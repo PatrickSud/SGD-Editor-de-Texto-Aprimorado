@@ -5,29 +5,46 @@
 
 // --- CONFIGURAÇÕES GERAIS E ARMAZENAMENTO ---
 
-const DATA_VERSION = 3
-const STORAGE_KEY = 'quickMessagesData'
-const NOTES_STORAGE_KEY = 'editorNotesData'
-const REMINDERS_STORAGE_KEY = 'remindersData'
-const SETTINGS_STORAGE_KEY = 'extensionSettingsData' // NOVO: Para configurações gerais
+const DATA_VERSION = 3;
+const STORAGE_KEY = 'quickMessagesData';
+const NOTES_STORAGE_KEY = 'editorNotesData';
+const REMINDERS_STORAGE_KEY = 'remindersData';
+const SETTINGS_STORAGE_KEY = 'extensionSettingsData';
 
-// Configurações Padrão (NOVO)
+// NOVO: Chaves para aprendizado e sugestões de IA
+const RESPONSE_SAMPLES_KEY = 'userResponseSamples'; // Para aprender o estilo
+const RESPONSE_LOG_KEY = 'userResponseLog'; // Para sugerir novos trâmites
+
+// --- CONFIGURAÇÕES DE IA ---
+const MAX_RESPONSE_SAMPLES = 25; // Limite de amostras de estilo salvas
+const MIN_TEXT_LENGTH_FOR_SUGGESTION = 40; // Comprimento mínimo do texto para acionar sugestões proativas
+const DEBOUNCE_DELAY_FOR_SUGGESTIONS = 2000; // Atraso (ms) para acionar a sugestão proativa
+
+// Configurações Padrão
 const DEFAULT_SETTINGS = {
-  reminderRetentionDays: 1, // Padrão: Manter lembretes disparados por 1 dia
-  geminiApiKey: '' // NOVO: Chave da API do Gemini fornecida pelo usuário
-}
+  reminderRetentionDays: 1,
+  geminiApiKey: '',
+  // NOVO: Controle do usuário sobre as novas funcionalidades
+  enableProactiveSuggestions: true,
+  enableStyleAdaptation: true,
+  enableNewTramiteSuggestions: true
+};
+
 
 // --- ESTADO GLOBAL (Variáveis mutáveis usadas entre os scripts) ---
 
 // O tema atual do editor.
-let currentEditorTheme = 'light'
+let currentEditorTheme = 'light';
 
 // Variáveis globais para controle de Drag & Drop
-let draggedCategoryItem = null
-let draggedMessageItem = null
+let draggedCategoryItem = null;
+let draggedMessageItem = null;
 
 // Timeout global para esconder os pickers
-let pickerHideTimeout
+let pickerHideTimeout;
+
+// NOVO: Timeout para debounce das sugestões proativas
+let suggestionDebounceTimeout;
 
 // --- CONFIGURAÇÕES DO SISTEMA ALVO (SGD) ---
 
@@ -38,7 +55,7 @@ const TARGET_TEXTAREA_SELECTORS = [
   'textarea#sscForm\\:descricaoTramite',
   'textarea#cadSscForm\\:tramiteDescricao',
   'textarea#ssForm\\:descricaoTramite'
-]
+];
 
 /**
  * IDs/Seletores para encontrar a descrição inicial da solicitação de suporte (Usado para Resumo IA)
@@ -48,7 +65,7 @@ const SUPPORT_REQUEST_DESCRIPTION_SELECTORS = [
   '#cadSscForm\\:solicitacao',
   '#ssForm\\:solicitacao',
   'textarea[name="solicitacao"]' // Fallback
-]
+];
 
 /**
  * Seletores para encontrar a tabela de trâmites anteriores (Usado para Resumo IA)
@@ -57,13 +74,13 @@ const TRAMITES_TABLE_SELECTORS = [
   '#sscForm\\:tramitesTable_data',
   '#cadSscForm\\:tramites_data',
   '#ssForm\\:tramitesTable_data'
-]
+];
 
 /**
  * IDs de elementos usados para encontrar o nome do usuário no SGD.
  */
-const USER_NAME_SELECT_ID = 'cadSscForm:usuario'
-const USER_NAME_LOGGED_ID = 'td:usuario_nome'
+const USER_NAME_SELECT_ID = 'cadSscForm:usuario';
+const USER_NAME_LOGGED_ID = 'td:usuario_nome';
 
 // --- CONFIGURAÇÕES DE TEMA ---
 
@@ -75,7 +92,7 @@ const THEMES = [
   'forest',
   'pink',
   'tokyo-night'
-]
+];
 
 // Mapeamento de temas para classes CSS.
 const THEME_CLASSES_MAP = {
@@ -84,10 +101,10 @@ const THEME_CLASSES_MAP = {
   pink: 'pink-mode',
   'dark-graphite': 'dark-graphite-mode',
   'tokyo-night': 'tokyo-night-mode'
-}
+};
 
 // Array de todas as classes de tema para facilitar a remoção.
-const ALL_THEME_CLASSES = Object.values(THEME_CLASSES_MAP)
+const ALL_THEME_CLASSES = Object.values(THEME_CLASSES_MAP);
 
 // Ícones exibidos no botão de alternância de tema
 const THEME_ICONS = {
@@ -97,7 +114,7 @@ const THEME_ICONS = {
   pink: '🌸',
   'dark-graphite': '🌙',
   'tokyo-night': '🌑'
-}
+};
 
 // Nomes amigáveis para exibição no menu de temas
 const THEME_NAMES = {
@@ -107,7 +124,7 @@ const THEME_NAMES = {
   forest: 'Floresta',
   pink: 'Cerejeira',
   'tokyo-night': 'Tokyo Night'
-}
+};
 
 // --- DADOS DOS PICKERS (Cores e Emojis) ---
 
@@ -119,7 +136,7 @@ const PICKER_COLORS = [
   '#00FFFF',
   '#FFA500',
   '#008000'
-]
+];
 
 // Emojis e seus códigos HTML escapados.
 const PICKER_EMOJIS = [
@@ -177,7 +194,7 @@ const PICKER_EMOJIS = [
   { char: '🔥', code: '&#128293;' },
   { char: '🧡', code: '&#129505;' },
   { char: '📌', code: '&#128204;' }
-]
+];
 
 // --- CONFIGURAÇÕES DE ATALHOS ---
 
@@ -215,4 +232,4 @@ const PROTECTED_SHORTCUTS = [
   'ctrl+shift+j',
   'ctrl+shift+c',
   'ctrl+u'
-]
+];
