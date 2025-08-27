@@ -408,7 +408,7 @@ async function handleAISummary(textArea) {
   }
 }
 
-// --- LÓGICA DE ATALHOS (Posição Fixa, Navegação por Teclado e Filtro Inteligente) ---
+// --- LÓGICA DE ATALHOS (Posição Fixa, Navegação por Teclado e Filtro) ---
 
 /**
  * Listener global para detectar atalhos de categoria.
@@ -489,7 +489,7 @@ async function handleShortcutListener(e) {
 }
 
 /**
- * Exibe o popup de atalhos com navegação por teclado e filtro (agora inteligente).
+ * Exibe o popup de atalhos com navegação por teclado e filtro.
  * @param {HTMLTextAreaElement} textArea - O textarea alvo para inserção.
  * @param {Array<object>} messages - As mensagens da categoria acionada.
  */
@@ -507,9 +507,9 @@ function showShortcutPopup(textArea, messages) {
   applyCurrentTheme(popup)
   editorContainer.appendChild(popup)
 
-  // Estrutura do popup atualizada com indicador de IA
+  // Estrutura do popup
   popup.innerHTML = `
-      <div id="shortcut-filter-display">Filtro: <span class="filter-text"></span><span class="ia-indicator" style="display: none;" title="Busca Inteligente Ativa">✨ (IA)</span></div>
+      <div id="shortcut-filter-display">Filtro: <span class="filter-text"></span></div>
       <div id="shortcut-items-container"></div>
   `
 
@@ -517,23 +517,17 @@ function showShortcutPopup(textArea, messages) {
   const filterDisplay = popup.querySelector(
     '#shortcut-filter-display .filter-text'
   )
-  const iaIndicator = popup.querySelector(
-    '#shortcut-filter-display .ia-indicator'
-  ) // NOVO
 
   // Estado do popup
   let filterString = ''
   let filteredMessages = [...messages] // Cópia da lista original
   let activeIndex = 0
-  let isSearchingIA = false // NOVO: Flag para busca IA
 
   // --- Funções de Renderização e Navegação ---
 
-  // Obtém os elementos DOM dos itens atualmente visíveis (exceto o "no-results")
   const getItems = () =>
     itemsContainer.querySelectorAll('.shortcut-item:not(.no-results)')
 
-  // Garante que o item selecionado esteja visível na área de scroll.
   const ensureVisible = index => {
     const items = getItems()
     if (items[index]) {
@@ -541,16 +535,8 @@ function showShortcutPopup(textArea, messages) {
     }
   }
 
-  // Renderiza a lista de itens com base no filtro aplicado.
   const renderItems = () => {
-    // Limpa o container
     itemsContainer.innerHTML = ''
-
-    // NOVO: Estado de carregamento IA
-    if (isSearchingIA) {
-      itemsContainer.innerHTML = `<div class="shortcut-item no-results ai-loading">Buscando com IA... ✨</div>`
-      return
-    }
 
     if (filteredMessages.length === 0) {
       itemsContainer.innerHTML = `<div class="shortcut-item no-results">Nenhum resultado encontrado</div>`
@@ -558,118 +544,56 @@ function showShortcutPopup(textArea, messages) {
       return
     }
 
-    // Renderiza os itens filtrados usando DocumentFragment para performance.
     const fragment = document.createDocumentFragment()
     filteredMessages.forEach((m, index) => {
       const item = document.createElement('div')
-      // Define a classe 'active-item' apenas para o primeiro item após a renderização
       item.className = `shortcut-item ${index === 0 ? 'active-item' : ''}`
       item.dataset.messageId = m.id
       item.dataset.index = index
-      item.textContent = m.title // Usa textContent para segurança e performance
+      item.textContent = m.title
       fragment.appendChild(item)
     })
     itemsContainer.appendChild(fragment)
 
-    activeIndex = 0 // Reseta o índice ativo para o primeiro item visível
+    activeIndex = 0
     ensureVisible(0)
   }
 
-  // NOVO: Função para realizar a busca inteligente via IA.
-  const performIntelligentSearch = async query => {
-    isSearchingIA = true
-    iaIndicator.style.display = 'inline'
-    renderItems() // Mostra o indicador de carregamento
-
-    try {
-      const apiKey = await getGeminiApiKey()
-      // searchQuickMessages definido em ai-service.js
-      const relevantIds = await searchQuickMessages(apiKey, query, messages)
-
-      // Cria um mapa para acesso rápido à ordem de relevância retornada pela IA
-      const relevanceOrder = new Map(
-        relevantIds.map((id, index) => [id, index])
-      )
-
-      // Filtra e ordena as mensagens originais de acordo com a ordem da IA
-      filteredMessages = messages
-        .filter(m => relevanceOrder.has(m.id))
-        .sort((a, b) => relevanceOrder.get(a.id) - relevanceOrder.get(b.id))
-    } catch (error) {
-      handleAIError(error)
-      // Fallback para busca local simples se a IA falhar
-      iaIndicator.style.display = 'none' // Esconde indicador IA no fallback
-      filteredMessages = messages.filter(m =>
-        m.title.toLowerCase().includes(query.toLowerCase())
-      )
-    } finally {
-      isSearchingIA = false
-      renderItems() // Renderiza os resultados finais
-    }
-  }
-
-  // Atualiza o estado do filtro e decide o tipo de busca. (Agora Async)
-  const updateFilter = async newFilter => {
+  const updateFilter = newFilter => {
     filterString = newFilter
     filterDisplay.textContent = filterString || '(Digite para filtrar)'
 
-    // Lógica de busca dinâmica e intuitiva:
-    if (filterString.length === 0) {
-      // Filtro vazio: busca local (lista original)
-      filteredMessages = [...messages]
-      iaIndicator.style.display = 'none'
-      renderItems()
-    } else if (filterString.length >= 3) {
-      // Filtro longo (3+ chars): inicia a busca inteligente
-      await performIntelligentSearch(filterString)
-    } else {
-      // Filtro curto (1-2 chars): busca local simples por título
+    if (filterString) {
       filteredMessages = messages.filter(m =>
         m.title.toLowerCase().includes(filterString.toLowerCase())
       )
-      iaIndicator.style.display = 'none'
-      renderItems()
+    } else {
+      filteredMessages = [...messages]
     }
+    renderItems()
   }
 
-  // Seleciona o item e fecha o popup.
   const selectItem = index => {
-    // NOVO: Impede seleção se a busca estiver em andamento
-    if (isSearchingIA) return
-
     if (filteredMessages.length === 0 || !filteredMessages[index]) return
 
     const message = filteredMessages[index]
     if (message) {
-      // insertAtCursor lida com a inserção correta.
       insertAtCursor(textArea, message.message)
     }
 
-    // Fechar o popup (o MutationObserver cuidará da limpeza do listener).
     if (editorContainer.contains(popup)) {
       popup.remove()
     }
   }
 
-  // Handler principal de teclado para navegação e filtragem. (Agora Async)
-  const navigatePopup = async e => {
-    // NOVO: Impede navegação enquanto busca IA estiver ativa
-    if (isSearchingIA && ['ArrowDown', 'ArrowUp', 'Enter'].includes(e.key)) {
-      e.preventDefault()
-      e.stopPropagation()
-      return
-    }
-
-    // 1. Handle Navigation/Action Keys (Setas, Enter, Escape)
+  const navigatePopup = e => {
     if (['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.key)) {
-      // Impede que a tecla mova o cursor no textarea/wysiwyg.
       e.preventDefault()
       e.stopPropagation()
 
       const items = getItems()
       const numItems = filteredMessages.length
 
-      // Se não houver itens, apenas Escape funciona
       if (numItems === 0 && e.key !== 'Escape') return
 
       switch (e.key) {
@@ -701,44 +625,36 @@ function showShortcutPopup(textArea, messages) {
       return
     }
 
-    // 2. Handle Backspace (para o filtro)
     if (e.key === 'Backspace') {
       e.preventDefault()
       e.stopPropagation()
       if (filterString.length > 0) {
-        await updateFilter(filterString.slice(0, -1)) // Chamada async
+        updateFilter(filterString.slice(0, -1))
       }
       return
     }
 
-    // 3. Handle Printable Characters (Filtering)
-    // Verifica se a tecla é um caractere único e não uma combinação de Ctrl/Meta (Alt é permitido para caracteres especiais/AltGr)
     if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
       e.preventDefault()
       e.stopPropagation()
-      await updateFilter(filterString + e.key) // Chamada async
+      updateFilter(filterString + e.key)
     }
   }
 
   // --- Inicialização do Popup ---
 
-  // Renderização inicial
   updateFilter('')
 
-  // Lógica de Posicionamento (Posição fixa dentro do editor)
   const toolbar = editorContainer.querySelector('.editor-toolbar')
   if (toolbar) {
-    // Posiciona centralizado abaixo da toolbar.
     popup.style.top = `${toolbar.offsetHeight + 8}px`
     popup.style.left = `50%`
     popup.style.transform = 'translateX(-50%)'
   } else {
-    // Fallback se a toolbar não for encontrada.
     popup.style.top = '10px'
     popup.style.left = '10px'
   }
 
-  // Listener para fechar ao clicar fora.
   const clickOutsideHandler = e => {
     if (!popup.contains(e.target)) {
       if (editorContainer.contains(popup)) {
@@ -747,16 +663,12 @@ function showShortcutPopup(textArea, messages) {
     }
   }
 
-  // Adiciona listener com useCapture=true (usando o novo navigatePopup async)
   document.addEventListener('keydown', navigatePopup, true)
 
-  // Adiciona listener de clique fora.
   setTimeout(() => {
-    // Adicionado com pequeno delay para evitar que o clique que abriu o popup o feche imediatamente.
     document.addEventListener('click', clickOutsideHandler, true)
   }, 0)
 
-  // Usa MutationObserver para limpar robustamente os listeners quando o popup é removido.
   const observer = new MutationObserver((mutationsList, observer) => {
     for (const mutation of mutationsList) {
       if (mutation.type === 'childList') {
@@ -765,26 +677,24 @@ function showShortcutPopup(textArea, messages) {
             document.removeEventListener('keydown', navigatePopup, true)
             document.removeEventListener('click', clickOutsideHandler, true)
             observer.disconnect()
-            // Retorna o foco ao editor ativo após fechar.
             focusEditor(textArea)
           }
         })
       }
     }
   })
-  // Observa o container pai (editorContainer) para remoção do filho (popup).
+
   observer.observe(editorContainer, { childList: true })
 
-  // Handle clicks (Delegação de eventos no container de itens).
-  itemsContainer.addEventListener('click', async event => {
+  itemsContainer.addEventListener('click', event => {
     const item = event.target.closest('.shortcut-item')
-    // Verifica se o clique não foi no item "Nenhum resultado" ou "Carregando"
     if (item && !item.classList.contains('no-results') && item.dataset.index) {
       const index = parseInt(item.dataset.index)
       selectItem(index)
     }
   })
 }
+
 /**
  * Inicia o processo de importação de trâmites a partir de um arquivo JSON.
  * @param {File} file - O arquivo JSON selecionado pelo usuário.
@@ -796,16 +706,12 @@ function importQuickMessages(file, onCompleteCallback) {
     try {
       const data = JSON.parse(e.target.result);
 
-      // Validação básica da estrutura do arquivo
       if (!data || !Array.isArray(data.categories) || !Array.isArray(data.messages)) {
         throw new Error("O arquivo não parece ser um backup válido da extensão.");
       }
 
-      // Migra os dados importados para a versão mais recente, se necessário
       const migratedData = await runDataMigration(data);
       
-      // Abre o modal de seleção para o usuário escolher o que importar.
-      // A função openImportSelectionModal já existe em `quick-messages.js`.
       await openImportSelectionModal(migratedData, onCompleteCallback);
 
     } catch (error) {
@@ -838,7 +744,6 @@ async function exportQuickMessages(modal) {
   const categoriesToExport = new Map();
   const messagesToExport = [];
 
-  // Filtra as mensagens selecionadas e suas respectivas categorias
   data.messages.forEach(msg => {
     if (selectedMessageIds.includes(msg.id)) {
       messagesToExport.push(msg);
@@ -857,7 +762,6 @@ async function exportQuickMessages(modal) {
     messages: messagesToExport
   };
 
-  // Cria um arquivo Blob para download
   const blob = new Blob([JSON.stringify(exportData, null, 2)], {
     type: "application/json"
   });
