@@ -16,7 +16,7 @@ const RESPONSE_SAMPLES_KEY = 'userResponseSamples'; // Para aprender o estilo
 const RESPONSE_LOG_KEY = 'userResponseLog'; // Para sugerir novos trâmites
 
 // --- CONFIGURAÇÕES DE IA ---
-const MAX_RESPONSE_SAMPLES = 25; // Limite de amostras de estilo salvas
+const MAX_RESPONSE_SAMPLES = 50; // Limite de amostras de estilo salvas
 const MIN_TEXT_LENGTH_FOR_SUGGESTION = 40; // Comprimento mínimo do texto para acionar sugestões proativas
 const DEBOUNCE_DELAY_FOR_SUGGESTIONS = 2000; // Atraso (ms) para acionar a sugestão proativa
 
