@@ -23,6 +23,7 @@
         "config.js",
         "utils.js",
         "storage.js",
+        "ai-service.js",
         "ui-components.js",
         "editor-core.js",
         "features.js",

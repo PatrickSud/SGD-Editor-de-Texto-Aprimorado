@@ -284,18 +284,18 @@ async function saveResponseSample(responseText) {
     try {
         const result = await chrome.storage.local.get(RESPONSE_SAMPLES_KEY);
         let samples = result[RESPONSE_SAMPLES_KEY] || [];
-
+        
         // Adiciona a nova amostra no início
         samples.unshift({
             text: responseText,
             timestamp: Date.now()
         });
-
+        
         // Mantém a lista dentro do limite definido em config.js
         if (samples.length > MAX_RESPONSE_SAMPLES) {
             samples = samples.slice(0, MAX_RESPONSE_SAMPLES);
         }
-
+        
         await chrome.storage.local.set({ [RESPONSE_SAMPLES_KEY]: samples });
 
     } catch (error) {

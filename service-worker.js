@@ -66,13 +66,17 @@ async function runResponseAnalysisAndSuggestNewTramite() {
 
         const dataResult = await chrome.storage.sync.get(STORAGE_KEY);
         const data = dataResult[STORAGE_KEY] || { messages: [] };
-
+        
+        // Converte mensagens salvas em hashes para comparação rápida
         const savedHashes = new Set(data.messages.map(msg => simpleHash(msg.message.trim())));
 
         let bestCandidate = null;
 
         for (const hash in log) {
             const entry = log[hash];
+            // Critérios para ser um bom candidato:
+            // - Usado pelo menos 3 vezes
+            // - Não está já salvo como um trâmite
             if (entry.count >= 3 && !savedHashes.has(parseInt(hash))) {
                 if (!bestCandidate || entry.count > bestCandidate.count) {
                     bestCandidate = entry;
@@ -81,7 +85,9 @@ async function runResponseAnalysisAndSuggestNewTramite() {
         }
 
         if (bestCandidate) {
+            // Salva a sugestão para a UI pegar
             await chrome.storage.local.set({ 'newTramiteSuggestion': bestCandidate.text });
+            // Remove do log para não sugerir de novo
             delete log[simpleHash(bestCandidate.text.trim())];
             await chrome.storage.local.set({ [RESPONSE_LOG_KEY]: log });
         }
@@ -89,6 +95,7 @@ async function runResponseAnalysisAndSuggestNewTramite() {
         console.warn("Service Worker: Erro durante análise de respostas.", error);
     }
 }
+
 
 // --- LISTENER DE MENSAGENS E ALARMES ---
 
