@@ -618,48 +618,21 @@ async function openMessageModal(data = null) {
  */
 async function openManagementModal() {
   const onSave = async (modalContent, closeModal) => {
-    // Salva as alterações de nome, ordem e atalhos das categorias que foram modificadas no DOM.
     const success = await saveAllCategoryChanges(modalContent)
     if (success) {
-      // Recarrega as instâncias visíveis para refletir as mudanças nas categorias/ordem.
       await reloadAllQuickMessagesInstances()
       showNotification(
         'Alterações de categorias salvas com sucesso!',
         'success'
       )
-      // Não fecha o modal automaticamente para permitir que o usuário continue gerenciando ou exportando.
     }
-    // A configuração de IA agora é salva pelo botão dedicado (💾) para feedback imediato.
   }
 
-  // Carrega a chave API atual para o input
   const currentApiKey = await getGeminiApiKey()
 
-  // Estrutura HTML com seções recolhíveis.
   const modal = createModal(
-    'Configurações', // Título alterado
+    'Configurações',
     `
-        <!-- NOVO: SEÇÃO DE IA -->
-        <div class="management-section collapsible-section expanded">
-            <h4 class="collapsible-header">▼ Configurações de IA (Gemini)</h4>
-            <div class="collapsible-content">
-                <p>Insira sua chave de API do Google Gemini para habilitar os recursos de IA (Correção, Geração, Resumo e Busca Inteligente). A chave é salva localmente no seu navegador.</p>
-                <div class="form-group">
-                    <label for="gemini-api-key-input">Chave da API Gemini</label>
-                    <div class="category-form">
-                        <input type="password" id="gemini-api-key-input" placeholder="AIzaSy..." value="${escapeHTML(
-                          currentApiKey
-                        )}">
-                        <button type="button" id="save-gemini-key-btn" class="action-btn save-cat-btn" title="Salvar Chave">💾</button>
-                        <button type="button" id="toggle-key-visibility-btn" class="action-btn" title="Mostrar/Ocultar Chave">👁️</button>
-                    </div>
-                </div>
-                <p style="font-size: 12px; color: var(--text-color-muted);"><a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Obtenha sua chave aqui (Google AI Studio)</a>.</p>
-            </div>
-        </div>
-        <hr>
-        <!-- FIM SEÇÃO DE IA -->
-
         <div class="management-section">
             <h4>Categorias (Arraste para reordenar)</h4>
             <p>Edite o nome inline, defina atalhos ou exclua categorias.</p>
@@ -685,31 +658,44 @@ async function openManagementModal() {
                     <button type="button" id="export-btn" class="action-btn">Exportar Selecionados</button>
                 </div>
             </div>
+        </div>
+        <hr>
+        <div class="management-section collapsible-section expanded">
+            <h4 class="collapsible-header">▼ Configurações de IA (Gemini)</h4>
+            <div class="collapsible-content">
+                <p>Insira sua chave de API do Google Gemini para habilitar os recursos de IA (Correção, Geração, Resumo). A chave é salva localmente no seu navegador.</p>
+                <div class="form-group">
+                    <label for="gemini-api-key-input">Chave da API Gemini</label>
+                    <div class="category-form">
+                        <input type="password" id="gemini-api-key-input" placeholder="AIzaSy..." value="${escapeHTML(
+                          currentApiKey
+                        )}">
+                        <button type="button" id="save-gemini-key-btn" class="action-btn save-cat-btn" title="Salvar Chave">💾</button>
+                        <button type="button" id="toggle-key-visibility-btn" class="action-btn" title="Mostrar/Ocultar Chave">👁️</button>
+                    </div>
+                </div>
+                <p style="font-size: 12px; color: var(--text-color-muted);"><a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Obtenha sua chave aqui (Google AI Studio)</a>.</p>
+            </div>
         </div>`,
     onSave,
-    true, // Define como modal de gerenciamento (botões diferentes).
-    'management-modal' // ID específico para estilos CSS (marca d'água).
+    true,
+    'management-modal'
   )
 
   document.body.appendChild(modal)
 
-  // Listener para as seções recolhíveis (Generalizado).
   modal.querySelectorAll('.collapsible-header').forEach(header => {
     header.addEventListener('click', e => {
       const section = e.target.closest('.collapsible-section')
-      // Verifica se o clique foi realmente no header
       if (e.target === header || header.contains(e.target)) {
         section.classList.toggle('expanded')
-        // Atualiza o ícone (▶ ou ▼)
         const icon = section.classList.contains('expanded') ? '▼' : '▶'
-        // Substitui o primeiro caractere pelo ícone correto, mantendo o texto
         const textContent = header.textContent.substring(1)
         header.textContent = icon + textContent
       }
     })
   })
 
-  // NOVO: Listeners para Configuração de IA
   const apiKeyInput = modal.querySelector('#gemini-api-key-input')
 
   modal
@@ -718,10 +704,8 @@ async function openManagementModal() {
       e.preventDefault()
       const newKey = apiKeyInput.value.trim()
       try {
-        // Usamos a função genérica saveSettings de storage.js
         await saveSettings({ geminiApiKey: newKey })
         showNotification('Chave da API Gemini salva com sucesso!', 'success')
-        // Garante que o input volte a ser password após salvar
         apiKeyInput.type = 'password'
       } catch (error) {
         showNotification('Erro ao salvar a chave da API.', 'error')
@@ -735,10 +719,8 @@ async function openManagementModal() {
       apiKeyInput.type = apiKeyInput.type === 'password' ? 'text' : 'password'
     })
 
-  // Renderiza a lista de categorias.
   await renderCategoryManagementList(modal)
 
-  // Listener do botão Adicionar Categoria.
   modal
     .querySelector('#add-category-btn')
     .addEventListener('click', async e => {
@@ -746,24 +728,20 @@ async function openManagementModal() {
       const input = modal.querySelector('#new-category-name')
       const name = input.value.trim()
       if (name) {
-        // Adiciona nova categoria sem atalho por padrão neste fluxo.
         const newCat = await addCategory(name)
         if (newCat) {
           input.value = ''
           await renderCategoryManagementList(modal)
-          // Atualiza a lista de exportação também.
           await renderExportList(modal)
         }
       }
     })
 
-  // Listener do botão Importar.
   modal.querySelector('#import-btn').addEventListener('click', e => {
     e.preventDefault()
     const fileInput = modal.querySelector('#import-file-input')
     if (fileInput.files.length > 0) {
       importQuickMessages(fileInput.files[0], () => {
-        // Callback após importação: atualiza as listas no modal.
         renderCategoryManagementList(modal)
         renderExportList(modal)
       })
@@ -772,7 +750,6 @@ async function openManagementModal() {
     }
   })
 
-  // Renderiza a lista de exportação e listener do botão Exportar.
   await renderExportList(modal)
   modal.querySelector('#export-btn').addEventListener('click', e => {
     e.preventDefault()
@@ -791,12 +768,9 @@ async function renderCategoryManagementList(modal) {
     const item = document.createElement('div')
     item.className = 'category-item'
     item.dataset.id = cat.id
-    // Armazena o atalho no dataset para manipulação posterior.
     item.dataset.shortcut = cat.shortcut || ''
-    // Torna o item arrastável para reordenação.
     item.draggable = true
 
-    // Segurança: Escapar nome e atalho. Adiciona alça de arraste e nome editável (contenteditable).
     item.innerHTML = `
             <span class="drag-handle" title="Arraste para reordenar">⠿</span>
             <button type="button" class="action-btn set-shortcut-btn" title="Definir Atalho">⌨️</button>
@@ -809,20 +783,17 @@ async function renderCategoryManagementList(modal) {
             <button type="button" class="action-btn delete-cat-btn">Excluir</button>
         `
 
-    // Listeners de Drag & Drop para reordenação de categorias.
     item.addEventListener('dragstart', handleCategoryDragStart)
     item.addEventListener('dragover', handleCategoryDragOver)
     item.addEventListener('dragleave', handleCategoryDragLeave)
     item.addEventListener('drop', handleCategoryDrop)
     item.addEventListener('dragend', handleCategoryDragEnd)
 
-    // Listener do botão Definir Atalho.
     item.querySelector('.set-shortcut-btn').addEventListener('click', e => {
       e.preventDefault()
       openShortcutModal(cat, item)
     })
 
-    // Listener do botão Excluir Categoria.
     item.querySelector('.delete-cat-btn').addEventListener('click', async e => {
       e.preventDefault()
       if (data.categories.length > 1) {
@@ -833,7 +804,6 @@ async function renderCategoryManagementList(modal) {
           async () => {
             await deleteCategory(cat.id)
             await renderCategoryManagementList(modal)
-            // Atualiza a lista de exportação após exclusão.
             await renderExportList(modal)
           }
         )
@@ -855,9 +825,7 @@ async function renderExportList(modal) {
   const exportBtn = modal.querySelector('#export-btn')
 
   if (data.messages.length > 0) {
-    // Renderiza agrupado por categoria.
     data.categories.forEach(category => {
-      // Garante a ordem correta das mensagens na exportação.
       const messagesInCategory = data.messages
         .filter(msg => msg.categoryId === category.id)
         .sort((a, b) => a.order - b.order)
@@ -868,7 +836,6 @@ async function renderExportList(modal) {
       categoryContainer.className = 'export-category'
 
       const safeCatId = escapeHTML(category.id)
-      // Header da categoria com checkbox para selecionar todos.
       categoryContainer.innerHTML = `
                 <div class="export-category-header">
                     <input type="checkbox" class="export-category-checkbox" data-category-id="${safeCatId}" id="export-cat-${safeCatId}">
@@ -877,7 +844,6 @@ async function renderExportList(modal) {
       )}</label>
                 </div>`
 
-      // Lista de mensagens da categoria.
       const messagesHtml = messagesInCategory
         .map(msg => {
           const safeMsgId = escapeHTML(msg.id)
@@ -894,7 +860,6 @@ async function renderExportList(modal) {
       exportList.appendChild(categoryContainer)
     })
 
-    // Lógica para marcar/desmarcar mensagens ao clicar na categoria (checkbox mestre).
     exportList
       .querySelectorAll('.export-category-checkbox')
       .forEach(catCheckbox => {
@@ -926,7 +891,6 @@ async function addCategory(name, shortcut = '') {
   const data = await getStoredData()
   if (!name || name.trim() === '') return null
 
-  // Validação de nome duplicado (case-insensitive).
   if (
     data.categories.some(
       c => c.name.toLowerCase() === name.trim().toLowerCase()
@@ -936,14 +900,11 @@ async function addCategory(name, shortcut = '') {
     return null
   }
 
-  // A validação do atalho deve ser feita antes de chamar esta função.
-
   const newCategory = {
     id: `cat-${Date.now()}`,
     name: name.trim(),
-    shortcut: shortcut // Usa o atalho fornecido ou o padrão ''
+    shortcut: shortcut
   }
-  // Adiciona ao final da lista (ordem padrão).
   data.categories.push(newCategory)
   await saveStoredData(data)
   return newCategory
@@ -958,16 +919,13 @@ async function saveAllCategoryChanges(modalContent) {
   const items = modalContent.querySelectorAll('.category-item')
   let validationError = false
   const newNames = new Set()
-  const newCategories = [] // Array para armazenar as categorias na nova ordem.
+  const newCategories = []
 
-  // Itera sobre os itens do DOM na ordem em que aparecem.
   items.forEach(item => {
-    if (validationError) return // Interrompe se já houver erro.
+    if (validationError) return
 
     const catId = item.dataset.id
-    // Captura o nome editado do contenteditable.
     const newName = item.querySelector('.category-name').textContent.trim()
-    // Captura o atalho armazenado no dataset (modificado via openShortcutModal).
     const newShortcut = item.dataset.shortcut || ''
 
     if (!newName) {
@@ -976,7 +934,6 @@ async function saveAllCategoryChanges(modalContent) {
       return
     }
 
-    // Verifica duplicidade de nome na lista atualizada.
     if (newNames.has(newName.toLowerCase())) {
       showNotification(`Nome de categoria duplicado: "${newName}"`, 'error')
       validationError = true
@@ -984,7 +941,6 @@ async function saveAllCategoryChanges(modalContent) {
     }
     newNames.add(newName.toLowerCase())
 
-    // Adiciona a categoria ao novo array, respeitando a ordem do DOM.
     newCategories.push({
       id: catId,
       name: newName,
@@ -994,11 +950,10 @@ async function saveAllCategoryChanges(modalContent) {
 
   if (validationError) return false
 
-  // Prepara o objeto de dados final com as categorias ordenadas e atualizadas.
   const newData = {
     version: DATA_VERSION,
     categories: newCategories,
-    messages: currentData.messages // As mensagens não são modificadas aqui.
+    messages: currentData.messages
   }
 
   await saveStoredData(newData)
@@ -1010,28 +965,23 @@ async function saveAllCategoryChanges(modalContent) {
  */
 async function deleteCategory(id) {
   const data = await getStoredData()
-  // Encontra a primeira categoria disponível para mover as mensagens.
   const defaultCategoryId = data.categories.find(c => c.id !== id)?.id
 
   if (!defaultCategoryId) {
-    // Segurança: não deve acontecer se a validação no botão (mínimo 1 categoria) estiver correta.
     showNotification('Erro ao encontrar categoria substituta.', 'error')
     return
   }
 
-  // Move e reordena as mensagens.
   const messagesToMove = data.messages.filter(msg => msg.categoryId === id)
   const destinationCatMessages = data.messages.filter(
     msg => msg.categoryId === defaultCategoryId
   )
 
-  // Calcula a ordem máxima na categoria de destino.
   let maxOrder =
     destinationCatMessages.length > 0
       ? Math.max(...destinationCatMessages.map(m => m.order))
       : -1
 
-  // Move as mensagens para o final da categoria de destino.
   messagesToMove.forEach(msg => {
     msg.categoryId = defaultCategoryId
     msg.order = ++maxOrder
@@ -1039,7 +989,6 @@ async function deleteCategory(id) {
 
   data.categories = data.categories.filter(c => c.id !== id)
   await saveStoredData(data)
-  // A atualização da UI é feita pelo chamador (renderCategoryManagementList) e reloadAllQuickMessagesInstances.
 }
 
 // --- MODAIS DE CAPTURA DE ATALHO ---
@@ -1050,16 +999,14 @@ async function deleteCategory(id) {
  * @param {HTMLElement} itemElement - O elemento DOM da categoria na lista de gerenciamento.
  */
 function openShortcutModal(category, itemElement) {
-  let capturedShortcut = null // Armazena o atalho capturado durante a sessão do modal.
+  let capturedShortcut = null
 
   const onSave = async (modalContent, closeModal) => {
-    // Determina o atalho final (o capturado ou o inicial se nada foi pressionado).
     const finalShortcut =
       capturedShortcut === null
         ? itemElement.dataset.shortcut
         : capturedShortcut
 
-    // Se o atalho for vazio (limpo via ESC), salva imediatamente.
     if (finalShortcut === '') {
       itemElement.dataset.shortcut = ''
       itemElement.querySelector('.shortcut-display').textContent = 'Nenhum'
@@ -1067,17 +1014,14 @@ function openShortcutModal(category, itemElement) {
       return
     }
 
-    // Valida o atalho (verifica se está protegido ou em uso por outra categoria).
     const validation = await validateShortcut(finalShortcut, category.id)
     if (validation.valid) {
-      // Se válido, atualiza o dataset e o display do item no modal de gerenciamento.
       itemElement.dataset.shortcut = finalShortcut
       itemElement.querySelector('.shortcut-display').textContent =
         escapeHTML(finalShortcut)
       closeModalAndRemoveListener()
     } else {
       showNotification(validation.message, 'error')
-      // Não fecha o modal para permitir correção.
     }
   }
 
@@ -1091,15 +1035,12 @@ function openShortcutModal(category, itemElement) {
     onSave
   )
 
-  // Handler para captura de teclas
   const keydownHandler = createKeydownHandler(modal, shortcut => {
     capturedShortcut = shortcut
   })
 
-  // Adiciona o listener com prioridade (useCapture=true).
   document.addEventListener('keydown', keydownHandler, true)
 
-  // Função auxiliar para fechar o modal e remover o listener de teclado.
   const closeModalAndRemoveListener = () => {
     document.removeEventListener('keydown', keydownHandler, true)
     if (document.body.contains(modal)) {
@@ -1107,8 +1048,6 @@ function openShortcutModal(category, itemElement) {
     }
   }
 
-  // Garante a remoção do listener ao fechar (via botões de Cancelar/Fechar).
-  // Sobrescreve os handlers padrão definidos em createModal.
   modal.querySelector('.se-close-modal-btn').onclick =
     closeModalAndRemoveListener
   const cancelBtn = modal.querySelector('#modal-cancel-btn')
@@ -1141,16 +1080,13 @@ function openShortcutModalForNewCategory(parentModal) {
       return
     }
 
-    // Valida contra atalhos existentes (ID é null pois é nova categoria).
     const validation = await validateShortcut(finalShortcut, null)
     if (validation.valid) {
-      // Atualiza os campos no modal pai (Adicionar Trâmite).
       shortcutInput.value = finalShortcut
       shortcutDisplay.textContent = escapeHTML(finalShortcut)
       closeModalAndRemoveListener()
     } else {
       showNotification(validation.message, 'error')
-      // Não fecha o modal para permitir correção.
     }
   }
 
@@ -1163,12 +1099,10 @@ function openShortcutModalForNewCategory(parentModal) {
     onSave
   )
 
-  // Handler para captura de teclas
   const keydownHandler = createKeydownHandler(modal, shortcut => {
     capturedShortcut = shortcut
   })
 
-  // Adiciona o listener com prioridade.
   document.addEventListener('keydown', keydownHandler, true)
 
   const closeModalAndRemoveListener = () => {
@@ -1178,7 +1112,6 @@ function openShortcutModalForNewCategory(parentModal) {
     }
   }
 
-  // Garante a remoção do listener ao fechar (via botões).
   modal.querySelector('.se-close-modal-btn').onclick =
     closeModalAndRemoveListener
   const cancelBtn = modal.querySelector('#modal-cancel-btn')
@@ -1194,7 +1127,6 @@ function openShortcutModalForNewCategory(parentModal) {
  */
 function createKeydownHandler(modal, setCapturedShortcutCallback) {
   return e => {
-    // Impede qualquer ação padrão do navegador e impede que o evento chegue a outros listeners (como o do editor principal).
     e.preventDefault()
     e.stopPropagation()
 
@@ -1205,25 +1137,21 @@ function createKeydownHandler(modal, setCapturedShortcutCallback) {
 
     const mainKey = e.key.toLowerCase()
 
-    // Tecla ESC limpa o atalho.
     if (mainKey === 'escape') {
       setCapturedShortcutCallback('')
       modal.querySelector('#shortcut-preview').textContent = 'Nenhum (Limpo)'
       return
     }
 
-    // Ignora teclas modificadoras pressionadas sozinhas.
     if (['control', 'alt', 'shift', 'meta'].includes(mainKey)) return
 
-    // Requer pelo menos um modificador.
     if (modifiers.length === 0) {
       modal.querySelector('#shortcut-preview').textContent =
         'Use Ctrl, Alt ou Shift'
       return
     }
 
-    // Constrói a string de combinação (ordenada para consistência).
-    modifiers.sort() // Garante ordem consistente (alt+ctrl vs ctrl+alt).
+    modifiers.sort()
     const combination = [...modifiers, mainKey]
     const capturedShortcut = combination.join('+')
 
@@ -1233,44 +1161,26 @@ function createKeydownHandler(modal, setCapturedShortcutCallback) {
   }
 }
 
-// A primeira definição duplicada de _addCategoryInMemory foi removida. A definição correta segue abaixo.
-
-/**
- * Adiciona uma nova categoria a um objeto de dados em memória, sem salvar no armazenamento.
- * Utilizado internamente pelo processo de importação para evitar múltiplas gravações.
- * Se uma categoria com o mesmo nome já existir (localmente ou durante a sessão de importação), retorna a existente.
- * @param {object} data - O objeto de dados completo (com 'categories' e 'messages').
- * @param {string} name - O nome da nova categoria.
- * @returns {object | null} A nova categoria criada ou a existente se o nome já existir.
- */
 function _addCategoryInMemory(data, name) {
   if (!name || name.trim() === '') return null
 
   const trimmedName = name.trim()
-  // Validação de nome duplicado (case-insensitive)
   const existingCategory = data.categories.find(
     c => c.name.toLowerCase() === trimmedName.toLowerCase()
   )
   if (existingCategory) {
-    // Se a categoria já existe, retorna a existente em vez de criar uma nova.
     return existingCategory
   }
 
   const newCategory = {
-    // Gera um ID único robusto para evitar colisões durante a importação.
     id: `cat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     name: trimmedName,
-    shortcut: '' // Atalhos importados são ignorados para prevenir conflitos.
+    shortcut: ''
   }
   data.categories.push(newCategory)
   return newCategory
 }
 
-/**
- * Função auxiliar que lê o modal e extrai as tarefas de importação selecionadas pelo usuário.
- * @param {HTMLElement} modalBody - O corpo do elemento do modal.
- * @returns {Array<object>} Uma lista de tarefas, onde cada tarefa contém os dados da mensagem e o destino escolhido.
- */
 function _getImportTasks(modalBody) {
   const tasks = []
   const selectedCheckboxes = modalBody.querySelectorAll(
@@ -1281,7 +1191,6 @@ function _getImportTasks(modalBody) {
     const group = checkbox.closest('.import-category')
     const destinationSelect = group.querySelector('.destination-select')
     tasks.push({
-      // Os dados da mensagem foram armazenados no dataset durante a criação do modal.
       messageData: JSON.parse(checkbox.dataset.messageContent),
       destinationChoice: destinationSelect.value,
       newCategoryName: group.dataset.importedCategoryName
@@ -1290,12 +1199,6 @@ function _getImportTasks(modalBody) {
   return tasks
 }
 
-/**
- * Função auxiliar que aplica as tarefas de importação a um objeto de dados.
- * @param {object} data - O objeto de dados atual a ser modificado.
- * @param {Array<object>} tasks - A lista de tarefas gerada por _getImportTasks.
- * @returns {number} O número de trâmites que foram efetivamente adicionados.
- */
 function _applyImportTasksToData(data, tasks) {
   const maxOrderMap = new Map()
   let importedCount = 0
@@ -1304,17 +1207,14 @@ function _applyImportTasksToData(data, tasks) {
     let finalCategoryId
 
     if (task.destinationChoice === '--create-new--') {
-      // Tenta criar a categoria. Se o nome já existir, _addCategoryInMemory retornará a existente.
       const category = _addCategoryInMemory(data, task.newCategoryName)
       finalCategoryId = category ? category.id : null
     } else {
-      // Destino é uma categoria existente selecionada pelo ID.
       finalCategoryId = task.destinationChoice
     }
 
-    if (!finalCategoryId) continue // Pula se não conseguiu determinar um destino
+    if (!finalCategoryId) continue
 
-    // Calcula a ordem máxima para a categoria de destino (apenas na primeira vez que a categoria é encontrada).
     if (!maxOrderMap.has(finalCategoryId)) {
       const messagesInDest = data.messages.filter(
         m => m.categoryId === finalCategoryId
@@ -1330,7 +1230,6 @@ function _applyImportTasksToData(data, tasks) {
     let currentMaxOrder = maxOrderMap.get(finalCategoryId)
     currentMaxOrder++
 
-    // Adiciona a mensagem ao objeto de dados.
     data.messages.push({
       id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       title: task.messageData.title || 'Trâmite Importado',
@@ -1345,11 +1244,6 @@ function _applyImportTasksToData(data, tasks) {
   return importedCount
 }
 
-/**
- * Abre um modal para o usuário selecionar quais trâmites de um arquivo importar.
- * @param {object} importedData - Os dados lidos e migrados do arquivo JSON.
- * @param {Function} onCompleteCallback - Callback a ser executado no final do processo.
- */
 async function openImportSelectionModal(importedData, onCompleteCallback) {
   const currentData = await getStoredData()
 
@@ -1358,14 +1252,7 @@ async function openImportSelectionModal(importedData, onCompleteCallback) {
     return
   }
 
-  // A restrição que impedia a importação se não houvesse categorias locais foi removida.
-
-  // --- Robustness Improvement: Handle Orphaned Messages ---
-  // Identify messages whose category ID is not present in the imported categories list.
   const definedCategoryIds = new Set(importedData.categories.map(cat => cat.id))
-
-  // Create a deep copy of messages to safely modify categoryId for UI grouping purposes.
-  // We use this copy for the UI generation process.
   const importedMessages = JSON.parse(JSON.stringify(importedData.messages))
   const orphanedMessages = importedMessages.filter(
     msg => !definedCategoryIds.has(msg.categoryId)
@@ -1374,41 +1261,33 @@ async function openImportSelectionModal(importedData, onCompleteCallback) {
   const categoriesToDisplay = [...importedData.categories]
 
   if (orphanedMessages.length > 0) {
-    const orphanCatId = 'orphan-import-group' // Temporary ID for UI grouping
+    const orphanCatId = 'orphan-import-group'
     const orphanCategory = {
       id: orphanCatId,
       name: 'Trâmites Órfãos (Sem Categoria no Arquivo)'
     }
     categoriesToDisplay.push(orphanCategory)
-    // Assign the temporary ID so they are grouped correctly by the filter logic below.
     orphanedMessages.forEach(msg => (msg.categoryId = orphanCatId))
   }
-  // ---------------------------------------------------------
 
   if (importedMessages.length === 0) {
     showNotification('O arquivo não contém trâmites para importar.', 'info')
     return
   }
 
-  // Monta o HTML da interface de seleção
   let selectionHtml = '<div class="import-selection-list">'
 
-  // Iterate over categoriesToDisplay (which includes the orphan group if needed)
   categoriesToDisplay.forEach(importedCategory => {
-    // Use the potentially modified importedMessages array for filtering
     const messagesInCategory = importedMessages
       .filter(msg => msg.categoryId === importedCategory.id)
       .sort((a, b) => (a.order || 0) - (b.order || 0))
 
-    // This check is technically redundant now because we only add categories if they have messages (including orphans), but kept for safety.
     if (messagesInCategory.length === 0) return
 
-    // Tenta encontrar uma correspondência por nome nos dados atuais.
     const existingCategoryMatch = currentData.categories.find(
       c => c.name.toLowerCase() === importedCategory.name.toLowerCase()
     )
 
-    // Gera as opções de destino (Mesclar com existentes).
     let destinationOptions = currentData.categories
       .map(
         cat =>
@@ -1420,7 +1299,6 @@ async function openImportSelectionModal(importedData, onCompleteCallback) {
       )
       .join('')
 
-    // Opção de Criar Nova Categoria. Selecionada por padrão se não houver correspondência (o que inclui o caso de não haver categorias locais).
     const createNewSelected =
       !existingCategoryMatch || currentData.categories.length === 0
         ? 'selected'
@@ -1429,7 +1307,6 @@ async function openImportSelectionModal(importedData, onCompleteCallback) {
       importedCategory.name
     )}"</option>`
 
-    // Monta o bloco HTML da categoria importada.
     selectionHtml += `
       <div class="import-category" data-imported-category-name="${escapeHTML(
         importedCategory.name
@@ -1465,7 +1342,6 @@ async function openImportSelectionModal(importedData, onCompleteCallback) {
 
   const modalContent = `<p>Selecione os trâmites e defina o destino para cada categoria.</p>${selectionHtml}`
 
-  // Lógica de salvamento (Executa a importação)
   const onSave = async (modalBody, closeModal) => {
     const tasks = _getImportTasks(modalBody)
     if (tasks.length === 0) {
@@ -1473,12 +1349,11 @@ async function openImportSelectionModal(importedData, onCompleteCallback) {
       return
     }
 
-    // Fluxo de dados seguro: Ler, Modificar, Salvar.
-    const dataToSave = await getStoredData() // Lê os dados mais atuais.
-    const importedCount = _applyImportTasksToData(dataToSave, tasks) // Modifica o objeto de dados em memória.
+    const dataToSave = await getStoredData()
+    const importedCount = _applyImportTasksToData(dataToSave, tasks)
 
     if (importedCount > 0) {
-      await saveStoredData(dataToSave) // Salva o objeto modificado.
+      await saveStoredData(dataToSave)
       showNotification(
         `${importedCount} trâmite(s) importado(s) com sucesso!`,
         'success'
@@ -1499,7 +1374,6 @@ async function openImportSelectionModal(importedData, onCompleteCallback) {
   )
   document.body.appendChild(modal)
 
-  // Lógica para o checkbox mestre da categoria (Selecionar/Deselecionar todos os trâmites filhos).
   modal.querySelectorAll('.import-category-checkbox').forEach(catCheckbox => {
     catCheckbox.addEventListener('change', e => {
       const parentCategoryDiv = e.target.closest('.import-category')
