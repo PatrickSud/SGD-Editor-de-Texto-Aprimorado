@@ -191,7 +191,6 @@ function createEditorToolbarHtml(
     `
   }
 
-  // NOVO: Botões de IA (Apenas na instância principal para Resumo)
   let aiButtonsHtml = `
       <div class="dropdown">
         <button type="button" title="Recursos de IA (Gemini)" class="ai-master-button">✨</button>
@@ -209,6 +208,8 @@ function createEditorToolbarHtml(
 
   return `
     <div class="editor-toolbar">
+      ${aiButtonsHtml}
+      ${separatorHtml}
       <button type="button" data-action="bold" title="Negrito (Ctrl+B)"><b>B</b></button>
       <button type="button" data-action="italic" title="Itálico (Ctrl+I)"><i>I</i></button>
       <button type="button" data-action="underline" title="Sublinhado (Ctrl+U)"><u>U</u></button>
@@ -222,11 +223,6 @@ function createEditorToolbarHtml(
         </div>
       </div>
       <button type="button" data-action="bullet" title="Adicionar Marcador (Ctrl+M)">&bull;</button>
-      
-      ${separatorHtml}
-      <!-- NOVO: Inserção das ferramentas de IA -->
-      ${aiButtonsHtml}
-
       ${separatorHtml}
       <button type="button" data-action="link" title="Inserir Hiperlink (Ctrl+Alt+H)">🔗</button>
       <button type="button" data-action="emoji" title="Emojis (Código HTML)">😀</button>
@@ -333,7 +329,6 @@ function setupEditorInstanceListeners(
   textArea.addEventListener('keydown', handleKeydown)
 
   // --- Listeners da Toolbar (Delegação de Eventos) ---
-  // Marcado como async para suportar chamadas de IA
   editorContainer.addEventListener('click', async e => {
     const themeOption = e.target.closest('.theme-option')
     if (themeOption && themeOption.dataset.themeName) {
@@ -358,10 +353,8 @@ function setupEditorInstanceListeners(
 
     const action = button.dataset.action
 
-    // NOVO: Funções auxiliares para feedback de carregamento IA
     const startAILoading = () => {
       button.disabled = true
-      // Adiciona classe de loading ao botão clicado e ao botão mestre (✨)
       button.classList.add('ai-loading')
       const masterButton = editorContainer.querySelector('.ai-master-button')
       if (masterButton) masterButton.classList.add('ai-loading')
@@ -384,27 +377,21 @@ function setupEditorInstanceListeners(
       case 'underline':
         applyFormatting(textArea, 'u')
         break
-
-      // NOVO: Ações de IA (Implementadas em features.js)
       case 'ai-correct':
         startAILoading()
-        // handleAICorrection definido em features.js
         await handleAICorrection(textArea)
         stopAILoading()
         break
       case 'ai-generate':
-        // openAIGenerationModal definido em features.js
         openAIGenerationModal(textArea)
         break
       case 'ai-summarize':
         if (instanceId === 'main') {
           startAILoading()
-          // handleAISummary definido em features.js
           await handleAISummary(textArea)
           stopAILoading()
         }
         break
-
       case 'link':
         openLinkModal(textArea)
         break
@@ -518,40 +505,15 @@ async function togglePreview(textArea) {
   }
 }
 
-/**
- * Adiciona os botões de ação originais do SGD (Tramitar, Salvar) na toolbar da extensão para facilitar o acesso.
- * @param {HTMLElement} masterContainer - O container principal do editor.
- */
-/**
- * Adiciona os botões de ação originais do SGD (Tramitar, Salvar) na toolbar da extensão para facilitar o acesso.
- * @param {HTMLElement} masterContainer - O container principal do editor.
- */
-/**
- * Adiciona os botões de ação originais do SGD (Tramitar, Salvar) na toolbar da extensão para facilitar o acesso.
- * @param {HTMLElement} masterContainer - O container principal do editor.
- */
-/**
- * Adiciona os botões de ação originais do SGD (Tramitar, Salvar) na toolbar da extensão para facilitar o acesso.
- * @param {HTMLElement} masterContainer - O container principal do editor.
- */
-/**
- * Adiciona os botões de ação originais do SGD (Tramitar, Salvar) na toolbar da extensão para facilitar o acesso.
- * @param {HTMLElement} masterContainer - O container principal do editor.
- */
 function addSgdActionButtons(masterContainer) {
   const actionButtonIds = [
-    // Formulário de Cadastro (cadSscForm)
     'cadSscForm:btnSalvar',
     'cadSscForm:gravarVisualizar',
     'cadSscForm:inserir',
     'cadSscForm:btnTramitar',
-
-    // Formulário de Tramitação (sscForm)
     'sscForm:gravarTramiteBtn',
     'sscForm:btnSalvarContinuar',
     'sscForm:btnTramitar',
-
-    // Formulário de visualização (ssForm)
     'ssForm:gravarTramiteBtn',
     'ssForm:btnTramitar'
   ]
@@ -568,18 +530,12 @@ function addSgdActionButtons(masterContainer) {
     if (originalButton && !originalButton.disabled) {
       const clonedButton = document.createElement('button')
       clonedButton.type = 'button'
-
-      // --- LÓGICA DE ALTERAÇÃO DO TEXTO ---
-      // Se o ID for o específico que queremos alterar, define um novo texto.
       if (id === 'cadSscForm:gravarVisualizar') {
         clonedButton.textContent = 'Gravar e Visualizar'
       } else {
-        // Para todos os outros botões, mantém o comportamento original.
         clonedButton.textContent =
           originalButton.value || originalButton.textContent || 'Ação'
       }
-      // ------------------------------------
-
       clonedButton.className = 'action-btn action-btn-themed'
       clonedButton.title = `Executar ação: ${clonedButton.textContent}`
 
@@ -605,8 +561,6 @@ async function initializeExtension() {
   await loadSavedTheme()
   observeForTextArea()
   document.addEventListener('keydown', handleShortcutListener)
-
-  // Adicione esta linha:
   initializeScrollToTopButton()
 
   const textArea = getTargetTextArea()
@@ -629,11 +583,9 @@ async function initializeExtension() {
  * Cria e gerencia o botão flutuante 'Ir ao Topo'.
  */
 function initializeScrollToTopButton() {
-  // 1. Cria o elemento do botão
   const button = document.createElement('button')
   button.id = 'floating-scroll-top-btn'
   button.title = 'Ir ao topo'
-  // Adiciona o ícone SVG diretamente
   button.innerHTML = `
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M12 19V5M5 12l7-7 7 7"/>
@@ -641,7 +593,6 @@ function initializeScrollToTopButton() {
 
   document.body.appendChild(button)
 
-  // 2. Adiciona o listener de scroll para mostrar/ocultar
   window.addEventListener('scroll', () => {
     if (window.scrollY > 200) {
       button.classList.add('visible')
@@ -650,7 +601,6 @@ function initializeScrollToTopButton() {
     }
   })
 
-  // 3. Adiciona o listener de clique para executar a rolagem
   button.addEventListener('click', () => {
     window.scrollTo({
       top: 0,
@@ -659,5 +609,4 @@ function initializeScrollToTopButton() {
   })
 }
 
-// Inicia a extensão.
 initializeExtension()
