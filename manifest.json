@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "SGD - Editor de Texto Aprimorado",
+  "version": "2.5.4",
+  "description": "Adiciona um editor de texto avançado ao site https://sgd.dominiosistemas.com.br/",
+  "permissions": [
+    "storage",
+    "alarms",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://sgd.dominiosistemas.com.br/*"
+   ],
+  "background": {
+    "service_worker": "service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://sgd.dominiosistemas.com.br/*"
+      ],
+      "js": [
+        "config.js",
+        "utils.js",
+        "storage.js",
+        "ai-service.js",
+        "ui-components.js",
+        "editor-core.js",
+        "features.js",
+        "quick-messages.js",
+        "main.js"
+      ],
+      "css": [
+        "editor.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "logo.png",
+    "48": "logo.png",
+    "128": "logo.png"
+  },
+  "action": {
+    "default_icon": "logo.png",
+    "default_title": "Editor Avançado"
+  }
+}
