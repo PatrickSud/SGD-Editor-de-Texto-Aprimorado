@@ -147,12 +147,14 @@ function createPreviewContainer(textArea, instanceId) {
   previewContainer.id = `editor-preview-container-${instanceId}`
   previewContainer.classList.add('editor-preview-container')
 
-  // Estrutura simplificada: botão de pin e conteúdo são filhos diretos
+  // Estrutura com wrapper para o conteúdo, permitindo que o botão fique fixo.
   previewContainer.innerHTML = `
     <button type="button" id="preview-pin-btn-${instanceId}" class="preview-pin-btn" title="Fixar/Liberar tamanho do painel">
         📌
     </button>
-    <div id="preview-content-${instanceId}" class="preview-content"></div>
+    <div class="preview-scroll-wrapper">
+        <div id="preview-content-${instanceId}" class="preview-content"></div>
+    </div>
   `
 
   // Insere após o textarea no DOM (como irmão, dentro do masterContainer)

@@ -192,14 +192,9 @@ textarea[data-enhanced]:focus {
   padding: 6px;
   border-radius: 50%;
   line-height: 1;
-  opacity: 0;
-  transform: scale(0.8);
-  transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
-}
-
-.editor-preview-container:hover .preview-pin-btn {
-  opacity: 0.7;
+  opacity: 0.7; /* Sempre visível */
   transform: scale(1);
+  transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
 }
 
 .preview-pin-btn:hover {
@@ -212,14 +207,26 @@ textarea[data-enhanced]:focus {
   opacity: 0.6;
 }
 
-/* Estilos para o modo redimensionável (CORRIGIDO) */
+/* Novo wrapper para o conteúdo que pode rolar */
+.preview-scroll-wrapper {
+  height: 100%;
+}
+
+/* Estilos para o modo redimensionável */
 .editor-preview-container.resizable {
   resize: vertical;
-  overflow: auto; /* ADICIONA a barra de rolagem ao container principal */
+  overflow: hidden; /* O container principal não rola mais, apenas redimensiona */
   height: 180px;
   min-height: 120px;
   max-height: 70vh;
-} /* --- BARRA DE FERRAMENTAS --- */
+}
+
+/* A barra de rolagem é aplicada ao wrapper interno */
+.editor-preview-container.resizable .preview-scroll-wrapper {
+  overflow: auto;
+}
+
+/* --- BARRA DE FERRAMENTAS --- */
 .editor-toolbar {
   display: flex;
   flex-wrap: wrap;
