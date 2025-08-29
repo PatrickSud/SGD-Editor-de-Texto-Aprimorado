@@ -3,6 +3,47 @@
  * @description Ponto de entrada principal da extensão. Inicializa o editor, configura listeners e observa mudanças na página.
  */
 
+// --- GERENCIADOR DE HISTÓRICO PARA UNDO/REDO ---
+function createHistoryManager(initialState) {
+  let history = [initialState]
+  let position = 0
+
+  return {
+    add(state) {
+      // Se o ponteiro não estiver no final, remove o histórico futuro (redo)
+      if (position < history.length - 1) {
+        history = history.slice(0, position + 1)
+      }
+      // Evita adicionar estados duplicados consecutivos
+      if (history[position] === state) {
+        return
+      }
+      history.push(state)
+      position = history.length - 1
+
+      // Limita o tamanho do histórico para não consumir muita memória
+      if (history.length > 50) {
+        history.shift()
+        position--
+      }
+    },
+    undo() {
+      if (position > 0) {
+        position--
+        return history[position]
+      }
+      return null // Não há mais o que desfazer
+    },
+    redo() {
+      if (position < history.length - 1) {
+        position++
+        return history[position]
+      }
+      return null // Não há mais o que refazer
+    }
+  }
+}
+
 // --- INICIALIZAÇÃO ROBUSTA (MutationObserver) ---
 
 // Variável para guardar o último conteúdo conhecido do textarea, para a verificação periódica.
@@ -290,11 +331,42 @@ function setupEditorInstanceListeners(
 ) {
   if (!textArea) return
 
+  // --- Inicialização do Gerenciador de Histórico ---
+  const history = createHistoryManager(textArea.value)
+  let debounceTimeout
+  let performingUndoRedo = false // Flag para evitar loop no listener de input
+
+  /**
+   * Atualiza o valor do textarea com um estado do histórico.
+   * @param {string | null} newState - O novo conteúdo para o textarea.
+   */
+  const updateTextAreaState = newState => {
+    if (newState === null) return
+    performingUndoRedo = true // Ativa a flag
+    const currentScrollTop = textArea.scrollTop
+    textArea.value = newState
+    // Dispara o evento de input para que o preview seja atualizado
+    textArea.dispatchEvent(new Event('input', { bubbles: true }))
+    textArea.scrollTop = currentScrollTop
+    // Reseta a flag após a atualização do DOM
+    setTimeout(() => {
+      performingUndoRedo = false
+    }, 0)
+  }
+
   // --- Listeners do Textarea ---
   if (includePreview) {
     textArea.addEventListener('input', () => {
       updatePreview(textArea)
       lastKnownTextAreaValue = textArea.value
+
+      // Adiciona o estado ao histórico com um debounce para não salvar a cada tecla
+      if (!performingUndoRedo) {
+        clearTimeout(debounceTimeout)
+        debounceTimeout = setTimeout(() => {
+          history.add(textArea.value)
+        }, 400) // Aguarda 400ms de inatividade para salvar
+      }
     })
 
     if (instanceId === 'main') {
@@ -315,6 +387,23 @@ function setupEditorInstanceListeners(
     const shift = e.shiftKey
     const key = e.key.toLowerCase()
 
+    // --- LÓGICA DE UNDO/REDO ---
+    if (ctrl && !alt && !shift) {
+      if (key === 'z') {
+        e.preventDefault()
+        const prevState = history.undo()
+        updateTextAreaState(prevState)
+        return
+      }
+      if (key === 'y') {
+        e.preventDefault()
+        const nextState = history.redo()
+        updateTextAreaState(nextState)
+        return
+      }
+    }
+
+    // --- Demais Atalhos ---
     if (ctrl && !alt && !shift) {
       switch (key) {
         case 'b':

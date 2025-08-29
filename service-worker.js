@@ -28,13 +28,31 @@ async function getReminders() {
 // É executado quando a extensão é instalada ou atualizada.
 chrome.runtime.onInstalled.addListener(() => {
   console.log('Service Worker instalado. Configurando alarmes.')
+  setupAlarms()
+})
+
+// É executado quando a extensão é iniciada
+chrome.runtime.onStartup.addListener(() => {
+  console.log('Service Worker iniciado. Configurando alarmes.')
+  setupAlarms()
+})
+
+// Função para configurar alarmes
+function setupAlarms() {
   // Cria o alarme para análise periódica.
   chrome.alarms.create('analyze-usage', {
     // Executa a primeira vez após 1 hora, e depois a cada 3 horas.
     delayInMinutes: 60,
     periodInMinutes: 180
   })
-})
+
+  console.log('Alarmes configurados: analyze-usage')
+
+  // Lista todos os alarmes ativos para debug
+  chrome.alarms.getAll(alarms => {
+    console.log('Alarmes ativos:', alarms)
+  })
+}
 
 /**
  * Função auxiliar para buscar dados de um storage específico (sync ou local).
@@ -161,25 +179,43 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 // Listener para quando um alarme é disparado
 chrome.alarms.onAlarm.addListener(async alarm => {
+  console.log(
+    'Alarme disparado:',
+    alarm.name,
+    'às:',
+    new Date().toLocaleString()
+  )
+
   // --- LÓGICA DE SUGESTÃO ---
   if (alarm.name === 'analyze-usage') {
+    console.log('Executando análise de uso...')
     await analyzeUsageAndSuggest()
     return
   }
 
   // --- LÓGICA DE LEMBRETES ---
   const reminderId = alarm.name
-  if (!reminderId.startsWith('reminder-')) return
+  if (!reminderId.startsWith('reminder-')) {
+    console.log('Alarme não é um lembrete:', reminderId)
+    return
+  }
+
+  console.log('Processando lembrete:', reminderId)
 
   const reminders = (await getStorageData(REMINDERS_STORAGE_KEY, 'sync')) || {}
   const reminder = reminders[reminderId]
 
   if (reminder) {
+    console.log('Lembrete encontrado, exibindo notificação:', reminder.title)
+
     // Atualiza o estado do lembrete para "disparado" e registra a hora.
     reminder.isFired = true
     reminder.firedAt = Date.now()
+
     // Salva no storage (para persistência na lista de gerenciamento)
     await chrome.storage.sync.set({ [REMINDERS_STORAGE_KEY]: reminders })
+
+    // Exibe a notificação
     showChromeNotification(reminder)
   } else {
     console.warn(
@@ -189,7 +225,7 @@ chrome.alarms.onAlarm.addListener(async alarm => {
 })
 
 /**
- * Exibe a notificação nativa do Chrome (Simplificada).
+ * Exibe a notificação nativa do Chrome com configurações para forçar interação.
  */
 function showChromeNotification(reminder) {
   const notificationId = reminder.id
@@ -202,15 +238,36 @@ function showChromeNotification(reminder) {
   }
   buttons.push({ title: 'Dispensar' }) // Index 0 or 1
 
-  chrome.notifications.create(notificationId, {
+  // Configurações para forçar a interação do usuário
+  const notificationOptions = {
     type: 'basic',
     iconUrl: 'logo.png',
     title: reminder.title || 'Lembrete SGD',
     message: reminder.description || 'Verificar chamado agendado.',
-    priority: 2,
+    priority: 2, // Prioridade alta
     buttons: buttons,
-    requireInteraction: true
-  })
+    requireInteraction: true, // Força o usuário a interagir
+    silent: false // Garante que haja som
+  }
+
+  // Tenta criar a notificação com retry em caso de falha
+  const createNotification = () => {
+    chrome.notifications.create(
+      notificationId,
+      notificationOptions,
+      notificationId => {
+        if (chrome.runtime.lastError) {
+          console.error('Erro ao criar notificação:', chrome.runtime.lastError)
+          // Retry após 1 segundo
+          setTimeout(createNotification, 1000)
+        } else {
+          console.log('Notificação criada com sucesso:', notificationId)
+        }
+      }
+    )
+  }
+
+  createNotification()
 }
 
 /**
@@ -231,9 +288,16 @@ async function clearNotificationAndAlarm(notificationId) {
   }
 }
 
-// Listener para cliques nos botões da notificação (Simplificado)
+// Listener para cliques nos botões da notificação
 chrome.notifications.onButtonClicked.addListener(
   async (notificationId, buttonIndex) => {
+    console.log(
+      'Botão clicado na notificação:',
+      notificationId,
+      'índice:',
+      buttonIndex
+    )
+
     if (!notificationId.startsWith('reminder-')) return
 
     const reminders =
@@ -247,39 +311,37 @@ chrome.notifications.onButtonClicked.addListener(
 
     const hasUrl = reminder.url && reminder.url.startsWith('http')
 
-    // Lógica de decisão simplificada.
+    // Lógica corrigida para os botões
     if (hasUrl) {
+      // Tem URL: [Abrir Solicitação] [Dispensar]
       if (buttonIndex === 0) {
-        // Abrir Chamado
+        // Botão "Abrir Solicitação"
+        console.log('Abrindo URL do lembrete:', reminder.url)
         chrome.tabs.create({ url: reminder.url })
+      } else if (buttonIndex === 1) {
+        // Botão "Dispensar" - apenas fecha a notificação
+        console.log('Usuário dispensou a notificação - NÃO abrindo URL')
       }
-      // Se for index 1 (Dispensar) ou qualquer outro caso, apenas limpa.
+    } else {
+      // Não tem URL: [Dispensar]
+      if (buttonIndex === 0) {
+        // Botão "Dispensar" - apenas fecha a notificação
+        console.log('Usuário dispensou a notificação')
+      }
     }
-    // Se não tiver URL, buttonIndex === 0 é Dispensar
 
     // Em todos os casos de clique em botão, a notificação é limpa.
+    console.log('Usuário interagiu com a notificação, limpando...')
     await clearNotificationAndAlarm(notificationId)
   }
 )
 
-// Listener para clique no corpo da notificação
-chrome.notifications.onClicked.addListener(async notificationId => {
-  if (!notificationId.startsWith('reminder-')) return
-
-  const reminders = (await getStorageData(REMINDERS_STORAGE_KEY, 'sync')) || {}
-  const reminder = reminders[notificationId]
-
-  if (reminder && reminder.url && reminder.url.startsWith('http')) {
-    chrome.tabs.create({ url: reminder.url })
-  }
-  // Clicar no corpo sempre fecha a notificação (mas mantém o lembrete no storage).
-  await clearNotificationAndAlarm(notificationId)
-})
-
 // Listener para quando a notificação é fechada manualmente
 chrome.notifications.onClosed.addListener(async (notificationId, byUser) => {
-  if (byUser && notificationId.startsWith('reminder-')) {
-    // Apenas garante que o alarme e a notificação sejam limpos. O estado no storage permanece.
+  console.log('Notificação fechada:', notificationId, 'por usuário:', byUser)
+
+  if (notificationId.startsWith('reminder-')) {
+    // Limpa o alarme e a notificação quando fechada
     await clearNotificationAndAlarm(notificationId)
   }
 })
