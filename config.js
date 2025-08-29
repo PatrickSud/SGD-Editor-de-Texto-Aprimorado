@@ -20,7 +20,8 @@ const MIN_SUGGESTION_LENGTH = 100 // NOVO: Tamanho mínimo do texto para ser con
 // Configurações Padrão (NOVO)
 const DEFAULT_SETTINGS = {
   reminderRetentionDays: 1, // Padrão: Manter lembretes disparados por 1 dia
-  geminiApiKey: '' // NOVO: Chave da API do Gemini fornecida pelo usuário
+  geminiApiKey: '', // NOVO: Chave da API do Gemini fornecida pelo usuário
+  previewResizable: false // NOVO: Define se o preview é redimensionável
 }
 
 // --- ESTADO GLOBAL (Variáveis mutáveis usadas entre os scripts) ---

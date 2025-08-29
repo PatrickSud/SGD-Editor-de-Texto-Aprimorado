@@ -39,7 +39,7 @@ function insertAtCursor(textArea, text, options = { prefixNewLine: false }) {
   }
 
   // Converte <br> para \n para consistência no textarea
-  textToInsert = textToInsert.replace(/<br\s*\/?>/gi, '\n');
+  textToInsert = textToInsert.replace(/<br\s*\/?>/gi, '\n')
 
   textArea.value =
     value.substring(0, selectionStart) +
@@ -107,32 +107,34 @@ function applyFormatting(textArea, tag, attributes = {}) {
  * @returns {string} O HTML sanitizado.
  */
 function sanitizeHtml(html) {
-    // Usa DOMParser para evitar que scripts sejam executados durante a sanitização.
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-    
-    // Remove elementos perigosos
-    doc.querySelectorAll('script, iframe, object, embed, form, meta').forEach(el => el.remove());
-    
-    // Itera sobre todos os elementos restantes para limpar atributos perigosos.
-    doc.querySelectorAll('*').forEach(element => {
-        const attributes = Array.from(element.attributes);
-        for (const attribute of attributes) {
-            const attrName = attribute.name.toLowerCase();
-            // Remove manipuladores de eventos (onclick, onload, etc.).
-            if (attrName.startsWith('on')) {
-                element.removeAttribute(attribute.name);
-            }
-            // Sanitiza atributos href/src para previnir XSS via javascript:
-            if (attrName === 'href' || attrName === 'src') {
-                if (!isValidUrl(attribute.value.trim())) {
-                    element.removeAttribute(attribute.name);
-                }
-            }
-        }
-    });
+  // Usa DOMParser para evitar que scripts sejam executados durante a sanitização.
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(html, 'text/html')
 
-    return doc.body.innerHTML;
+  // Remove elementos perigosos
+  doc
+    .querySelectorAll('script, iframe, object, embed, form, meta')
+    .forEach(el => el.remove())
+
+  // Itera sobre todos os elementos restantes para limpar atributos perigosos.
+  doc.querySelectorAll('*').forEach(element => {
+    const attributes = Array.from(element.attributes)
+    for (const attribute of attributes) {
+      const attrName = attribute.name.toLowerCase()
+      // Remove manipuladores de eventos (onclick, onload, etc.).
+      if (attrName.startsWith('on')) {
+        element.removeAttribute(attribute.name)
+      }
+      // Sanitiza atributos href/src para previnir XSS via javascript:
+      if (attrName === 'href' || attrName === 'src') {
+        if (!isValidUrl(attribute.value.trim())) {
+          element.removeAttribute(attribute.name)
+        }
+      }
+    }
+  })
+
+  return doc.body.innerHTML
 }
 
 /**
@@ -144,13 +146,21 @@ function createPreviewContainer(textArea, instanceId) {
   const previewContainer = document.createElement('div')
   previewContainer.id = `editor-preview-container-${instanceId}`
   previewContainer.classList.add('editor-preview-container')
-  
+
+  // Estrutura simplificada: botão de pin e conteúdo são filhos diretos
+  previewContainer.innerHTML = `
+    <button type="button" id="preview-pin-btn-${instanceId}" class="preview-pin-btn" title="Fixar/Liberar tamanho do painel">
+        📌
+    </button>
+    <div id="preview-content-${instanceId}" class="preview-content"></div>
+  `
+
   // Insere após o textarea no DOM (como irmão, dentro do masterContainer)
   if (textArea.parentNode) {
     textArea.parentNode.insertBefore(previewContainer, textArea.nextSibling)
   }
-  
-  return previewContainer;
+
+  return previewContainer
 }
 
 /**
@@ -164,21 +174,26 @@ function updatePreview(textArea) {
   )
   if (!previewContainer) return
 
-  let rawHtml = textArea.value;
-  
+  let rawHtml = textArea.value
+
   // ALTERAÇÃO AQUI: Converte as quebras de linha do textarea para a tag <br>
-  rawHtml = rawHtml.replace(/\n/g, '<br>');
+  rawHtml = rawHtml.replace(/\n/g, '<br>')
 
   // Passo de segurança crítico antes de inserir no innerHTML
-  const sanitizedHtml = sanitizeHtml(rawHtml);
-  
-  // Evita atualizações desnecessárias se o conteúdo for o mesmo
-  if (previewContainer.innerHTML === sanitizedHtml) return;
+  const sanitizedHtml = sanitizeHtml(rawHtml)
 
-  previewContainer.innerHTML = sanitizedHtml;
+  const previewContent = document.getElementById(
+    `preview-content-${instanceId}`
+  )
+  if (!previewContent) return
+
+  // Evita atualizações desnecessárias se o conteúdo for o mesmo
+  if (previewContent.innerHTML === sanitizedHtml) return
+
+  previewContent.innerHTML = sanitizedHtml
 
   // Ajusta links para abrir em nova aba por segurança e conveniência.
-  previewContainer.querySelectorAll('a[href]').forEach(link => {
+  previewContent.querySelectorAll('a[href]').forEach(link => {
     link.target = '_blank'
     if (!link.rel || !link.rel.includes('noopener')) {
       link.rel = link.rel
@@ -196,26 +211,26 @@ async function togglePreview(textArea) {
   const instanceId = textArea.dataset.enhanced
   const previewContainer = document.getElementById(
     `editor-preview-container-${instanceId}`
-  );
+  )
   const toggleButton = document.querySelector(
     `#editor-container-${instanceId} [data-action="toggle-preview"]`
   )
-  
-  if (!previewContainer || !toggleButton) return;
 
-  const isVisible = previewContainer.style.display !== 'none';
-  
+  if (!previewContainer || !toggleButton) return
+
+  const isVisible = previewContainer.style.display !== 'none'
+
   if (isVisible) {
-    previewContainer.style.display = 'none';
-    toggleButton.innerHTML = '👁️';
-    toggleButton.title = 'Mostrar Visualização (Ctrl+Alt+V)';
-    await savePreviewState(false);
+    previewContainer.style.display = 'none'
+    toggleButton.innerHTML = '👁️'
+    toggleButton.title = 'Mostrar Visualização (Ctrl+Alt+V)'
+    await savePreviewState(false)
   } else {
     // Antes de mostrar, garante que o conteúdo está atualizado
-    updatePreview(textArea);
-    previewContainer.style.display = 'block';
-    toggleButton.innerHTML = '📝';
-    toggleButton.title = 'Ocultar Visualização (Ctrl+Alt+V)';
-    await savePreviewState(true);
+    updatePreview(textArea)
+    previewContainer.style.display = 'block'
+    toggleButton.innerHTML = '📝'
+    toggleButton.title = 'Ocultar Visualização (Ctrl+Alt+V)'
+    await savePreviewState(true)
   }
 }

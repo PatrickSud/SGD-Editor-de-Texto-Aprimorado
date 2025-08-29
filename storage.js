@@ -385,6 +385,23 @@ async function savePreviewState(isVisible) {
   await saveSettings({ previewVisible: isVisible })
 }
 
+/**
+ * Carrega o estado de redimensionamento do painel de visualização.
+ * @returns {Promise<boolean>} Retorna true se deve ser redimensionável, false caso contrário.
+ */
+async function getPreviewResizableState() {
+  const settings = await getSettings()
+  return settings.previewResizable === true
+}
+
+/**
+ * Salva o estado de redimensionamento do painel de visualização.
+ * @param {boolean} isResizable - O estado a ser salvo.
+ */
+async function savePreviewResizableState(isResizable) {
+  await saveSettings({ previewResizable: isResizable })
+}
+
 // --- GERENCIAMENTO DE ANOTAÇÕES ---
 
 // ... (Funções de Anotações permanecem inalteradas)

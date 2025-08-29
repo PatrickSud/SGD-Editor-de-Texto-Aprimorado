@@ -81,6 +81,8 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
   if (includePreview) {
     const previewContainer = createPreviewContainer(textArea, instanceId)
     applyCurrentTheme(previewContainer)
+
+    // Lógica de visibilidade
     const isVisible = await getPreviewState()
     const toggleButton = editorContainer.querySelector(
       '[data-action="toggle-preview"]'
@@ -99,6 +101,33 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
         toggleButton.title = 'Mostrar Visualização (Ctrl+Alt+V)'
       }
     }
+
+    // Lógica de redimensionamento com o botão PIN
+    if (instanceId === 'main') {
+      const pinButton = document.getElementById(`preview-pin-btn-${instanceId}`)
+
+      const setPinState = isResizable => {
+        previewContainer.classList.toggle('resizable', isResizable)
+        pinButton.classList.toggle('unpinned', isResizable)
+        pinButton.title = isResizable
+          ? 'Fixar tamanho do painel'
+          : 'Liberar para redimensionar'
+      }
+
+      // Carrega o estado inicial
+      const initialResizableState = await getPreviewResizableState()
+      setPinState(initialResizableState)
+
+      // Adiciona o listener de clique
+      pinButton.addEventListener('click', async () => {
+        const currentStateIsResizable =
+          previewContainer.classList.contains('resizable')
+        const newState = !currentStateIsResizable
+        setPinState(newState)
+        await savePreviewResizableState(newState)
+      })
+    }
+
     updatePreview(textArea)
   }
 

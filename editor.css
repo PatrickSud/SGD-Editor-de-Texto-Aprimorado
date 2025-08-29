@@ -169,31 +169,57 @@ textarea[data-enhanced]:focus {
   border-top: 1px dashed var(--border-color);
   border-radius: var(--border-radius-md);
   margin-top: 8px;
-  padding: 12px;
   background-color: var(--background-main);
   color: var(--text-color-main);
-  min-height: 100px;
   position: relative;
+  min-height: 100px; /* Garante uma altura mínima no modo fixo */
+}
+
+.preview-content {
+  padding: 12px;
   word-wrap: break-word;
 }
 
-.editor-preview-container::before {
-  content: 'Visualização';
+.preview-pin-btn {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  font-size: 10px;
-  font-weight: bold;
-  color: var(--text-color-muted);
-  background-color: var(--background-hover);
-  padding: 2px 6px;
-  border-radius: 4px;
-  opacity: 0.7;
-  pointer-events: none;
-  user-select: none;
+  top: 6px;
+  right: 6px;
+  z-index: 1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 6px;
+  border-radius: 50%;
+  line-height: 1;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
 }
 
-/* --- BARRA DE FERRAMENTAS --- */
+.editor-preview-container:hover .preview-pin-btn {
+  opacity: 0.7;
+  transform: scale(1);
+}
+
+.preview-pin-btn:hover {
+  opacity: 1;
+  background-color: var(--background-hover);
+}
+
+.preview-pin-btn.unpinned {
+  transform: scale(1) rotate(45deg);
+  opacity: 0.6;
+}
+
+/* Estilos para o modo redimensionável (CORRIGIDO) */
+.editor-preview-container.resizable {
+  resize: vertical;
+  overflow: auto; /* ADICIONA a barra de rolagem ao container principal */
+  height: 180px;
+  min-height: 120px;
+  max-height: 70vh;
+} /* --- BARRA DE FERRAMENTAS --- */
 .editor-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -1636,9 +1662,9 @@ a.open-link-btn:hover {
 #floating-scroll-top-btn {
   position: fixed;
   bottom: 25px;
-  left: 25px;
-  width: 45px;
-  height: 45px;
+  right: 25px; /* Alterado de left para right */
+  width: 40px; /* Reduzido de 45px */
+  height: 40px; /* Reduzido de 45px */
 
   /* Efeito Glassmorphism para fundo branco */
   background: rgba(255, 255, 255, 0.5);
