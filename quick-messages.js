@@ -1092,10 +1092,10 @@ function openShortcutModal(category, itemElement) {
   const modal = createModal(
     `Definir Atalho para "${escapeHTML(category.name)}"`,
     `<p>Pressione a combinação de teclas desejada (ex: <b>Alt + 1</b>) e clique em Salvar.<br> Pressione <b>ESC</b> para limpar o atalho.</p>
-         <div id="shortcut-preview" class="shortcut-preview-box">${
-           escapeHTML(initialShortcut) || 'Aguardando...'
-         }</div>
-         <p class="shortcut-recommendation"><b>Nota</b>: O atalho é salvo imediatamente.</p>`,
+          <div id="shortcut-preview" class="shortcut-preview-box">${
+            escapeHTML(initialShortcut) || 'Aguardando...'
+          }</div>
+         <p class="shortcut-recommendation"><b>Nota</b>: Pressione <b>ESC</b> para limpar o atalho.</p>`,
     onSave
   )
 
