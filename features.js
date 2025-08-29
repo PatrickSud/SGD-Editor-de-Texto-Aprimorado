@@ -736,30 +736,34 @@ function showShortcutPopup(textArea, messages) {
  * @param {Function} onCompleteCallback - Função a ser chamada após a conclusão.
  */
 function importQuickMessages(file, onCompleteCallback) {
-  const reader = new FileReader();
+  const reader = new FileReader()
   reader.onload = async e => {
     try {
-      const data = JSON.parse(e.target.result);
+      const data = JSON.parse(e.target.result)
 
-      if (!data || !Array.isArray(data.categories) || !Array.isArray(data.messages)) {
-        throw new Error("O arquivo não parece ser um backup válido da extensão.");
+      if (
+        !data ||
+        !Array.isArray(data.categories) ||
+        !Array.isArray(data.messages)
+      ) {
+        throw new Error(
+          'O arquivo não parece ser um backup válido da extensão.'
+        )
       }
 
-      const migratedData = await runDataMigration(data);
-      
-      await openImportSelectionModal(migratedData, onCompleteCallback);
+      const migratedData = await runDataMigration(data)
 
+      await openImportSelectionModal(migratedData, onCompleteCallback)
     } catch (error) {
-      console.error("Erro ao importar arquivo:", error);
-      showNotification(`Erro ao importar: ${error.message}`, "error");
+      console.error('Erro ao importar arquivo:', error)
+      showNotification(`Erro ao importar: ${error.message}`, 'error')
     }
-  };
+  }
   reader.onerror = () => {
-      showNotification("Não foi possível ler o arquivo selecionado.", "error");
-  };
-  reader.readAsText(file);
+    showNotification('Não foi possível ler o arquivo selecionado.', 'error')
+  }
+  reader.readAsText(file)
 }
-
 
 /**
  * Exporta os trâmites selecionados no modal de gerenciamento para um arquivo JSON.
@@ -767,47 +771,52 @@ function importQuickMessages(file, onCompleteCallback) {
  */
 async function exportQuickMessages(modal) {
   const selectedMessageIds = Array.from(
-    modal.querySelectorAll(".export-item-checkbox:checked")
-  ).map(cb => cb.dataset.messageId);
+    modal.querySelectorAll('.export-item-checkbox:checked')
+  ).map(cb => cb.dataset.messageId)
 
   if (selectedMessageIds.length === 0) {
-    showNotification("Nenhum trâmite selecionado para exportar.", "info");
-    return;
+    showNotification('Nenhum trâmite selecionado para exportar.', 'info')
+    return
   }
 
-  const data = await getStoredData();
-  const categoriesToExport = new Map();
-  const messagesToExport = [];
+  const data = await getStoredData()
+  const categoriesToExport = new Map()
+  const messagesToExport = []
 
   data.messages.forEach(msg => {
     if (selectedMessageIds.includes(msg.id)) {
-      messagesToExport.push(msg);
+      messagesToExport.push(msg)
       if (!categoriesToExport.has(msg.categoryId)) {
-        const category = data.categories.find(c => c.id === msg.categoryId);
+        const category = data.categories.find(c => c.id === msg.categoryId)
         if (category) {
-          categoriesToExport.set(category.id, category);
+          categoriesToExport.set(category.id, category)
         }
       }
     }
-  });
+  })
 
   const exportData = {
     version: DATA_VERSION,
     categories: Array.from(categoriesToExport.values()),
     messages: messagesToExport
-  };
+  }
 
   const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-    type: "application/json"
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `backup_tramites_sgd_${new Date().toISOString().slice(0, 10)}.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+    type: 'application/json'
+  })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `backup_tramites_sgd_${new Date()
+    .toISOString()
+    .slice(0, 10)}.json`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
 
-  showNotification(`${messagesToExport.length} trâmite(s) exportado(s) com sucesso!`, "success");
+  showNotification(
+    `${messagesToExport.length} trâmite(s) exportado(s) com sucesso!`,
+    'success'
+  )
 }

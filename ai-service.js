@@ -52,9 +52,7 @@ async function callGeminiAPI(apiKey, contents, systemInstruction = null) {
         response.status === 403 ||
         (response.status === 400 && errorMessage.includes('API key not valid'))
       ) {
-        throw new Error(
-          'Chave de API inválida ou sem permissão. Verifique nas configurações.'
-        )
+        throw new Error('Chave de API inválida ou não informada.')
       }
       throw new Error(`Erro na API Gemini: ${errorMessage}`)
     }
