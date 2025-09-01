@@ -1,5 +1,3 @@
-# SGD - Editor de Texto Aprimorado
-
 ## 📖 Sobre o Projeto
 
 O **SGD - Editor de Texto Aprimorado** é uma extensão para navegador projetada para turbinar a interface de edição de texto do sistema SGD da Domínio Sistemas. A extensão substitui o editor padrão por uma ferramenta moderna e cheia de funcionalidades, otimizando o fluxo de trabalho de analistas de suporte e outros usuários do sistema.
