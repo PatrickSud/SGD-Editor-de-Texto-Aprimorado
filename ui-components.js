@@ -814,13 +814,47 @@ function createNotesPanel() {
   listContainer.addEventListener('dblclick', handleTitleRenameStart)
 }
 
+// Armazena a referência do handler para poder removê-lo depois
+let notesPanelOutsideClickHandler = null
+
 /**
- * Alterna a visibilidade do painel de anotações.
+ * Alterna a visibilidade do painel de anotações e gerencia o listener de clique externo.
  */
 function toggleNotesPanel() {
   const panel = document.getElementById('notes-side-panel')
   if (panel) {
-    panel.classList.toggle('visible')
+    const isVisible = panel.classList.toggle('visible')
+
+    // Sempre remove o listener antigo antes de decidir se precisa de um novo
+    if (notesPanelOutsideClickHandler) {
+      document.removeEventListener('mousedown', notesPanelOutsideClickHandler)
+      notesPanelOutsideClickHandler = null
+    }
+
+    // Se o painel agora está visível, adiciona um novo listener
+    if (isVisible) {
+      // Define o handler do clique externo
+      notesPanelOutsideClickHandler = e => {
+        const toggleButton = document.querySelector(
+          '[data-action="toggle-notes"]'
+        )
+
+        // Se o clique foi fora do painel E não foi no botão de abrir, fecha o painel
+        if (
+          panel &&
+          !panel.contains(e.target) &&
+          toggleButton &&
+          !toggleButton.contains(e.target)
+        ) {
+          toggleNotesPanel() // A chamada recursiva irá remover o listener
+        }
+      }
+
+      // Adiciona o listener com um pequeno delay para evitar que o mesmo clique que abriu, feche-o.
+      setTimeout(() => {
+        document.addEventListener('mousedown', notesPanelOutsideClickHandler)
+      }, 0)
+    }
   }
 }
 

@@ -76,6 +76,7 @@ const USER_NAME_LOGGED_ID = 'td:usuario_nome'
 
 // Ordem de alternância dos temas
 const THEMES = [
+  'padrao',
   'light',
   'dark-graphite',
   'dark',
@@ -90,7 +91,8 @@ const THEME_CLASSES_MAP = {
   forest: 'forest-mode',
   pink: 'pink-mode',
   'dark-graphite': 'dark-graphite-mode',
-  'tokyo-night': 'tokyo-night-mode'
+  'tokyo-night': 'tokyo-night-mode',
+  padrao: 'padrao-mode'
 }
 
 // Array de todas as classes de tema para facilitar a remoção.
@@ -103,7 +105,8 @@ const THEME_ICONS = {
   forest: '🍃',
   pink: '🌸',
   'dark-graphite': '🌙',
-  'tokyo-night': '🌑'
+  'tokyo-night': '🌑',
+  padrao: '💎'
 }
 
 // Nomes amigáveis para exibição no menu de temas
@@ -113,7 +116,8 @@ const THEME_NAMES = {
   dark: 'Blue Night',
   forest: 'Floresta',
   pink: 'Cerejeira',
-  'tokyo-night': 'Tokyo Night'
+  'tokyo-night': 'Tokyo Night',
+  padrao: 'Padrão'
 }
 
 // --- DADOS DOS PICKERS (Cores e Emojis) ---

@@ -37,6 +37,7 @@ textarea[data-enhanced] {
     .editor-modal,
     .editor-preview-container,
     #shortcut-popup,
+    #notes-side-panel,
     textarea[data-enhanced]
   ) {
   /* Tema Claro (Padrão) */
@@ -48,18 +49,38 @@ textarea[data-enhanced] {
   --background-hover: #e0e7ff; /* Azul clarinho */
   --text-color-main: #1f2937;
   --text-color-muted: #6b7280;
+  --background-glass: rgba(
+    245,
+    243,
+    255,
+    0.75
+  ); /* Fundo para efeito de vidro */
+}
+
+/* --- TEMA PADRÃO (Glassmorphism) --- */
+.padrao-mode {
+  --primary-color: rgba(99, 102, 241, 0.8);
+  --primary-color-hover: rgba(79, 70, 229, 0.85);
+  --border-color: rgba(229, 231, 235, 0.4);
+  --background-main: rgba(255, 255, 255, 0.5);
+  --background-secondary: rgba(232, 233, 233, 0.45);
+  --background-hover: rgba(243, 244, 246, 0.45);
+  --text-color-main: #1f2937;
+  --text-color-muted: #6b7280;
+  --background-glass: rgba(255, 255, 255, 0.75);
 }
 
 /* --- TEMA ESCURO --- */
 .dark-mode {
   --primary-color: #3b82f6;
   --primary-color-hover: #60a5fa;
-  --border-color: #374151;
+  --border-color: #222e42;
   --background-main: #111827;
   --background-secondary: #1f2937;
   --background-hover: #374151;
   --text-color-main: #f9fafb;
   --text-color-muted: #9ca3af;
+  --background-glass: rgba(17, 24, 39, 0.75);
 }
 
 /* --- TEMA FLORESTA --- */
@@ -72,6 +93,7 @@ textarea[data-enhanced] {
   --background-hover: #2a4c3d;
   --text-color-main: #e6f0e9;
   --text-color-muted: #a3b8ac;
+  --background-glass: rgba(13, 43, 31, 0.75);
 }
 
 /* --- TEMA ROSA PINK (Versão Clara) --- */
@@ -84,21 +106,24 @@ textarea[data-enhanced] {
   --background-hover: #fcdff1;
   --text-color-main: #a8295c;
   --text-color-muted: #9c3f6f;
+  --background-glass: rgba(238, 164, 202, 0.75);
 }
 
 /* --- TEMA DARK GRAFITE --- */
 .dark-graphite-mode {
   --primary-color: #3b82f6;
   --primary-color-hover: #333333;
-  --border-color: #404040;
+  --border-color: #2a2a2a;
   --background-main: #121212;
   --background-secondary: #1f1f1f;
   --background-hover: #2e2e2e;
   --text-color-main: #f5f5f5;
   --text-color-muted: #bfbfbf;
+  --background-glass: rgba(18, 18, 18, 0.75);
 }
 
 /* --- TEMA TOKYO NIGHT --- */
+
 .tokyo-night-mode {
   --primary-color: #ff7aa2;
   --primary-color-hover: #e05282;
@@ -108,17 +133,34 @@ textarea[data-enhanced] {
   --background-hover: #272d3f;
   --text-color-main: #e6dff2;
   --text-color-muted: #948aa8;
+  --background-glass: rgba(21, 18, 30, 0.75);
 }
 
 /* Correção para visibilidade do ícone de calendário/relógio em temas escuros (Webkit/Blink) */
 .dark-mode input[type='datetime-local']::-webkit-calendar-picker-indicator,
 .dark-graphite-mode
   input[type='datetime-local']::-webkit-calendar-picker-indicator,
-.forest-mode input[type='datetime-local']::-webkit-calendar-picker-indicator,
-.tokyo-night-mode
-  input[type='datetime-local']::-webkit-calendar-picker-indicator {
+.forest-mode input[type='datetime-local']::-webkit-calendar-picker-indicator {
   /* Adicionado */
   filter: invert(1);
+}
+
+/* --- EFEITO DE VIDRO FOSCO (Glassmorphism) --- */
+/* Aplicado a todos os componentes flutuantes em todos os temas */
+.se-modal-content,
+#shortcut-popup,
+.dropdown-content,
+.picker,
+#notes-side-panel {
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  background-color: var(--background-glass);
+
+  /* Textura de ruído sutil para o efeito "fosco" */
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.07"/%3E%3C/svg%3E');
+
+  /* Sombra de texto para destacar o conteúdo interno */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 /* --- GERAL E ESTRUTURA DO EDITOR --- */
@@ -296,14 +338,21 @@ textarea[data-enhanced]:focus {
   display: none;
   flex-direction: column;
   position: absolute;
-  background-color: var(--background-secondary);
   width: max-content;
   box-shadow: var(--shadow-lg);
   border-radius: var(--border-radius-md);
   border: 1px solid var(--border-color);
   z-index: 1001;
   padding: 8px;
+
+  /* Efeito de Vidro Fosco */
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  background-color: var(--background-glass);
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.07"/%3E%3C/svg%3E');
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
+
 .dropdown-content button {
   width: 100%;
   text-align: left;
@@ -492,7 +541,6 @@ button.ai-loading:hover {
 /* --- POPUP DE ATALHO --- */
 #shortcut-popup {
   position: absolute;
-  background-color: var(--background-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
   box-shadow: var(--shadow-lg);
@@ -501,6 +549,13 @@ button.ai-loading:hover {
   display: flex;
   flex-direction: column;
   max-height: 250px;
+
+  /* Efeito de Vidro Fosco */
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  background-color: var(--background-glass);
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.07"/%3E%3C/svg%3E');
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 #shortcut-filter-display {
@@ -578,7 +633,6 @@ button.ai-loading:hover {
 }
 
 .se-modal-content {
-  background-color: var(--background-secondary);
   color: var(--text-color-main);
   border-radius: var(--border-radius-md);
   box-shadow: var(--shadow-lg);
@@ -588,6 +642,13 @@ button.ai-loading:hover {
   flex-direction: column;
   border: 1px solid var(--border-color);
   max-height: 90vh;
+
+  /* Efeito de Vidro Fosco */
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  background-color: var(--background-glass);
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.07"/%3E%3C/svg%3E');
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 #management-modal .se-modal-content {
@@ -1102,16 +1163,28 @@ a.open-link-btn:hover {
 .picker {
   display: none;
   position: absolute;
-  background-color: var(--background-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
   box-shadow: var(--shadow-lg);
-  z-index: 2010;
+  z-index: 9999; /* Aumentado para garantir que fique acima de tudo */
   padding: 12px;
   grid-template-columns: repeat(8, 1fr);
   gap: 5px;
   max-width: 340px;
   box-sizing: border-box;
+  /* Garante que o picker não seja afetado por contextos de empilhamento */
+  isolation: isolate;
+  transform: translateZ(0); /* Força um novo contexto de empilhamento */
+  /* Força o picker a estar sempre visível */
+  will-change: transform;
+  contain: layout style paint;
+
+  /* Efeito de Vidro Fosco */
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  background-color: var(--background-glass);
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.07"/%3E%3C/svg%3E');
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .color-swatch,
@@ -1311,7 +1384,6 @@ a.open-link-btn:hover {
   right: 0;
   width: 350px;
   height: 100vh;
-  background-color: var(--background-main);
   color: var(--text-color-main);
   border-left: 1px solid var(--border-color);
   box-shadow: -8px 0 30px -5px rgba(0, 0, 0, 0.25);
@@ -1322,6 +1394,13 @@ a.open-link-btn:hover {
   transition: transform 0.3s ease-in-out;
   border-top-left-radius: var(--border-radius-md);
   border-bottom-left-radius: var(--border-radius-md);
+
+  /* Efeito de Vidro Fosco */
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  background-color: var(--background-glass);
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.07"/%3E%3C/svg%3E');
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 #notes-side-panel.visible {
@@ -1517,68 +1596,6 @@ a.open-link-btn:hover {
 .note-block-content textarea:focus {
   outline: none;
   border-color: var(--primary-color);
-}
-
-/* --- Bloco de Correções Específicas para o Tema Alvorada --- */
-#notes-side-panel:not(
-    .dark-mode,
-    .forest-mode,
-    .pink-mode,
-    .dark-graphite-mod,
-    .tokyo-night-mode
-  ) {
-  --notes-bg-main: #dddde0;
-  --notes-bg-secondary: #e4e1e1;
-  --notes-bg-hover: #b3b3b7;
-  --notes-border-color: #b3b3b7;
-  --notes-text-main: #18181b;
-  --notes-text-muted: #71717a;
-
-  background-color: var(--notes-bg-main);
-  color: var(--notes-text-main);
-  border-left-color: var(--notes-border-color);
-}
-
-#notes-side-panel:not(.dark-mode, .forest-mode, .pink-mode, .dark-graphite-mode)
-  .notes-panel-header,
-#notes-side-panel:not(.dark-mode, .forest-mode, .pink-mode, .dark-graphite-mode)
-  .notes-panel-footer {
-  border-color: var(--notes-border-color);
-}
-
-#notes-side-panel:not(.dark-mode, .forest-mode, .pink-mode, .dark-graphite-mode)
-  .note-block {
-  border-color: var(--notes-border-color);
-}
-
-#notes-side-panel:not(.dark-mode, .forest-mode, .pink-mode, .dark-graphite-mode)
-  .note-block-header {
-  background-color: var(--notes-bg-hover);
-}
-
-#notes-side-panel:not(.dark-mode, .forest-mode, .pink-mode, .dark-graphite-mode)
-  .note-block-content
-  textarea {
-  background-color: var(--notes-bg-secondary);
-  color: var(--notes-text-main);
-}
-
-#notes-side-panel:not(.dark-mode, .forest-mode, .pink-mode, .dark-graphite-mode)
-  .note-block-actions
-  button,
-#notes-side-panel:not(.dark-mode, .forest-mode, .pink-mode, .dark-graphite-mode)
-  .edit-actions
-  button {
-  color: var(--notes-text-muted);
-}
-#notes-side-panel:not(.dark-mode, .forest-mode, .pink-mode, .dark-graphite-mode)
-  .note-block-actions
-  button:hover,
-#notes-side-panel:not(.dark-mode, .forest-mode, .pink-mode, .dark-graphite-mode)
-  .edit-actions
-  button:hover {
-  background-color: var(--notes-bg-secondary);
-  color: var(--notes-text-main);
 }
 
 /* --- SCROLLBAR --- */
