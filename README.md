@@ -40,6 +40,6 @@ O código-fonte é modular e bem organizado, com cada arquivo tendo uma responsa
 ## 🚀 Como Instalar
 
 * **Chrome Web Store**:
-    1.  Acesse o link da extensão na Chrome Web Store (ainda não disponível).
+    1.  Acesse o link da extensão na Chrome Web Store (<a href="[link](https://chromewebstore.google.com/detail/sgd-editor-de-texto-aprim/gheenkbjmfijkelccofdnlcfbfeinfpe?authuser=0&hl=pt-BR)" target="_blank" style="color: Blue"><b>SGD - Editor de Texto Aprimorado</b></a>).
     2.  Clique em "Usar no Chrome".
     3.  Acesse o site do SGD e a extensão será carregada automaticamente.
