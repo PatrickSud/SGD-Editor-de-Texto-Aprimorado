@@ -378,10 +378,9 @@ function openAIGenerationModal(textArea) {
  * Manipula a ação de resumir a solicitação de suporte via IA.
  */
 async function handleAISummary(textArea) {
-  // Extrai o conteúdo usando a função utilitária (definida em utils.js)
-  const requestContent = extractPageContentForAI()
+  const { rawContent, relevantData } = extractPageContentForAI()
 
-  if (!requestContent.trim() || requestContent.length < 50) {
+  if (!rawContent || rawContent.length < 50) {
     showNotification(
       'Não foi possível encontrar conteúdo suficiente na página para resumir.',
       'info'
@@ -391,17 +390,30 @@ async function handleAISummary(textArea) {
 
   try {
     const apiKey = await getGeminiApiKey()
-    // summarizeSupportRequest definido em ai-service.js
-    const summaryText = await summarizeSupportRequest(apiKey, requestContent)
+    const rawApiResponse = await summarizeSupportRequest(apiKey, rawContent)
 
-    if (summaryText) {
-      // Formata o resumo antes de inserir (convertendo \n para <br> para o editor HTML)
-      const formattedSummary = `<b>Resumo da Solicitação (Gerado por IA):</b><br>${summaryText.replace(
-        /\n/g,
-        '<br>'
-      )}<br><br>--<br><br>`
-      insertAtCursor(textArea, formattedSummary, { prefixNewLine: true })
-      showNotification('Resumo gerado com sucesso!', 'success')
+    if (rawApiResponse) {
+      // Processa a resposta da IA com 2 seções
+      const sections = rawApiResponse.split('---')
+      const summaryText = (sections[0] || '').replace('[RESUMO]', '').trim()
+      const nextActionText = (sections[1] || '')
+        .replace('[PRÓXIMA AÇÃO]', '')
+        .trim()
+
+      // Chama o modal com os novos dados
+      showSummaryModal(
+        summaryText,
+        nextActionText,
+        relevantData,
+        contentToInsert => {
+          const formattedContent = `${contentToInsert.replace(
+            /\n/g,
+            '<br>'
+          )}<br><br>--<br><br>`
+          insertAtCursor(textArea, formattedContent, { prefixNewLine: true })
+          showNotification('Resumo inserido com sucesso!', 'success')
+        }
+      )
     }
   } catch (error) {
     handleAIError(error)

@@ -48,6 +48,15 @@ async function callGeminiAPI(apiKey, contents, systemInstruction = null) {
       const errorData = await response.json()
       const errorMessage =
         errorData.error?.message || `HTTP error! status: ${response.status}`
+
+      // --- CORREÇÃO APLICADA AQUI ---
+      // Verifica se o erro é de cota excedida e traduz a mensagem
+      if (errorMessage.toLowerCase().includes('quota')) {
+        throw new Error(
+          'Limite de requisições à IA excedido. Muitas solicitações em um curto período. Por favor, aguarde um minuto e tente novamente.'
+        )
+      }
+
       if (
         response.status === 403 ||
         (response.status === 400 && errorMessage.includes('API key not valid'))
@@ -70,6 +79,7 @@ async function callGeminiAPI(apiKey, contents, systemInstruction = null) {
     return data.candidates[0].content.parts[0].text
   } catch (error) {
     console.error('Erro ao chamar a API Gemini:', error)
+    // Propaga o erro (seja o nosso erro customizado ou outro)
     throw error
   }
 }
@@ -141,13 +151,13 @@ async function generateFromTopics(apiKey, topics) {
 }
 
 /**
- * 3. Resume a solicitação de suporte com base no conteúdo extraído da página.
+ * 3. Analisa o histórico de um chamado e gera um resumo e sugestão de ação.
  */
 async function summarizeSupportRequest(apiKey, extractedContent) {
   const systemInstruction = {
     parts: [
       {
-        text: 'Você é um analista de suporte técnico. Sua tarefa é analisar o histórico da solicitação de suporte fornecido (Descrição Inicial e Trâmites Anteriores). Identifique o problema principal do cliente, os passos chave já realizados e o estado atual. Gere um resumo conciso e objetivo (máximo 4 frases ou bullet points). Responda apenas com o resumo em Português Brasileiro.'
+        text: 'Você é um analista de suporte sênior. Analise o histórico do chamado e retorne 2 seções, usando "---" como separador.\n\n[RESUMO]\nCrie um texto unificado que comece com um parágrafo de resumo (2-3 frases) sobre o problema central e o estado atual. Em seguida, adicione uma lista de bullet points com os fatos e eventos mais cruciais do histórico, sem repetir informações. Não inicie sua resposta com asteriscos ou qualquer outro caractere especial.\n---\n[PRÓXIMA AÇÃO]\nRecomende a próxima ação mais lógica para o analista. Seja conciso e use um tom de sugestão (ex: "Considerar...", "Sugerimos verificar...", "Pode ser útil solicitar...").'
       }
     ]
   }
@@ -156,7 +166,7 @@ async function summarizeSupportRequest(apiKey, extractedContent) {
     {
       role: 'user',
       parts: [
-        { text: `Histórico da Solicitação para resumir:\n${extractedContent}` }
+        { text: `Histórico da Solicitação para analisar:\n${extractedContent}` }
       ]
     }
   ]
@@ -218,16 +228,8 @@ async function testApiKey(apiKey) {
     }
     const contents = [{ role: 'user', parts: [{ text: 'Teste' }] }]
     const response = await callGeminiAPI(apiKey, contents, systemInstruction)
-    // A chamada foi bem-sucedida se não lançou erro e a resposta é a esperada.
     return response.trim().toLowerCase() === 'ok'
   } catch (error) {
-    // Propaga o erro para a UI, que o exibirá de forma amigável.
     throw error
   }
 }
-
-//Melhorar Texto Opção 1
-//    text: 'Você é um assistente de escrita profissional para suporte técnico em Português Brasileiro. Sua tarefa é corrigir a ortografia e a gramática do texto fornecido, mantendo o significado original e o tom profissional. O texto pode conter formatação HTML (<b>, <i>, <br>, <span>). Preserve a formatação HTML original o máximo possível. Responda APENAS com o texto corrigido, sem introduções ou explicações.'
-
-//Texto por tópicos Opção 1
-//     text: 'Você é um assistente de suporte técnico. Elabore uma resposta profissional e clara para um chamado de suporte em Português Brasileiro, abordando os tópicos fornecidos pelo analista. Estruture a resposta de forma lógica. Utilize formatação HTML básica (<b> para destaques, <br> para quebras de linha, listas numeradas como <b>1. </b>) para melhorar a legibilidade. Responda apenas com o texto gerado. IMITE O ESTILO DE ESCRITA DOS EXEMPLOS FORNECIDOS.'

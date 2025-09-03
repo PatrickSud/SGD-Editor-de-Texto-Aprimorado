@@ -1055,3 +1055,123 @@ async function initializeNotesPanel() {
   notesDataCache = await getSavedNotes()
   renderNotesBlocks()
 }
+
+/**
+ * Exibe um modal estilizado com o resumo do chamado.
+ * @param {string} summaryText - O texto do resumo (parágrafo + tópicos).
+ * @param {string} nextActionText - O texto da sugestão de próxima ação.
+ * @param {object} relevantData - Dados extraídos da página.
+ * @param {function(string): void} onInsert - Callback para inserir o conteúdo no editor.
+ */
+function showSummaryModal(summaryText, nextActionText, relevantData, onInsert) {
+  const formatTimeAgo = timestamp => {
+    if (!timestamp) return 'Data não encontrada'
+    const now = new Date()
+    const past = new Date(timestamp)
+    const diffInSeconds = Math.floor((now - past) / 1000)
+    const minutes = Math.floor(diffInSeconds / 60)
+    const hours = Math.floor(minutes / 60)
+    const days = Math.floor(hours / 24)
+
+    if (days > 1) return `Há ${days} dias`
+    if (days === 1) return `Há 1 dia`
+    if (hours > 1) return `Há ${hours} horas`
+    if (hours === 1) return `Há 1 hora`
+    if (minutes > 1) return `Há ${minutes} minutos`
+    return 'Há poucos instantes'
+  }
+
+  // Função para transformar texto com asteriscos em HTML de lista
+  const formatSummaryToHtml = text => {
+    let html = ''
+    const lines = text.split('\n').filter(line => line.trim() !== '')
+    let inList = false
+
+    lines.forEach(line => {
+      line = line.trim()
+      if (line.startsWith('*')) {
+        if (!inList) {
+          html += '<ul>'
+          inList = true
+        }
+        html += `<li>${escapeHTML(line.substring(1).trim())}</li>`
+      } else {
+        if (inList) {
+          html += '</ul>'
+          inList = false
+        }
+        html += `<p>${escapeHTML(line)}</p>`
+      }
+    })
+
+    if (inList) {
+      html += '</ul>'
+    }
+    return html.replace(/<p><\/p>/g, '') // Limpa parágrafos vazios
+  }
+
+  const openingDate = relevantData.openingDate
+    ? new Date(relevantData.openingDate).toLocaleString('pt-BR')
+    : 'Não encontrada'
+  const timeAgo = formatTimeAgo(relevantData.openingDate)
+
+  let relevantDataHtml = `<div class="data-item"><span class="data-label">Abertura:</span><span class="data-value">${openingDate} (${timeAgo})</span></div>`
+
+  if (relevantData.attachments && relevantData.attachments.length > 0) {
+    const attachmentList = relevantData.attachments
+      .map(
+        att =>
+          `<li><a href="${
+            att.fileUrl
+          }" target="_blank" title="Abrir anexo em nova guia">${escapeHTML(
+            att.fileName
+          )}</a></li>`
+      )
+      .join('')
+    relevantDataHtml += `<div class="data-item attachments"><span class="data-label">Anexos:</span><ul class="data-value">${attachmentList}</ul></div>`
+  }
+
+  if (relevantData.accessData && relevantData.accessData.length > 0) {
+    const accessList = relevantData.accessData
+      .map(data => `<li>${escapeHTML(data)}</li>`)
+      .join('')
+    relevantDataHtml += `<div class="data-item attachments"><span class="data-label">Acesso:</span><ul class="data-value">${accessList}</ul></div>`
+  }
+
+  const summaryHtml = formatSummaryToHtml(summaryText)
+
+  const modalContentHtml = `
+    <div class="summary-modal-content">
+      <div class="summary-card resume">
+        <h5><span class="section-icon">📄</span>Resumo</h5>
+        <div class="summary-card-content">${summaryHtml}</div>
+      </div>
+      <div class="summary-card action">
+        <h5><span class="section-icon">🚀</span>Próxima Ação Sugerida</h5>
+        <p>${nextActionText.replace(/\n/g, '<br>')}</p>
+      </div>
+      <div class="summary-section relevant-data-section">
+        <h4><span class="section-icon">📊</span> Dados Relevantes</h4>
+        ${relevantDataHtml}
+      </div>
+      <div class="ai-disclaimer">
+        Conteúdo gerado por IA. Verifique as informações antes de usar.
+      </div>
+    </div>
+  `
+
+  const modal = createModal(
+    'Análise do Chamado',
+    modalContentHtml,
+    (modalBody, closeModal) => {
+      const contentToInsert = `<b>Resumo:</b><br>${summaryText}`
+      onInsert(contentToInsert)
+      closeModal()
+    }
+  )
+
+  const saveBtn = modal.querySelector('#modal-save-btn')
+  if (saveBtn) saveBtn.textContent = 'Inserir Resumo no Editor'
+
+  document.body.appendChild(modal)
+}

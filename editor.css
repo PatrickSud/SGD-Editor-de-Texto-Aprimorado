@@ -1769,3 +1769,225 @@ a.open-link-btn:hover {
   color: white !important;
   transform: translateY(-1px);
 }
+
+/* --- ESTILOS PARA O MODAL DE RESUMO --- */
+.summary-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.summary-section h4 {
+  margin: 0 0 8px 0;
+  font-size: 15px;
+  color: var(--text-color-main);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.summary-section .section-icon {
+  font-size: 18px;
+}
+
+.summary-section p {
+  margin: 0;
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+.summary-section ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.summary-section li {
+  margin-bottom: 6px;
+  line-height: 1.5;
+}
+
+.relevant-data-section {
+  background-color: var(--background-main);
+  padding: 10px;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-color);
+}
+
+.data-item {
+  display: flex;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.data-label {
+  font-weight: 600;
+  color: var(--text-color-main);
+  width: 80px;
+  flex-shrink: 0;
+}
+
+.data-value {
+  color: var(--text-color-muted);
+}
+
+.data-value.access-data {
+  font-family: monospace;
+  background-color: var(--background-secondary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* --- ESTILO PARA O DISCLAIMER DE IA NO MODAL --- */
+.ai-disclaimer {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-color-muted);
+  padding-top: 10px;
+  margin-top: 10px;
+  border-top: 1px dashed var(--border-color);
+  opacity: 0.8;
+}
+
+.data-item.attachments ul {
+  padding-left: 1.2em;
+  margin: 4px 0 0 0;
+  list-style-type: square;
+}
+
+.data-item.attachments li {
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.data-item.attachments a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+.data-item.attachments a:hover {
+  text-decoration: underline;
+}
+
+.summary-card-content p {
+  margin: 0 0 10px 0;
+  line-height: 1.6;
+}
+.summary-card-content ul {
+  margin: 0;
+  padding-left: 20px;
+}
+.summary-card-content li {
+  margin-bottom: 5px;
+  line-height: 1.5;
+}
+.summary-card-content p:last-child {
+  margin-bottom: 0;
+}
+
+/* --- ESTILOS PARA O MODAL DE DIAGNÓSTICO --- */
+.se-modal-content.diagnostic-modal {
+  max-width: 900px; /* Aumenta a largura para acomodar a grade */
+}
+
+.diagnostic-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+.diagnostic-card {
+  background-color: var(--background-main);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.diagnostic-card h5 {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: var(--text-color-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.diagnostic-card p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-color-main);
+  line-height: 1.5;
+  flex-grow: 1;
+}
+
+.diagnostic-card.pending {
+  border-left: 3px solid var(--action-orange);
+}
+.diagnostic-card.pending h5 {
+  color: var(--action-orange);
+}
+
+.diagnostic-card.action {
+  background-color: color-mix(
+    in srgb,
+    var(--action-green) 8%,
+    var(--background-main)
+  );
+  border-color: var(--action-green);
+}
+.diagnostic-card.action h5 {
+  color: var(--action-green);
+}
+
+/* --- ESTILOS PARA O MODAL DE RESUMO (CARDS) --- */
+.summary-card {
+  background-color: var(--background-main);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  padding: 12px;
+  margin-bottom: 15px;
+}
+
+.summary-card h5 {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: var(--text-color-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.summary-card p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-color-main);
+  line-height: 1.6;
+}
+
+.summary-card.resume {
+  border-left: 3px solid var(--action-orange);
+}
+.summary-card.resume h5 {
+  color: var(--action-orange);
+}
+
+.summary-card.action {
+  background-color: color-mix(
+    in srgb,
+    var(--action-green) 8%,
+    var(--background-main)
+  );
+  border-color: var(--action-green);
+}
+.summary-card.action h5 {
+  color: var(--action-green);
+}
