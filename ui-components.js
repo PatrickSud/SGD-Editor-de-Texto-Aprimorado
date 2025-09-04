@@ -85,6 +85,14 @@ function createModal(
     }
   }
 
+  // Foca o primeiro botão ou input para acessibilidade
+  requestAnimationFrame(() => {
+    const focusable = modal.querySelector('button, input, textarea, select')
+    if (focusable) {
+      focusable.focus()
+    }
+  })
+
   return modal
 }
 
@@ -851,9 +859,9 @@ function toggleNotesPanel() {
       }
 
       // Adiciona o listener com um pequeno delay para evitar que o mesmo clique que abriu, feche-o.
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         document.addEventListener('mousedown', notesPanelOutsideClickHandler)
-      }, 0)
+      })
     }
   }
 }
@@ -1119,14 +1127,17 @@ function showSummaryModal(summaryText, nextActionText, relevantData, onInsert) {
 
   if (relevantData.attachments && relevantData.attachments.length > 0) {
     const attachmentList = relevantData.attachments
-      .map(
-        att =>
-          `<li><a href="${
+      .map(att => {
+        // Validação de segurança para garantir que a URL é segura
+        if (isValidUrl(att.fileUrl)) {
+          return `<li><a href="${escapeHTML(
             att.fileUrl
-          }" target="_blank" title="Abrir anexo em nova guia">${escapeHTML(
+          )}" target="_blank" title="Abrir anexo em nova guia">${escapeHTML(
             att.fileName
           )}</a></li>`
-      )
+        }
+        return `<li>${escapeHTML(att.fileName)} (Link inválido)</li>`
+      })
       .join('')
     relevantDataHtml += `<div class="data-item attachments"><span class="data-label">Anexos:</span><ul class="data-value">${attachmentList}</ul></div>`
   }

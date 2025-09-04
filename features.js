@@ -145,40 +145,34 @@ function insertBullet(textArea) {
  * @param {HTMLTextAreaElement} textArea - O textarea alvo.
  */
 function insertUserName(textArea) {
-  // --- LÓGICA: Prioridade para o <select> da tela de cadastro ---
+  const getFirstName = element => {
+    if (element && element.textContent) {
+      const fullName = element.textContent.trim()
+      return fullName.split(' ')[0]
+    }
+    return null
+  }
+
   const userSelectElement = document.getElementById(USER_NAME_SELECT_ID)
   let firstName = ''
 
-  // Verifica se o elemento de seleção existe e se um usuário válido foi escolhido (value > 0 no SGD)
   if (userSelectElement && userSelectElement.value > 0) {
     const selectedOption =
       userSelectElement.options[userSelectElement.selectedIndex]
-
-    if (selectedOption && selectedOption.textContent) {
-      const fullName = selectedOption.textContent.trim()
-      firstName = fullName.split(' ')[0]
-    }
+    firstName = getFirstName(selectedOption)
   }
 
-  // --- LÓGICA ORIGINAL (FALLBACK): Se não encontrou na lista, busca o nome do usuário logado ---
   if (!firstName) {
     const userNameElement = document.getElementById(USER_NAME_LOGGED_ID)
-    if (userNameElement && userNameElement.textContent) {
-      const fullName = userNameElement.textContent.trim()
-      firstName = fullName.split(' ')[0]
-    }
+    firstName = getFirstName(userNameElement)
   }
 
   if (firstName) {
-    // Capitaliza o nome (Primeira letra maiúscula, resto minúscula)
-    firstName =
+    const capitalizedName =
       firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase()
-    // insertAtCursor lida com a inserção correta (WYSIWYG ou Textarea).
-    insertAtCursor(textArea, firstName)
+    insertAtCursor(textArea, capitalizedName)
   } else {
-    console.warn(
-      'Editor SGD: Elemento com nome de usuário não encontrado em nenhuma das fontes.'
-    )
+    console.warn('Editor SGD: Elemento com nome de usuário não encontrado.')
   }
 }
 
@@ -245,22 +239,9 @@ function openLinkModal(textArea) {
 
       let linkHtml
 
-      // --- LÓGICA DE GERAÇÃO DO LINK ATUALIZADA ---
       if (asButton) {
-        // Gera um link <a> estilizado como botão inline (Estilo padrão SGD).
-        const buttonStyle = [
-          'display: inline-block',
-          'background-color: #fa6400', // Cor padrão SGD
-          'border-radius: 5px',
-          'padding: 4px 8px',
-          'color: #ffffff',
-          'text-decoration: none',
-          'border: none',
-          'font-size: 14px',
-          'font-family: sans-serif',
-          'margin: 2px 0'
-        ].join('; ')
-
+        const buttonStyle =
+          'display: inline-block; background-color: #fa6400; border-radius: 5px; padding: 4px 8px; color: #ffffff; text-decoration: none; border: none; font-size: 14px; font-family: sans-serif; margin: 2px 0;'
         linkHtml = `<a href="${sanitizedUrl}" target="_blank" rel="noopener noreferrer" style="${buttonStyle}">${sanitizedText}</a>`
       } else {
         linkHtml = `<a href="${sanitizedUrl}" target="_blank" rel="noopener noreferrer" style="color: rgb(255, 128, 0);"><b>${sanitizedText} </b><img alt="Link" src="https://sgd.dominiosistemas.com.br/ckfiles/images/ui-expressive-55x55-15(7).png" style="width: 25px; height: 25px; vertical-align: middle;"></a>`
@@ -712,9 +693,10 @@ function showShortcutPopup(textArea, messages) {
 
   document.addEventListener('keydown', navigatePopup, true)
 
-  setTimeout(() => {
+  // O listener é adicionado no próximo ciclo de eventos para evitar capturar o mesmo clique que abriu o popup.
+  requestAnimationFrame(() => {
     document.addEventListener('click', clickOutsideHandler, true)
-  }, 0)
+  })
 
   const observer = new MutationObserver((mutationsList, observer) => {
     for (const mutation of mutationsList) {

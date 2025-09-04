@@ -10,6 +10,10 @@ const STORAGE_KEY = 'quickMessagesData' // Para acessar trâmites existentes
 const SUGGESTION_THRESHOLD = 5
 const MIN_SUGGESTION_LENGTH = 100
 
+// --- CONTROLE DE EVENTOS DE NOTIFICAÇÃO ---
+// Evita a dupla ativação de eventos de clique em notificações.
+const handledNotifications = new Set()
+
 // --- INICIALIZAÇÃO E ALARMES ---,
 
 /**
@@ -231,12 +235,12 @@ function showChromeNotification(reminder) {
   const notificationId = reminder.id
   const hasUrl = reminder.url && reminder.url.startsWith('http')
 
-  // Botões: [Abrir?], [Dispensar].
+  // O botão "Dispensar" foi removido para evitar conflitos de eventos.
+  // A notificação pode ser fechada pelo "X" padrão do sistema operacional.
   const buttons = []
   if (hasUrl) {
-    buttons.push({ title: 'Abrir Solicitação' }) // Index 0
+    buttons.push({ title: 'Abrir Solicitação' })
   }
-  buttons.push({ title: 'Dispensar' }) // Index 0 or 1
 
   // Configurações para forçar a interação do usuário
   const notificationOptions = {
@@ -291,6 +295,10 @@ async function clearNotificationAndAlarm(notificationId) {
 // Listener para cliques nos botões da notificação
 chrome.notifications.onButtonClicked.addListener(
   async (notificationId, buttonIndex) => {
+    // Evita que o listener onClicked seja acionado em seguida.
+    handledNotifications.add(notificationId)
+    setTimeout(() => handledNotifications.delete(notificationId), 500) // Limpeza automática
+
     console.log(
       'Botão clicado na notificação:',
       notificationId,
@@ -304,30 +312,14 @@ chrome.notifications.onButtonClicked.addListener(
       (await getStorageData(REMINDERS_STORAGE_KEY, 'sync')) || {}
     const reminder = reminders[notificationId]
 
-    if (!reminder) {
-      chrome.notifications.clear(notificationId)
-      return
-    }
-
-    const hasUrl = reminder.url && reminder.url.startsWith('http')
-
-    // Lógica corrigida para os botões
-    if (hasUrl) {
-      // Tem URL: [Abrir Solicitação] [Dispensar]
-      if (buttonIndex === 0) {
-        // Botão "Abrir Solicitação"
-        console.log('Abrindo URL do lembrete:', reminder.url)
-        chrome.tabs.create({ url: reminder.url })
-      } else if (buttonIndex === 1) {
-        // Botão "Dispensar" - apenas fecha a notificação
-        console.log('Usuário dispensou a notificação - NÃO abrindo URL')
-      }
+    // Com a nova lógica, qualquer clique em botão significa "abrir URL".
+    if (reminder && reminder.url && reminder.url.startsWith('http')) {
+      console.log('Abrindo URL do lembrete via botão:', reminder.url)
+      chrome.tabs.create({ url: reminder.url })
     } else {
-      // Não tem URL: [Dispensar]
-      if (buttonIndex === 0) {
-        // Botão "Dispensar" - apenas fecha a notificação
-        console.log('Usuário dispensou a notificação')
-      }
+      console.warn(
+        `Botão clicado para notificação ${notificationId} sem URL, o que não deveria ocorrer.`
+      )
     }
 
     // Em todos os casos de clique em botão, a notificação é limpa.
@@ -335,6 +327,29 @@ chrome.notifications.onButtonClicked.addListener(
     await clearNotificationAndAlarm(notificationId)
   }
 )
+
+// Listener para quando a notificação é clicada diretamente (não nos botões)
+chrome.notifications.onClicked.addListener(async notificationId => {
+  // Ignora o clique se ele foi originado por um botão.
+  if (handledNotifications.has(notificationId)) {
+    return
+  }
+
+  console.log('Notificação clicada:', notificationId)
+
+  if (!notificationId.startsWith('reminder-')) return
+
+  const reminders = (await getStorageData(REMINDERS_STORAGE_KEY, 'sync')) || {}
+  const reminder = reminders[notificationId]
+
+  if (reminder && reminder.url && reminder.url.startsWith('http')) {
+    console.log('Abrindo URL do lembrete via clique no corpo:', reminder.url)
+    chrome.tabs.create({ url: reminder.url })
+  }
+
+  // Limpa a notificação após o clique
+  await clearNotificationAndAlarm(notificationId)
+})
 
 // Listener para quando a notificação é fechada manualmente
 chrome.notifications.onClosed.addListener(async (notificationId, byUser) => {

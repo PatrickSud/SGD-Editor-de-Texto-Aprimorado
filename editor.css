@@ -655,19 +655,6 @@ button.ai-loading:hover {
   position: relative;
 }
 
-#management-modal .se-modal-content::after {
-  content: 'Adaptado por Patrick Godoy';
-  position: absolute;
-  bottom: 16px;
-  left: 16px;
-  font-size: 10px;
-  color: var(--text-color-muted);
-  opacity: 0.6;
-  pointer-events: none;
-  user-select: none;
-  z-index: 1;
-}
-
 .se-modal-header {
   display: flex;
   justify-content: space-between;
@@ -931,6 +918,28 @@ a.open-link-btn:hover {
   border-radius: var(--border-radius-sm);
   border: 1px solid var(--border-color);
   color: var(--text-color-main);
+}
+
+.se-modal-body {
+  padding: 15px 20px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.modal-footer-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  font-size: 12px;
+  color: var(--text-color-muted);
+  border-top: 1px solid var(--border-color);
+  margin-top: 15px;
+}
+
+#extension-version-trigger {
+  cursor: pointer;
+  user-select: none;
 }
 
 .se-modal-actions {

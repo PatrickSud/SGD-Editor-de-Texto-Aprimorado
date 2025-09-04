@@ -107,7 +107,6 @@ function applyFormatting(textArea, tag, attributes = {}) {
  * @returns {string} O HTML sanitizado.
  */
 function sanitizeHtml(html) {
-  // Usa DOMParser para evitar que scripts sejam executados durante a sanitização.
   const parser = new DOMParser()
   const doc = parser.parseFromString(html, 'text/html')
 
@@ -178,10 +177,9 @@ function updatePreview(textArea) {
 
   let rawHtml = textArea.value
 
-  // ALTERAÇÃO AQUI: Converte as quebras de linha do textarea para a tag <br>
+  // Converte as quebras de linha do textarea para a tag <br>
   rawHtml = rawHtml.replace(/\n/g, '<br>')
 
-  // Passo de segurança crítico antes de inserir no innerHTML
   const sanitizedHtml = sanitizeHtml(rawHtml)
 
   const previewContent = document.getElementById(

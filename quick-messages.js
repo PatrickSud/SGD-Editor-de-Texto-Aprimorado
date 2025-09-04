@@ -11,7 +11,6 @@
  */
 async function loadQuickMessages(editorContainer) {
   const data = await getStoredData()
-  // Encontra o dropdown dentro do container específico.
   const dropdown = editorContainer.querySelector('.quick-steps-dropdown')
   if (!dropdown) return
   dropdown.innerHTML = ''
@@ -20,8 +19,6 @@ async function loadQuickMessages(editorContainer) {
   listContainer.classList.add('quick-steps-list')
   dropdown.appendChild(listContainer)
 
-  // A lógica abaixo já carrega as categorias na ordem em que estão salvas.
-  // Garante que a ordem do array de categorias seja refletida na UI.
   data.categories.forEach(category => {
     const categoryContainer = document.createElement('div')
     categoryContainer.className = 'category-container'
@@ -204,8 +201,10 @@ function handleDragStart(e) {
     // Define os dados de transferência (necessário para Firefox).
     e.dataTransfer.setData('text/plain', draggedMessageItem.dataset.messageId)
     e.dataTransfer.effectAllowed = 'move'
-    // Usa timeout para aplicar a classe após o início do arraste (permite que o navegador gere a imagem de arraste).
-    setTimeout(() => draggedMessageItem.classList.add('is-dragging'), 0)
+    // Usa requestAnimationFrame para garantir que a classe seja aplicada após o início do arraste.
+    requestAnimationFrame(() => {
+      draggedMessageItem.classList.add('is-dragging')
+    })
   }
 }
 
@@ -377,7 +376,9 @@ function handleCategoryDragStart(e) {
       'text/x-sgd-category-id',
       draggedCategoryItem.dataset.id
     )
-    setTimeout(() => draggedCategoryItem.classList.add('is-dragging'), 0)
+    requestAnimationFrame(() => {
+      draggedCategoryItem.classList.add('is-dragging')
+    })
   }
 }
 
@@ -617,6 +618,11 @@ async function openMessageModal(data = null) {
  * Abre o modal principal de gerenciamento de trâmites (Categorias, Import/Export, Configs IA).
  */
 async function openManagementModal() {
+  // Se o modal de gerenciamento já estiver aberto, não faz nada para evitar duplicatas.
+  if (document.getElementById('management-modal')) {
+    return
+  }
+
   const onSave = async (modalContent, closeModal) => {
     const success = await saveAllCategoryChanges(modalContent)
     if (success) {
@@ -629,6 +635,36 @@ async function openManagementModal() {
   }
 
   const currentApiKey = await getGeminiApiKey()
+  const devMode = await isDevModeEnabled() // CORREÇÃO: Corrigido o erro de digitação aqui
+
+  let aiSettingsHtml = '' // Inicia como string vazia
+  if (devMode) {
+    aiSettingsHtml = `
+      <hr>
+      <div class="management-section collapsible-section">
+          <h4 class="collapsible-header">▶ ✨ Configurações de IA (Gemini)</h4>
+          <div class="collapsible-content">
+              <p>Insira sua chave de API do Google Gemini para habilitar os recursos de IA.</p>
+              <div class="form-group">
+                  <label for="gemini-api-key-input">Chave da API Gemini</label>
+                  <div class="category-form">
+                      <input type="text" id="gemini-api-key-input" placeholder="AIzaSy..." value="${escapeHTML(
+                        currentApiKey
+                      )}">
+                       <button type="button" id="save-gemini-key-btn" class="action-btn save-cat-btn" title="Salvar Chave">💾</button>
+                  </div>
+                   <div class="category-form" style="margin-top: 10px; justify-content: space-between;">
+                      <button type="button" id="how-to-get-api-key-link" class="action-btn small-btn">👆 Como obter a chave de API?</button>
+                      <button type="button" id="test-api-key-btn" class="action-btn">Testar Conexão</button>
+                  </div>
+              </div>
+          </div>
+      </div>
+    `
+  }
+
+  // Pega a versão da extensão diretamente do manifest.json
+  const extensionVersion = chrome.runtime.getManifest().version
 
   const modal = createModal(
     'Configurações',
@@ -661,30 +697,68 @@ async function openManagementModal() {
                 </div>
             </div>
         </div>
-        <hr>
-        <div class="management-section collapsible-section">
-            <h4 class="collapsible-header">▶ ✨ Configurações de IA (Gemini)</h4>
-            <div class="collapsible-content">
-                <p>Insira sua chave de API do Google Gemini para habilitar os recursos de IA.</p>
-                <div class="form-group">
-                    <label for="gemini-api-key-input">Chave da API Gemini</label>
-                    <div class="category-form">
-                        <input type="text" id="gemini-api-key-input" placeholder="AIzaSy..." value="${escapeHTML(
-                          currentApiKey
-                        )}">
-                         <button type="button" id="save-gemini-key-btn" class="action-btn save-cat-btn" title="Salvar Chave">💾</button>
-                    </div>
-                     <div class="category-form" style="margin-top: 10px; justify-content: space-between;">
-                        <button type="button" id="how-to-get-api-key-link" class="action-btn small-btn">👆 Como obter a chave de API?</button>
-                        <button type="button" id="test-api-key-btn" class="action-btn">Testar Conexão</button>
-                    </div>
-                </div>
-            </div>
-        </div>`,
+        ${aiSettingsHtml}
+    `,
     onSave,
     true,
     'management-modal'
   )
+
+  // --- NOVO: Lógica para inserir e controlar o gatilho secreto ---
+  const modalContentElement = modal.querySelector('.se-modal-content')
+  if (modalContentElement) {
+    const watermarkTrigger = document.createElement('div')
+    watermarkTrigger.id = 'dev-mode-trigger'
+    watermarkTrigger.textContent = 'Adaptado por Patrick Godoy'
+
+    // Aplica o estilo para posicionar no canto inferior esquerdo, como antes
+    Object.assign(watermarkTrigger.style, {
+      position: 'absolute',
+      bottom: '16px',
+      left: '16px',
+      fontSize: '10px',
+      color: 'var(--text-color-muted)',
+      opacity: '0.6',
+      cursor: 'default',
+      userSelect: 'none',
+      zIndex: '1'
+    })
+
+    // Anexa o gatilho ao conteúdo do modal
+    modalContentElement.appendChild(watermarkTrigger)
+
+    // --- LÓGICA DO ATIVADOR SECRETO ---
+    let clickCount = 0
+    let clickTimer = null
+
+    watermarkTrigger.addEventListener('click', async () => {
+      clickCount++
+      clearTimeout(clickTimer)
+      clickTimer = setTimeout(() => {
+        clickCount = 0
+      }, 1500)
+
+      if (clickCount >= 5) {
+        clickCount = 0
+        clearTimeout(clickTimer)
+
+        const newState = await toggleDevMode()
+        const status = newState ? 'ATIVADO' : 'DESATIVADO'
+
+        showNotification(
+          `Modo de Desenvolvedor ${status}! O modal será recarregado.`,
+          'info',
+          3000
+        )
+
+        const modalElement = document.getElementById('management-modal')
+        if (modalElement) {
+          modalElement.querySelector('.se-close-modal-btn').click()
+        }
+        setTimeout(openManagementModal, 300)
+      }
+    })
+  }
 
   document.body.appendChild(modal)
 
@@ -701,58 +775,61 @@ async function openManagementModal() {
     })
   })
 
-  const apiKeyInput = modal.querySelector('#gemini-api-key-input')
+  // IMPORTANTE: Adicione uma verificação antes de procurar os seletores de IA
+  if (devMode) {
+    const apiKeyInput = modal.querySelector('#gemini-api-key-input')
 
-  modal
-    .querySelector('#save-gemini-key-btn')
-    .addEventListener('click', async e => {
-      e.preventDefault()
-      const newKey = apiKeyInput.value.trim()
-      try {
-        await saveSettings({ geminiApiKey: newKey })
-        showNotification('Chave da API Gemini salva com sucesso!', 'success')
-      } catch (error) {
-        showNotification('Erro ao salvar a chave da API.', 'error')
-      }
-    })
-
-  modal
-    .querySelector('#test-api-key-btn')
-    .addEventListener('click', async e => {
-      e.preventDefault()
-      const key = apiKeyInput.value.trim()
-      if (!key) {
-        showNotification(
-          'Por favor, insira uma chave de API para testar.',
-          'info'
-        )
-        return
-      }
-      const button = e.target
-      button.disabled = true
-      button.classList.add('ai-loading')
-      button.textContent = 'Testando...'
-
-      try {
-        const success = await testApiKey(key)
-        if (success) {
-          showNotification('Conexão com a API bem-sucedida!', 'success')
+    modal
+      .querySelector('#save-gemini-key-btn')
+      .addEventListener('click', async e => {
+        e.preventDefault()
+        const newKey = apiKeyInput.value.trim()
+        try {
+          await saveSettings({ geminiApiKey: newKey })
+          showNotification('Chave da API Gemini salva com sucesso!', 'success')
+        } catch (error) {
+          showNotification('Erro ao salvar a chave da API.', 'error')
         }
-      } catch (error) {
-        showNotification(`Falha na conexão: ${error.message}`, 'error', 5000)
-      } finally {
-        button.disabled = false
-        button.classList.remove('ai-loading')
-        button.textContent = 'Testar Conexão'
-      }
-    })
+      })
 
-  modal
-    .querySelector('#how-to-get-api-key-link')
-    .addEventListener('click', e => {
-      e.preventDefault()
-      showHowToGetApiKeyModal()
-    })
+    modal
+      .querySelector('#test-api-key-btn')
+      .addEventListener('click', async e => {
+        e.preventDefault()
+        const key = apiKeyInput.value.trim()
+        if (!key) {
+          showNotification(
+            'Por favor, insira uma chave de API para testar.',
+            'info'
+          )
+          return
+        }
+        const button = e.target
+        button.disabled = true
+        button.classList.add('ai-loading')
+        button.textContent = 'Testando...'
+
+        try {
+          const success = await testApiKey(key)
+          if (success) {
+            showNotification('Conexão com a API bem-sucedida!', 'success')
+          }
+        } catch (error) {
+          showNotification(`Falha na conexão: ${error.message}`, 'error', 5000)
+        } finally {
+          button.disabled = false
+          button.classList.remove('ai-loading')
+          button.textContent = 'Testar Conexão'
+        }
+      })
+
+    modal
+      .querySelector('#how-to-get-api-key-link')
+      .addEventListener('click', e => {
+        e.preventDefault()
+        showHowToGetApiKeyModal()
+      })
+  }
 
   await renderCategoryManagementList(modal)
 

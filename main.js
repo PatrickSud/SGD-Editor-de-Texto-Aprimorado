@@ -46,7 +46,6 @@ function createHistoryManager(initialState) {
 
 // --- INICIALIZAÇÃO ROBUSTA (MutationObserver) ---
 
-// Variável para guardar o último conteúdo conhecido do textarea, para a verificação periódica.
 let lastKnownTextAreaValue = ''
 
 /**
@@ -81,6 +80,9 @@ function observeForTextArea() {
  * @param {object} options - Opções de configuração.
  */
 async function initializeEditorInstance(textArea, instanceId, options = {}) {
+  if (!textArea || textArea.dataset.enhanced) return
+  textArea.dataset.enhanced = instanceId // Trava para evitar re-inicialização
+
   const {
     includePreview,
     includeQuickSteps,
@@ -89,15 +91,13 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
     includeReminders
   } = options
 
-  if (!textArea || textArea.dataset.enhanced) return
-
   const masterContainer = document.createElement('div')
   masterContainer.classList.add('editor-master-container', 'mode-textarea')
 
   const editorContainer = document.createElement('div')
   editorContainer.id = `editor-container-${instanceId}`
   editorContainer.classList.add('editor-container')
-  editorContainer.innerHTML = createEditorToolbarHtml(
+  editorContainer.innerHTML = await createEditorToolbarHtml(
     instanceId,
     includeQuickSteps,
     includeThemeToggle,
@@ -116,8 +116,6 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
     )
     return
   }
-
-  textArea.dataset.enhanced = instanceId
 
   if (includePreview) {
     const previewContainer = createPreviewContainer(textArea, instanceId)
@@ -202,9 +200,9 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
  * @param {boolean} includePreview - Se deve incluir o botão de Alternar Visualização.
  * @param {boolean} includeNotes - Se deve incluir o botão de Anotações.
  * @param {boolean} includeReminders - Se deve incluir os botões de Lembretes.
- * @returns {string} O HTML da toolbar.
+ * @returns {Promise<string>} O HTML da toolbar. (Retorno agora é uma Promise)
  */
-function createEditorToolbarHtml(
+async function createEditorToolbarHtml(
   instanceId,
   includeQuickSteps,
   includeThemeToggle,
@@ -261,11 +259,16 @@ function createEditorToolbarHtml(
     `
   }
 
-  let aiButtonsHtml = `
+  let aiButtonsHtml = '' // Inicia como string vazia
+  const devMode = await isDevModeEnabled() // Verifica o modo dev
+
+  // SÓ CRIA OS BOTÕES DE IA SE O MODO DEV ESTIVER ATIVO
+  if (devMode) {
+    aiButtonsHtml = `
       <div class="dropdown">
         <button type="button" title="Recursos de IA (Gemini)" class="ai-master-button">✨</button>
         <div class="dropdown-content">
-          <button type="button" data-action="ai-correct">🪄 Melhorar Texto</button> 
+          <button type="button" data-action="ai-correct">🪄 Melhorar Texto</button>
           <button type="button" data-action="ai-generate">💡 Gerar por Tópicos</button>
           <button type="button" data-action="ai-complete-draft">🚀 Completar Rascunho</button>
           ${
@@ -275,12 +278,13 @@ function createEditorToolbarHtml(
           }
         </div>
       </div>
-  `
+      ${separatorHtml}
+    `
+  }
 
   return `
     <div class="editor-toolbar">
       ${aiButtonsHtml}
-      ${separatorHtml}
       <button type="button" data-action="bold" title="Negrito (Ctrl+B)"><b>B</b></button>
       <button type="button" data-action="italic" title="Itálico (Ctrl+I)"><i>I</i></button>
       <button type="button" data-action="underline" title="Sublinhado (Ctrl+U)"><u>U</u></button>
@@ -349,9 +353,9 @@ function setupEditorInstanceListeners(
     textArea.dispatchEvent(new Event('input', { bubbles: true }))
     textArea.scrollTop = currentScrollTop
     // Reseta a flag após a atualização do DOM
-    setTimeout(() => {
+    requestAnimationFrame(() => {
       performingUndoRedo = false
-    }, 0)
+    })
   }
 
   // --- Listeners do Textarea ---
@@ -729,17 +733,6 @@ async function initializeExtension() {
   observeForTextArea()
   document.addEventListener('keydown', handleShortcutListener)
   initializeScrollToTopButton()
-
-  const textArea = getTargetTextArea()
-  if (textArea) {
-    await initializeEditorInstance(textArea, 'main', {
-      includePreview: true,
-      includeQuickSteps: true,
-      includeThemeToggle: true,
-      includeNotes: true,
-      includeReminders: true
-    })
-  }
 
   if (typeof initializeNotesPanel === 'function') {
     initializeNotesPanel()

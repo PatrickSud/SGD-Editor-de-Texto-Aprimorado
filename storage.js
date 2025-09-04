@@ -9,14 +9,8 @@
  * Recupera os dados armazenados, executando migrações se necessário.
  */
 async function getStoredData() {
-  // ... (A função getStoredData permanece inalterada)
   try {
-    const result = await new Promise((resolve, reject) => {
-      chrome.storage.sync.get(STORAGE_KEY, data => {
-        if (chrome.runtime.lastError) reject(chrome.runtime.lastError)
-        else resolve(data)
-      })
-    })
+    const result = await chrome.storage.sync.get(STORAGE_KEY)
 
     let data = result[STORAGE_KEY]
 
@@ -45,7 +39,6 @@ async function getStoredData() {
  * Salva os dados no armazenamento.
  */
 async function saveStoredData(data) {
-  // ... (A função saveStoredData permanece inalterada)
   try {
     data.version = DATA_VERSION
     await chrome.storage.sync.set({ [STORAGE_KEY]: data })
@@ -59,7 +52,6 @@ async function saveStoredData(data) {
  * Inicializa os dados padrão.
  */
 function initializeDefaultData(save = false) {
-  // ... (A função initializeDefaultData permanece inalterada)
   const timestamp = Date.now()
   const defaultCategories = [
     { id: `cat-${timestamp}-0`, name: 'Geral', shortcut: 'alt+0' },
@@ -83,7 +75,6 @@ function initializeDefaultData(save = false) {
  * Migração de versões antigas (V1, V2) para a estrutura atual (V3).
  */
 async function runDataMigration(data) {
-  // ... (A função runDataMigration permanece inalterada)
   // Se não houver dados, inicializa padrão.
   if (!data || (typeof data === 'object' && Object.keys(data).length === 0)) {
     return initializeDefaultData(true)
@@ -216,16 +207,12 @@ async function runDataMigration(data) {
  */
 async function getSettings() {
   try {
-    const result = await new Promise((resolve, reject) => {
-      // Busca tanto as configurações novas quanto as antigas (tema, preview) para migração suave.
-      chrome.storage.sync.get(
-        [SETTINGS_STORAGE_KEY, 'editorTheme', 'previewVisible'],
-        data => {
-          if (chrome.runtime.lastError) reject(chrome.runtime.lastError)
-          else resolve(data)
-        }
-      )
-    })
+    // Busca tanto as configurações novas quanto as antigas (tema, preview) para migração suave.
+    const result = await chrome.storage.sync.get([
+      SETTINGS_STORAGE_KEY,
+      'editorTheme',
+      'previewVisible'
+    ])
 
     const settings = result[SETTINGS_STORAGE_KEY] || {}
 
@@ -302,7 +289,7 @@ async function getGeminiApiKey() {
  */
 async function loadSavedTheme() {
   const settings = await getSettings()
-  currentEditorTheme = settings.editorTheme || 'light'
+  currentEditorTheme = settings.editorTheme || 'padrao'
 }
 
 /**
@@ -327,7 +314,6 @@ async function setTheme(themeName) {
  * Atualiza as classes CSS nos elementos da extensão.
  */
 function updateThemeOnElements() {
-  // ... (A função updateThemeOnElements permanece inalterada)
   // Seleciona todas as instâncias do editor, modais, popups e textareas aprimorados, incluindo o novo preview.
   const themedElements = document.querySelectorAll(
     '.editor-container, .editor-modal, .editor-preview-container, #shortcut-popup, textarea[data-enhanced], #notes-side-panel, #floating-scroll-top-btn'
@@ -357,7 +343,6 @@ function updateThemeOnElements() {
  * Aplica o tema atual a um elemento recém-criado.
  */
 function applyCurrentTheme(element) {
-  // ... (A função applyCurrentTheme permanece inalterada)
   if (!element) return
   const themeClass = THEME_CLASSES_MAP[currentEditorTheme]
   if (themeClass) {
@@ -404,8 +389,6 @@ async function savePreviewResizableState(isResizable) {
 
 // --- GERENCIAMENTO DE ANOTAÇÕES ---
 
-// ... (Funções de Anotações permanecem inalteradas)
-
 /**
  * Retorna uma estrutura de dados padrão para as anotações.
  * @returns {object}
@@ -425,12 +408,7 @@ function getInitialNotesData() {
  */
 async function getSavedNotes() {
   try {
-    const result = await new Promise((resolve, reject) => {
-      chrome.storage.sync.get(NOTES_STORAGE_KEY, data => {
-        if (chrome.runtime.lastError) reject(chrome.runtime.lastError)
-        else resolve(data)
-      })
-    })
+    const result = await chrome.storage.sync.get(NOTES_STORAGE_KEY)
 
     const notesData = result[NOTES_STORAGE_KEY]
 
@@ -510,12 +488,7 @@ async function getReminders() {
     // Limpa lembretes antigos/disparados antes de retornar os ativos.
     await cleanupOldReminders()
 
-    const result = await new Promise((resolve, reject) => {
-      chrome.storage.sync.get(REMINDERS_STORAGE_KEY, data => {
-        if (chrome.runtime.lastError) reject(chrome.runtime.lastError)
-        else resolve(data)
-      })
-    })
+    const result = await chrome.storage.sync.get(REMINDERS_STORAGE_KEY)
     // Usamos um objeto (dicionário) para facilitar a busca por ID.
     return result[REMINDERS_STORAGE_KEY] || {}
   } catch (error) {
@@ -734,12 +707,7 @@ async function deleteMultipleReminders(reminderIds) {
  */
 async function getUserResponseSamples() {
   try {
-    const result = await new Promise((resolve, reject) => {
-      chrome.storage.local.get(USER_RESPONSE_SAMPLES_KEY, data => {
-        if (chrome.runtime.lastError) reject(chrome.runtime.lastError)
-        else resolve(data)
-      })
-    })
+    const result = await chrome.storage.local.get(USER_RESPONSE_SAMPLES_KEY)
     // Retorna o array de amostras ou um array vazio se não existir.
     return result[USER_RESPONSE_SAMPLES_KEY] || []
   } catch (error) {
@@ -764,12 +732,7 @@ async function saveUserResponseSample(responseText) {
       samples = samples.slice(0, MAX_RESPONSE_SAMPLES)
     }
     // Salva o array atualizado.
-    await new Promise((resolve, reject) => {
-      chrome.storage.local.set({ [USER_RESPONSE_SAMPLES_KEY]: samples }, () => {
-        if (chrome.runtime.lastError) reject(chrome.runtime.lastError)
-        else resolve()
-      })
-    })
+    await chrome.storage.local.set({ [USER_RESPONSE_SAMPLES_KEY]: samples })
   } catch (error) {
     console.error('Editor SGD: Erro ao salvar amostra de resposta.', error)
   }
@@ -895,5 +858,44 @@ async function updateCategoryShortcut(categoryId, newShortcut) {
     console.error('Editor SGD: Erro ao salvar o atalho da categoria.', error)
     // Propaga o erro para a UI poder notificar o usuário.
     throw error
+  }
+}
+
+/**
+ * Verifica se o modo de desenvolvedor está ativo.
+ * @returns {Promise<boolean>} Retorna true se o modo dev estiver ativado.
+ */
+async function isDevModeEnabled() {
+  try {
+    // Usamos 'local' para que a configuração não seja sincronizada.
+    const result = await chrome.storage.local.get(DEV_MODE_KEY)
+    // Acessa a chave diretamente e retorna true se o valor for exatamente true.
+    return result[DEV_MODE_KEY] === true
+  } catch (error) {
+    console.error(
+      'Editor SGD: Erro ao verificar o modo de desenvolvedor.',
+      error
+    )
+    return false
+  }
+}
+
+/**
+ * Alterna (liga/desliga) o modo de desenvolvedor.
+ * @returns {Promise<boolean>} Retorna o novo estado do modo dev (true se ativado, false se desativado).
+ */
+async function toggleDevMode() {
+  const isEnabled = await isDevModeEnabled()
+  const newState = !isEnabled
+  try {
+    await chrome.storage.local.set({ [DEV_MODE_KEY]: newState })
+    console.log(`Modo de desenvolvedor alterado para: ${newState}`)
+    return newState
+  } catch (error) {
+    console.error(
+      'Editor SGD: Erro ao alternar o modo de desenvolvedor.',
+      error
+    )
+    return isEnabled // Retorna ao estado anterior em caso de erro
   }
 }

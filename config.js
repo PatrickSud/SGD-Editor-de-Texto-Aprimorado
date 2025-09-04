@@ -4,7 +4,7 @@
  */
 
 // --- CONFIGURAÇÕES GERAIS E ARMAZENAMENTO ---
-
+const DEV_MODE_KEY = 'developerModeEnabled' // Nova chave para o modo dev
 const DATA_VERSION = 3
 const STORAGE_KEY = 'quickMessagesData'
 const NOTES_STORAGE_KEY = 'editorNotesData'
@@ -12,28 +12,27 @@ const REMINDERS_STORAGE_KEY = 'remindersData'
 const SETTINGS_STORAGE_KEY = 'extensionSettingsData'
 const USER_RESPONSE_SAMPLES_KEY = 'userResponseSamples'
 const MAX_RESPONSE_SAMPLES = 30
-const USAGE_TRACKING_KEY = 'usageTrackingData' // NOVO
-const SUGGESTED_TRAMITES_KEY = 'suggestedTramites' // NOVO
-const SUGGESTION_THRESHOLD = 5 // NOVO: Nº de vezes que um texto deve ser usado para virar sugestão
-const MIN_SUGGESTION_LENGTH = 100 // NOVO: Tamanho mínimo do texto para ser considerado para sugestão
+const USAGE_TRACKING_KEY = 'usageTrackingData'
+const SUGGESTED_TRAMITES_KEY = 'suggestedTramites'
+const SUGGESTION_THRESHOLD = 5 // Nº de vezes que um texto deve ser usado para virar sugestão
+const MIN_SUGGESTION_LENGTH = 100 // Tamanho mínimo do texto para ser considerado para sugestão
 
-// Configurações Padrão (NOVO)
+// Configurações Padrão
 const DEFAULT_SETTINGS = {
-  reminderRetentionDays: 1, // Padrão: Manter lembretes disparados por 1 dia
-  geminiApiKey: '', // NOVO: Chave da API do Gemini fornecida pelo usuário
-  previewResizable: false // NOVO: Define se o preview é redimensionável
+  reminderRetentionDays: 2, // Padrão: Manter lembretes disparados por 1 dia
+  geminiApiKey: '', // Chave da API do Gemini fornecida pelo usuário
+  previewResizable: false // Define se o preview é redimensionável
 }
 
 // --- ESTADO GLOBAL (Variáveis mutáveis usadas entre os scripts) ---
 
-// O tema atual do editor.
-let currentEditorTheme = 'light'
+let currentEditorTheme = 'padrao'
 
-// Variáveis globais para controle de Drag & Drop
+// Controle de Drag & Drop
 let draggedCategoryItem = null
 let draggedMessageItem = null
 
-// Timeout global para esconder os pickers
+// Timeout para esconder os pickers
 let pickerHideTimeout
 
 // --- CONFIGURAÇÕES DO SISTEMA ALVO (SGD) ---
@@ -48,7 +47,7 @@ const TARGET_TEXTAREA_SELECTORS = [
 ]
 
 /**
- * IDs/Seletores para encontrar a descrição inicial da solicitação de suporte (Usado para Resumo IA)
+ * IDs/Seletores para encontrar a descrição inicial da solicitação de suporte.
  */
 const SUPPORT_REQUEST_DESCRIPTION_SELECTORS = [
   '#sscForm\\:solicitacao',
@@ -58,7 +57,7 @@ const SUPPORT_REQUEST_DESCRIPTION_SELECTORS = [
 ]
 
 /**
- * Seletores para encontrar a tabela de trâmites anteriores (Usado para Resumo IA)
+ * Seletores para encontrar a tabela de trâmites anteriores.
  */
 const TRAMITES_TABLE_SELECTORS = [
   '#sscForm\\:tramitesTable_data',
@@ -98,7 +97,7 @@ const THEME_CLASSES_MAP = {
 // Array de todas as classes de tema para facilitar a remoção.
 const ALL_THEME_CLASSES = Object.values(THEME_CLASSES_MAP)
 
-// Ícones exibidos no botão de alternância de tema
+// Ícones para o botão de alternância de tema
 const THEME_ICONS = {
   light: '☀️',
   dark: '❄️',
@@ -109,7 +108,7 @@ const THEME_ICONS = {
   padrao: '💎'
 }
 
-// Nomes amigáveis para exibição no menu de temas
+// Nomes amigáveis para o menu de temas
 const THEME_NAMES = {
   light: 'Alvorada',
   'dark-graphite': 'Meia-noite',
@@ -123,6 +122,7 @@ const THEME_NAMES = {
 // --- DADOS DOS PICKERS (Cores e Emojis) ---
 
 const PICKER_COLORS = [
+  '#fa6400',
   '#FF0000',
   '#0000FF',
   '#FFFF00',
@@ -132,7 +132,7 @@ const PICKER_COLORS = [
   '#008000'
 ]
 
-// Emojis e seus códigos HTML escapados.
+// Emojis e seus códigos HTML.
 const PICKER_EMOJIS = [
   { char: '😀', code: '&#128512;' },
   { char: '😃', code: '&#128515;' },

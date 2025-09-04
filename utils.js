@@ -12,14 +12,17 @@
  */
 function escapeHTML(str) {
   if (typeof str !== 'string') return ''
-  const map = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;'
-  }
-  return str.replace(/[&<>"']/g, m => map[m])
+  return str.replace(
+    /[&<>"']/g,
+    m =>
+      ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[m])
+  )
 }
 
 /**
@@ -58,11 +61,16 @@ function getTargetTextArea() {
  * @returns {string} A string formatada.
  */
 function getLocalDateTimeString(date) {
-  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
-  if (isNaN(localDate.getTime())) {
-    return getLocalDateTimeString(new Date())
+  if (!(date instanceof Date) || isNaN(date)) {
+    date = new Date()
   }
-  return localDate.toISOString().slice(0, 16)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`
 }
 
 // --- UTILITÁRIOS DE EXTRAÇÃO DE CONTEÚDO (Para IA) ---
