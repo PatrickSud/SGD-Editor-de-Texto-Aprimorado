@@ -32,7 +32,7 @@ O código-fonte é modular e bem organizado, com cada arquivo tendo uma responsa
 * ⚡ **`quick-messages.js`**: Gerencia toda a funcionalidade de "Trâmites Rápidos", incluindo a lógica de arrastar e soltar (drag-and-drop) e os modais de gerenciamento.
 * 🖼️ **`ui-components.js`**: Uma biblioteca de componentes de UI reutilizáveis, como modais, notificações (toasts) e seletores (emojis, cores).
 * 💾 **`storage.js`**: Camada de abstração para interagir com o `chrome.storage`, gerenciando o salvamento e a leitura de todos os dados da extensão (trâmites, anotações, configurações). Inclui um sistema de migração de dados para novas versões.
-* 🧠 **`ai-service.js`**: Isola a comunicação com a API do Google Gemini. Prepara os prompts, envia as requisições e processa as respostas da IA.
+* 🧠 **`ai-service.js`**: Isola a comunicação com a API do Google Gemini. Prepara os prompts, envia as requisições e processa as respostas da IA. (Em desenvolvimento)
 * ⏳ **`service-worker.js`**: Script de fundo que gerencia alarmes para o sistema de lembretes e executa tarefas periódicas, como a análise de uso para sugerir novos trâmites.
 * 🛠️ **`utils.js`**: Funções utilitárias usadas em todo o projeto, como sanitização de HTML e extração de conteúdo da página do SGD.
 * 🎨 **`editor.css`**: Contém todos os estilos da extensão. Utiliza variáveis CSS para um sistema de temas eficiente e Flexbox para um design responsivo.
