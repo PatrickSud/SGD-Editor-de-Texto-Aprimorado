@@ -219,8 +219,31 @@ chrome.alarms.onAlarm.addListener(async alarm => {
     // Salva no storage (para persistência na lista de gerenciamento)
     await chrome.storage.sync.set({ [REMINDERS_STORAGE_KEY]: reminders })
 
-    // Exibe a notificação
+    // Ação 1: Exibe a notificação nativa do sistema.
     showChromeNotification(reminder)
+
+    // Ação 2: Envia a notificação para ser exibida dentro da página do SGD.
+    try {
+      const tabs = await chrome.tabs.query({
+        url: 'https://sgd.dominiosistemas.com.br/*'
+      })
+
+      if (tabs.length > 0) {
+        console.log(`Enviando lembrete para ${tabs.length} aba(s) do SGD.`)
+        tabs.forEach(tab => {
+          chrome.tabs.sendMessage(tab.id, {
+            action: 'SHOW_IN_PAGE_NOTIFICATION',
+            reminder: reminder
+          })
+        })
+      } else {
+        console.log(
+          'Nenhuma aba do SGD encontrada para exibir o lembrete em página.'
+        )
+      }
+    } catch (error) {
+      console.error('Erro ao enviar mensagem para content script:', error)
+    }
   } else {
     console.warn(
       `Service Worker: Lembrete não encontrado no storage ao disparar alarme: ${reminderId}`

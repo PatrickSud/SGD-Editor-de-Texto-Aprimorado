@@ -1186,3 +1186,73 @@ function showSummaryModal(summaryText, nextActionText, relevantData, onInsert) {
 
   document.body.appendChild(modal)
 }
+
+/**
+ * Exibe uma notificação flutuante (toast) de lembrete dentro da página do SGD.
+ * @param {object} reminder - O objeto do lembrete enviado pelo service worker.
+ */
+function showInPageNotification(reminder) {
+  // Cria um container para as notificações, se não existir
+  let container = document.getElementById('in-page-notification-container')
+  if (!container) {
+    container = document.createElement('div')
+    container.id = 'in-page-notification-container'
+    document.body.appendChild(container)
+  }
+
+  const notification = document.createElement('div')
+  notification.className = 'in-page-notification'
+  applyCurrentTheme(notification) // Aplica o tema atual
+
+  const hasUrl = reminder.url && reminder.url.startsWith('http')
+  const openUrlButtonHtml = hasUrl
+    ? `<button type="button" class="action-btn open-url-btn">Abrir Solicitação</button>`
+    : ''
+
+  notification.innerHTML = `
+    <div class="in-page-notification-header">
+      <span class="notification-icon">⏰</span>
+      <h5 class="in-page-notification-title">${escapeHTML(reminder.title)}</h5>
+      <button type="button" class="dismiss-btn" title="Dispensar">&times;</button>
+    </div>
+    <div class="in-page-notification-body">
+      ${
+        reminder.description ? `<p>${escapeHTML(reminder.description)}</p>` : ''
+      }
+    </div>
+    <div class="in-page-notification-actions">
+      ${openUrlButtonHtml}
+      <button type="button" class="action-btn dismiss-btn-main">Dispensar</button>
+    </div>
+  `
+
+  // Adiciona a notificação ao container
+  container.appendChild(notification)
+
+  // Adiciona listeners
+  const dismiss = () => {
+    notification.classList.add('fade-out')
+    setTimeout(() => {
+      if (container.contains(notification)) {
+        container.removeChild(notification)
+      }
+    }, 400)
+  }
+
+  notification
+    .querySelectorAll('.dismiss-btn, .dismiss-btn-main')
+    .forEach(btn => btn.addEventListener('click', dismiss))
+
+  const openUrlBtn = notification.querySelector('.open-url-btn')
+  if (openUrlBtn) {
+    openUrlBtn.addEventListener('click', () => {
+      window.open(reminder.url, '_blank')
+      dismiss() // Dispensa a notificação após abrir o link
+    })
+  }
+
+  // Faz a notificação aparecer com uma animação
+  requestAnimationFrame(() => {
+    notification.classList.add('visible')
+  })
+}

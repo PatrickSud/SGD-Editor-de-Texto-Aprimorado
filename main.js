@@ -773,3 +773,10 @@ function initializeScrollToTopButton() {
 }
 
 initializeExtension()
+
+// --- LISTENER PARA NOTIFICAÇÕES DE LEMBRETES NA PÁGINA ---
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === 'SHOW_IN_PAGE_NOTIFICATION' && message.reminder) {
+    showInPageNotification(message.reminder)
+  }
+})
