@@ -664,7 +664,7 @@ async function openManagementModal() {
   }
 
   // Pega a versão da extensão diretamente do manifest.json
-  const extensionVersion = chrome.runtime.getManifest().version
+  const extensionVersion = browser.runtime.getManifest().version
 
   const modal = createModal(
     'Configurações',

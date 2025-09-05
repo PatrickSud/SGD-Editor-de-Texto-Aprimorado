@@ -215,34 +215,26 @@ function openNewReminderModal(existingReminder = null) {
   const isEditing = existingReminder !== null
 
   const now = new Date()
-  const minDateTime = getLocalDateTimeString(now)
+  const minDate = now.toISOString().split('T')[0]
 
-  let defaultDateTime
+  let reminderDateTime
   if (isEditing) {
     const originalDate = new Date(existingReminder.dateTime)
-    if (originalDate < now) {
-      const defaultTime = new Date(now.getTime() + 60 * 60 * 1000)
-      defaultDateTime = getLocalDateTimeString(defaultTime)
-    } else {
-      defaultDateTime = getLocalDateTimeString(originalDate)
-    }
+    reminderDateTime =
+      originalDate < now
+        ? new Date(now.getTime() + 60 * 60 * 1000)
+        : originalDate
   } else {
-    const defaultTime = new Date(now.getTime() + 60 * 60 * 1000)
-    defaultDateTime = getLocalDateTimeString(defaultTime)
+    reminderDateTime = new Date(now.getTime() + 60 * 60 * 1000)
   }
+
+  const defaultDate = reminderDateTime.toISOString().split('T')[0]
+  const defaultTime = reminderDateTime.toTimeString().slice(0, 5)
 
   const titleValue = isEditing ? existingReminder.title : ''
   const descriptionValue = isEditing ? existingReminder.description || '' : ''
-
   const currentPageUrl = window.location.href
-  let initialUrl = ''
-
-  if (isEditing) {
-    initialUrl = existingReminder.url || ''
-  } else {
-    initialUrl = currentPageUrl
-  }
-
+  let initialUrl = isEditing ? existingReminder.url || '' : currentPageUrl
   const isUrlIncluded = initialUrl !== ''
 
   const modal = createModal(
@@ -254,10 +246,15 @@ function openNewReminderModal(existingReminder = null) {
           titleValue
         )}" required>
      </div>
+     
      <div class="form-group">
-        <label for="reminder-datetime">Data e Hora do Alerta*</label>
-        <input type="datetime-local" id="reminder-datetime" min="${minDateTime}" value="${defaultDateTime}" required>
+        <label for="reminder-date">Data e Hora do Alerta*</label>
+        <div class="datetime-picker-container">
+            <input type="date" id="reminder-date" class="datetime-input" min="${minDate}" value="${defaultDate}" required>
+            <input type="time" id="reminder-time" class="datetime-input" value="${defaultTime}" required>
+        </div>
      </div>
+
      <div class="form-group">
         <label for="reminder-description">Descrição (Opcional)</label>
         <textarea id="reminder-description" placeholder="Detalhes sobre o lembrete..." rows="3" style="min-height: 80px;">${escapeHTML(
@@ -281,18 +278,20 @@ function openNewReminderModal(existingReminder = null) {
     `,
     async (modalContent, closeModal) => {
       const title = modalContent.querySelector('#reminder-title').value.trim()
-      const dateTime = modalContent.querySelector('#reminder-datetime').value
+      const dateValue = modalContent.querySelector('#reminder-date').value
+      const timeValue = modalContent.querySelector('#reminder-time').value
       const description = modalContent
         .querySelector('#reminder-description')
         .value.trim()
-
       const urlInput = modalContent.querySelector('#reminder-url')
       const url = urlInput.value.trim()
 
-      if (!title || !dateTime) {
-        showNotification('Título e Data/Hora são obrigatórios.', 'error')
+      if (!title || !dateValue || !timeValue) {
+        showNotification('Título, Data e Hora são obrigatórios.', 'error')
         return
       }
+
+      const dateTime = `${dateValue}T${timeValue}`
 
       if (url && !isValidUrl(url)) {
         showNotification(
@@ -302,13 +301,7 @@ function openNewReminderModal(existingReminder = null) {
         return
       }
 
-      const dataToSave = {
-        title,
-        dateTime,
-        description,
-        url
-      }
-
+      const dataToSave = { title, dateTime, description, url }
       if (isEditing) {
         dataToSave.id = existingReminder.id
         dataToSave.createdAt = existingReminder.createdAt
@@ -338,9 +331,7 @@ function openNewReminderModal(existingReminder = null) {
 
   const checkbox = modal.querySelector('#reminder-include-url')
   const urlInput = modal.querySelector('#reminder-url')
-
   let storedUrl = initialUrl
-
   const toggleUrlField = () => {
     if (checkbox.checked) {
       urlInput.disabled = false
@@ -355,9 +346,7 @@ function openNewReminderModal(existingReminder = null) {
       urlInput.value = ''
     }
   }
-
   checkbox.addEventListener('change', toggleUrlField)
-
   toggleUrlField()
 }
 
@@ -1185,4 +1174,74 @@ function showSummaryModal(summaryText, nextActionText, relevantData, onInsert) {
   if (saveBtn) saveBtn.textContent = 'Inserir Resumo no Editor'
 
   document.body.appendChild(modal)
+}
+
+/**
+ * Exibe uma notificação flutuante (toast) de lembrete dentro da página do SGD.
+ * @param {object} reminder - O objeto do lembrete enviado pelo service worker.
+ */
+function showInPageNotification(reminder) {
+  // Cria um container para as notificações, se não existir
+  let container = document.getElementById('in-page-notification-container')
+  if (!container) {
+    container = document.createElement('div')
+    container.id = 'in-page-notification-container'
+    document.body.appendChild(container)
+  }
+
+  const notification = document.createElement('div')
+  notification.className = 'in-page-notification'
+  applyCurrentTheme(notification) // Aplica o tema atual
+
+  const hasUrl = reminder.url && reminder.url.startsWith('http')
+  const openUrlButtonHtml = hasUrl
+    ? `<button type="button" class="action-btn open-url-btn">Abrir Solicitação</button>`
+    : ''
+
+  notification.innerHTML = `
+    <div class="in-page-notification-header">
+      <span class="notification-icon">⏰</span>
+      <h5 class="in-page-notification-title">${escapeHTML(reminder.title)}</h5>
+      <button type="button" class="dismiss-btn" title="Dispensar">&times;</button>
+    </div>
+    <div class="in-page-notification-body">
+      ${
+        reminder.description ? `<p>${escapeHTML(reminder.description)}</p>` : ''
+      }
+    </div>
+    <div class="in-page-notification-actions">
+      ${openUrlButtonHtml}
+      <button type="button" class="action-btn dismiss-btn-main">Dispensar</button>
+    </div>
+  `
+
+  // Adiciona a notificação ao container
+  container.appendChild(notification)
+
+  // Adiciona listeners
+  const dismiss = () => {
+    notification.classList.add('fade-out')
+    setTimeout(() => {
+      if (container.contains(notification)) {
+        container.removeChild(notification)
+      }
+    }, 400)
+  }
+
+  notification
+    .querySelectorAll('.dismiss-btn, .dismiss-btn-main')
+    .forEach(btn => btn.addEventListener('click', dismiss))
+
+  const openUrlBtn = notification.querySelector('.open-url-btn')
+  if (openUrlBtn) {
+    openUrlBtn.addEventListener('click', () => {
+      window.open(reminder.url, '_blank')
+      dismiss() // Dispensa a notificação após abrir o link
+    })
+  }
+
+  // Faz a notificação aparecer com uma animação
+  requestAnimationFrame(() => {
+    notification.classList.add('visible')
+  })
 }

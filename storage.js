@@ -10,7 +10,7 @@
  */
 async function getStoredData() {
   try {
-    const result = await chrome.storage.sync.get(STORAGE_KEY)
+    const result = await browser.storage.sync.get(STORAGE_KEY)
 
     let data = result[STORAGE_KEY]
 
@@ -41,7 +41,7 @@ async function getStoredData() {
 async function saveStoredData(data) {
   try {
     data.version = DATA_VERSION
-    await chrome.storage.sync.set({ [STORAGE_KEY]: data })
+    await browser.storage.sync.set({ [STORAGE_KEY]: data })
   } catch (error) {
     console.error('Editor SGD: Erro ao salvar dados.', error)
     showNotification('Falha ao salvar alterações.', 'error')
@@ -208,7 +208,7 @@ async function runDataMigration(data) {
 async function getSettings() {
   try {
     // Busca tanto as configurações novas quanto as antigas (tema, preview) para migração suave.
-    const result = await chrome.storage.sync.get([
+    const result = await browser.storage.sync.get([
       SETTINGS_STORAGE_KEY,
       'editorTheme',
       'previewVisible'
@@ -266,7 +266,7 @@ async function saveSettings(newSettings) {
       throw new Error('Período de retenção inválido (1-30 dias).')
     }
 
-    await chrome.storage.sync.set({ [SETTINGS_STORAGE_KEY]: mergedSettings })
+    await browser.storage.sync.set({ [SETTINGS_STORAGE_KEY]: mergedSettings })
   } catch (error) {
     console.error('Editor SGD: Erro ao salvar configurações.', error)
     throw error // Propaga o erro para a UI
@@ -408,7 +408,7 @@ function getInitialNotesData() {
  */
 async function getSavedNotes() {
   try {
-    const result = await chrome.storage.sync.get(NOTES_STORAGE_KEY)
+    const result = await browser.storage.sync.get(NOTES_STORAGE_KEY)
 
     const notesData = result[NOTES_STORAGE_KEY]
 
@@ -445,7 +445,7 @@ async function getSavedNotes() {
  */
 async function saveNotes(data) {
   try {
-    await chrome.storage.sync.set({ [NOTES_STORAGE_KEY]: data })
+    await browser.storage.sync.set({ [NOTES_STORAGE_KEY]: data })
   } catch (error) {
     console.error('Editor SGD: Erro ao salvar anotações.', error)
   }
@@ -458,8 +458,8 @@ async function saveNotes(data) {
  */
 async function sendBackgroundMessage(message) {
   try {
-    // Em MV3, chrome.runtime.sendMessage retorna uma Promise se nenhum callback for fornecido.
-    const response = await chrome.runtime.sendMessage(message)
+    // Em MV3, browser.runtime.sendMessage retorna uma Promise se nenhum callback for fornecido.
+    const response = await browser.runtime.sendMessage(message)
 
     // Verifica se a resposta foi bem-sucedida.
     if (!response || !response.success) {
@@ -488,7 +488,7 @@ async function getReminders() {
     // Limpa lembretes antigos/disparados antes de retornar os ativos.
     await cleanupOldReminders()
 
-    const result = await chrome.storage.sync.get(REMINDERS_STORAGE_KEY)
+    const result = await browser.storage.sync.get(REMINDERS_STORAGE_KEY)
     // Usamos um objeto (dicionário) para facilitar a busca por ID.
     return result[REMINDERS_STORAGE_KEY] || {}
   } catch (error) {
@@ -509,7 +509,7 @@ async function cleanupOldReminders() {
     const FIVE_MINUTES_MS = 5 * 60 * 1000
 
     // 2. Carrega os lembretes
-    const result = await chrome.storage.sync.get(REMINDERS_STORAGE_KEY)
+    const result = await browser.storage.sync.get(REMINDERS_STORAGE_KEY)
     const reminders = result[REMINDERS_STORAGE_KEY] || {}
     const now = Date.now()
     let changed = false
@@ -548,7 +548,7 @@ async function cleanupOldReminders() {
     }
 
     if (changed) {
-      await chrome.storage.sync.set({ [REMINDERS_STORAGE_KEY]: reminders })
+      await browser.storage.sync.set({ [REMINDERS_STORAGE_KEY]: reminders })
     }
   } catch (error) {
     console.error('Editor SGD: Erro ao limpar lembretes antigos.', error)
@@ -586,11 +586,11 @@ async function saveReminder(reminderData) {
   try {
     // 1. Salva no storage
     // Buscamos diretamente para garantir consistência.
-    const storageResult = await chrome.storage.sync.get(REMINDERS_STORAGE_KEY)
+    const storageResult = await browser.storage.sync.get(REMINDERS_STORAGE_KEY)
     const reminders = storageResult[REMINDERS_STORAGE_KEY] || {}
 
     reminders[reminderId] = reminder
-    await chrome.storage.sync.set({ [REMINDERS_STORAGE_KEY]: reminders })
+    await browser.storage.sync.set({ [REMINDERS_STORAGE_KEY]: reminders })
 
     // 2. Agenda o alarme via mensagem para o Service Worker
     await sendBackgroundMessage({
@@ -609,14 +609,14 @@ async function saveReminder(reminderData) {
     // Tentativa de rollback (apenas para novos lembretes)
     if (!reminderData.id) {
       try {
-        const currentRemindersResult = await chrome.storage.sync.get(
+        const currentRemindersResult = await browser.storage.sync.get(
           REMINDERS_STORAGE_KEY
         )
         const currentReminders =
           currentRemindersResult[REMINDERS_STORAGE_KEY] || {}
         if (currentReminders[reminderId]) {
           delete currentReminders[reminderId]
-          await chrome.storage.sync.set({
+          await browser.storage.sync.set({
             [REMINDERS_STORAGE_KEY]: currentReminders
           })
         }
@@ -649,12 +649,12 @@ async function deleteReminder(reminderId) {
     })
 
     // 2. Remove do storage
-    const result = await chrome.storage.sync.get(REMINDERS_STORAGE_KEY)
+    const result = await browser.storage.sync.get(REMINDERS_STORAGE_KEY)
     const reminders = result[REMINDERS_STORAGE_KEY] || {}
 
     if (reminders[reminderId]) {
       delete reminders[reminderId]
-      await chrome.storage.sync.set({ [REMINDERS_STORAGE_KEY]: reminders })
+      await browser.storage.sync.set({ [REMINDERS_STORAGE_KEY]: reminders })
     }
   } catch (error) {
     console.error(`Editor SGD: Erro ao excluir lembrete ${reminderId}.`, error)
@@ -670,7 +670,7 @@ async function deleteMultipleReminders(reminderIds) {
   if (!reminderIds || reminderIds.length === 0) return
 
   try {
-    const result = await chrome.storage.sync.get(REMINDERS_STORAGE_KEY)
+    const result = await browser.storage.sync.get(REMINDERS_STORAGE_KEY)
     const reminders = result[REMINDERS_STORAGE_KEY] || {}
     let changed = false
 
@@ -691,7 +691,7 @@ async function deleteMultipleReminders(reminderIds) {
     }
 
     if (changed) {
-      await chrome.storage.sync.set({ [REMINDERS_STORAGE_KEY]: reminders })
+      await browser.storage.sync.set({ [REMINDERS_STORAGE_KEY]: reminders })
     }
   } catch (error) {
     console.error(`Editor SGD: Erro ao excluir múltiplos lembretes.`, error)
@@ -707,7 +707,7 @@ async function deleteMultipleReminders(reminderIds) {
  */
 async function getUserResponseSamples() {
   try {
-    const result = await chrome.storage.local.get(USER_RESPONSE_SAMPLES_KEY)
+    const result = await browser.storage.local.get(USER_RESPONSE_SAMPLES_KEY)
     // Retorna o array de amostras ou um array vazio se não existir.
     return result[USER_RESPONSE_SAMPLES_KEY] || []
   } catch (error) {
@@ -732,7 +732,7 @@ async function saveUserResponseSample(responseText) {
       samples = samples.slice(0, MAX_RESPONSE_SAMPLES)
     }
     // Salva o array atualizado.
-    await chrome.storage.local.set({ [USER_RESPONSE_SAMPLES_KEY]: samples })
+    await browser.storage.local.set({ [USER_RESPONSE_SAMPLES_KEY]: samples })
   } catch (error) {
     console.error('Editor SGD: Erro ao salvar amostra de resposta.', error)
   }
@@ -746,8 +746,8 @@ async function saveUserResponseSample(responseText) {
  */
 async function logResponseUsage(text) {
   try {
-    // Usamos chrome.storage.local para dados mais frequentes e maiores.
-    const result = await chrome.storage.local.get(USAGE_TRACKING_KEY)
+    // Usamos browser.storage.local para dados mais frequentes e maiores.
+    const result = await browser.storage.local.get(USAGE_TRACKING_KEY)
     const trackingData = result[USAGE_TRACKING_KEY] || {
       hashes: {},
       content: {}
@@ -759,7 +759,7 @@ async function logResponseUsage(text) {
     // Armazena o conteúdo completo associado ao hash, sobrescrevendo para manter o mais recente.
     trackingData.content[hash] = text
 
-    await chrome.storage.local.set({ [USAGE_TRACKING_KEY]: trackingData })
+    await browser.storage.local.set({ [USAGE_TRACKING_KEY]: trackingData })
   } catch (error) {
     console.error('Editor SGD: Erro ao registrar uso de resposta.', error)
   }
@@ -771,7 +771,7 @@ async function logResponseUsage(text) {
  */
 async function getSuggestedTramites() {
   try {
-    const result = await chrome.storage.sync.get(SUGGESTED_TRAMITES_KEY)
+    const result = await browser.storage.sync.get(SUGGESTED_TRAMITES_KEY)
     return result[SUGGESTED_TRAMITES_KEY] || []
   } catch (error) {
     console.error('Editor SGD: Erro ao buscar sugestões.', error)
@@ -788,7 +788,7 @@ async function clearSuggestion(suggestionHash) {
     let suggestions = await getSuggestedTramites()
     suggestions = suggestions.filter(s => s.hash !== suggestionHash)
 
-    await chrome.storage.sync.set({ [SUGGESTED_TRAMITES_KEY]: suggestions })
+    await browser.storage.sync.set({ [SUGGESTED_TRAMITES_KEY]: suggestions })
   } catch (error) {
     console.error('Editor SGD: Erro ao limpar sugestão.', error)
   }
@@ -813,7 +813,7 @@ async function addSuggestedTramite(text) {
     // Adiciona a nova sugestão no início da lista
     suggestions.unshift({ text, hash })
 
-    await chrome.storage.sync.set({ [SUGGESTED_TRAMITES_KEY]: suggestions })
+    await browser.storage.sync.set({ [SUGGESTED_TRAMITES_KEY]: suggestions })
   } catch (error) {
     console.error('Editor SGD: Erro ao adicionar sugestão.', error)
   }
@@ -824,7 +824,7 @@ async function addSuggestedTramite(text) {
  */
 async function clearAllSuggestions() {
   try {
-    await chrome.storage.sync.set({ [SUGGESTED_TRAMITES_KEY]: [] })
+    await browser.storage.sync.set({ [SUGGESTED_TRAMITES_KEY]: [] })
   } catch (error) {
     console.error('Editor SGD: Erro ao limpar todas as sugestões.', error)
   }
@@ -868,7 +868,7 @@ async function updateCategoryShortcut(categoryId, newShortcut) {
 async function isDevModeEnabled() {
   try {
     // Usamos 'local' para que a configuração não seja sincronizada.
-    const result = await chrome.storage.local.get(DEV_MODE_KEY)
+    const result = await browser.storage.local.get(DEV_MODE_KEY)
     // Acessa a chave diretamente e retorna true se o valor for exatamente true.
     return result[DEV_MODE_KEY] === true
   } catch (error) {
@@ -888,7 +888,7 @@ async function toggleDevMode() {
   const isEnabled = await isDevModeEnabled()
   const newState = !isEnabled
   try {
-    await chrome.storage.local.set({ [DEV_MODE_KEY]: newState })
+    await browser.storage.local.set({ [DEV_MODE_KEY]: newState })
     console.log(`Modo de desenvolvedor alterado para: ${newState}`)
     return newState
   } catch (error) {

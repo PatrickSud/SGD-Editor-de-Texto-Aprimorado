@@ -10,9 +10,9 @@
   ],
   "host_permissions": [
     "https://sgd.dominiosistemas.com.br/*"
-   ],
+  ],
   "background": {
-    "service_worker": "service-worker.js"
+    "scripts": ["service-worker.js"]
   },
   "content_scripts": [
     {
@@ -44,5 +44,10 @@
   "action": {
     "default_icon": "logo.png",
     "default_title": "Editor Avançado"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "sgd-editor-aprimorado@patrickgodoy.dev"
+    }
   }
 }
