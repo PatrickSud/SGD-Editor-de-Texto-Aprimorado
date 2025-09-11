@@ -16,6 +16,7 @@
   --border-radius-sm: 6px;
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0px 8px 16px 0px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0px 12px 24px 0px rgba(0, 0, 0, 0.1);
   --transition-fast: 0.2s ease;
 }
 
@@ -40,21 +41,15 @@ textarea[data-enhanced] {
     #notes-side-panel,
     textarea[data-enhanced]
   ) {
-  /* Tema Claro (Padrão) */
-  --primary-color: #6366f1; /* Indigo suave */
-  --primary-color-hover: #4f46e5; /* Indigo mais forte */
-  --border-color: #e5e7eb;
-  --background-main: #f5f3ff; /* Lilás bem claro */
-  --background-secondary: #ede9fe; /* Lilás acinzentado */
-  --background-hover: #e0e7ff; /* Azul clarinho */
+  --primary-color: rgba(99, 102, 241, 0.8);
+  --primary-color-hover: rgba(79, 70, 229, 0.85);
+  --border-color: rgba(229, 231, 235, 0.4);
+  --background-main: rgba(255, 255, 255, 0.5);
+  --background-secondary: rgba(232, 233, 233, 0.45);
+  --background-hover: rgba(243, 244, 246, 0.45);
   --text-color-main: #1f2937;
   --text-color-muted: #6b7280;
-  --background-glass: rgba(
-    245,
-    243,
-    255,
-    0.75
-  ); /* Fundo para efeito de vidro */
+  --background-glass: rgba(255, 255, 255, 0.75);
 }
 
 /* --- TEMA PADRÃO (Glassmorphism) --- */
@@ -68,6 +63,32 @@ textarea[data-enhanced] {
   --text-color-main: #1f2937;
   --text-color-muted: #6b7280;
   --background-glass: rgba(255, 255, 255, 0.75);
+}
+
+/* --- TEMA SERENIDADE --- */
+.serenidade-mode {
+  --primary-color: #6366f1;
+  --primary-color-hover: #4f46e5;
+  --border-color: #e5e7eb;
+  --background-main: #f5f3ff;
+  --background-secondary: #ede9fe;
+  --background-hover: #e0e7ff;
+  --text-color-main: #1f2937;
+  --text-color-muted: #6b7280;
+  --background-glass: rgba(255, 255, 255, 0.75);
+}
+
+/* --- TEMA LUMEN --- */
+.lumen-mode {
+  --primary-color: #0ea5e9;
+  --primary-color-hover: #0369a1;
+  --border-color: #d8e5f3;
+  --background-main: #cde9f4;
+  --background-secondary: #f4f9fc;
+  --background-hover: #eef9ff;
+  --text-color-main: #0f172a;
+  --text-color-muted: #475569;
+  --background-glass: rgba(207, 240, 251, 0.85);
 }
 
 /* --- TEMA ESCURO --- */
@@ -1386,6 +1407,21 @@ a.open-link-btn:hover {
   text-align: center;
 }
 
+.open-link-btn-note {
+  background: none;
+  border: none;
+  color: var(--text-color-muted);
+  cursor: pointer;
+  padding: 4px;
+  font-size: 16px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.open-link-btn-note:hover {
+  background-color: var(--background-secondary);
+  color: var(--text-color-main);
+}
+
 /* --- PAINEL DE ANOTAÇÕES LATERAL --- */
 #notes-side-panel {
   position: fixed;
@@ -2107,4 +2143,539 @@ a.open-link-btn:hover {
 }
 .in-page-notification-actions .open-url-btn:hover {
   background-color: var(--primary-color-hover);
+}
+
+/* --- MENU DE AÇÃO FLUTUANTE (FAB) --- */
+.fab-container {
+  position: fixed;
+  z-index: 1040;
+  transition: top 0.3s ease, bottom 0.3s ease, left 0.3s ease, right 0.3s ease;
+  /* Define um contexto de posicionamento e alinhamento */
+  display: flex;
+  justify-content: center;
+}
+
+/* Adiciona a "ponte" de hover com padding e alinha o botão principal */
+.fab-container.bottom-left,
+.fab-container.bottom-right {
+  padding-top: 12px; /* Ponte invisível acima do botão */
+  align-items: flex-end; /* Alinha o botão na base do container */
+}
+.fab-container.top-left,
+.fab-container.top-right {
+  padding-bottom: 12px; /* Ponte invisível abaixo do botão */
+  align-items: flex-start; /* Alinha o botão no topo do container */
+}
+
+.fab-container.bottom-left {
+  bottom: 25px;
+  left: 25px;
+}
+.fab-container.bottom-right {
+  bottom: 25px;
+  right: 25px;
+}
+.fab-container.top-left {
+  top: 25px;
+  left: 25px;
+}
+.fab-container.top-right {
+  top: 25px;
+  right: 25px;
+}
+
+.fab-options {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+  pointer-events: none;
+}
+
+/* Comportamento para posições na BASE (abrir para cima) */
+.fab-container.bottom-left .fab-options,
+.fab-container.bottom-right .fab-options {
+  bottom: 100%; /* Posiciona acima do padding do container */
+  flex-direction: column-reverse;
+  transform: translateY(10px) scale(0.9);
+  transform-origin: bottom;
+}
+
+/* Comportamento para posições no TOPO (abrir para baixo) */
+.fab-container.top-left .fab-options,
+.fab-container.top-right .fab-options {
+  top: 100%; /* Posiciona abaixo do padding do container */
+  transform: translateY(-10px) scale(0.9);
+  transform-origin: top;
+}
+
+.fab-container:hover .fab-options {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.fab-button {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.05); /* Mantido para consistência */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Sombra do botão Ir ao Topo */
+  transition: transform var(--transition-fast),
+    background-color var(--transition-fast), box-shadow 0.2s ease; /* Transições */
+  position: relative;
+
+  /* Efeito Glassmorphism */
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #333; /* Cor escura para o ícone */
+}
+
+.fab-button:hover {
+  transform: scale(1.1) translateY(-2px); /* Efeito de hover combinado */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.main-fab {
+  /* Mantém a cor de destaque, mas com efeito glass */
+  background: rgba(0, 123, 255, 0.6); /* Azul com transparência */
+  color: #fff;
+  z-index: 2;
+  cursor: grab;
+}
+.main-fab:active {
+  cursor: grabbing;
+}
+.fab-container:hover .main-fab {
+  transform: rotate(45deg);
+}
+.fab-option {
+  /* Herda de .fab-button, ajustando o tamanho e a fonte */
+  width: 45px;
+  height: 45px;
+  font-size: 20px;
+}
+
+.fab-option:hover {
+  /* Efeito de hover específico para as opções, se necessário */
+  background-color: rgba(255, 255, 255, 0.7);
+}
+
+.fab-option::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 110%;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 5px 10px;
+  border-radius: var(--border-radius-sm);
+  white-space: nowrap;
+  font-size: 14px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--transition-fast), visibility var(--transition-fast);
+  pointer-events: none;
+
+  /* Estilo Glassmorphism para o Tooltip */
+  background: var(--background-glass);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  color: var(--text-color-main);
+  border: 1px solid var(--border-color-alpha);
+  box-shadow: var(--shadow-md);
+}
+
+.fab-option:hover::after {
+  opacity: 1;
+  max-width: 900px;
+  display: flex;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  animation: fadeIn var(--transition-fast) ease-out;
+
+  /* Estilo Glassmorphism para o Painel */
+  backdrop-filter: blur(10px) saturate(120%);
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  background-color: var(--background-glass);
+}
+
+.fab-container.dragging .fab-options {
+  opacity: 0;
+  transform: translateY(20px) scale(0.9);
+  pointer-events: none;
+}
+
+.fab-drop-zone-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 1039;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.fab-drop-zone-container.visible {
+  opacity: 1;
+}
+.fab-drop-zone {
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  background-color: rgba(0, 0, 0, 0.1);
+  transform: scale(0.8);
+}
+.fab-drop-zone.active {
+  background-color: color-mix(in srgb, var(--action-blue) 40%, transparent);
+  transform: scale(1);
+}
+#fab-drop-zone-tl {
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+}
+#fab-drop-zone-tr {
+  top: 0;
+  right: 0;
+  transform-origin: top right;
+}
+#fab-drop-zone-bl {
+  bottom: 0;
+  left: 0;
+  transform-origin: bottom left;
+}
+#fab-drop-zone-br {
+  bottom: 0;
+  right: 0;
+  transform-origin: bottom right;
+}
+
+/* --- PALETA DE COMANDOS / INSERÇÃO RÁPIDA --- */
+#quick-inserter-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1900; /* Abaixo dos modais (2000), mas acima do resto */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+#quick-inserter-panel {
+  width: 90%;
+  max-width: 800px;
+  height: 60vh;
+  max-height: 550px;
+  display: flex;
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+
+  /* Efeito de Vidro Fosco */
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  background-color: var(--background-glass);
+}
+
+.qi-sidebar {
+  width: 200px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+}
+
+.qi-search-container {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+#qi-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-color);
+  background-color: var(--background-main);
+  color: var(--text-color-main);
+  font-size: 14px;
+}
+#qi-search-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.qi-categories-list {
+  overflow-y: auto;
+  padding: 8px;
+  flex-grow: 1;
+}
+
+.qi-category-item {
+  padding: 8px 12px;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  user-select: none;
+  margin-bottom: 4px;
+  font-weight: 500;
+  transition: background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.qi-category-item:hover {
+  background-color: var(--background-hover);
+}
+
+.qi-category-item.active {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.qi-main-content {
+  flex-grow: 1;
+  display: flex;
+  min-width: 0; /* Previne que o flex item cresça demais */
+}
+
+.qi-messages-list {
+  width: 40%;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border-color);
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.qi-message-item {
+  padding: 8px 12px;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  margin-bottom: 4px;
+  transition: background-color var(--transition-fast);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.qi-message-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-grow: 1;
+}
+
+.qi-message-actions {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.qi-message-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-color-main);
+  transition: background-color var(--transition-fast);
+}
+
+.qi-message-actions button:hover {
+  background-color: var(--background-hover);
+}
+
+.qi-message-item:hover,
+.qi-message-item.active {
+  background-color: var(--background-hover);
+}
+
+.qi-drag-handle {
+  cursor: move;
+  color: var(--text-color-muted);
+  user-select: none;
+  padding: 0 4px;
+  font-size: 16px;
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity var(--transition-fast);
+}
+
+.qi-message-item:hover .qi-drag-handle {
+  opacity: 1;
+}
+
+.qi-message-item.is-dragging {
+  opacity: 0.8;
+  background-color: var(--background-hover);
+  cursor: grabbing;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+.qi-message-item.drag-over-top::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--primary-color);
+  z-index: 1;
+}
+
+.qi-message-item.drag-over-bottom::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--primary-color);
+  z-index: 1;
+}
+
+.qi-preview-area {
+  flex-grow: 1;
+  padding: 16px;
+  overflow-y: auto;
+  word-wrap: break-word;
+  color: var(--text-color-muted);
+}
+.qi-preview-area h5 {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  color: var(--text-color-main);
+}
+.qi-preview-content {
+  font-size: 14px;
+  line-height: 1.6;
+}
+.qi-preview-placeholder {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--text-color-muted);
+  font-size: 14px;
+}
+
+/* Estilos para o botão Adicionar Novo (Mantido) */
+.qi-actions {
+  padding: 8px 12px 12px;
+  margin-top: auto;
+  border-top: 1px solid var(--border-color);
+}
+#qi-add-new-btn {
+  width: 100%;
+  padding: 10px;
+  background-color: var(--action-blue);
+  color: #fff;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+#qi-add-new-btn:hover {
+  background-color: var(--action-blue-hover);
+}
+
+/* --- Fim da Paleta de Comandos --- */
+
+/* --- AJUSTES DE TEMA ESPECÍFICOS PARA A PALETA DE COMANDOS --- */
+
+/* Cor de texto geral para temas escuros */
+#quick-inserter-panel.tokyo-night-mode,
+#quick-inserter-panel.forest-mode,
+#quick-inserter-panel.dark-mode,
+#quick-inserter-panel.dark-graphite-mode {
+  color: #e0e0e0; /* Branco suave para texto principal */
+}
+
+/* Títulos no preview dos temas escuros */
+#quick-inserter-panel.tokyo-night-mode .qi-preview-area h5,
+#quick-inserter-panel.forest-mode .qi-preview-area h5,
+#quick-inserter-panel.dark-mode .qi-preview-area h5,
+#quick-inserter-panel.dark-graphite-mode .qi-preview-area h5 {
+  color: #ffffff;
+}
+
+/* Input de busca nos temas escuros */
+#quick-inserter-panel.tokyo-night-mode #qi-search-input,
+#quick-inserter-panel.forest-mode #qi-search-input,
+#quick-inserter-panel.dark-mode #qi-search-input,
+#quick-inserter-panel.dark-graphite-mode #qi-search-input {
+  background-color: #2c2c2c;
+  color: #e0e0e0;
+  border-color: #444;
+}
+
+/* Placeholder do input nos temas escuros */
+#quick-inserter-panel.tokyo-night-mode #qi-search-input::placeholder,
+#quick-inserter-panel.forest-mode #qi-search-input::placeholder,
+#quick-inserter-panel.dark-mode #qi-search-input::placeholder,
+#quick-inserter-panel.dark-graphite-mode #qi-search-input::placeholder {
+  color: #888;
+}
+
+/* Área de preview e textos secundários nos temas escuros */
+#quick-inserter-panel.tokyo-night-mode .qi-preview-area,
+#quick-inserter-panel.forest-mode .qi-preview-area,
+#quick-inserter-panel.dark-mode .qi-preview-area,
+#quick-inserter-panel.dark-graphite-mode .qi-preview-area {
+  color: #a0a0a0; /* Cinza claro para textos secundários */
+}
+
+/* 
+  Correção para o Tema Alvorada (light):
+  Agora com uma classe dedicada, garantimos um fundo sólido sem afetar outros temas.
+*/
+#quick-inserter-panel.light-mode {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background-color: var(--background-main) !important;
+}
+
+/* --- FAB (Floating Action Button) --- */
+.fab-container {
+  position: fixed;
+  z-index: 1040;
+  transition: top 0.3s ease, bottom 0.3s ease, left 0.3s ease, right 0.3s ease;
+  /* Define um contexto de posicionamento e alinhamento */
+  display: flex;
+  justify-content: center;
+}
+
+.serenidade-mode {
+  --primary-color: #6366f1; /* Indigo suave */
+  --primary-color-hover: #4f46e5; /* Indigo mais forte */
+  --border-color: #e5e7eb;
+  --background-main: #f5f3ff; /* Lilás bem claro */
+  --background-secondary: #ede9fe; /* Lilás acinzentado */
+  --background-hover: #e0e7ff; /* Azul clarinho */
+  --text-color-main: #1f2937;
+  --text-color-muted: #6b7280;
+  --background-glass: rgba(255, 255, 255, 0.75);
 }

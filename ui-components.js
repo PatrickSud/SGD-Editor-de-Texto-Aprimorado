@@ -233,6 +233,12 @@ function openNewReminderModal(existingReminder = null) {
 
   const titleValue = isEditing ? existingReminder.title : ''
   const descriptionValue = isEditing ? existingReminder.description || '' : ''
+  const recurrenceValue = isEditing
+    ? existingReminder.recurrence || 'none'
+    : 'none'
+  const priorityValue = isEditing
+    ? existingReminder.priority || 'medium'
+    : 'medium'
 
   const currentPageUrl = window.location.href
   let initialUrl = ''
@@ -259,18 +265,47 @@ function openNewReminderModal(existingReminder = null) {
         <input type="datetime-local" id="reminder-datetime" min="${minDateTime}" value="${defaultDateTime}" required>
      </div>
      <div class="form-group">
+        <label for="reminder-priority">Prioridade</label>
+        <select id="reminder-priority">
+            <option value="high" ${
+              priorityValue === 'high' ? 'selected' : ''
+            }>Alta</option>
+            <option value="medium" ${
+              priorityValue === 'medium' ? 'selected' : ''
+            }>Média</option>
+            <option value="low" ${
+              priorityValue === 'low' ? 'selected' : ''
+            }>Baixa</option>
+        </select>
+     </div>
+     <div class="form-group">
+        <label for="reminder-recurrence">Repetir</label>
+        <select id="reminder-recurrence">
+            <option value="none" ${
+              recurrenceValue === 'none' ? 'selected' : ''
+            }>Nunca</option>
+            <option value="daily" ${
+              recurrenceValue === 'daily' ? 'selected' : ''
+            }>Diariamente</option>
+            <option value="weekly" ${
+              recurrenceValue === 'weekly' ? 'selected' : ''
+            }>Semanalmente</option>
+            <option value="monthly" ${
+              recurrenceValue === 'monthly' ? 'selected' : ''
+            }>Mensalmente</option>
+        </select>
+     </div>
+     <div class="form-group">
         <label for="reminder-description">Descrição (Opcional)</label>
         <textarea id="reminder-description" placeholder="Detalhes sobre o lembrete..." rows="3" style="min-height: 80px;">${escapeHTML(
           descriptionValue
         )}</textarea>
      </div>
-     
      <div class="form-group url-group">
         <label for="reminder-url">URL do Chamado (SGD)</label>
         <input type="text" id="reminder-url" placeholder="https://sgd.dominiosistemas.com.br/..." value="${escapeHTML(
           initialUrl
         )}">
-        
         <div class="form-checkbox-group">
             <input type="checkbox" id="reminder-include-url" ${
               isUrlIncluded ? 'checked' : ''
@@ -285,7 +320,10 @@ function openNewReminderModal(existingReminder = null) {
       const description = modalContent
         .querySelector('#reminder-description')
         .value.trim()
-
+      const recurrence = modalContent.querySelector(
+        '#reminder-recurrence'
+      ).value
+      const priority = modalContent.querySelector('#reminder-priority').value
       const urlInput = modalContent.querySelector('#reminder-url')
       const url = urlInput.value.trim()
 
@@ -306,6 +344,8 @@ function openNewReminderModal(existingReminder = null) {
         title,
         dateTime,
         description,
+        recurrence,
+        priority,
         url
       }
 
@@ -540,9 +580,10 @@ async function renderRemindersList(modal) {
 
   reminders.forEach(reminder => {
     const item = document.createElement('div')
+    const priorityClass = `priority-${reminder.priority || 'medium'}`
     item.className = `category-item reminder-item ${
       reminder.isFired ? 'fired-reminder' : ''
-    }`
+    } ${priorityClass}`
     item.dataset.id = reminder.id
 
     let statusDisplayHtml = ''
@@ -758,21 +799,33 @@ function renderNotesBlocks() {
 
   container.innerHTML = ''
   const fragment = document.createDocumentFragment()
+  const currentPageUrl = window.location.href
 
   notesDataCache.blocks.forEach(block => {
     const blockEl = document.createElement('div')
     blockEl.className = 'note-block'
     blockEl.dataset.blockId = block.id
 
-    if (block.id === notesDataCache.activeBlockId) {
+    if (block.associatedUrl && block.associatedUrl === currentPageUrl) {
+      blockEl.classList.add('active', 'context-match')
+      notesDataCache.activeBlockId = block.id
+    } else if (block.id === notesDataCache.activeBlockId) {
       blockEl.classList.add('active')
     }
 
+    const linkIcon = block.associatedUrl ? '🔗' : ''
+    const openLinkBtn = block.associatedUrl
+      ? `<button type="button" class="open-link-btn-note" title="Abrir chamado vinculado">↗️</button>`
+      : ''
+
     blockEl.innerHTML = `
-            <div class="note-block-header" title="Clique para expandir, clique duplo no título ou no lápis para renomear.">
+            <div class="note-block-header" title="Clique para expandir, clique duplo no título para renomear.">
                 <span class="note-title">${escapeHTML(block.title)}</span>
-                <button type="button" class="edit-title-btn" title="Editar Título">✏️</button>
+                <span class="note-link-icon">${linkIcon}</span>
                 <div class="note-block-actions">
+                    ${openLinkBtn}
+                    <button type="button" class="link-note-btn" title="Vincular/desvincular anotação a este chamado">🔗</button>
+                    <button type="button" class="edit-title-btn" title="Editar Título">✏️</button>
                     <button type="button" class="delete-note-btn" title="Excluir Bloco">&times;</button>
                 </div>
             </div>
@@ -784,7 +837,6 @@ function renderNotesBlocks() {
         `
     fragment.appendChild(blockEl)
   })
-
   container.appendChild(fragment)
 }
 
@@ -914,11 +966,26 @@ async function handleAddNoteBlock() {
  * Agora também verifica cliques no novo botão de editar.
  */
 function handleBlockClick(e) {
+  const openLinkBtn = e.target.closest('.open-link-btn-note')
+  const linkBtn = e.target.closest('.link-note-btn')
   const editBtn = e.target.closest('.edit-title-btn')
   const deleteBtn = e.target.closest('.delete-note-btn')
   const header = e.target.closest('.note-block-header')
 
-  if (editBtn) {
+  if (openLinkBtn) {
+    e.stopPropagation()
+    const blockEl = openLinkBtn.closest('.note-block')
+    const block = notesDataCache.blocks.find(
+      b => b.id === blockEl.dataset.blockId
+    )
+    if (block && block.associatedUrl) {
+      window.open(block.associatedUrl, '_blank')
+    }
+  } else if (linkBtn) {
+    e.stopPropagation()
+    const blockEl = linkBtn.closest('.note-block')
+    handleLinkNoteToggle(blockEl.dataset.blockId)
+  } else if (editBtn) {
     e.stopPropagation()
     const titleEl = header.querySelector('.note-title')
     if (titleEl) {
@@ -1053,6 +1120,26 @@ function _exitAllTitleEditModes() {
     .forEach(el => {
       el.blur()
     })
+}
+
+/**
+ * Função auxiliar para garantir que todos os modos de edição de título sejam finalizados.
+ */
+async function handleLinkNoteToggle(blockId) {
+  if (!notesDataCache) return
+  const block = notesDataCache.blocks.find(b => b.id === blockId)
+  if (!block) return
+  const currentPageUrl = window.location.href
+
+  if (block.associatedUrl === currentPageUrl) {
+    block.associatedUrl = null
+    showNotification('Anotação desvinculada deste chamado.', 'info')
+  } else {
+    block.associatedUrl = currentPageUrl
+    showNotification('Anotação vinculada a este chamado.', 'success')
+  }
+  await saveNotes(notesDataCache)
+  renderNotesBlocks()
 }
 
 /**

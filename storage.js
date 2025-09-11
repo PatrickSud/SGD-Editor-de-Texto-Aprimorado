@@ -285,15 +285,24 @@ async function getGeminiApiKey() {
 // --- GERENCIAMENTO DE TEMA (Atualizado para usar Settings) ---
 
 /**
- * Carrega o tema salvo do armazenamento.
+ * Carrega o tema salvo nas configurações e o aplica.
+ * Se nenhum tema estiver salvo, usa o padrão ('padrao').
  */
 async function loadSavedTheme() {
   const settings = await getSettings()
-  currentEditorTheme = settings.editorTheme || 'padrao'
+  let theme = settings.editorTheme || 'padrao'
+
+  // Migração: Se o usuário estava com o tema 'light' (Alvorada), muda para 'padrao'.
+  if (theme === 'light') {
+    theme = 'padrao'
+    await saveSettings({ editorTheme: theme }) // Salva a alteração
+  }
+
+  await setTheme(theme)
 }
 
 /**
- * Define um tema específico e salva a preferência.
+ * Define o tema atual, salva a preferência e atualiza a UI.
  * @param {string} themeName - O nome do tema a ser aplicado (ex: 'dark', 'forest').
  */
 async function setTheme(themeName) {
@@ -398,7 +407,14 @@ function getInitialNotesData() {
   return {
     version: 2,
     activeBlockId: firstBlockId,
-    blocks: [{ id: firstBlockId, title: 'Anotações Gerais', content: '' }]
+    blocks: [
+      {
+        id: firstBlockId,
+        title: 'Anotações Gerais',
+        content: '',
+        associatedUrl: null
+      }
+    ]
   }
 }
 
@@ -578,6 +594,8 @@ async function saveReminder(reminderData) {
     dateTime: reminderData.dateTime,
     description: reminderData.description || '',
     url: reminderData.url || '',
+    recurrence: reminderData.recurrence || 'none', // NOVO
+    priority: reminderData.priority || 'medium', // NOVO
     createdAt: reminderData.createdAt || Date.now(),
     isFired: false, // Sempre false ao salvar/editar manualmente
     firedAt: null // Limpa o timestamp do disparo
@@ -697,6 +715,27 @@ async function deleteMultipleReminders(reminderIds) {
     console.error(`Editor SGD: Erro ao excluir múltiplos lembretes.`, error)
     throw error
   }
+}
+
+/**
+ * Salva a posição do menu flutuante (FAB).
+ * @param {string} position - A nova posição (ex: 'bottom-left').
+ */
+async function saveFabPosition(position) {
+  try {
+    await saveSettings({ fabPosition: position })
+  } catch (error) {
+    console.error('Editor SGD: Erro ao salvar a posição do FAB.', error)
+  }
+}
+
+/**
+ * Recupera a posição salva do menu flutuante (FAB).
+ * @returns {Promise<string>} A posição salva ou o padrão.
+ */
+async function getFabPosition() {
+  const settings = await getSettings()
+  return settings.fabPosition || 'bottom-left'
 }
 
 // --- GERENCIAMENTO DE AMOSTRAS DE RESPOSTA (Adaptação de Estilo IA) ---

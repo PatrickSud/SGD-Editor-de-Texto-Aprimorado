@@ -16,12 +16,14 @@ const USAGE_TRACKING_KEY = 'usageTrackingData'
 const SUGGESTED_TRAMITES_KEY = 'suggestedTramites'
 const SUGGESTION_THRESHOLD = 5 // Nº de vezes que um texto deve ser usado para virar sugestão
 const MIN_SUGGESTION_LENGTH = 100 // Tamanho mínimo do texto para ser considerado para sugestão
+const FAB_POSITION_KEY = 'fabPositionData' // NOVO
 
 // Configurações Padrão
 const DEFAULT_SETTINGS = {
-  reminderRetentionDays: 2, // Padrão: Manter lembretes disparados por 1 dia
+  reminderRetentionDays: 2, // Padrão: Manter lembretes disparados por 2 dias
   geminiApiKey: '', // Chave da API do Gemini fornecida pelo usuário
-  previewResizable: false // Define se o preview é redimensionável
+  previewResizable: false, // Define se o preview é redimensionável
+  fabPosition: 'bottom-left' // NOVO: Posição padrão
 }
 
 // --- ESTADO GLOBAL (Variáveis mutáveis usadas entre os scripts) ---
@@ -76,16 +78,19 @@ const USER_NAME_LOGGED_ID = 'td:usuario_nome'
 // Ordem de alternância dos temas
 const THEMES = [
   'padrao',
-  'light',
+  'serenidade',
+  'lumen',
+  'pink',
+  'forest',
   'dark-graphite',
   'dark',
-  'forest',
-  'pink',
   'tokyo-night'
 ]
 
 // Mapeamento de temas para classes CSS.
 const THEME_CLASSES_MAP = {
+  serenidade: 'serenidade-mode',
+  lumen: 'lumen-mode',
   dark: 'dark-mode',
   forest: 'forest-mode',
   pink: 'pink-mode',
@@ -99,7 +104,8 @@ const ALL_THEME_CLASSES = Object.values(THEME_CLASSES_MAP)
 
 // Ícones para o botão de alternância de tema
 const THEME_ICONS = {
-  light: '☀️',
+  serenidade: '☁️',
+  lumen: '🌐',
   dark: '❄️',
   forest: '🍃',
   pink: '🌸',
@@ -110,8 +116,9 @@ const THEME_ICONS = {
 
 // Nomes amigáveis para o menu de temas
 const THEME_NAMES = {
-  light: 'Alvorada',
-  'dark-graphite': 'Meia-noite',
+  serenidade: 'Serenidade',
+  lumen: 'Lumen',
+  'dark-graphite': 'Midnight',
   dark: 'Blue Night',
   forest: 'Floresta',
   pink: 'Cerejeira',

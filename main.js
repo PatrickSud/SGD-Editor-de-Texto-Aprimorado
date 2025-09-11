@@ -734,12 +734,151 @@ async function initializeExtension() {
   document.addEventListener('keydown', handleShortcutListener)
   initializeScrollToTopButton()
 
+  createFloatingActionButtons()
+  setupFabListeners()
+
+  const fabPosition = await getFabPosition()
+  const fabContainer = document.getElementById('fab-container')
+  if (fabContainer) {
+    fabContainer.classList.add(fabPosition)
+    adjustGoToTopButtonPosition(fabPosition) // Ajusta o botão 'Ir ao Topo'
+  }
+
   if (typeof initializeNotesPanel === 'function') {
     initializeNotesPanel()
   }
 
   // Verifica por sugestões de trâmites ao carregar a página
   checkForAndDisplaySuggestions()
+}
+
+function createFloatingActionButtons() {
+  if (document.getElementById('fab-container')) return
+  const fabContainer = document.createElement('div')
+  fabContainer.id = 'fab-container'
+  fabContainer.className = 'fab-container'
+  fabContainer.innerHTML = `
+    <div class="fab-options">
+      <button type="button" class="fab-button fab-option" data-action="fab-notes" data-tooltip="Anotações">✍️</button>
+      <button type="button" class="fab-button fab-option" data-action="fab-reminders" data-tooltip="Lembretes">⏰</button>
+      <button type="button" class="fab-button fab-option" data-action="fab-quick-steps" data-tooltip="Trâmites">⚡</button>
+    </div>
+    <button type="button" class="fab-button main-fab" title="Ações Rápidas">+</button>
+  `
+  document.body.appendChild(fabContainer)
+
+  const dropZoneContainer = document.createElement('div')
+  dropZoneContainer.id = 'fab-drop-zone-container'
+  dropZoneContainer.className = 'fab-drop-zone-container'
+  dropZoneContainer.innerHTML = `
+    <div class="fab-drop-zone" id="fab-drop-zone-tl" data-position="top-left"></div>
+    <div class="fab-drop-zone" id="fab-drop-zone-tr" data-position="top-right"></div>
+    <div class="fab-drop-zone" id="fab-drop-zone-bl" data-position="bottom-left"></div>
+    <div class="fab-drop-zone" id="fab-drop-zone-br" data-position="bottom-right"></div>
+  `
+  document.body.appendChild(dropZoneContainer)
+}
+
+function setupFabListeners() {
+  const fabContainer = document.getElementById('fab-container')
+  if (!fabContainer) return
+
+  const mainFab = fabContainer.querySelector('.main-fab')
+  const dropZoneContainer = document.getElementById('fab-drop-zone-container')
+  const dropZones = dropZoneContainer.querySelectorAll('.fab-drop-zone')
+
+  fabContainer.addEventListener('click', e => {
+    const actionButton = e.target.closest('.fab-option')
+    if (!actionButton) return
+    switch (actionButton.dataset.action) {
+      case 'fab-quick-steps':
+        openQuickInserterPanel()
+        break
+      case 'fab-reminders':
+        openRemindersManagementModal()
+        break
+      case 'fab-notes':
+        toggleNotesPanel()
+        break
+    }
+  })
+
+  let isDragging = false,
+    offsetX,
+    offsetY
+  mainFab.addEventListener('mousedown', e => {
+    isDragging = true
+    fabContainer.classList.add('dragging')
+    dropZoneContainer.classList.add('visible')
+    const rect = fabContainer.getBoundingClientRect()
+    offsetX = e.clientX - rect.left
+    offsetY = e.clientY - rect.top
+    e.preventDefault()
+  })
+
+  document.addEventListener('mousemove', e => {
+    if (!isDragging) return
+    fabContainer.style.left = `${e.clientX - offsetX}px`
+    fabContainer.style.top = `${e.clientY - offsetY}px`
+    fabContainer.className = 'fab-container dragging'
+    dropZones.forEach(zone => {
+      const rect = zone.getBoundingClientRect()
+      if (
+        e.clientX >= rect.left &&
+        e.clientX <= rect.right &&
+        e.clientY >= rect.top &&
+        e.clientY <= rect.bottom
+      ) {
+        zone.classList.add('active')
+      } else {
+        zone.classList.remove('active')
+      }
+    })
+  })
+
+  document.addEventListener('mouseup', async e => {
+    if (!isDragging) return
+    isDragging = false
+    fabContainer.classList.remove('dragging')
+    dropZoneContainer.classList.remove('visible')
+    fabContainer.style.left = ''
+    fabContainer.style.top = ''
+
+    const activeZone = dropZoneContainer.querySelector('.fab-drop-zone.active')
+    let finalPosition = ''
+    if (activeZone) {
+      finalPosition = activeZone.dataset.position
+    } else {
+      const midX = window.innerWidth / 2,
+        midY = window.innerHeight / 2
+      finalPosition = `${e.clientY < midY ? 'top' : 'bottom'}-${
+        e.clientX < midX ? 'left' : 'right'
+      }`
+    }
+    fabContainer.className = `fab-container ${finalPosition}`
+    await saveFabPosition(finalPosition)
+    adjustGoToTopButtonPosition(finalPosition) // Ajusta o botão 'Ir ao Topo'
+    dropZones.forEach(zone => zone.classList.remove('active'))
+  })
+}
+
+/**
+ * Ajusta a posição do botão 'Ir ao Topo' com base na posição do FAB.
+ * @param {string} fabPosition - A posição atual do FAB (ex: 'bottom-right').
+ */
+function adjustGoToTopButtonPosition(fabPosition) {
+  const goToTopButton = document.getElementById('floating-scroll-top-btn')
+  if (!goToTopButton) return
+
+  // Se o FAB estiver em qualquer canto direito, move o botão 'Ir ao Topo' para a esquerda.
+  if (fabPosition.includes('right')) {
+    goToTopButton.style.left = '25px'
+    goToTopButton.style.right = 'auto'
+  } else {
+    // Caso contrário, volta para a posição padrão (direita).
+    goToTopButton.style.right = '25px'
+    goToTopButton.style.left = 'auto'
+  }
 }
 
 /**
@@ -778,5 +917,19 @@ initializeExtension()
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'SHOW_IN_PAGE_NOTIFICATION' && message.reminder) {
     showInPageNotification(message.reminder)
+  }
+  if (message.action === 'CLOSE_IN_PAGE_NOTIFICATION' && message.reminderId) {
+    const notification = document.getElementById(
+      `in-page-notification-${message.reminderId}`
+    )
+    if (notification) {
+      // Reutiliza a função de fade-out para uma remoção suave
+      notification.classList.add('fade-out')
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification)
+        }
+      }, 400)
+    }
   }
 })

@@ -1526,3 +1526,323 @@ async function openImportSelectionModal(importedData, onCompleteCallback) {
     })
   })
 }
+
+/**
+ * Abre a Paleta de Comandos para inserção rápida de trâmites.
+ */
+async function openQuickInserterPanel() {
+  // Evita abrir múltiplos painéis
+  if (document.getElementById('quick-inserter-overlay')) return
+
+  const data = await getStoredData()
+  const textArea = getTargetTextArea()
+  if (!textArea) return
+
+  let draggedQiItem = null
+
+  // Cria o overlay e o painel
+  const overlay = document.createElement('div')
+  overlay.id = 'quick-inserter-overlay'
+  // O tema será aplicado diretamente no painel, não no overlay
+  // applyCurrentTheme(overlay);
+
+  overlay.innerHTML = `
+    <div id="quick-inserter-panel">
+      <div class="qi-sidebar">
+        <div class="qi-search-container">
+          <input type="text" id="qi-search-input" placeholder="Buscar trâmite...">
+        </div>
+        <div class="qi-categories-list"></div>
+        <div class="qi-actions">
+          <button type="button" id="qi-add-new-btn" class="action-btn">+ Adicionar novo</button>
+        </div>
+      </div>
+      <div class="qi-main-content">
+        <div class="qi-messages-list"></div>
+        <div class="qi-preview-area">
+          <div class="qi-preview-placeholder">Passe o mouse sobre um item para visualizar</div>
+        </div>
+      </div>
+    </div>
+  `
+  document.body.appendChild(overlay)
+
+  // Referências aos elementos da UI
+  const panel = document.getElementById('quick-inserter-panel')
+  // Aplica o tema diretamente no painel para que o overlay mantenha o fundo escuro
+  applyCurrentTheme(panel)
+
+  const searchInput = document.getElementById('qi-search-input')
+  const categoriesList = panel.querySelector('.qi-categories-list')
+  const messagesList = panel.querySelector('.qi-messages-list')
+  const previewArea = panel.querySelector('.qi-preview-area')
+
+  let activeCategory = 'all'
+
+  // --- FUNÇÕES DRAG & DROP ---
+
+  function qiHandleDragStart(e) {
+    draggedQiItem = e.target.closest('.qi-message-item')
+    if (draggedQiItem) {
+      e.dataTransfer.setData('text/plain', draggedQiItem.dataset.id)
+      e.dataTransfer.effectAllowed = 'move'
+      requestAnimationFrame(() => {
+        draggedQiItem.classList.add('is-dragging')
+      })
+    }
+  }
+
+  function qiHandleDragEnd() {
+    if (draggedQiItem) {
+      draggedQiItem.classList.remove('is-dragging')
+    }
+    draggedQiItem = null
+    messagesList
+      .querySelectorAll('.drag-over-top, .drag-over-bottom')
+      .forEach(el => {
+        el.classList.remove('drag-over-top', 'drag-over-bottom')
+      })
+  }
+
+  function qiHandleDragOver(e) {
+    e.preventDefault()
+    if (!draggedQiItem) return
+
+    const targetItem = e.target.closest('.qi-message-item')
+
+    messagesList
+      .querySelectorAll('.drag-over-top, .drag-over-bottom')
+      .forEach(el => {
+        el.classList.remove('drag-over-top', 'drag-over-bottom')
+      })
+
+    if (targetItem && targetItem !== draggedQiItem) {
+      const rect = targetItem.getBoundingClientRect()
+      const isBottomHalf = (e.clientY - rect.top) / rect.height > 0.5
+      targetItem.classList.add(
+        isBottomHalf ? 'drag-over-bottom' : 'drag-over-top'
+      )
+    }
+  }
+
+  function qiHandleDragLeave(e) {
+    if (!messagesList.contains(e.relatedTarget)) {
+      messagesList
+        .querySelectorAll('.drag-over-top, .drag-over-bottom')
+        .forEach(el => {
+          el.classList.remove('drag-over-top', 'drag-over-bottom')
+        })
+    }
+  }
+
+  async function qiHandleDrop(e) {
+    e.preventDefault()
+    if (!draggedQiItem) return
+
+    const currentDraggedItem = draggedQiItem
+    const droppedOnItem = e.target.closest('.qi-message-item')
+
+    // Limpa a UI antes das operações assíncronas
+    qiHandleDragEnd()
+
+    let messageIdsInList = Array.from(messagesList.children).map(
+      child => child.dataset.id
+    )
+    const draggedItemId = currentDraggedItem.dataset.id
+    const originalIndex = messageIdsInList.indexOf(draggedItemId)
+    if (originalIndex > -1) {
+      messageIdsInList.splice(originalIndex, 1)
+    }
+
+    let newIndex = -1
+    if (droppedOnItem && droppedOnItem !== currentDraggedItem) {
+      const rect = droppedOnItem.getBoundingClientRect()
+      const isBottomHalf = (e.clientY - rect.top) / rect.height > 0.5
+      const droppedOnIndex = messageIdsInList.indexOf(droppedOnItem.dataset.id)
+      newIndex = isBottomHalf ? droppedOnIndex + 1 : droppedOnIndex
+    } else {
+      newIndex = messageIdsInList.length
+    }
+
+    messageIdsInList.splice(newIndex, 0, draggedItemId)
+
+    // Atualiza o armazenamento
+    const categoryMessages = data.messages.filter(
+      m => m.categoryId === activeCategory
+    )
+
+    let changed = false
+    messageIdsInList.forEach((msgId, index) => {
+      const msg = categoryMessages.find(m => m.id === msgId)
+      if (msg && msg.order !== index) {
+        msg.order = index
+        changed = true
+      }
+    })
+
+    if (changed) {
+      await saveStoredData(data)
+      renderMessages()
+      reloadAllQuickMessagesInstances() // Garante que a outra lista seja atualizada
+    }
+  }
+
+  // --- FUNÇÕES DE RENDERIZAÇÃO ---
+
+  const renderCategories = () => {
+    categoriesList.innerHTML = `<div class="qi-category-item ${
+      activeCategory === 'all' ? 'active' : ''
+    }" data-id="all">Todas as Categorias</div>`
+    data.categories.forEach(cat => {
+      categoriesList.innerHTML += `<div class="qi-category-item ${
+        activeCategory === cat.id ? 'active' : ''
+      }" data-id="${cat.id}">${escapeHTML(cat.name)}</div>`
+    })
+  }
+
+  const renderMessages = () => {
+    const searchTerm = searchInput.value.toLowerCase()
+    messagesList.innerHTML = ''
+
+    const filteredMessages = data.messages
+      .filter(msg => {
+        const inCategory =
+          activeCategory === 'all' || msg.categoryId === activeCategory
+        const matchesSearch = msg.title.toLowerCase().includes(searchTerm)
+        return inCategory && matchesSearch
+      })
+      .sort((a, b) => (a.order || 0) - (b.order || 0))
+
+    filteredMessages.forEach(msg => {
+      const item = document.createElement('div')
+      item.className = 'qi-message-item'
+      item.dataset.id = msg.id
+
+      const dragHandleHtml =
+        activeCategory !== 'all'
+          ? `<span class="qi-drag-handle" draggable="true" title="Arraste para reordenar">⠿</span>`
+          : ''
+
+      item.innerHTML = `
+                ${dragHandleHtml}
+                <span class="qi-message-title">${escapeHTML(msg.title)}</span>
+                <div class="qi-message-actions">
+                    <button type="button" class="edit-message-btn" title="Editar">✏️</button>
+                    <button type="button" class="delete-message-btn" title="Excluir">🗑️</button>
+                </div>
+            `
+      messagesList.appendChild(item)
+    })
+
+    // Remove listeners antigos para evitar duplicação
+    messagesList.removeEventListener('dragover', qiHandleDragOver)
+    messagesList.removeEventListener('dragleave', qiHandleDragLeave)
+    messagesList.removeEventListener('drop', qiHandleDrop)
+
+    // Adiciona listeners se estivermos em uma categoria para drag & drop
+    if (activeCategory !== 'all') {
+      messagesList.querySelectorAll('.qi-drag-handle').forEach(handle => {
+        handle.addEventListener('dragstart', qiHandleDragStart)
+        handle.addEventListener('dragend', qiHandleDragEnd)
+      })
+      messagesList.addEventListener('dragover', qiHandleDragOver)
+      messagesList.addEventListener('dragleave', qiHandleDragLeave)
+      messagesList.addEventListener('drop', qiHandleDrop)
+    }
+  }
+
+  const updatePreview = message => {
+    if (!message) {
+      previewArea.innerHTML = `<div class="qi-preview-placeholder">Passe o mouse sobre um item para visualizar</div>`
+    } else {
+      previewArea.innerHTML = `
+        <h5>${escapeHTML(message.title)}</h5>
+        <div class="qi-preview-content">${message.message.replace(
+          /\n/g,
+          '<br>'
+        )}</div>
+      `
+    }
+  }
+
+  // --- LISTENERS ---
+
+  // Fechar ao clicar fora ou pressionar Escape
+  const closeModal = () => document.body.removeChild(overlay)
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) closeModal()
+  })
+  document.addEventListener('keydown', function onKeydown(e) {
+    if (e.key === 'Escape') {
+      closeModal()
+      document.removeEventListener('keydown', onKeydown)
+    }
+  })
+
+  // Botão Adicionar Novo
+  document.getElementById('qi-add-new-btn').addEventListener('click', () => {
+    closeModal()
+    openMessageModal() // Abre o modal para adicionar um novo trâmite
+  })
+
+  // Busca
+  searchInput.addEventListener('input', renderMessages)
+
+  // Seleção de Categoria
+  categoriesList.addEventListener('click', e => {
+    const categoryItem = e.target.closest('.qi-category-item')
+    if (categoryItem) {
+      activeCategory = categoryItem.dataset.id
+      renderCategories()
+      renderMessages()
+      updatePreview(null) // Limpa o preview
+    }
+  })
+
+  // Interação com a lista de mensagens
+  messagesList.addEventListener('mouseover', e => {
+    const messageItem = e.target.closest('.qi-message-item')
+    if (messageItem) {
+      const message = data.messages.find(m => m.id === messageItem.dataset.id)
+      updatePreview(message)
+    }
+  })
+
+  messagesList.addEventListener('click', e => {
+    const messageItem = e.target.closest('.qi-message-item')
+    if (!messageItem) return
+
+    const message = data.messages.find(m => m.id === messageItem.dataset.id)
+    if (!message) return
+
+    // Ação para o botão de editar
+    if (e.target.closest('.edit-message-btn')) {
+      closeModal()
+      openMessageModal(message)
+      return
+    }
+
+    // Ação para o botão de excluir
+    if (e.target.closest('.delete-message-btn')) {
+      showConfirmDialog(`Excluir "${escapeHTML(message.title)}"?`, async () => {
+        await removeMessageFromStorage(message.id)
+        // Recarrega os dados e renderiza a lista novamente
+        const newData = await getStoredData()
+        data.messages = newData.messages
+        data.categories = newData.categories
+        renderMessages()
+        updatePreview(null) // Limpa o preview
+      })
+      return
+    }
+
+    // Ação padrão: inserir o texto
+    insertAtCursor(textArea, message.message)
+    closeModal()
+  })
+
+  // --- INICIALIZAÇÃO ---
+  renderCategories()
+  renderMessages()
+  searchInput.focus()
+}
