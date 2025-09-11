@@ -236,9 +236,7 @@ function openNewReminderModal(existingReminder = null) {
   const recurrenceValue = isEditing
     ? existingReminder.recurrence || 'none'
     : 'none'
-  const priorityValue = isEditing
-    ? existingReminder.priority || 'medium'
-    : 'medium'
+  const priorityValue = isEditing ? existingReminder.priority || 'low' : 'low'
 
   const currentPageUrl = window.location.href
   let initialUrl = ''
@@ -260,41 +258,43 @@ function openNewReminderModal(existingReminder = null) {
           titleValue
         )}" required>
      </div>
-     <div class="form-group">
-        <label for="reminder-datetime">Data e Hora do Alerta*</label>
-        <input type="datetime-local" id="reminder-datetime" min="${minDateTime}" value="${defaultDateTime}" required>
-     </div>
-     <div class="form-group">
-        <label for="reminder-priority">Prioridade</label>
-        <select id="reminder-priority">
-            <option value="high" ${
-              priorityValue === 'high' ? 'selected' : ''
-            }>Alta</option>
-            <option value="medium" ${
-              priorityValue === 'medium' ? 'selected' : ''
-            }>Média</option>
-            <option value="low" ${
-              priorityValue === 'low' ? 'selected' : ''
-            }>Baixa</option>
-        </select>
-     </div>
-     <div class="form-group">
-        <label for="reminder-recurrence">Repetir</label>
-        <select id="reminder-recurrence">
-            <option value="none" ${
-              recurrenceValue === 'none' ? 'selected' : ''
-            }>Nunca</option>
-            <option value="daily" ${
-              recurrenceValue === 'daily' ? 'selected' : ''
-            }>Diariamente</option>
-            <option value="weekly" ${
-              recurrenceValue === 'weekly' ? 'selected' : ''
-            }>Semanalmente</option>
-            <option value="monthly" ${
-              recurrenceValue === 'monthly' ? 'selected' : ''
-            }>Mensalmente</option>
-        </select>
-     </div>
+     <div class="form-row">
+       <div class="form-group">
+          <label for="reminder-datetime">Data e Hora do Alerta*</label>
+          <input type="datetime-local" id="reminder-datetime" min="${minDateTime}" value="${defaultDateTime}" required>
+       </div>
+       <div class="form-group">
+          <label for="reminder-priority">Prioridade</label>
+          <select id="reminder-priority">
+              <option value="low" ${
+                priorityValue === 'low' ? 'selected' : ''
+              }>Baixa</option>
+              <option value="medium" ${
+                priorityValue === 'medium' ? 'selected' : ''
+              }>Média</option>
+              <option value="high" ${
+                priorityValue === 'high' ? 'selected' : ''
+              }>Alta</option>
+          </select>
+       </div>
+       <div class="form-group">
+          <label for="reminder-recurrence">Repetir</label>
+          <select id="reminder-recurrence">
+              <option value="none" ${
+                recurrenceValue === 'none' ? 'selected' : ''
+              }>Nunca</option>
+              <option value="daily" ${
+                recurrenceValue === 'daily' ? 'selected' : ''
+              }>Diariamente</option>
+              <option value="weekly" ${
+                recurrenceValue === 'weekly' ? 'selected' : ''
+              }>Semanalmente</option>
+              <option value="monthly" ${
+                recurrenceValue === 'monthly' ? 'selected' : ''
+              }>Mensalmente</option>
+          </select>
+       </div>
+      </div>
      <div class="form-group">
         <label for="reminder-description">Descrição (Opcional)</label>
         <textarea id="reminder-description" placeholder="Detalhes sobre o lembrete..." rows="3" style="min-height: 80px;">${escapeHTML(
@@ -591,6 +591,13 @@ async function renderRemindersList(modal) {
     let icon = '⏰'
     let checkboxHtml = ''
 
+    // Adiciona o botão de link ANTES da lógica de 'fired' ou não, se existir URL.
+    if (reminder.url && isValidUrl(reminder.url)) {
+      actionsHtml += `<a href="${escapeHTML(
+        reminder.url
+      )}" target="_blank" class="action-btn open-link-btn" title="Abrir Chamado Vinculado">🔗</a>`
+    }
+
     if (reminder.isFired) {
       icon = '✅'
       checkboxHtml = `<input type="checkbox" class="reminder-checkbox" data-id="${reminder.id}" title="Selecionar para exclusão em massa">`
@@ -611,12 +618,6 @@ async function renderRemindersList(modal) {
 
       statusDisplayHtml = `<span class="shortcut-display">Disparado ${dayPrefix} às ${formattedFiredTime}</span>`
 
-      if (reminder.url && isValidUrl(reminder.url)) {
-        actionsHtml += `<a href="${escapeHTML(
-          reminder.url
-        )}" target="_blank" class="action-btn open-link-btn" title="Abrir Chamado Vinculado">🔗</a>`
-      }
-
       actionsHtml += `
                 <button type="button" class="action-btn edit-reminder-btn reschedule-btn" title="Reagendar este lembrete">🔄️</button>
                 <button type="button" class="action-btn dismiss-now-btn" title="Remover da lista agora">Dispensar</button>
@@ -630,7 +631,20 @@ async function renderRemindersList(modal) {
       })
 
       statusDisplayHtml = `<span class="shortcut-display">${formattedDate} às ${formattedTime}</span>`
-      actionsHtml = `
+
+      // Adiciona o indicador de recorrência se houver
+      if (reminder.recurrence && reminder.recurrence !== 'none') {
+        const recurrenceText = {
+          daily: 'Diária',
+          weekly: 'Semanal',
+          monthly: 'Mensal'
+        }
+        statusDisplayHtml += `<span class="shortcut-display recurrence-display" title="Recorrência ${
+          recurrenceText[reminder.recurrence]
+        }">🔄️</span>`
+      }
+
+      actionsHtml += `
                 <button type="button" class="action-btn edit-reminder-btn" title="Editar/Reagendar">✏️</button>
                 <button type="button" class="action-btn delete-cat-btn delete-reminder-btn" title="Cancelar Lembrete">🗑️</button>
             `
@@ -813,7 +827,6 @@ function renderNotesBlocks() {
       blockEl.classList.add('active')
     }
 
-    const linkIcon = block.associatedUrl ? '🔗' : ''
     const openLinkBtn = block.associatedUrl
       ? `<button type="button" class="open-link-btn-note" title="Abrir chamado vinculado">↗️</button>`
       : ''
@@ -821,7 +834,6 @@ function renderNotesBlocks() {
     blockEl.innerHTML = `
             <div class="note-block-header" title="Clique para expandir, clique duplo no título para renomear.">
                 <span class="note-title">${escapeHTML(block.title)}</span>
-                <span class="note-link-icon">${linkIcon}</span>
                 <div class="note-block-actions">
                     ${openLinkBtn}
                     <button type="button" class="link-note-btn" title="Vincular/desvincular anotação a este chamado">🔗</button>
@@ -1287,7 +1299,14 @@ function showInPageNotification(reminder) {
     document.body.appendChild(container)
   }
 
+  const notificationId = `in-page-notification-${reminder.id}`
+  // Se a notificação já existe, não a cria novamente.
+  if (document.getElementById(notificationId)) {
+    return
+  }
+
   const notification = document.createElement('div')
+  notification.id = notificationId
   notification.className = 'in-page-notification'
   applyCurrentTheme(notification) // Aplica o tema atual
 
@@ -1309,6 +1328,7 @@ function showInPageNotification(reminder) {
     </div>
     <div class="in-page-notification-actions">
       ${openUrlButtonHtml}
+      <button type="button" class="action-btn snooze-btn-main">Adiar (10 min)</button>
       <button type="button" class="action-btn dismiss-btn-main">Dispensar</button>
     </div>
   `
@@ -1318,12 +1338,11 @@ function showInPageNotification(reminder) {
 
   // Adiciona listeners
   const dismiss = () => {
-    notification.classList.add('fade-out')
-    setTimeout(() => {
-      if (container.contains(notification)) {
-        container.removeChild(notification)
-      }
-    }, 400)
+    // Envia mensagem para o service worker orquestrar o fechamento em todas as abas
+    chrome.runtime.sendMessage({
+      action: 'BROADCAST_DISMISS',
+      reminderId: reminder.id
+    })
   }
 
   notification
@@ -1335,6 +1354,22 @@ function showInPageNotification(reminder) {
     openUrlBtn.addEventListener('click', () => {
       window.open(reminder.url, '_blank')
       dismiss() // Dispensa a notificação após abrir o link
+    })
+  }
+
+  // Novo: Listener para o botão Adiar
+  const snoozeBtn = notification.querySelector('.snooze-btn-main')
+  if (snoozeBtn) {
+    snoozeBtn.addEventListener('click', () => {
+      const snoozeTime = Date.now() + 10 * 60 * 1000 // 10 minutos
+      // Envia a mensagem para o service worker criar o alarme de soneca
+      chrome.runtime.sendMessage({
+        action: 'SET_ALARM',
+        reminderId: `snooze-${reminder.id}`,
+        alarmTime: snoozeTime
+      })
+      // Dispensa a notificação em todas as abas
+      dismiss()
     })
   }
 

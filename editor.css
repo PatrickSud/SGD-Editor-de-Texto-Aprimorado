@@ -12,6 +12,8 @@
   --action-red-hover: #b91c1c;
   --action-orange: #f97316;
   --action-orange-hover: #ea580c;
+  --action-yellow: #f59e0b; /* Amarelo/Âmbar */
+  --action-yellow-hover: #d97706;
   --border-radius-md: 8px;
   --border-radius-sm: 6px;
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -711,6 +713,16 @@ button.ai-loading:hover {
   display: flex;
   flex-direction: column;
   gap: 5px;
+}
+
+.se-modal-body .form-row {
+  display: flex;
+  gap: 15px;
+  align-items: flex-end;
+}
+
+.se-modal-body .form-row .form-group {
+  flex: 1;
 }
 
 .url-group input[type='text']:disabled {
@@ -1683,6 +1695,19 @@ a.open-link-btn:hover {
 
 .reminder-item {
   align-items: flex-start;
+  border-left: 4px solid transparent; /* Espaçamento padrão */
+  padding-left: 10px;
+  margin-left: -10px; /* Compensa o padding para alinhar o conteúdo */
+}
+
+.reminder-item.priority-low {
+  border-left-color: var(--action-blue);
+}
+.reminder-item.priority-medium {
+  border-left-color: var(--action-yellow);
+}
+.reminder-item.priority-high {
+  border-left-color: var(--action-red);
 }
 
 .reminder-icon {
@@ -1716,6 +1741,11 @@ a.open-link-btn:hover {
 
 .reminder-item .shortcut-display {
   margin-top: 2px;
+}
+
+.recurrence-display {
+  margin-left: 6px;
+  font-size: 14px;
 }
 
 .edit-reminder-btn {
