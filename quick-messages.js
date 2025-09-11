@@ -1536,7 +1536,7 @@ async function openQuickInserterPanel() {
 
   const data = await getStoredData()
   const textArea = getTargetTextArea()
-  if (!textArea) return
+  // REMOVIDO: if (!textArea) return
 
   let draggedQiItem = null
 
@@ -1854,8 +1854,15 @@ async function openQuickInserterPanel() {
     }
 
     // Ação padrão: inserir o texto
-    insertAtCursor(textArea, message.message)
-    closeModal()
+    if (textArea) {
+      insertAtCursor(textArea, message.message)
+      closeModal()
+    } else {
+      showNotification(
+        'Não há um campo de texto ativo para inserir o trâmite.',
+        'info'
+      )
+    }
   })
 
   // --- INICIALIZAÇÃO ---

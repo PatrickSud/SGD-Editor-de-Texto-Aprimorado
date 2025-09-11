@@ -762,6 +762,7 @@ function createFloatingActionButtons() {
       <button type="button" class="fab-button fab-option" data-action="fab-notes" data-tooltip="Anotações">✍️</button>
       <button type="button" class="fab-button fab-option" data-action="fab-reminders" data-tooltip="Lembretes">⏰</button>
       <button type="button" class="fab-button fab-option" data-action="fab-quick-steps" data-tooltip="Trâmites">⚡</button>
+      <button type="button" class="fab-button fab-option" data-action="fab-manage-steps" data-tooltip="Configurações">⚙️</button>
     </div>
     <button type="button" class="fab-button main-fab" title="Ações Rápidas">+</button>
   `
@@ -799,6 +800,9 @@ function setupFabListeners() {
         break
       case 'fab-notes':
         toggleNotesPanel()
+        break
+      case 'fab-manage-steps':
+        openManagementModal()
         break
     }
   })
