@@ -2381,7 +2381,7 @@ a.open-link-btn:hover {
 
 #quick-inserter-panel {
   width: 90%;
-  max-width: 800px;
+  max-width: 1000px;
   height: 60vh;
   max-height: 550px;
   display: flex;
@@ -2452,15 +2452,38 @@ a.open-link-btn:hover {
 .qi-main-content {
   flex-grow: 1;
   display: flex;
-  min-width: 0; /* Previne que o flex item cresça demais */
+  min-width: 0;
 }
 
-.qi-messages-list {
+.qi-messages-column {
   width: 40%;
   flex-shrink: 0;
   border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+}
+
+.qi-messages-header {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.qi-messages-footer {
+  padding: 12px;
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+#qi-add-new-btn {
+  width: 100%;
+}
+
+.qi-messages-list {
+  flex-grow: 1;
   overflow-y: auto;
   padding: 8px;
+  background-color: var(--background-secondary);
 }
 
 .qi-message-item {
@@ -2470,7 +2493,6 @@ a.open-link-btn:hover {
   margin-bottom: 4px;
   transition: background-color var(--transition-fast);
   display: flex;
-  justify-content: space-between;
   align-items: center;
   gap: 8px;
   position: relative;
@@ -2587,24 +2609,25 @@ a.open-link-btn:hover {
   padding: 8px 12px 12px;
   margin-top: auto;
   border-top: 1px solid var(--border-color);
+  display: flex;
+  gap: 8px;
 }
-#qi-add-new-btn {
+
+#qi-open-settings-btn {
   width: 100%;
-  padding: 10px;
-  background-color: var(--action-blue);
-  color: #fff;
-  border: none;
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-}
-#qi-add-new-btn:hover {
-  background-color: var(--action-blue-hover);
+  padding: 10px 12px;
+  font-size: 14px; /* Ajustado para consistência */
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 /* --- Fim da Paleta de Comandos --- */
 
 /* --- AJUSTES DE TEMA ESPECÍFICOS PARA A PALETA DE COMANDOS --- */
+/* ----------------------------------- */
 
 /* Cor de texto geral para temas escuros */
 #quick-inserter-panel.tokyo-night-mode,
@@ -2648,7 +2671,7 @@ a.open-link-btn:hover {
   color: #a0a0a0; /* Cinza claro para textos secundários */
 }
 
-/* 
+/*
   Correção para o Tema Alvorada (light):
   Agora com uma classe dedicada, garantimos um fundo sólido sem afetar outros temas.
 */
@@ -2656,6 +2679,16 @@ a.open-link-btn:hover {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   background-color: var(--background-main) !important;
+}
+
+/* Override para a lista de mensagens em temas escuros */
+#quick-inserter-panel.tokyo-night-mode .qi-messages-list,
+#quick-inserter-panel.forest-mode .qi-messages-list,
+#quick-inserter-panel.dark-mode .qi-messages-list,
+#quick-inserter-panel.dark-graphite-mode .qi-messages-list {
+  background-color: var(
+    --background-main
+  ); /* Usar o fundo principal mais escuro */
 }
 
 /* --- FAB (Floating Action Button) --- */
@@ -2666,16 +2699,4 @@ a.open-link-btn:hover {
   /* Define um contexto de posicionamento e alinhamento */
   display: flex;
   justify-content: center;
-}
-
-.serenidade-mode {
-  --primary-color: #6366f1; /* Indigo suave */
-  --primary-color-hover: #4f46e5; /* Indigo mais forte */
-  --border-color: #e5e7eb;
-  --background-main: #f5f3ff; /* Lilás bem claro */
-  --background-secondary: #ede9fe; /* Lilás acinzentado */
-  --background-hover: #e0e7ff; /* Azul clarinho */
-  --text-color-main: #1f2937;
-  --text-color-muted: #6b7280;
-  --background-glass: rgba(255, 255, 255, 0.75);
 }

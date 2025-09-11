@@ -1554,11 +1554,16 @@ async function openQuickInserterPanel() {
         </div>
         <div class="qi-categories-list"></div>
         <div class="qi-actions">
-          <button type="button" id="qi-add-new-btn" class="action-btn">+ Adicionar novo</button>
+          <button type="button" id="qi-open-settings-btn" class="action-btn" title="Configurações">⚙️ Configurações</button>
         </div>
       </div>
       <div class="qi-main-content">
-        <div class="qi-messages-list"></div>
+        <div class="qi-messages-column">
+          <div class="qi-messages-list"></div>
+          <div class="qi-messages-footer">
+            <button type="button" id="qi-add-new-btn" class="action-btn">+ Adicionar novo</button>
+          </div>
+        </div>
         <div class="qi-preview-area">
           <div class="qi-preview-placeholder">Passe o mouse sobre um item para visualizar</div>
         </div>
@@ -1785,6 +1790,13 @@ async function openQuickInserterPanel() {
     openMessageModal() // Abre o modal para adicionar um novo trâmite
   })
 
+  // Listener para o novo botão de configurações
+  document
+    .getElementById('qi-open-settings-btn')
+    .addEventListener('click', () => {
+      openManagementModal() // Abre o modal de configurações
+    })
+
   // Busca
   searchInput.addEventListener('input', renderMessages)
 
@@ -1817,7 +1829,6 @@ async function openQuickInserterPanel() {
 
     // Ação para o botão de editar
     if (e.target.closest('.edit-message-btn')) {
-      closeModal()
       openMessageModal(message)
       return
     }
