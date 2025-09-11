@@ -1697,11 +1697,18 @@ async function openQuickInserterPanel() {
   const renderCategories = () => {
     categoriesList.innerHTML = `<div class="qi-category-item ${
       activeCategory === 'all' ? 'active' : ''
-    }" data-id="all">Todas as Categorias</div>`
+    }" data-id="all"><span class="qi-category-name">Todas as Categorias</span></div>`
     data.categories.forEach(cat => {
+      const shortcutDisplay = cat.shortcut
+        ? `<span class="qi-category-shortcut">${escapeHTML(
+            cat.shortcut
+          )}</span>`
+        : ''
       categoriesList.innerHTML += `<div class="qi-category-item ${
         activeCategory === cat.id ? 'active' : ''
-      }" data-id="${cat.id}">${escapeHTML(cat.name)}</div>`
+      }" data-id="${cat.id}"><span class="qi-category-name">${escapeHTML(
+        cat.name
+      )}</span>${shortcutDisplay}</div>`
     })
   }
 
@@ -1786,7 +1793,6 @@ async function openQuickInserterPanel() {
 
   // Botão Adicionar Novo
   document.getElementById('qi-add-new-btn').addEventListener('click', () => {
-    closeModal()
     openMessageModal() // Abre o modal para adicionar um novo trâmite
   })
 

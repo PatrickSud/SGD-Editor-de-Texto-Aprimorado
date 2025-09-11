@@ -2438,6 +2438,9 @@ a.open-link-btn:hover {
   font-weight: 500;
   transition: background-color var(--transition-fast),
     color var(--transition-fast);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .qi-category-item:hover {
@@ -2447,6 +2450,29 @@ a.open-link-btn:hover {
 .qi-category-item.active {
   background-color: var(--primary-color);
   color: white;
+}
+
+.qi-category-name {
+  flex-grow: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qi-category-shortcut {
+  font-size: 11px;
+  font-weight: normal;
+  color: var(--text-color-muted);
+  background-color: var(--background-secondary);
+  padding: 2px 6px;
+  border-radius: var(--border-radius-sm);
+  margin-left: 8px;
+  font-family: monospace;
+}
+
+.qi-category-item.active .qi-category-shortcut {
+  color: var(--primary-color);
+  background-color: white;
 }
 
 .qi-main-content {
