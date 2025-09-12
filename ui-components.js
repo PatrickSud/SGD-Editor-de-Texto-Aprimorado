@@ -540,7 +540,7 @@ async function renderRemindersList(modal) {
           hour: '2-digit',
           minute: '2-digit'
         })
-        statusText = `Ativo para ${activeDate}`
+        statusText = `Para ${activeDate}`
         actionsHtml = openUrlButton + editButton + removeButton
         break
       case 'pending':
@@ -551,7 +551,7 @@ async function renderRemindersList(modal) {
           hour: '2-digit',
           minute: '2-digit'
         })
-        statusText = `Pendente desde ${pendingDate}`
+        statusText = `Desde ${pendingDate}`
         actionsHtml =
           openUrlButton +
           completeButton +
@@ -567,7 +567,7 @@ async function renderRemindersList(modal) {
           hour: '2-digit',
           minute: '2-digit'
         })
-        statusText = `Concluído em ${ackDate}`
+        statusText = `Em ${ackDate}`
         actionsHtml = openUrlButton + editButton + removeButton
         break
     }
