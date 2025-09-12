@@ -748,8 +748,9 @@ async function initializeExtension() {
     initializeNotesPanel()
   }
 
-  // Inicializa o badge de notificação do FAB
-  await updateFabBadge()
+  // Cria e injeta o sino na barra de navegação
+  createAndInjectBellIcon()
+  await updateNotificationStatus()
 
   // Verifica por sugestões de trâmites ao carregar a página
   checkForAndDisplaySuggestions()
@@ -760,15 +761,15 @@ function createFloatingActionButtons() {
   const fabContainer = document.createElement('div')
   fabContainer.id = 'fab-container'
   fabContainer.className = 'fab-container'
+
   fabContainer.innerHTML = `
     <div class="fab-options">
       <button type="button" class="fab-button fab-option" data-action="fab-notes" data-tooltip="Anotações">✍️</button>
-      <button type="button" class="fab-button fab-option" data-action="fab-reminders" data-tooltip="Lembretes">⏰</button>
+      <button type="button" class="fab-button fab-option" data-action="fab-reminders" data-tooltip="Gerenciar Lembretes">⏰</button>
       <button type="button" class="fab-button fab-option" data-action="fab-quick-steps" data-tooltip="Trâmites">⚡</button>
       <button type="button" class="fab-button fab-option" data-action="fab-manage-steps" data-tooltip="Configurações">⚙️</button>
     </div>
     <button type="button" class="fab-button main-fab" title="Ações Rápidas">+</button>
-    <div id="fab-notification-badge" class="fab-notification-badge" style="display: none;"></div>
   `
   document.body.appendChild(fabContainer)
 
@@ -793,17 +794,9 @@ function setupFabListeners() {
   const dropZones = dropZoneContainer.querySelectorAll('.fab-drop-zone')
 
   fabContainer.addEventListener('click', e => {
-    // Adicionado: Prioriza o clique no badge de notificação
-    if (e.target.closest('#fab-notification-badge')) {
-      e.stopPropagation()
-      openFiredRemindersPanel() // Abre o painel de lembretes pendentes
-      return
-    }
-
     const actionButton = e.target.closest('.fab-option')
     if (!actionButton) return
 
-    // A lógica existente para os outros botões permanece a mesma
     switch (actionButton.dataset.action) {
       case 'fab-quick-steps':
         openQuickInserterPanel()
@@ -935,48 +928,76 @@ initializeExtension()
 /**
  * Verifica lembretes disparados e atualiza o badge de notificação no FAB.
  */
-async function updateFabBadge() {
-  const fabBadge = document.getElementById('fab-notification-badge')
-  if (!fabBadge) return
+/**
+ * Verifica lembretes e atualiza o estado do ícone de sino (badge e pulso).
+ */
+async function updateNotificationStatus() {
+  const bellIcon = document.getElementById('sgd-notification-bell')
+  if (!bellIcon) return
+
+  const badge = bellIcon.querySelector('.notification-badge')
+  if (!badge) return
 
   try {
-    const reminders = await getReminders() // Função de storage.js
+    const reminders = await getReminders()
     const firedReminders = Object.values(reminders).filter(r => r.isFired)
     const count = firedReminders.length
 
     if (count > 0) {
-      // Texto atualizado para ser mais descritivo
-      fabBadge.textContent = `${count} Notificaç${count > 1 ? 'ões' : 'ão'}`
-      fabBadge.style.display = 'flex'
-      requestAnimationFrame(() => fabBadge.classList.add('visible'))
+      badge.textContent = count
+      badge.style.display = 'flex'
+      bellIcon.classList.add('pulsing')
     } else {
-      fabBadge.classList.remove('visible')
-      setTimeout(() => {
-        if (!fabBadge.classList.contains('visible')) {
-          fabBadge.style.display = 'none'
-        }
-      }, 300) // Aguarda a animação de fade-out
+      badge.style.display = 'none'
+      bellIcon.classList.remove('pulsing')
     }
   } catch (error) {
-    console.error(
-      'Editor SGD: Erro ao atualizar o badge de notificações.',
-      error
-    )
+    console.error('Editor SGD: Erro ao atualizar status de notificação.', error)
   }
 }
 
 /**
- * Inicializa o badge de notificação na inicialização da extensão
+ * Cria o ícone de sino e o injeta na barra de navegação principal do SGD.
  */
-async function initializeFabBadge() {
-  await updateFabNotificationBadge()
+function createAndInjectBellIcon() {
+  // Se o sino já existir, não faz nada
+  if (document.getElementById('sgd-notification-bell')) return
+
+  // Encontra o elemento de referência (o nome do usuário) para injetar o sino antes dele
+  const targetLink = document.querySelector(
+    'p.navbar-text.navbar-right a[href*="alt-usuario.html"]'
+  )
+  if (!targetLink) {
+    console.warn(
+      'Editor SGD: Ponto de injeção do ícone de sino não encontrado.'
+    )
+    return
+  }
+  const targetContainer = targetLink.parentElement
+
+  // Cria o elemento do sino
+  const bellElement = document.createElement('div')
+  bellElement.id = 'sgd-notification-bell'
+  bellElement.title = 'Notificações Pendentes'
+  bellElement.innerHTML = `
+    🔔
+    <div class="notification-badge" style="display: none;"></div>
+  `
+
+  // Adiciona o evento de clique para abrir o painel
+  bellElement.addEventListener('click', () => {
+    openFiredRemindersPanel()
+  })
+
+  // Insere o sino na página, antes do nome do usuário
+  targetContainer.parentNode.insertBefore(bellElement, targetContainer)
 }
 
 // --- LISTENER PARA NOTIFICAÇÕES DE LEMBRETES NA PÁGINA ---
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Adicionada nova condição para atualizar o badge
   if (message.action === 'UPDATE_NOTIFICATION_BADGE') {
-    updateFabBadge()
+    updateNotificationStatus()
   }
 
   // Exibe notificação in-page quando um lembrete dispara

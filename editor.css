@@ -2185,53 +2185,57 @@ a.open-link-btn:hover {
   justify-content: center;
 }
 
-/* --- FAB Notification Badge --- */
-.fab-notification-badge {
+/* --- Standalone Notification Bell --- */
+@keyframes bell-pulse {
+  0% {
+    text-shadow: 0 0 0 rgba(220, 38, 38, 0.7);
+  }
+  70% {
+    text-shadow: 0 0 12px rgba(220, 38, 38, 0);
+  }
+  100% {
+    text-shadow: 0 0 0 rgba(220, 38, 38, 0);
+  }
+}
+
+#sgd-notification-bell {
+  display: inline-flex;
+  align-items: center;
+  font-size: 22px;
+  color: var(--text-color-main);
+  cursor: pointer;
+  position: relative;
+  margin-right: 15px; /* Espaço entre o sino e o nome do usuário */
+  padding: 5px;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+#sgd-notification-bell:hover {
+  background-color: var(--background-hover);
+}
+
+/* Aplica a animação de pulso apenas quando houver notificações pendentes */
+#sgd-notification-bell.pulsing {
+  animation: bell-pulse 1.5s infinite;
+}
+
+/* Badge posicionado no canto do ícone de sino */
+#sgd-notification-bell .notification-badge {
   position: absolute;
-  top: -10px;
-  right: 45px; /* Posiciona à esquerda do botão principal do FAB */
-
-  /* Transforma de círculo para pílula */
-  height: 28px;
-  width: auto; /* Largura automática para caber o texto */
-  padding: 0 12px;
-  border-radius: 14px; /* Cantos arredondados */
-
+  top: 0;
+  right: 0;
+  width: 18px;
+  height: 18px;
   background-color: var(--action-red);
   color: white;
-  display: flex;
+  border-radius: 50%;
+  display: none; /* Controlado via JS */
   align-items: center;
   justify-content: center;
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap; /* Evita que o texto quebre a linha */
-
+  font-size: 10px;
+  font-weight: bold;
   border: 2px solid var(--background-main);
-  cursor: pointer;
-  z-index: 3;
-
-  transform: translateY(10px) scale(0.8);
-  opacity: 0;
-  transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28),
-    opacity 0.3s ease;
-}
-
-.fab-notification-badge.visible {
-  transform: translateY(0) scale(1);
-  opacity: 1;
-}
-
-/* Ajusta a posição do badge baseado na posição do FAB */
-.fab-container.bottom-left .fab-notification-badge,
-.fab-container.bottom-right .fab-notification-badge {
-  top: -5px;
-  right: -5px;
-}
-
-.fab-container.top-left .fab-notification-badge,
-.fab-container.top-right .fab-notification-badge {
-  top: -5px;
-  right: -5px;
 }
 
 /* Adiciona a "ponte" de hover com padding e alinha o botão principal */
@@ -2808,21 +2812,22 @@ a.open-link-btn:hover {
 
 /* --- Fired Reminders Panel --- */
 #fired-reminders-panel {
-  position: fixed;
-  width: 320px;
+  position: absolute; /* Alterado para posicionamento absoluto */
+  width: 340px; /* Aumentado um pouco para melhor visualização */
   max-height: 400px;
-  z-index: 1035; /* Abaixo do FAB, acima do resto */
+  z-index: 2100; /* Garante que fique acima de outros elementos */
   border-radius: var(--border-radius-md);
-  box-shadow: var(--shadow-xl);
+  box-shadow: var(--shadow-lg);
   border: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   opacity: 0;
   transform: scale(0.95);
+  transform-origin: top center; /* Animação surge do topo */
   transition: transform 0.2s ease-out, opacity 0.2s ease-out;
 
-  /* Glassmorphism */
+  /* Efeito Glassmorphism */
   backdrop-filter: blur(14px) saturate(120%);
   -webkit-backdrop-filter: blur(14px) saturate(120%);
   background-color: var(--background-glass);
@@ -2831,28 +2836,6 @@ a.open-link-btn:hover {
 #fired-reminders-panel.visible {
   opacity: 1;
   transform: scale(1);
-}
-
-/* Posicionamento baseado na localização do FAB */
-#fired-reminders-panel.bottom-left {
-  bottom: 90px;
-  left: 25px;
-  transform-origin: bottom left;
-}
-#fired-reminders-panel.bottom-right {
-  bottom: 90px;
-  right: 25px;
-  transform-origin: bottom right;
-}
-#fired-reminders-panel.top-left {
-  top: 90px;
-  left: 25px;
-  transform-origin: top left;
-}
-#fired-reminders-panel.top-right {
-  top: 90px;
-  right: 25px;
-  transform-origin: top right;
 }
 
 .fired-reminders-header {
@@ -2965,6 +2948,25 @@ p.fired-reminder-desc {
 .fired-reminder-item.acknowledged .fired-reminder-title {
   text-decoration: line-through;
   font-weight: normal;
+}
+
+/* --- Ajustes de Legibilidade para Painel de Lembretes --- */
+
+/* Garante que os títulos de seção (Pendentes, Concluídos) usem a cor de texto principal do tema */
+.fired-reminders-list h6 {
+  color: var(--text-color-main);
+}
+
+.fired-reminder-item.active {
+  border-left-color: var(
+    --text-color-muted
+  ); /* Borda cinza neutra para lembretes agendados */
+}
+
+/* Adiciona um estilo para o botão de edição para que ele se alinhe com os outros */
+.fired-reminder-actions .edit-btn {
+  background-color: var(--action-blue);
+  color: white;
 }
 
 hr.fired-reminders-separator {

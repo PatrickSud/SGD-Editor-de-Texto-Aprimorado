@@ -956,3 +956,16 @@ async function toggleDevMode() {
     return isEnabled // Retorna ao estado anterior em caso de erro
   }
 }
+
+/**
+ * Salva o objeto completo de lembretes no armazenamento.
+ * @param {object} reminders - O objeto de dados completo de lembretes a ser salvo.
+ */
+async function saveAllReminders(reminders) {
+  try {
+    await chrome.storage.sync.set({ [REMINDERS_STORAGE_KEY]: reminders })
+  } catch (error) {
+    console.error('Editor SGD: Erro ao salvar todos os lembretes.', error)
+    throw error // Propaga o erro para a UI
+  }
+}
