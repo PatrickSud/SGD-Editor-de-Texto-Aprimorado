@@ -706,27 +706,6 @@ function addSgdActionButtons(masterContainer) {
  * Verifica se existem lembretes pendentes que ainda não foram notificados
  * nesta sessão do navegador e exibe o toast para eles.
  */
-async function checkForMissedToasts() {
-  const reminders = await getReminders()
-  const pendingReminders = Object.values(reminders).filter(r => r.isFired)
-
-  if (pendingReminders.length === 0) return
-
-  // Usa uma abordagem mais simples: verifica se já passou tempo suficiente desde a última exibição
-  const lastShownKey = 'sgd_last_toast_shown'
-  const lastShown = localStorage.getItem(lastShownKey)
-  const now = Date.now()
-  const minInterval = 5 * 60 * 1000 // 5 minutos entre exibições
-
-  // Se já passou tempo suficiente desde a última exibição, mostra os toasts
-  if (!lastShown || now - parseInt(lastShown) > minInterval) {
-    localStorage.setItem(lastShownKey, now.toString())
-
-    for (const reminder of pendingReminders) {
-      showInPageNotification(reminder)
-    }
-  }
-}
 
 async function initializeExtension() {
   await loadSavedTheme()
@@ -751,7 +730,6 @@ async function initializeExtension() {
   // Cria e injeta o sino na barra de navegação
   createAndInjectBellIcon()
   await updateNotificationStatus()
-  await checkForMissedToasts() // Verifica notificações perdidas
 }
 
 function createFloatingActionButtons() {

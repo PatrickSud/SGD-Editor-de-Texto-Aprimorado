@@ -218,10 +218,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  * Listener principal para quando um alarme é disparado.
  */
 chrome.alarms.onAlarm.addListener(async alarm => {
-  // A verificação de 'snooze' foi removida pois a lógica agora é unificada
-  const reminderId = alarm.name
+  if (alarm.name.startsWith('snooze-')) {
+    // Lógica para soneca (se necessário) ou pode ser unificada
+  }
 
-  // A verificação de prefixo 'reminder-' também foi removida para simplificar
+  const reminderId = alarm.name.replace('snooze-', '')
   if (!reminderId) return
 
   const reminders = await getReminders()
@@ -233,15 +234,25 @@ chrome.alarms.onAlarm.addListener(async alarm => {
     return
   }
 
-  // Ação principal: envia o lembrete para ser exibido na interface do site
-  broadcastToSgdTabs({ action: 'SHOW_IN_PAGE_NOTIFICATION', reminder })
-
-  // Apenas marca o lembrete como "disparado".
-  // A lógica de reagendamento agora é tratada na interface do usuário.
+  // Passo 1: Atualiza o estado para "disparado" e salva. Esta é a nova fonte da verdade.
   reminder.isFired = true
   reminder.firedAt = Date.now()
-
   await saveReminders(reminders)
+
+  // Passo 2: Notifica todas as abas para atualizarem o ícone do sino.
+  // Isso garante que o sino comece a pulsar imediatamente em todas as guias.
+  broadcastToSgdTabs({ action: 'UPDATE_NOTIFICATION_BADGE' })
+
+  // Passo 3: Verifica se o toast de notificação único para esta sessão já foi exibido.
+  const toastShownKey = `toast_shown_${reminder.id}`
+  const sessionData = await chrome.storage.session.get(toastShownKey)
+
+  if (!sessionData[toastShownKey]) {
+    // Se ainda não foi exibido, define o flag de visualização para a sessão...
+    await chrome.storage.session.set({ [toastShownKey]: true })
+    // ...e então envia a mensagem para mostrar o toast.
+    broadcastToSgdTabs({ action: 'SHOW_IN_PAGE_NOTIFICATION', reminder })
+  }
 })
 
 // ATENÇÃO: Todos os listeners de chrome.notifications foram REMOVIDOS

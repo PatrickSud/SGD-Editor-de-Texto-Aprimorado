@@ -1302,7 +1302,7 @@ function showInPageNotification(reminder) {
       <button type="button" class="action-btn complete-btn-main">✅ Concluir</button>
     </div>
   `
-  // O controle de exibição agora é feito globalmente em checkForMissedToasts
+  // O controle de exibição agora é feito centralmente no service worker
 
   container.appendChild(notification)
 
