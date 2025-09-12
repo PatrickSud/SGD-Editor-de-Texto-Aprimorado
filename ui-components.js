@@ -239,15 +239,14 @@ function openNewReminderModal(existingReminder = null) {
   const priorityValue = isEditing ? existingReminder.priority || 'low' : 'low'
 
   const currentPageUrl = window.location.href
-  let initialUrl = ''
+  let initialUrl = currentPageUrl
+  let isUrlIncluded = false // Checkbox desmarcado por padrão para novos lembretes
 
   if (isEditing) {
-    initialUrl = existingReminder.url || ''
-  } else {
-    initialUrl = currentPageUrl
+    initialUrl = existingReminder.url || currentPageUrl
+    // Marca a caixa apenas se um URL foi salvo anteriormente no lembrete
+    isUrlIncluded = !!existingReminder.url
   }
-
-  const isUrlIncluded = initialUrl !== ''
 
   const modal = createModal(
     `${isEditing ? 'Editar' : 'Novo'} Lembrete 📅`,
@@ -302,7 +301,7 @@ function openNewReminderModal(existingReminder = null) {
         )}</textarea>
      </div>
      <div class="form-group url-group">
-        <label for="reminder-url">URL do Chamado (SGD)</label>
+        <label for="reminder-url">Página atual</label>
         <input type="text" id="reminder-url" placeholder="https://sgd.dominiosistemas.com.br/..." value="${escapeHTML(
           initialUrl
         )}">
@@ -310,7 +309,7 @@ function openNewReminderModal(existingReminder = null) {
             <input type="checkbox" id="reminder-include-url" ${
               isUrlIncluded ? 'checked' : ''
             }>
-            <label for="reminder-include-url">Incluir link do chamado no alerta</label>
+            <label for="reminder-include-url">Incluir Página atual no lembrete?</label>
         </div>
      </div>
     `,
@@ -412,20 +411,13 @@ async function openRemindersManagementModal() {
     'Gerenciamento de Lembretes ⏳',
     `
         <div class="management-section">
-            <h4>Lembretes Ativos e Recentes</h4>
-            <p>Gerencie seus lembretes. Lembretes disparados ficam visíveis pelo período configurado abaixo.</p>
-            
-            <div id="bulk-actions-container" style="display: none;">
-                <span id="selected-count-info"></span>
-                <button type="button" id="bulk-delete-btn" class="action-btn delete-cat-btn small-btn" disabled>Excluir Selecionados</button>
-            </div>
-
+        
             <div id="reminders-list" class="category-list"></div>
         </div>
-
+        
         <div class="management-section">
              <div class="reminder-settings-form">
-                <label for="retention-days">Remover automaticamente lembretes disparados após:</label>
+                <label for="retention-days">Remover automaticamente lembretes concluídos após:</label>
                 <input type="number" id="retention-days" min="1" max="30" value="${retentionDays}">
                 <span>dias</span>
                 <button type="button" id="save-retention-btn" class="action-btn save-cat-btn">Salvar</button>
@@ -462,7 +454,7 @@ async function openRemindersManagementModal() {
 }
 
 /**
- * Configura os listeners para a seção de configurações e ações em massa.
+ * Configura os listeners para a seção de configurações.
  */
 function setupReminderManagementListeners(modal) {
   const saveBtn = modal.querySelector('#save-retention-btn')
@@ -491,220 +483,161 @@ function setupReminderManagementListeners(modal) {
       }
     })
   }
-
-  const bulkDeleteBtn = modal.querySelector('#bulk-delete-btn')
-  if (bulkDeleteBtn) {
-    bulkDeleteBtn.addEventListener('click', async () => {
-      const checkedItems = modal.querySelectorAll(
-        '#reminders-list .reminder-checkbox:checked'
-      )
-      if (checkedItems.length === 0) return
-
-      const idsToDelete = Array.from(checkedItems).map(cb => cb.dataset.id)
-
-      showConfirmDialog(
-        `Tem certeza que deseja excluir ${idsToDelete.length} lembrete(s) selecionado(s)?`,
-        async () => {
-          try {
-            await deleteMultipleReminders(idsToDelete)
-            showNotification(
-              `${idsToDelete.length} lembrete(s) excluído(s).`,
-              'success'
-            )
-            await renderRemindersList(modal)
-          } catch (error) {
-            showNotification('Erro durante a exclusão em massa.', 'error')
-          }
-        }
-      )
-    })
-  }
 }
 
 /**
- * Atualiza a visibilidade e o estado dos controles de ação em massa.
- */
-function updateBulkActionsState(modal) {
-  const bulkActionsContainer = modal.querySelector('#bulk-actions-container')
-  const bulkDeleteBtn = modal.querySelector('#bulk-delete-btn')
-  const selectedCountInfo = modal.querySelector('#selected-count-info')
-
-  const firedRemindersExist =
-    modal.querySelectorAll('#reminders-list .fired-reminder').length > 0
-  const checkedItemsCount = modal.querySelectorAll(
-    '#reminders-list .reminder-checkbox:checked'
-  ).length
-
-  if (firedRemindersExist) {
-    bulkActionsContainer.style.display = 'flex'
-  } else {
-    bulkActionsContainer.style.display = 'none'
-  }
-
-  bulkDeleteBtn.disabled = checkedItemsCount === 0
-  selectedCountInfo.textContent =
-    checkedItemsCount > 0
-      ? `${checkedItemsCount} selecionados`
-      : firedRemindersExist
-      ? 'Selecione lembretes disparados para excluir'
-      : ''
-}
-
-/**
- * Renderiza a lista de lembretes ativos e disparados no modal de gerenciamento.
+ * Renderiza a lista de lembretes no modal de gerenciamento com as seções Pendentes, Ativos e Concluídos.
  */
 async function renderRemindersList(modal) {
   const list = modal.querySelector('#reminders-list')
   list.innerHTML = 'Carregando...'
 
-  const remindersMap = await getReminders()
+  const remindersData = await getReminders()
+  const allReminders = Object.values(remindersData)
 
-  const reminders = Object.values(remindersMap).sort((a, b) => {
-    if (a.isFired && !b.isFired) return 1
-    if (!a.isFired && b.isFired) return -1
-    if (a.isFired) {
-      return (b.firedAt || 0) - (a.firedAt || 0)
-    } else {
-      return new Date(a.dateTime) - new Date(b.dateTime)
-    }
-  })
+  // Filtra os lembretes nos três grupos
+  const activeReminders = allReminders
+    .filter(r => !r.isFired && !r.firedAt)
+    .sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime))
+  const pendingReminders = allReminders
+    .filter(r => r.isFired)
+    .sort((a, b) => (a.firedAt || 0) - (b.firedAt || 0))
+  const acknowledgedReminders = allReminders
+    .filter(r => !r.isFired && r.firedAt)
+    .sort((a, b) => (b.firedAt || 0) - (a.firedAt || 0))
 
-  if (reminders.length === 0) {
+  if (allReminders.length === 0) {
     list.innerHTML =
-      '<p style="text-align: center; color: var(--text-color-muted); padding: 20px 0;">Nenhum lembrete ativo ou recente.</p>'
-    updateBulkActionsState(modal)
+      '<p style="text-align: center; color: var(--text-color-muted); padding: 20px 0;">Nenhum lembrete para exibir.</p>'
     return
   }
 
-  list.innerHTML = ''
-
-  reminders.forEach(reminder => {
-    const item = document.createElement('div')
+  // Função interna para renderizar cada item, garantindo consistência visual
+  const renderItem = (reminder, type) => {
     const priorityClass = `priority-${reminder.priority || 'medium'}`
-    item.className = `category-item reminder-item ${
-      reminder.isFired ? 'fired-reminder' : ''
-    } ${priorityClass}`
-    item.dataset.id = reminder.id
-
-    let statusDisplayHtml = ''
+    const hasUrl = reminder.url && isValidUrl(reminder.url)
+    const openUrlButtonHtml = hasUrl
+      ? `<a href="${escapeHTML(
+          reminder.url
+        )}" target="_blank" class="action-btn open-link-btn" title="Abrir Chamado Vinculado">🔗</a>`
+      : ''
+    const removeButtonHtml = `<button type="button" class="action-btn remove-btn" title="Remover Lembrete">🗑️</button>`
+    const editButtonHtml = `<button type="button" class="action-btn edit-btn" title="Editar">✏️</button>`
     let actionsHtml = ''
+    let statusText = ''
     let icon = '⏰'
-    let checkboxHtml = ''
 
-    // Adiciona o botão de link ANTES da lógica de 'fired' ou não, se existir URL.
-    if (reminder.url && isValidUrl(reminder.url)) {
-      actionsHtml += `<a href="${escapeHTML(
-        reminder.url
-      )}" target="_blank" class="action-btn open-link-btn" title="Abrir Chamado Vinculado">🔗</a>`
+    switch (type) {
+      case 'active':
+        statusText = `Agendado para ${new Date(
+          reminder.dateTime
+        ).toLocaleString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        })}`
+        actionsHtml = editButtonHtml + removeButtonHtml
+        break
+      case 'pending':
+        icon = '🔥'
+        statusText = `Pendente desde ${new Date(
+          reminder.firedAt
+        ).toLocaleDateString('pt-BR')}`
+        actionsHtml = `${openUrlButtonHtml}<button type="button" class="action-btn complete-btn" title="Concluir">✅</button><button type="button" class="action-btn snooze-btn" title="Adiar">⏰</button>${removeButtonHtml}`
+        break
+      case 'acknowledged':
+        icon = '✅'
+        statusText = `Concluído em ${new Date(
+          reminder.firedAt
+        ).toLocaleDateString('pt-BR')}`
+        actionsHtml = openUrlButtonHtml + editButtonHtml + removeButtonHtml
+        break
     }
 
-    if (reminder.isFired) {
-      icon = '✅'
-      checkboxHtml = `<input type="checkbox" class="reminder-checkbox" data-id="${reminder.id}" title="Selecionar para exclusão em massa">`
+    return `
+      <div class="category-item reminder-item ${priorityClass} ${type}" data-id="${
+      reminder.id
+    }">
+        <span class="reminder-icon">${icon}</span>
+        <div class="reminder-details">
+            <span class="category-name">${escapeHTML(reminder.title)}</span>
+            <span class="reminder-description">${escapeHTML(
+              reminder.description || ''
+            )}</span>
+        </div>
+        <span class="shortcut-display">${statusText}</span>
+        <div class="reminder-actions-container">${actionsHtml}</div>
+      </div>`
+  }
 
-      const firedTime = new Date(reminder.firedAt)
-      const formattedFiredTime = firedTime.toLocaleTimeString('pt-BR', {
-        hour: '2-digit',
-        minute: '2-digit'
+  const pendingHtml =
+    pendingReminders.length > 0
+      ? `<h6>Pendentes (${pendingReminders.length})</h6>` +
+        pendingReminders.map(r => renderItem(r, 'pending')).join('')
+      : ''
+  const activeHtml =
+    activeReminders.length > 0
+      ? `<h6>Ativos (${activeReminders.length})</h6>` +
+        activeReminders.map(r => renderItem(r, 'active')).join('')
+      : ''
+  const acknowledgedHtml =
+    acknowledgedReminders.length > 0
+      ? `<h6>Concluídos (${acknowledgedReminders.length})</h6>` +
+        acknowledgedReminders.map(r => renderItem(r, 'acknowledged')).join('')
+      : ''
+
+  const sections = [pendingHtml, activeHtml, acknowledgedHtml].filter(Boolean)
+  list.innerHTML = sections.join('')
+
+  // Adiciona os listeners para os botões de cada item
+  list.querySelectorAll('.reminder-item').forEach(item => {
+    const reminderId = item.dataset.id
+    const reminder = allReminders.find(r => r.id === reminderId)
+    if (!reminder) return
+
+    // Listeners para editar, adiar, remover e concluir
+    item.querySelector('.edit-btn')?.addEventListener('click', () => {
+      openNewReminderModal(reminder)
+    })
+    item.querySelector('.snooze-btn')?.addEventListener('click', () => {
+      openSnoozeModal(reminder, () => renderRemindersList(modal))
+    })
+    item.querySelector('.remove-btn')?.addEventListener('click', () => {
+      showConfirmDialog('Remover este lembrete permanentemente?', async () => {
+        await deleteReminder(reminderId)
+        renderRemindersList(modal)
       })
-
-      const today = new Date().toDateString()
-      const firedDay = firedTime.toDateString()
-
-      let dayPrefix = 'Hoje'
-      if (today !== firedDay) {
-        dayPrefix = firedTime.toLocaleDateString('pt-BR')
-      }
-
-      statusDisplayHtml = `<span class="shortcut-display">Disparado ${dayPrefix} às ${formattedFiredTime}</span>`
-
-      actionsHtml += `
-                <button type="button" class="action-btn edit-reminder-btn reschedule-btn" title="Reagendar este lembrete">🔄️</button>
-                <button type="button" class="action-btn dismiss-now-btn" title="Remover da lista agora">Dispensar</button>
-            `
-    } else {
-      const dateTime = new Date(reminder.dateTime)
-      const formattedDate = dateTime.toLocaleDateString('pt-BR')
-      const formattedTime = dateTime.toLocaleTimeString('pt-BR', {
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-
-      statusDisplayHtml = `<span class="shortcut-display">${formattedDate} às ${formattedTime}</span>`
-
-      // Adiciona o indicador de recorrência se houver
-      if (reminder.recurrence && reminder.recurrence !== 'none') {
-        const recurrenceText = {
-          daily: 'Diária',
-          weekly: 'Semanal',
-          monthly: 'Mensal'
-        }
-        statusDisplayHtml += `<span class="shortcut-display recurrence-display" title="Recorrência ${
-          recurrenceText[reminder.recurrence]
-        }">🔄️</span>`
-      }
-
-      actionsHtml += `
-                <button type="button" class="action-btn edit-reminder-btn" title="Editar/Reagendar">✏️</button>
-                <button type="button" class="action-btn delete-cat-btn delete-reminder-btn" title="Cancelar Lembrete">🗑️</button>
-            `
-    }
-
-    item.innerHTML = `
-            ${checkboxHtml}
-            <span class="reminder-icon">${icon}</span>
-            <div class="reminder-details">
-                <span class="category-name">${escapeHTML(reminder.title)}</span>
-                <span class="reminder-description">${escapeHTML(
-                  reminder.description || ''
-                )}</span>
-            </div>
-            ${statusDisplayHtml}
-            <div class="reminder-actions-container">
-                ${actionsHtml}
-            </div>
-        `
-
-    const checkbox = item.querySelector('.reminder-checkbox')
-    if (checkbox) {
-      checkbox.addEventListener('change', () => {
-        updateBulkActionsState(modal)
-      })
-    }
-
-    const deleteBtn = item.querySelector('.delete-reminder-btn')
-    if (deleteBtn) {
-      deleteBtn.addEventListener('click', async e => {
-        e.preventDefault()
-        showConfirmDialog(
-          `Cancelar o lembrete "${escapeHTML(reminder.title)}"?`,
-          async () => {
-            await handleDeleteReminder(reminder.id, modal)
+    })
+    item.querySelector('.complete-btn')?.addEventListener('click', async () => {
+      const reminders = await getReminders()
+      const reminderToComplete = reminders[reminderId]
+      if (reminderToComplete) {
+        if (
+          reminderToComplete.recurrence &&
+          reminderToComplete.recurrence !== 'none'
+        ) {
+          const nextDate = getNextRecurrenceDate(
+            new Date(reminderToComplete.dateTime),
+            reminderToComplete.recurrence
+          )
+          if (nextDate) {
+            reminderToComplete.dateTime = nextDate.toISOString()
+            reminderToComplete.isFired = false
+            reminderToComplete.firedAt = null
+            await saveReminder(reminderToComplete)
+          } else {
+            await deleteReminder(reminderId)
           }
-        )
-      })
-    }
-
-    const editBtn = item.querySelector('.edit-reminder-btn')
-    if (editBtn) {
-      editBtn.addEventListener('click', e => {
-        e.preventDefault()
-        openNewReminderModal(reminder)
-      })
-    }
-
-    const dismissBtn = item.querySelector('.dismiss-now-btn')
-    if (dismissBtn) {
-      dismissBtn.addEventListener('click', async e => {
-        e.preventDefault()
-        await handleDeleteReminder(reminder.id, modal)
-      })
-    }
-
-    list.appendChild(item)
+        } else {
+          reminderToComplete.isFired = false
+          await saveAllReminders(reminders)
+        }
+        chrome.runtime.sendMessage({ action: 'UPDATE_NOTIFICATION_BADGE' })
+        renderRemindersList(modal)
+      }
+    })
   })
-
-  updateBulkActionsState(modal)
 }
 
 /**
@@ -1403,112 +1336,100 @@ async function openFiredRemindersPanel() {
   const remindersData = await getReminders()
   const allReminders = Object.values(remindersData)
 
+  const activeReminders = allReminders
+    .filter(r => r.isFired === false && !r.firedAt)
+    .sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime))
+  const pendingReminders = allReminders
+    .filter(r => r.isFired === true)
+    .sort((a, b) => (a.firedAt || 0) - (b.firedAt || 0))
+  const acknowledgedReminders = allReminders
+    .filter(r => r.isFired === false && r.firedAt)
+    .sort((a, b) => (b.firedAt || 0) - (a.firedAt || 0))
+
+  const isEmpty =
+    pendingReminders.length === 0 &&
+    acknowledgedReminders.length === 0 &&
+    activeReminders.length === 0
+
   const panel = document.createElement('div')
   panel.id = 'fired-reminders-panel'
   applyCurrentTheme(panel)
 
-  panel.innerHTML = `
-    <div class="fired-reminders-header">
-        <div class="header-top-row">
-            <h6>Notificações</h6>
-            <div class="fired-reminders-header-actions">
-                <button type="button" class="action-btn small-btn new-reminder-btn" title="Novo Lembrete">⏰</button>
-                <button type="button" class="action-btn small-btn manage-reminders-btn" title="Gerenciar Lembretes">⏳</button>
-                <button type="button" class="close-panel-btn" title="Fechar">&times;</button>
-            </div>
+  const renderReminderItem = (reminder, type) => {
+    const priorityClass = `priority-${reminder.priority || 'medium'}`
+    const hasUrl = reminder.url && isValidUrl(reminder.url)
+    const openUrlButtonHtml = hasUrl
+      ? `<button type="button" class="action-btn open-url-btn small-btn" title="Abrir Link">🔗</button>`
+      : ''
+    const removeButtonHtml = `<button type="button" class="action-btn remove-btn small-btn" title="Remover Lembrete">🗑️</button>`
+    const editButtonHtml = `<button type="button" class="action-btn edit-btn small-btn" title="Editar">✏️</button>`
+    let actionsHtml = ''
+    let statusText = ''
+
+    switch (type) {
+      case 'active':
+        const formattedDate = new Date(reminder.dateTime).toLocaleString(
+          'pt-BR',
+          {
+            day: '2-digit',
+            month: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+          }
+        )
+        statusText = `Ativo para ${formattedDate}`
+        actionsHtml = editButtonHtml + removeButtonHtml
+        break
+      case 'pending':
+        statusText = `Pendente em ${new Date(
+          reminder.firedAt
+        ).toLocaleDateString('pt-BR')}`
+        actionsHtml = `${openUrlButtonHtml}<button type="button" class="action-btn complete-btn small-btn" title="Concluir">✅</button><button type="button" class="action-btn snooze-btn small-btn" title="Adiar">⏰</button>${removeButtonHtml}`
+        break
+      case 'acknowledged':
+        statusText = `Concluído em ${new Date(
+          reminder.firedAt
+        ).toLocaleDateString('pt-BR')}`
+        actionsHtml = openUrlButtonHtml + editButtonHtml + removeButtonHtml
+        break
+    }
+
+    // NOVO: Adiciona a descrição do lembrete, se existir.
+    const descriptionHtml = reminder.description
+      ? `<p class="fired-reminder-desc-snippet">${escapeHTML(
+          reminder.description
+        )}</p>`
+      : ''
+
+    return `
+      <div class="fired-reminder-item ${priorityClass} ${type}" data-id="${
+      reminder.id
+    }">
+        <div class="fired-reminder-content">
+          <h6 class="fired-reminder-title">${escapeHTML(reminder.title)}</h6>
+          ${descriptionHtml}
+          <p class="fired-reminder-desc">${statusText}</p>
         </div>
-        <input type="text" class="search-input" placeholder="Buscar lembrete...">
-    </div>
-    <div class="fired-reminders-list"></div>`
+        <div class="fired-reminder-actions">${actionsHtml}</div>
+      </div>`
+  }
 
-  const listContainer = panel.querySelector('.fired-reminders-list')
-  const searchInput = panel.querySelector('.search-input')
+  let panelContentHtml
 
-  const renderLists = (filter = '') => {
-    const filterText = filter.toLowerCase()
-
-    const filterAndSort = list =>
-      list.filter(
-        r =>
-          (r.title?.toLowerCase() || '').includes(filterText) ||
-          (r.description?.toLowerCase() || '').includes(filterText)
-      )
-
-    const activeReminders = filterAndSort(
-      allReminders
-        .filter(r => r.isFired === false && !r.firedAt)
-        .sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime))
-    )
-    const pendingReminders = filterAndSort(
-      allReminders
-        .filter(r => r.isFired === true)
-        .sort((a, b) => (a.firedAt || 0) - (b.firedAt || 0))
-    )
-    const acknowledgedReminders = filterAndSort(
-      allReminders
-        .filter(r => r.isFired === false && r.firedAt)
-        .sort((a, b) => (b.firedAt || 0) - (a.firedAt || 0))
-    )
-
-    if (
-      activeReminders.length === 0 &&
-      pendingReminders.length === 0 &&
-      acknowledgedReminders.length === 0
-    ) {
-      listContainer.innerHTML = `<p class="empty-list-message">${
-        filter ? 'Nenhum lembrete encontrado.' : 'Não há lembretes para exibir.'
-      }</p>`
-      return
-    }
-
-    const renderReminderItem = (reminder, type) => {
-      const priorityClass = `priority-${reminder.priority || 'medium'}`
-      const hasUrl = reminder.url && isValidUrl(reminder.url)
-      const openUrlButtonHtml = hasUrl
-        ? `<button type="button" class="action-btn open-url-btn small-btn" title="Abrir Link">🔗</button>`
-        : ''
-      const removeButtonHtml = `<button type="button" class="action-btn remove-btn small-btn" title="Remover Lembrete">🗑️</button>`
-      let actionsHtml = ''
-      let statusText = ''
-
-      switch (type) {
-        case 'active':
-          statusText = `Ativo para ${formatRelativeTime(reminder.dateTime)}`
-          actionsHtml =
-            `<button type="button" class="action-btn edit-btn small-btn" title="Editar">✏️</button>` +
-            removeButtonHtml
-          break
-        case 'pending':
-          statusText = `Pendente (${formatRelativeTime(reminder.firedAt)})`
-          actionsHtml = `${openUrlButtonHtml}<button type="button" class="action-btn complete-btn small-btn" title="Concluir">✅</button><button type="button" class="action-btn snooze-btn small-btn" title="Adiar">⏰</button>${removeButtonHtml}`
-          break
-        case 'acknowledged':
-          statusText = `Concluído (${formatRelativeTime(reminder.firedAt)})`
-          actionsHtml = openUrlButtonHtml + removeButtonHtml
-          break
-      }
-
-      return `
-        <div class="fired-reminder-item ${priorityClass} ${type}" data-id="${
-        reminder.id
-      }">
-          <div class="fired-reminder-content">
-            <h6 class="fired-reminder-title">${escapeHTML(reminder.title)}</h6>
-            <p class="fired-reminder-desc">${statusText}</p>
-          </div>
-          <div class="fired-reminder-actions">${actionsHtml}</div>
-        </div>`
-    }
-
-    const activeHtml =
-      activeReminders.length > 0
-        ? `<h6>Ativos</h6>` +
-          activeReminders.map(r => renderReminderItem(r, 'active')).join('')
-        : ''
+  // NOVO: Lógica para exibir o painel mesmo quando vazio.
+  if (isEmpty) {
+    panelContentHtml = `<div class="empty-reminders-message">Não existem notificações ou lembretes ativos.</div>`
+    updateNotificationStatus() // Garante que o sino não fique pulsando
+  } else {
     const pendingHtml =
       pendingReminders.length > 0
         ? `<h6>Pendentes</h6>` +
           pendingReminders.map(r => renderReminderItem(r, 'pending')).join('')
+        : ''
+    const activeHtml =
+      activeReminders.length > 0
+        ? `<h6>Ativos</h6>` +
+          activeReminders.map(r => renderReminderItem(r, 'active')).join('')
         : ''
     const acknowledgedHtml =
       acknowledgedReminders.length > 0
@@ -1517,26 +1438,35 @@ async function openFiredRemindersPanel() {
             .map(r => renderReminderItem(r, 'acknowledged'))
             .join('')
         : ''
-    const sections = [activeHtml, pendingHtml, acknowledgedHtml].filter(Boolean)
-    listContainer.innerHTML = sections.join(
-      '<hr class="fired-reminders-separator">'
-    )
+
+    const sections = [pendingHtml, activeHtml, acknowledgedHtml].filter(Boolean)
+    panelContentHtml = sections.join('<hr class="fired-reminders-separator">')
   }
 
+  panel.innerHTML = `
+    <div class="fired-reminders-header">
+        <h6>Notificações</h6>
+        <div class="fired-reminders-header-actions">
+            <div class="reminder-search-container">
+                <button class="search-icon-btn" title="Buscar">🔍</button>
+                <input type="text" class="reminder-search-input" placeholder="Buscar...">
+            </div>
+            <button type="button" class="action-btn small-btn new-reminder-btn" title="Novo Lembrete">⏰ Novo</button>
+            <button type="button" class="action-btn small-btn manage-reminders-btn" title="Gerenciar Lembretes">⏳ Gerenciar</button>
+        </div>
+    </div>
+    <div class="fired-reminders-list">${panelContentHtml}</div>`
+
   document.body.appendChild(panel)
-  renderLists() // Renderiza a lista inicial
 
-  // Adiciona o listener para o campo de busca
-  searchInput.addEventListener('input', e => renderLists(e.target.value))
-
-  // --- NOVA LÓGICA DE POSICIONAMENTO ---
+  // Posicionamento e Listeners
   const bellIcon = document.getElementById('sgd-notification-bell')
   if (bellIcon) {
     const bellRect = bellIcon.getBoundingClientRect()
     const panelRect = panel.getBoundingClientRect()
 
     // Calcula a posição abaixo do sino
-    let topPos = bellRect.bottom + window.scrollY + 5 // Adiciona um espaçamento de 5px
+    let topPos = bellRect.bottom + window.scrollY + 5
     let leftPos = bellRect.left + window.scrollX
 
     // Ajusta a posição horizontal para evitar que o painel saia da tela
@@ -1546,63 +1476,98 @@ async function openFiredRemindersPanel() {
 
     panel.style.position = 'absolute'
     panel.style.top = `${topPos}px`
-    panel.style.left = `${Math.max(10, leftPos)}px` // Garante uma margem mínima de 10px da borda
+    panel.style.left = `${Math.max(10, leftPos)}px`
   }
 
-  const closePanel = () => panel.remove()
-  panel.querySelector('.close-panel-btn').addEventListener('click', closePanel)
+  // --- NOVA LÓGICA DE FECHAMENTO ---
+  // Função para fechar o painel e remover o listener de clique externo
+  const closePanelAndCleanup = () => {
+    document.removeEventListener('click', clickOutsideHandler, true)
+    panel.classList.remove('visible')
+    setTimeout(() => {
+      if (panel.parentNode) panel.remove()
+    }, 300)
+  }
 
-  // NOVOS LISTENERS para os botões do cabeçalho
-  panel.querySelector('.new-reminder-btn').addEventListener('click', () => {
-    closePanel()
-    openNewReminderModal()
+  // Handler que verifica se o clique foi fora do painel
+  const clickOutsideHandler = event => {
+    if (!panel.contains(event.target) && !bellIcon.contains(event.target)) {
+      closePanelAndCleanup()
+    }
+  }
+
+  // Adiciona o listener no próximo ciclo de eventos para evitar fechar ao abrir
+  requestAnimationFrame(() => {
+    document.addEventListener('click', clickOutsideHandler, true)
   })
 
+  // Atualiza os listeners dos botões para usar a nova função de fechamento
+  panel.querySelector('.new-reminder-btn').addEventListener('click', () => {
+    closePanelAndCleanup()
+    openNewReminderModal()
+  })
   panel.querySelector('.manage-reminders-btn').addEventListener('click', () => {
-    closePanel()
+    closePanelAndCleanup()
     openRemindersManagementModal()
   })
 
-  // Adiciona listeners aos botões dos itens (usando event delegation)
-  panel.addEventListener('click', async e => {
-    const editBtn = e.target.closest('.edit-btn')
-    const openUrlBtn = e.target.closest('.open-url-btn')
-    const removeBtn = e.target.closest('.remove-btn')
-    const snoozeBtn = e.target.closest('.snooze-btn')
-    const completeBtn = e.target.closest('.complete-btn')
+  // Lógica da Busca
+  const searchIcon = panel.querySelector('.search-icon-btn')
+  const searchContainer = panel.querySelector('.reminder-search-container')
+  const searchInput = panel.querySelector('.reminder-search-input')
+  searchIcon.addEventListener('click', () => {
+    searchContainer.classList.toggle('expanded')
+    searchInput.focus()
+  })
+  searchInput.addEventListener('input', () => {
+    const searchTerm = searchInput.value.toLowerCase()
+    panel.querySelectorAll('.fired-reminder-item').forEach(item => {
+      const title = item
+        .querySelector('.fired-reminder-title')
+        .textContent.toLowerCase()
+      item.style.display = title.includes(searchTerm) ? 'flex' : 'none'
+    })
+  })
 
-    if (editBtn) {
+  panel.querySelectorAll('.fired-reminder-item').forEach(item => {
+    const reminderId = item.dataset.id
+    if (!reminderId) return
+
+    item.querySelector('.edit-btn')?.addEventListener('click', e => {
       e.stopPropagation()
-      const reminderId = editBtn.closest('.fired-reminder-item').dataset.id
       const reminder = allReminders.find(r => r.id === reminderId)
       if (reminder) {
-        closePanel()
+        closePanelAndCleanup()
         openNewReminderModal(reminder)
       }
-    } else if (openUrlBtn) {
+    })
+
+    item.querySelector('.open-url-btn')?.addEventListener('click', e => {
       e.stopPropagation()
-      const reminderId = openUrlBtn.closest('.fired-reminder-item').dataset.id
       const reminder = allReminders.find(r => r.id === reminderId)
       if (reminder && reminder.url) window.open(reminder.url, '_blank')
-    } else if (removeBtn) {
+    })
+
+    item.querySelector('.remove-btn')?.addEventListener('click', e => {
       e.stopPropagation()
-      const reminderId = removeBtn.closest('.fired-reminder-item').dataset.id
       showConfirmDialog(
         'Tem certeza que deseja remover este lembrete permanentemente?',
         async () => {
           await deleteReminder(reminderId)
           chrome.runtime.sendMessage({ action: 'UPDATE_NOTIFICATION_BADGE' })
-          closePanel()
+          closePanelAndCleanup()
         }
       )
-    } else if (snoozeBtn) {
+    })
+
+    item.querySelector('.snooze-btn')?.addEventListener('click', e => {
       e.stopPropagation()
-      const reminderId = snoozeBtn.closest('.fired-reminder-item').dataset.id
       const reminder = allReminders.find(r => r.id === reminderId)
-      if (reminder) openSnoozeModal(reminder, closePanel)
-    } else if (completeBtn) {
+      if (reminder) openSnoozeModal(reminder, closePanelAndCleanup)
+    })
+
+    item.querySelector('.complete-btn')?.addEventListener('click', async e => {
       e.stopPropagation()
-      const reminderId = completeBtn.closest('.fired-reminder-item').dataset.id
       const reminders = await getReminders()
       const reminderToComplete = reminders[reminderId]
       if (reminderToComplete) {
@@ -1627,9 +1592,9 @@ async function openFiredRemindersPanel() {
           await saveAllReminders(reminders)
         }
         chrome.runtime.sendMessage({ action: 'UPDATE_NOTIFICATION_BADGE' })
-        closePanel()
+        closePanelAndCleanup()
       }
-    }
+    })
   })
 
   requestAnimationFrame(() => panel.classList.add('visible'))

@@ -20,7 +20,7 @@ const FAB_POSITION_KEY = 'fabPositionData' // NOVO
 
 // Configurações Padrão
 const DEFAULT_SETTINGS = {
-  reminderRetentionDays: 2, // Padrão: Manter lembretes disparados por 2 dias
+  reminderRetentionDays: 7, // ALTERADO: Padrão agora é 7 dias
   geminiApiKey: '', // Chave da API do Gemini fornecida pelo usuário
   previewResizable: false, // Define se o preview é redimensionável
   fabPosition: 'bottom-left' // NOVO: Posição padrão
