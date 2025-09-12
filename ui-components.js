@@ -1287,11 +1287,10 @@ function showSummaryModal(summaryText, nextActionText, relevantData, onInsert) {
 }
 
 /**
- * Exibe uma notificação flutuante (toast) de lembrete dentro da página do SGD.
+ * Exibe uma notificação flutuante (toast) de lembrete dentro da página do SGD por 10 segundos.
  * @param {object} reminder - O objeto do lembrete enviado pelo service worker.
  */
 function showInPageNotification(reminder) {
-  // Cria um container para as notificações, se não existir
   let container = document.getElementById('in-page-notification-container')
   if (!container) {
     container = document.createElement('div')
@@ -1300,15 +1299,12 @@ function showInPageNotification(reminder) {
   }
 
   const notificationId = `in-page-notification-${reminder.id}`
-  // Se a notificação já existe, não a cria novamente.
-  if (document.getElementById(notificationId)) {
-    return
-  }
+  if (document.getElementById(notificationId)) return
 
   const notification = document.createElement('div')
   notification.id = notificationId
   notification.className = 'in-page-notification'
-  applyCurrentTheme(notification) // Aplica o tema atual
+  applyCurrentTheme(notification)
 
   const hasUrl = reminder.url && reminder.url.startsWith('http')
   const openUrlButtonHtml = hasUrl
@@ -1321,60 +1317,235 @@ function showInPageNotification(reminder) {
       <h5 class="in-page-notification-title">${escapeHTML(reminder.title)}</h5>
       <button type="button" class="dismiss-btn" title="Dispensar">&times;</button>
     </div>
-    <div class="in-page-notification-body">
-      ${
-        reminder.description ? `<p>${escapeHTML(reminder.description)}</p>` : ''
-      }
-    </div>
+    <div class="in-page-notification-body">${
+      reminder.description ? `<p>${escapeHTML(reminder.description)}</p>` : ''
+    }</div>
     <div class="in-page-notification-actions">
       ${openUrlButtonHtml}
       <button type="button" class="action-btn snooze-btn-main">Adiar (10 min)</button>
       <button type="button" class="action-btn dismiss-btn-main">Dispensar</button>
     </div>
   `
-
-  // Adiciona a notificação ao container
   container.appendChild(notification)
 
-  // Adiciona listeners
-  const dismiss = () => {
-    // Envia mensagem para o service worker orquestrar o fechamento em todas as abas
-    chrome.runtime.sendMessage({
-      action: 'BROADCAST_DISMISS',
-      reminderId: reminder.id
-    })
+  let wasInteractedWith = false
+
+  const notificationTimeout = setTimeout(() => {
+    if (wasInteractedWith) return
+
+    notification.classList.remove('visible')
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification)
+      }
+    }, 400)
+
+    // Tempo esgotado: Pede para o service worker atualizar o badge em TODAS as abas
+    chrome.runtime.sendMessage({ action: 'UPDATE_NOTIFICATION_BADGE' })
+  }, 10000) // 10 segundos
+
+  const handleInteraction = async actionFn => {
+    if (wasInteractedWith) return
+    wasInteractedWith = true
+    clearTimeout(notificationTimeout)
+
+    try {
+      await actionFn()
+      // Avisa outras abas para fecharem a mesma notificação
+      chrome.runtime.sendMessage({
+        action: 'BROADCAST_DISMISS',
+        reminderId: reminder.id
+      })
+    } catch (error) {
+      showNotification(`Erro ao processar lembrete: ${error.message}`, 'error')
+    }
   }
 
   notification
     .querySelectorAll('.dismiss-btn, .dismiss-btn-main')
-    .forEach(btn => btn.addEventListener('click', dismiss))
+    .forEach(btn =>
+      btn.addEventListener('click', () =>
+        handleInteraction(() => deleteReminder(reminder.id))
+      )
+    )
 
   const openUrlBtn = notification.querySelector('.open-url-btn')
   if (openUrlBtn) {
     openUrlBtn.addEventListener('click', () => {
       window.open(reminder.url, '_blank')
-      dismiss() // Dispensa a notificação após abrir o link
+      handleInteraction(() => deleteReminder(reminder.id))
     })
   }
 
-  // Novo: Listener para o botão Adiar
   const snoozeBtn = notification.querySelector('.snooze-btn-main')
   if (snoozeBtn) {
     snoozeBtn.addEventListener('click', () => {
-      const snoozeTime = Date.now() + 10 * 60 * 1000 // 10 minutos
-      // Envia a mensagem para o service worker criar o alarme de soneca
-      chrome.runtime.sendMessage({
-        action: 'SET_ALARM',
-        reminderId: `snooze-${reminder.id}`,
-        alarmTime: snoozeTime
-      })
-      // Dispensa a notificação em todas as abas
-      dismiss()
+      const snoozedReminder = {
+        ...reminder,
+        dateTime: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+        isFired: false,
+        firedAt: null
+      }
+      handleInteraction(() => saveReminder(snoozedReminder))
     })
   }
 
-  // Faz a notificação aparecer com uma animação
   requestAnimationFrame(() => {
     notification.classList.add('visible')
   })
+}
+
+/**
+ * Abre um painel flutuante para exibir lembretes pendentes e já disparados.
+ */
+async function openFiredRemindersPanel() {
+  if (document.getElementById('fired-reminders-panel')) {
+    document.getElementById('fired-reminders-panel').remove()
+    return
+  }
+
+  const remindersData = await getReminders()
+  const allReminders = Object.values(remindersData)
+
+  // Lembretes pendentes são aqueles que foram disparados (isFired: true)
+  const pendingReminders = allReminders
+    .filter(r => r.isFired === true)
+    .sort((a, b) => (a.firedAt || 0) - (b.firedAt || 0))
+
+  // Lembretes já dispensados são os que não estão pendentes, mas têm uma data de disparo
+  const acknowledgedReminders = allReminders
+    .filter(r => r.isFired === false && r.firedAt)
+    .sort((a, b) => (b.firedAt || 0) - (a.firedAt || 0))
+
+  if (pendingReminders.length === 0 && acknowledgedReminders.length === 0) {
+    updateFabBadge() // Garante que o badge suma se não houver nada
+    return
+  }
+
+  const panel = document.createElement('div')
+  panel.id = 'fired-reminders-panel'
+  applyCurrentTheme(panel)
+
+  const fabContainer = document.getElementById('fab-container')
+  const fabPosition = fabContainer
+    ? fabContainer.className
+    : 'fab-container bottom-left'
+  panel.className = fabPosition.replace('fab-container', '').trim()
+
+  const renderReminderItem = (reminder, isAcknowledged = false) => {
+    const priorityClass = `priority-${reminder.priority || 'medium'}`
+    const hasUrl = reminder.url && isValidUrl(reminder.url)
+    const openUrlButtonHtml = hasUrl
+      ? `<button type="button" class="action-btn open-url-btn small-btn" data-url="${escapeHTML(
+          reminder.url
+        )}" title="Abrir Chamado">🔗</button>`
+      : ''
+
+    const actionsHtml = isAcknowledged
+      ? openUrlButtonHtml
+      : `${openUrlButtonHtml}
+         <button type="button" class="action-btn snooze-btn small-btn" title="Adiar (10 min)">Adiar</button>
+         <button type="button" class="action-btn dismiss-btn small-btn" title="Dispensar Lembrete">Dispensar</button>`
+
+    return `
+      <div class="fired-reminder-item ${priorityClass} ${
+      isAcknowledged ? 'acknowledged' : ''
+    }" data-id="${reminder.id}">
+        <div class="fired-reminder-content">
+          <h6 class="fired-reminder-title">${escapeHTML(reminder.title)}</h6>
+          <p class="fired-reminder-desc">
+            ${isAcknowledged ? 'Dispensado' : 'Pendente'} em ${new Date(
+      reminder.firedAt
+    ).toLocaleDateString('pt-BR')}
+          </p>
+        </div>
+        <div class="fired-reminder-actions">${actionsHtml}</div>
+      </div>`
+  }
+
+  const pendingHtml =
+    pendingReminders.length > 0
+      ? `<h6>Pendentes</h6>` +
+        pendingReminders.map(r => renderReminderItem(r, false)).join('')
+      : ''
+  const acknowledgedHtml =
+    acknowledgedReminders.length > 0
+      ? `<h6>Já Disparados</h6>` +
+        acknowledgedReminders.map(r => renderReminderItem(r, true)).join('')
+      : ''
+  const separatorHtml =
+    pendingHtml && acknowledgedHtml
+      ? '<hr class="fired-reminders-separator">'
+      : ''
+
+  panel.innerHTML = `
+    <div class="fired-reminders-header">
+        <h6>Lembretes</h6>
+        <button type="button" class="close-panel-btn" title="Fechar">&times;</button>
+    </div>
+    <div class="fired-reminders-list">${pendingHtml}${separatorHtml}${acknowledgedHtml}</div>`
+
+  document.body.appendChild(panel)
+
+  const closePanel = () => {
+    panel.classList.remove('visible')
+    setTimeout(() => panel.remove(), 300)
+  }
+
+  panel.querySelector('.close-panel-btn').addEventListener('click', closePanel)
+
+  panel.querySelectorAll('.fired-reminder-item').forEach(item => {
+    const reminderId = item.dataset.id
+    if (!reminderId) return
+
+    item.querySelector('.open-url-btn')?.addEventListener('click', () => {
+      window.open(item.querySelector('.open-url-btn').dataset.url, '_blank')
+    })
+
+    item.querySelector('.snooze-btn')?.addEventListener('click', async () => {
+      const reminders = await getReminders()
+      const reminderToSnooze = reminders[reminderId]
+      if (reminderToSnooze) {
+        reminderToSnooze.dateTime = new Date(
+          Date.now() + 10 * 60 * 1000
+        ).toISOString()
+        reminderToSnooze.isFired = false
+        // Mantém o firedAt original para o histórico, mas reseta o alarme
+        await saveReminder(reminderToSnooze)
+        chrome.runtime.sendMessage({ action: 'UPDATE_NOTIFICATION_BADGE' })
+        closePanel()
+      }
+    })
+
+    item.querySelector('.dismiss-btn')?.addEventListener('click', async () => {
+      const reminders = await getReminders()
+      const reminderToDismiss = reminders[reminderId]
+      if (reminderToDismiss) {
+        if (
+          reminderToDismiss.recurrence &&
+          reminderToDismiss.recurrence !== 'none'
+        ) {
+          const nextDate = getNextRecurrenceDate(
+            new Date(reminderToDismiss.dateTime),
+            reminderToDismiss.recurrence
+          )
+          if (nextDate) {
+            reminderToDismiss.dateTime = nextDate.toISOString()
+            reminderToDismiss.isFired = false
+            reminderToDismiss.firedAt = null // Limpa para o próximo ciclo
+            await saveReminder(reminderToDismiss)
+          } else {
+            await deleteReminder(reminderId) // Se não houver próxima data, exclui
+          }
+        } else {
+          reminderToDismiss.isFired = false // Apenas marca como "não pendente"
+          await saveReminder(reminderToDismiss)
+        }
+        chrome.runtime.sendMessage({ action: 'UPDATE_NOTIFICATION_BADGE' })
+        closePanel()
+      }
+    })
+  })
+
+  requestAnimationFrame(() => panel.classList.add('visible'))
 }

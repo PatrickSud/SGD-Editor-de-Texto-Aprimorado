@@ -515,11 +515,10 @@ async function getReminders() {
 
 /**
  * Função interna para limpar lembretes expirados.
- * Regra: Lembretes disparados (isFired=true) são mantidos pelo tempo configurado pelo usuário.
+ * Regra: Lembretes com um 'firedAt' timestamp são mantidos pelo tempo configurado pelo usuário.
  */
 async function cleanupOldReminders() {
   try {
-    // 1. Carrega as configurações para obter o período de retenção
     const settings = await getSettings()
     const retentionMs = settings.reminderRetentionDays * 24 * 60 * 60 * 1000
     const FIVE_MINUTES_MS = 5 * 60 * 1000
@@ -534,15 +533,13 @@ async function cleanupOldReminders() {
       const reminder = reminders[id]
       let shouldDelete = false
 
-      if (reminder.isFired) {
-        // Caso 1: Disparado. Excluir se tiver passado o tempo de retenção configurado.
-        if (reminder.firedAt && now - reminder.firedAt > retentionMs) {
-          shouldDelete = true
-        }
-      } else {
-        // Caso 2: Não disparado (Ativo ou Perdido).
+      // Se o lembrete tem uma data de disparo, verifica se já passou o tempo de retenção
+      if (reminder.firedAt && now - reminder.firedAt > retentionMs) {
+        shouldDelete = true
+      }
+      // Se não foi disparado, verifica se é um alarme antigo que foi perdido
+      else if (!reminder.firedAt) {
         const alarmTime = new Date(reminder.dateTime).getTime()
-        // Excluir se o tempo do alarme já passou significativamente (Alarme Perdido).
         if (alarmTime < now - FIVE_MINUTES_MS) {
           shouldDelete = true
         }
@@ -617,6 +614,13 @@ async function saveReminder(reminderData) {
       alarmTime: alarmTime
     })
 
+    // 3. Notifica o service worker sobre a criação do lembrete para atualizar o badge
+    sendBackgroundMessage({
+      action: reminderData.id ? 'REMINDER_UPDATED' : 'REMINDER_CREATED'
+    }).catch(error => {
+      console.warn('Erro ao notificar criação/atualização de lembrete:', error)
+    })
+
     return reminderId
   } catch (error) {
     console.error(
@@ -673,6 +677,13 @@ async function deleteReminder(reminderId) {
     if (reminders[reminderId]) {
       delete reminders[reminderId]
       await chrome.storage.sync.set({ [REMINDERS_STORAGE_KEY]: reminders })
+
+      // 3. Notifica o service worker sobre a exclusão do lembrete para atualizar o badge
+      sendBackgroundMessage({
+        action: 'REMINDER_DISMISSED'
+      }).catch(error => {
+        console.warn('Erro ao notificar exclusão de lembrete:', error)
+      })
     }
   } catch (error) {
     console.error(`Editor SGD: Erro ao excluir lembrete ${reminderId}.`, error)
@@ -710,6 +721,13 @@ async function deleteMultipleReminders(reminderIds) {
 
     if (changed) {
       await chrome.storage.sync.set({ [REMINDERS_STORAGE_KEY]: reminders })
+
+      // Notifica o service worker sobre as exclusões para atualizar o badge
+      sendBackgroundMessage({
+        action: 'REMINDER_DISMISSED'
+      }).catch(error => {
+        console.warn('Erro ao notificar exclusão em massa de lembretes:', error)
+      })
     }
   } catch (error) {
     console.error(`Editor SGD: Erro ao excluir múltiplos lembretes.`, error)

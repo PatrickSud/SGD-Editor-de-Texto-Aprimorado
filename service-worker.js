@@ -73,25 +73,7 @@ async function saveReminders(reminders) {
  * @param {string} recurrence A regra ('daily', 'weekly', 'monthly').
  * @returns {Date | null} A nova data ou null se a recorrência for 'none'.
  */
-function getNextRecurrenceDate(lastDate, recurrence) {
-  if (!recurrence || recurrence === 'none') return null
-
-  const nextDate = new Date(lastDate.getTime())
-  switch (recurrence) {
-    case 'daily':
-      nextDate.setDate(nextDate.getDate() + 1)
-      break
-    case 'weekly':
-      nextDate.setDate(nextDate.getDate() + 7)
-      break
-    case 'monthly':
-      nextDate.setMonth(nextDate.getMonth() + 1)
-      break
-    default:
-      return null
-  }
-  return nextDate
-}
+// REMOVIDO: A função getNextRecurrenceDate foi movida para utils.js
 
 /**
  * Transmite uma mensagem para todas as abas abertas do SGD.
@@ -119,31 +101,7 @@ async function broadcastToSgdTabs(message) {
   }
 }
 
-/**
- * Exibe uma notificação nativa do Chrome.
- * @param {object} reminder O objeto do lembrete.
- */
-function showChromeNotification(reminder) {
-  const notificationId = reminder.id
-  const hasUrl = reminder.url && reminder.url.startsWith('http')
-
-  const buttons = [{ title: 'Soneca (10 min)' }]
-  if (hasUrl) {
-    buttons.push({ title: 'Abrir Solicitação' })
-  }
-  buttons.push({ title: 'Dispensar' })
-
-  chrome.notifications.create(notificationId, {
-    type: 'basic',
-    iconUrl: 'logo.png',
-    title: reminder.title || 'Lembrete SGD',
-    message: reminder.description || 'Verificar chamado agendado.',
-    priority: 2,
-    buttons: buttons,
-    requireInteraction: true,
-    silent: false
-  })
-}
+// ATENÇÃO: A função showChromeNotification foi REMOVIDA - agora usamos apenas notificações internas
 
 /**
  * Limpa a notificação visual e o alarme associado.
@@ -219,6 +177,37 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           action: 'UPDATE_NOTIFICATION_BADGE'
         })
         sendResponse({ success: true })
+      } else if (message.action === 'REMINDER_CREATED') {
+        // Notifica todas as abas sobre novo lembrete criado
+        await broadcastToSgdTabs({
+          action: 'UPDATE_NOTIFICATION_BADGE'
+        })
+        sendResponse({ success: true })
+      } else if (message.action === 'REMINDER_DISMISSED') {
+        // Notifica todas as abas sobre lembrete dispensado
+        await broadcastToSgdTabs({
+          action: 'UPDATE_NOTIFICATION_BADGE'
+        })
+        sendResponse({ success: true })
+      } else if (message.action === 'REMINDER_UPDATED') {
+        // Notifica todas as abas sobre lembrete atualizado
+        await broadcastToSgdTabs({
+          action: 'UPDATE_NOTIFICATION_BADGE'
+        })
+        sendResponse({ success: true })
+      } else if (message.action === 'BROADCAST_DISMISS' && message.reminderId) {
+        // Ação para fechar a notificação em outras abas quando o usuário interage em uma delas
+        await broadcastToSgdTabs({
+          action: 'CLOSE_IN_PAGE_NOTIFICATION',
+          reminderId: message.reminderId
+        })
+        sendResponse({ success: true })
+      } else if (message.action === 'UPDATE_NOTIFICATION_BADGE') {
+        // Ação para atualizar o badge em todas as abas (agora chamada pelo site após 10s)
+        await broadcastToSgdTabs({
+          action: 'UPDATE_NOTIFICATION_BADGE'
+        })
+        sendResponse({ success: true })
       }
     } catch (error) {
       console.error(`Erro ao processar ação '${message.action}':`, error)
@@ -237,10 +226,11 @@ chrome.alarms.onAlarm.addListener(async alarm => {
     return
   }
 
-  const isSnooze = alarm.name.startsWith('snooze-')
-  const reminderId = isSnooze ? alarm.name.split('snooze-')[1] : alarm.name
+  // A verificação de 'snooze' foi removida pois a lógica agora é unificada
+  const reminderId = alarm.name
 
-  if (!reminderId.startsWith('reminder-')) return
+  // A verificação de prefixo 'reminder-' também foi removida para simplificar
+  if (!reminderId) return
 
   const reminders = await getReminders()
   const reminder = reminders[reminderId]
@@ -251,97 +241,18 @@ chrome.alarms.onAlarm.addListener(async alarm => {
     return
   }
 
-  showChromeNotification(reminder)
+  // Ação principal: envia o lembrete para ser exibido na interface do site
   broadcastToSgdTabs({ action: 'SHOW_IN_PAGE_NOTIFICATION', reminder })
 
-  // Marca o lembrete atual como disparado. Isso é importante para a UI.
+  // Apenas marca o lembrete como "disparado".
+  // A lógica de reagendamento agora é tratada na interface do usuário.
   reminder.isFired = true
   reminder.firedAt = Date.now()
-
-  // Se for um lembrete recorrente (e não uma soneca), agenda a próxima ocorrência.
-  if (reminder.recurrence && reminder.recurrence !== 'none' && !isSnooze) {
-    const nextDate = getNextRecurrenceDate(
-      new Date(reminder.dateTime),
-      reminder.recurrence
-    )
-    if (nextDate) {
-      // Atualiza o lembrete existente com a nova data e reseta o status 'fired'.
-      reminder.dateTime = nextDate.toISOString()
-      reminder.isFired = false
-      reminder.firedAt = null
-      await chrome.alarms.create(reminder.id, { when: nextDate.getTime() })
-    }
-  }
 
   await saveReminders(reminders)
 })
 
-/**
- * Listener para cliques nos botões da notificação.
- */
-chrome.notifications.onButtonClicked.addListener(
-  async (notificationId, buttonIndex) => {
-    if (!notificationId.startsWith('reminder-')) return
-
-    const reminders = await getReminders()
-    const reminder = reminders[notificationId]
-
-    if (!reminder) {
-      await clearNotificationAndAlarm(notificationId)
-      return
-    }
-
-    const hasUrl = reminder.url && reminder.url.startsWith('http')
-    let buttonAction = 'snooze' // Botão 0 é sempre soneca
-
-    if (hasUrl) {
-      if (buttonIndex === 1) buttonAction = 'open'
-      if (buttonIndex === 2) buttonAction = 'dismiss'
-    } else {
-      if (buttonIndex === 1) buttonAction = 'dismiss'
-    }
-
-    switch (buttonAction) {
-      case 'snooze':
-        const snoozeTime = Date.now() + 10 * 60 * 1000 // 10 minutos
-        await chrome.alarms.create(`snooze-${notificationId}`, {
-          when: snoozeTime
-        })
-        break
-      case 'open':
-        chrome.tabs.create({ url: reminder.url })
-        break
-      case 'dismiss':
-        // Apenas fecha a notificação, o estado 'fired' já foi salvo no onAlarm.
-        break
-    }
-
-    // Limpa a notificação visual após qualquer ação de botão.
-    await chrome.notifications.clear(notificationId)
-  }
-)
-
-/**
- * Listener para clique no corpo da notificação.
- */
-chrome.notifications.onClicked.addListener(async notificationId => {
-  if (!notificationId.startsWith('reminder-')) return
-
-  const reminder = (await getReminders())[notificationId]
-  if (reminder?.url) {
-    chrome.tabs.create({ url: reminder.url })
-  }
-  await clearNotificationAndAlarm(notificationId)
-})
-
-/**
- * Listener para quando a notificação é fechada pelo usuário.
- */
-chrome.notifications.onClosed.addListener(async (notificationId, byUser) => {
-  if (byUser && notificationId.startsWith('reminder-')) {
-    await clearNotificationAndAlarm(notificationId)
-  }
-})
+// ATENÇÃO: Todos os listeners de chrome.notifications foram REMOVIDOS
 
 // --- LÓGICA DE ANÁLISE DE SUGESTÕES ---
 

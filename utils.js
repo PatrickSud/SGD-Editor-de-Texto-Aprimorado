@@ -236,3 +236,29 @@ function simpleHash(str) {
   }
   return hash
 }
+
+/**
+ * Calcula a próxima data de um alarme recorrente.
+ * @param {Date} lastDate A última data do alarme.
+ * @param {string} recurrence A regra ('daily', 'weekly', 'monthly').
+ * @returns {Date | null} A nova data ou null se a recorrência for 'none'.
+ */
+function getNextRecurrenceDate(lastDate, recurrence) {
+  if (!recurrence || recurrence === 'none') return null
+
+  const nextDate = new Date(lastDate.getTime())
+  switch (recurrence) {
+    case 'daily':
+      nextDate.setDate(nextDate.getDate() + 1)
+      break
+    case 'weekly':
+      nextDate.setDate(nextDate.getDate() + 7)
+      break
+    case 'monthly':
+      nextDate.setMonth(nextDate.getMonth() + 1)
+      break
+    default:
+      return null
+  }
+  return nextDate
+}
