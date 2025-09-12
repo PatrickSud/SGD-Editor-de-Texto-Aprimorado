@@ -545,7 +545,7 @@ async function renderRemindersList(modal) {
           reminder.firedAt
         ).toLocaleDateString('pt-BR')}`
         // Adiciona o botão Editar também para os pendentes
-        actionsHtml = `${openUrlButtonHtml}${editButtonHtml}<button type="button" class="action-btn complete-btn" title="Concluir">✅</button><button type="button" class="action-btn snooze-btn" title="Adiar">⏰</button>${removeButtonHtml}`
+        actionsHtml = `${openUrlButtonHtml}<button type="button" class="action-btn complete-btn" title="Concluir">✅</button><button type="button" class="action-btn snooze-btn" title="Adiar">⏰</button>${editButtonHtml}${removeButtonHtml}`
         break
       case 'acknowledged':
         icon = '✅'
@@ -1244,7 +1244,7 @@ function showInPageNotification(reminder) {
 
   const hasUrl = reminder.url && reminder.url.startsWith('http')
   const openUrlButtonHtml = hasUrl
-    ? `<button type="button" class="action-btn open-url-btn">Abrir Solicitação</button>`
+    ? `<button type="button" class="action-btn open-url-btn">🔗 Abrir Link</button>`
     : ''
 
   notification.innerHTML = `
@@ -1258,8 +1258,8 @@ function showInPageNotification(reminder) {
     }</div>
     <div class="in-page-notification-actions">
       ${openUrlButtonHtml}
-      <button type="button" class="action-btn snooze-btn-main">Adiar (10 min)</button>
-      <button type="button" class="action-btn dismiss-btn-main">Dispensar</button>
+      <button type="button" class="action-btn snooze-btn-main">⏰ Adiar</button>
+      <button type="button" class="action-btn complete-btn-main">✅ Concluir</button>
     </div>
   `
   // Registra que a notificação foi exibida nesta sessão para não repetir em novas abas
@@ -1318,18 +1318,42 @@ function showInPageNotification(reminder) {
     chrome.runtime.sendMessage({ action: 'UPDATE_NOTIFICATION_BADGE' })
   })
 
-  // O botão "Dispensar" (dismiss-btn-main) mantém a função de concluir
+  // O botão "Concluir" (complete-btn-main) marca o lembrete como concluído
   notification
-    .querySelector('.dismiss-btn-main')
+    .querySelector('.complete-btn-main')
     .addEventListener('click', () =>
-      handleInteraction(() => deleteReminder(reminder.id))
+      handleInteraction(async () => {
+        const reminders = await getReminders()
+        const reminderToComplete = reminders[reminder.id]
+        if (reminderToComplete) {
+          reminderToComplete.isFired = false
+          reminderToComplete.firedAt = Date.now()
+
+          // Se for recorrente, agenda o próximo
+          if (
+            reminderToComplete.recurrence &&
+            reminderToComplete.recurrence !== 'none'
+          ) {
+            const nextDateTime = calculateNextRecurrence(
+              reminderToComplete.dateTime,
+              reminderToComplete.recurrence
+            )
+            reminderToComplete.dateTime = nextDateTime
+            reminderToComplete.isFired = false
+            reminderToComplete.firedAt = null
+          }
+
+          await saveAllReminders(reminders)
+          chrome.runtime.sendMessage({ action: 'UPDATE_NOTIFICATION_BADGE' })
+        }
+      })
     )
 
+  // CORREÇÃO: O botão 'Abrir Link' agora apenas abre o link, sem fechar o toast ou concluir o lembrete
   const openUrlBtn = notification.querySelector('.open-url-btn')
   if (openUrlBtn) {
     openUrlBtn.addEventListener('click', () => {
       window.open(reminder.url, '_blank')
-      handleInteraction(() => deleteReminder(reminder.id))
     })
   }
 
@@ -1407,8 +1431,8 @@ async function openFiredRemindersPanel() {
         statusText = `Pendente em ${new Date(
           reminder.firedAt
         ).toLocaleDateString('pt-BR')}`
-        // Adiciona o botão Editar também para os pendentes
-        actionsHtml = `${openUrlButtonHtml}${editButtonHtml}<button type="button" class="action-btn complete-btn small-btn" title="Concluir">✅</button><button type="button" class="action-btn snooze-btn small-btn" title="Adiar">⏰</button>${removeButtonHtml}`
+        // Adiciona o botão Editar também para os pendentes, reordenado à esquerda do Remover
+        actionsHtml = `${openUrlButtonHtml}<button type="button" class="action-btn complete-btn small-btn" title="Concluir">✅</button><button type="button" class="action-btn snooze-btn small-btn" title="Adiar">⏰</button>${editButtonHtml}${removeButtonHtml}`
         break
       case 'acknowledged':
         statusText = `Concluído em ${new Date(
