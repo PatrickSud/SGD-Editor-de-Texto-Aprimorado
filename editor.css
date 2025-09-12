@@ -3108,3 +3108,34 @@ hr.fired-reminders-separator {
   font-size: 14px;
   color: var(--text-color-muted);
 }
+
+/* --- Prioridade no Toast de Notificação --- */
+.in-page-notification.priority-low {
+  border-left-color: var(--action-blue);
+}
+.in-page-notification.priority-medium {
+  border-left-color: var(--action-yellow);
+}
+.in-page-notification.priority-high {
+  border-left-color: var(--action-red);
+}
+
+/* --- Consistência de Estilo para Botões no Gerenciamento de Lembretes --- */
+.management-section .reminder-actions-container .complete-btn {
+  background-color: var(--action-blue);
+  color: white;
+}
+.management-section .reminder-actions-container .remove-btn {
+  background-color: var(--action-red);
+  color: white;
+}
+.management-section .reminder-actions-container .edit-btn {
+  background-color: var(--action-blue);
+  color: white;
+}
+
+/* --- Título Riscado para Lembretes Concluídos no Gerenciamento --- */
+.management-section .reminder-item.acknowledged .category-name {
+  text-decoration: line-through;
+  opacity: 0.7;
+}

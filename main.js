@@ -728,6 +728,28 @@ async function checkForAndDisplaySuggestions() {
 /**
  * Função de inicialização principal que carrega o tema e inicia a observação.
  */
+/**
+ * Verifica se existem lembretes pendentes que ainda não foram notificados
+ * nesta sessão do navegador e exibe o toast para eles.
+ */
+async function checkForMissedToasts() {
+  const reminders = await getReminders()
+  const pendingReminders = Object.values(reminders).filter(r => r.isFired)
+
+  if (pendingReminders.length === 0) return
+
+  // Busca todos os flags de "toast exibido" da sessão atual
+  const sessionData = await chrome.storage.session.get(null)
+
+  for (const reminder of pendingReminders) {
+    const toastShownKey = `toast_shown_${reminder.id}`
+    // Exibe o toast apenas se o flag não existir na sessão atual
+    if (!sessionData[toastShownKey]) {
+      showInPageNotification(reminder)
+    }
+  }
+}
+
 async function initializeExtension() {
   await loadSavedTheme()
   observeForTextArea()
@@ -751,6 +773,7 @@ async function initializeExtension() {
   // Cria e injeta o sino na barra de navegação
   createAndInjectBellIcon()
   await updateNotificationStatus()
+  await checkForMissedToasts() // Verifica notificações perdidas
 
   // Verifica por sugestões de trâmites ao carregar a página
   checkForAndDisplaySuggestions()

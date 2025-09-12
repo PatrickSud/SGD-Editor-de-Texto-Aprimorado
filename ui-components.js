@@ -544,7 +544,8 @@ async function renderRemindersList(modal) {
         statusText = `Pendente desde ${new Date(
           reminder.firedAt
         ).toLocaleDateString('pt-BR')}`
-        actionsHtml = `${openUrlButtonHtml}<button type="button" class="action-btn complete-btn" title="Concluir">✅</button><button type="button" class="action-btn snooze-btn" title="Adiar">⏰</button>${removeButtonHtml}`
+        // Adiciona o botão Editar também para os pendentes
+        actionsHtml = `${openUrlButtonHtml}${editButtonHtml}<button type="button" class="action-btn complete-btn" title="Concluir">✅</button><button type="button" class="action-btn snooze-btn" title="Adiar">⏰</button>${removeButtonHtml}`
         break
       case 'acknowledged':
         icon = '✅'
@@ -1237,6 +1238,8 @@ function showInPageNotification(reminder) {
   const notification = document.createElement('div')
   notification.id = notificationId
   notification.className = 'in-page-notification'
+  // Adiciona a classe de prioridade para a estilização da borda colorida
+  notification.classList.add(`priority-${reminder.priority || 'medium'}`)
   applyCurrentTheme(notification)
 
   const hasUrl = reminder.url && reminder.url.startsWith('http')
@@ -1259,6 +1262,10 @@ function showInPageNotification(reminder) {
       <button type="button" class="action-btn dismiss-btn-main">Dispensar</button>
     </div>
   `
+  // Registra que a notificação foi exibida nesta sessão para não repetir em novas abas
+  const toastShownKey = `toast_shown_${reminder.id}`
+  chrome.storage.session.set({ [toastShownKey]: true })
+
   container.appendChild(notification)
 
   let wasInteractedWith = false
@@ -1294,12 +1301,28 @@ function showInPageNotification(reminder) {
     }
   }
 
+  // O botão 'X' (dismiss-btn) agora apenas fecha o toast e ativa o sino
+  notification.querySelector('.dismiss-btn').addEventListener('click', () => {
+    if (wasInteractedWith) return
+    wasInteractedWith = true
+    clearTimeout(notificationTimeout)
+
+    // Apenas remove o elemento visual
+    notification.classList.remove('visible')
+    setTimeout(() => {
+      if (notification.parentNode)
+        notification.parentNode.removeChild(notification)
+    }, 400)
+
+    // Ativa o sino de notificação imediatamente
+    chrome.runtime.sendMessage({ action: 'UPDATE_NOTIFICATION_BADGE' })
+  })
+
+  // O botão "Dispensar" (dismiss-btn-main) mantém a função de concluir
   notification
-    .querySelectorAll('.dismiss-btn, .dismiss-btn-main')
-    .forEach(btn =>
-      btn.addEventListener('click', () =>
-        handleInteraction(() => deleteReminder(reminder.id))
-      )
+    .querySelector('.dismiss-btn-main')
+    .addEventListener('click', () =>
+      handleInteraction(() => deleteReminder(reminder.id))
     )
 
   const openUrlBtn = notification.querySelector('.open-url-btn')
@@ -1384,7 +1407,8 @@ async function openFiredRemindersPanel() {
         statusText = `Pendente em ${new Date(
           reminder.firedAt
         ).toLocaleDateString('pt-BR')}`
-        actionsHtml = `${openUrlButtonHtml}<button type="button" class="action-btn complete-btn small-btn" title="Concluir">✅</button><button type="button" class="action-btn snooze-btn small-btn" title="Adiar">⏰</button>${removeButtonHtml}`
+        // Adiciona o botão Editar também para os pendentes
+        actionsHtml = `${openUrlButtonHtml}${editButtonHtml}<button type="button" class="action-btn complete-btn small-btn" title="Concluir">✅</button><button type="button" class="action-btn snooze-btn small-btn" title="Adiar">⏰</button>${removeButtonHtml}`
         break
       case 'acknowledged':
         statusText = `Concluído em ${new Date(
