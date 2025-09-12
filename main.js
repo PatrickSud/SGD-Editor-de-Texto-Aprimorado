@@ -670,17 +670,13 @@ function addSgdActionButtons(masterContainer) {
       clonedButton.addEventListener('click', e => {
         e.preventDefault()
 
-        // --- LÓGICA DE COLETA DE AMOSTRAS E SUGESTÕES ---
+        // --- LÓGICA DE COLETA DE AMOSTRAS ---
         const textArea = getTargetTextArea()
         if (textArea) {
           const content = textArea.value.trim()
           // Salva se o conteúdo for relevante para treinar a IA
           if (content.length > 150) {
             saveUserResponseSample(content)
-          }
-          // Registra o uso para possível sugestão de trâmite
-          if (content.length >= MIN_SUGGESTION_LENGTH) {
-            logResponseUsage(content)
           }
         }
         // --- FIM DA LÓGICA ---
@@ -700,28 +696,6 @@ function addSgdActionButtons(masterContainer) {
 /**
  * Verifica se existem sugestões pendentes e exibe uma notificação para a primeira.
  */
-async function checkForAndDisplaySuggestions() {
-  const suggestions = await getSuggestedTramites()
-  if (suggestions.length === 0) return
-
-  const suggestion = suggestions[0] // Pega a primeira sugestão da lista
-
-  const message =
-    'Notamos que você usa esta resposta com frequência. Deseja salvá-la como um trâmite?'
-
-  // A notificação não expira automaticamente (duração 0) e tem um callback
-  showNotification(message, 'suggestion', 0, () => {
-    // Ao clicar na notificação:
-    // 1. Abre o modal de mensagem preenchido com o conteúdo sugerido.
-    openMessageModal({
-      title: `Sugestão (usada ${suggestion.count} vezes)`,
-      message: suggestion.content,
-      categoryId: null // Nenhuma categoria pré-selecionada
-    })
-    // 2. Remove esta sugestão da lista de pendentes para não mostrar novamente.
-    clearSuggestion(suggestion.hash)
-  })
-}
 
 // --- EXECUÇÃO PRINCIPAL ---
 
@@ -774,9 +748,6 @@ async function initializeExtension() {
   createAndInjectBellIcon()
   await updateNotificationStatus()
   await checkForMissedToasts() // Verifica notificações perdidas
-
-  // Verifica por sugestões de trâmites ao carregar a página
-  checkForAndDisplaySuggestions()
 }
 
 function createFloatingActionButtons() {

@@ -124,10 +124,7 @@ async function clearNotificationAndAlarm(notificationId) {
  * Configura alarmes essenciais na inicialização da extensão.
  */
 function setupInitialAlarms() {
-  chrome.alarms.create('analyze-usage', {
-    delayInMinutes: 60,
-    periodInMinutes: 180
-  })
+  // Alarmes de análise de uso removidos
 }
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -221,11 +218,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  * Listener principal para quando um alarme é disparado.
  */
 chrome.alarms.onAlarm.addListener(async alarm => {
-  if (alarm.name === 'analyze-usage') {
-    await analyzeUsageAndSuggest()
-    return
-  }
-
   // A verificação de 'snooze' foi removida pois a lógica agora é unificada
   const reminderId = alarm.name
 
@@ -260,50 +252,6 @@ chrome.alarms.onAlarm.addListener(async alarm => {
  * Analisa o uso de trâmites e sugere novos para adicionar às mensagens rápidas.
  * (A lógica interna desta função permanece a mesma)
  */
-async function analyzeUsageAndSuggest() {
-  console.log('Executando análise de uso para sugestão de trâmites...')
-  const usageData = (await getStorageData(USAGE_TRACKING_KEY, 'local')) || {
-    hashes: {},
-    content: {}
-  }
-  const quickMessagesData = (await getStorageData(STORAGE_KEY, 'sync')) || {
-    messages: []
-  }
-  const existingSuggestions =
-    (await getStorageData(SUGGESTED_TRAMITES_KEY, 'sync')) || []
-
-  const existingTramiteHashes = new Set(
-    quickMessagesData.messages.map(msg => simpleHash(msg.message))
-  )
-  const pendingSuggestionHashes = new Set(existingSuggestions.map(s => s.hash))
-
-  const newSuggestions = []
-
-  for (const hash in usageData.hashes) {
-    const count = usageData.hashes[hash]
-    const content = usageData.content[hash]
-
-    if (
-      content &&
-      count >= SUGGESTION_THRESHOLD &&
-      content.length >= MIN_SUGGESTION_LENGTH &&
-      !existingTramiteHashes.has(parseInt(hash)) &&
-      !pendingSuggestionHashes.has(parseInt(hash))
-    ) {
-      newSuggestions.push({
-        hash: parseInt(hash),
-        content: content,
-        count: count
-      })
-    }
-  }
-
-  if (newSuggestions.length > 0) {
-    const allSuggestions = [...existingSuggestions, ...newSuggestions]
-    await setStorageData(SUGGESTED_TRAMITES_KEY, allSuggestions, 'sync')
-    console.log(`${newSuggestions.length} nova(s) sugestão(ões) salva(s).`)
-  }
-}
 
 /**
  * Gera um hash simples de uma string.

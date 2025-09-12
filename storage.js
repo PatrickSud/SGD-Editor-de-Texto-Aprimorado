@@ -595,7 +595,10 @@ async function saveReminder(reminderData) {
     priority: reminderData.priority || 'medium', // NOVO
     createdAt: reminderData.createdAt || Date.now(),
     isFired: false, // Sempre false ao salvar/editar manualmente
-    firedAt: null // Limpa o timestamp do disparo
+    firedAt: null, // Limpa o timestamp do disparo
+    // Adiciona o contador de adiamentos, incrementando se já existir
+    snoozeCount:
+      (reminderData.snoozeCount || 0) + (reminderData.isSnoozed ? 1 : 0)
   }
 
   try {
@@ -796,96 +799,6 @@ async function saveUserResponseSample(responseText) {
 }
 
 // --- SUGESTÃO INTELIGENTE DE TRÂMITES ---
-
-/**
- * Registra o uso de um texto, incrementando seu contador.
- * @param {string} text - O texto da resposta do usuário.
- */
-async function logResponseUsage(text) {
-  try {
-    // Usamos chrome.storage.local para dados mais frequentes e maiores.
-    const result = await chrome.storage.local.get(USAGE_TRACKING_KEY)
-    const trackingData = result[USAGE_TRACKING_KEY] || {
-      hashes: {},
-      content: {}
-    }
-    const hash = simpleHash(text)
-
-    // Incrementa o contador para o hash
-    trackingData.hashes[hash] = (trackingData.hashes[hash] || 0) + 1
-    // Armazena o conteúdo completo associado ao hash, sobrescrevendo para manter o mais recente.
-    trackingData.content[hash] = text
-
-    await chrome.storage.local.set({ [USAGE_TRACKING_KEY]: trackingData })
-  } catch (error) {
-    console.error('Editor SGD: Erro ao registrar uso de resposta.', error)
-  }
-}
-
-/**
- * Recupera as sugestões de trâmites pendentes.
- * @returns {Promise<Array<object>>}
- */
-async function getSuggestedTramites() {
-  try {
-    const result = await chrome.storage.sync.get(SUGGESTED_TRAMITES_KEY)
-    return result[SUGGESTED_TRAMITES_KEY] || []
-  } catch (error) {
-    console.error('Editor SGD: Erro ao buscar sugestões.', error)
-    return []
-  }
-}
-
-/**
- * Remove uma sugestão da lista de pendentes (após o usuário interagir).
- * @param {number} suggestionHash - O hash da sugestão a ser removida.
- */
-async function clearSuggestion(suggestionHash) {
-  try {
-    let suggestions = await getSuggestedTramites()
-    suggestions = suggestions.filter(s => s.hash !== suggestionHash)
-
-    await chrome.storage.sync.set({ [SUGGESTED_TRAMITES_KEY]: suggestions })
-  } catch (error) {
-    console.error('Editor SGD: Erro ao limpar sugestão.', error)
-  }
-}
-
-/**
- * Adiciona uma nova sugestestão à lista de pendentes.
- * @param {string} text - O texto da nova sugestão.
- */
-async function addSuggestedTramite(text) {
-  try {
-    let suggestions = await getSuggestedTramites()
-    const hash = simpleHash(text)
-
-    // Verifica se já existe uma sugestão igual
-    const exists = suggestions.some(s => s.hash === hash)
-    if (exists) {
-      console.warn('Sugestão duplicada, não adicionada:', text)
-      return
-    }
-
-    // Adiciona a nova sugestão no início da lista
-    suggestions.unshift({ text, hash })
-
-    await chrome.storage.sync.set({ [SUGGESTED_TRAMITES_KEY]: suggestions })
-  } catch (error) {
-    console.error('Editor SGD: Erro ao adicionar sugestão.', error)
-  }
-}
-
-/**
- * Limpa todas as sugestões armazenadas (usado em configurações).
- */
-async function clearAllSuggestions() {
-  try {
-    await chrome.storage.sync.set({ [SUGGESTED_TRAMITES_KEY]: [] })
-  } catch (error) {
-    console.error('Editor SGD: Erro ao limpar todas as sugestões.', error)
-  }
-}
 
 /**
  * Atualiza o atalho de uma categoria específica diretamente no storage.

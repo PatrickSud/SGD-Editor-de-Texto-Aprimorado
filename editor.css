@@ -3139,3 +3139,165 @@ hr.fired-reminders-separator {
   text-decoration: line-through;
   opacity: 0.7;
 }
+
+/* Adicione esta regra para aumentar a largura da janela de Gerenciamento */
+#reminders-management-modal .se-modal-content {
+  max-width: 850px;
+}
+
+/* --- Estilo Moderno de Lembretes (Cards) --- */
+
+@keyframes card-fade-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+#reminders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#reminders-list h6 {
+  margin-bottom: -5px; /* Reduz o espaço entre o título e o primeiro card */
+}
+
+.reminder-card {
+  background-color: var(--background-main);
+  border: 1px solid var(--border-color);
+  border-left-width: 4px; /* Adiciona a borda de prioridade */
+  border-radius: var(--border-radius-md);
+  padding: 10px 14px; /* Reduz o padding para diminuir a altura */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.reminder-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.reminder-card.completing {
+  animation: card-fade-out 0.4s ease forwards;
+}
+
+/* Adicione estas regras para as cores da borda de prioridade */
+.reminder-card.priority-low {
+  border-left-color: var(--action-blue);
+}
+.reminder-card.priority-medium {
+  border-left-color: var(--action-yellow);
+}
+.reminder-card.priority-high {
+  border-left-color: var(--action-red);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-color-main);
+}
+
+.card-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 11px;
+  color: var(--text-color-muted);
+  flex-shrink: 0;
+}
+
+.card-history {
+  font-style: italic;
+}
+
+.card-content .description-snippet {
+  font-size: 13px;
+  color: var(--text-color-muted);
+  margin: 4px 0 8px 0;
+
+  /* Limita o texto a 2 linhas por padrão */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+
+  transition: -webkit-line-clamp 0.3s ease-in-out;
+}
+
+/* Ao expandir, remove o limite de linhas */
+.reminder-card.expanded .description-snippet {
+  -webkit-line-clamp: 20; /* Um número alto para mostrar todo o conteúdo */
+  line-clamp: 20;
+}
+
+.card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.card-actions .action-btn {
+  border-radius: var(--border-radius-sm);
+  padding: 5px 10px;
+  font-size: 14px;
+  border: 1px solid transparent;
+}
+
+/* Estilos Sutis dos Botões */
+.card-actions .action-btn.primary {
+  background-color: color-mix(in srgb, var(--action-blue) 15%, transparent);
+  color: var(--action-blue);
+}
+.card-actions .action-btn.primary:hover {
+  background-color: var(--action-blue);
+  color: white;
+}
+
+.card-actions .action-btn.secondary {
+  background-color: color-mix(
+    in srgb,
+    var(--text-color-muted) 15%,
+    transparent
+  );
+  color: var(--text-color-muted);
+}
+.card-actions .action-btn.secondary:hover {
+  background-color: var(--text-color-muted);
+  color: var(--background-main);
+}
+
+.card-actions .action-btn.destructive {
+  background-color: color-mix(in srgb, var(--action-red) 15%, transparent);
+  color: var(--action-red);
+}
+.card-actions .action-btn.destructive:hover {
+  background-color: var(--action-red);
+  color: white;
+}
+
+/* Estilo para cards Concluídos */
+.reminder-card.acknowledged {
+  opacity: 0.7;
+}
+.reminder-card.acknowledged .card-title {
+  text-decoration: line-through;
+}

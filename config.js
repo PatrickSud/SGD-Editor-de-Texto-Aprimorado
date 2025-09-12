@@ -12,10 +12,6 @@ const REMINDERS_STORAGE_KEY = 'remindersData'
 const SETTINGS_STORAGE_KEY = 'extensionSettingsData'
 const USER_RESPONSE_SAMPLES_KEY = 'userResponseSamples'
 const MAX_RESPONSE_SAMPLES = 30
-const USAGE_TRACKING_KEY = 'usageTrackingData'
-const SUGGESTED_TRAMITES_KEY = 'suggestedTramites'
-const SUGGESTION_THRESHOLD = 5 // Nº de vezes que um texto deve ser usado para virar sugestão
-const MIN_SUGGESTION_LENGTH = 100 // Tamanho mínimo do texto para ser considerado para sugestão
 const FAB_POSITION_KEY = 'fabPositionData' // NOVO
 
 // Configurações Padrão
