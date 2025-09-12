@@ -2847,6 +2847,19 @@ a.open-link-btn:hover {
   flex-shrink: 0;
 }
 
+.fired-reminders-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fired-reminders-header-actions .action-btn {
+  padding: 4px;
+  width: 28px;
+  height: 28px;
+  font-size: 16px;
+}
+
 .fired-reminders-header h6 {
   margin: 0;
   font-size: 14px;

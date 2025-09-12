@@ -1510,7 +1510,14 @@ async function openFiredRemindersPanel() {
   )
 
   panel.innerHTML = `
-    <div class="fired-reminders-header"><h6>Notificações</h6><button type="button" class="close-panel-btn" title="Fechar">&times;</button></div>
+    <div class="fired-reminders-header">
+        <h6>Notificações</h6>
+        <div class="fired-reminders-header-actions">
+            <button type="button" class="action-btn small-btn new-reminder-btn" title="Novo Lembrete">⏰</button>
+            <button type="button" class="action-btn small-btn manage-reminders-btn" title="Gerenciar Lembretes">⏳</button>
+            <button type="button" class="close-panel-btn" title="Fechar">&times;</button>
+        </div>
+    </div>
     <div class="fired-reminders-list">${panelContentHtml}</div>`
 
   document.body.appendChild(panel)
@@ -1537,6 +1544,17 @@ async function openFiredRemindersPanel() {
 
   const closePanel = () => panel.remove()
   panel.querySelector('.close-panel-btn').addEventListener('click', closePanel)
+
+  // NOVOS LISTENERS para os botões do cabeçalho
+  panel.querySelector('.new-reminder-btn').addEventListener('click', () => {
+    closePanel()
+    openNewReminderModal()
+  })
+
+  panel.querySelector('.manage-reminders-btn').addEventListener('click', () => {
+    closePanel()
+    openRemindersManagementModal()
+  })
 
   panel.querySelectorAll('.fired-reminder-item').forEach(item => {
     const reminderId = item.dataset.id
