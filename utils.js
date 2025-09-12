@@ -262,3 +262,32 @@ function getNextRecurrenceDate(lastDate, recurrence) {
   }
   return nextDate
 }
+
+/**
+ * Formata uma data para um formato relativo e legível.
+ * @param {string | Date} dateInput - A data a ser formatada.
+ * @returns {string} A data formatada de forma relativa (ex: "Amanhã às 10:00").
+ */
+function formatRelativeTime(dateInput) {
+  const date = new Date(dateInput)
+  const now = new Date()
+  const diffInSeconds = (date.getTime() - now.getTime()) / 1000
+  const diffInDays = Math.round(diffInSeconds / (60 * 60 * 24))
+
+  const timeFormat = { hour: '2-digit', minute: '2-digit' }
+  const timeString = date.toLocaleTimeString('pt-BR', timeFormat)
+  const dateFormat = { day: '2-digit', month: '2-digit' }
+  const dateString = date.toLocaleDateString('pt-BR', dateFormat)
+
+  if (diffInDays === 0) return `Hoje, ${timeString}`
+  if (diffInDays === 1) return `Amanhã, ${timeString}`
+  if (diffInDays === -1) return `Ontem, ${timeString}`
+
+  if (diffInSeconds > 0) {
+    if (diffInDays < 7) return `Em ${diffInDays} dias, ${timeString}`
+  } else {
+    if (diffInDays > -7) return `Há ${-diffInDays} dias`
+  }
+
+  return `Em ${dateString}`
+}

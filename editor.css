@@ -2813,8 +2813,8 @@ a.open-link-btn:hover {
 /* --- Fired Reminders Panel --- */
 #fired-reminders-panel {
   position: absolute; /* Alterado para posicionamento absoluto */
-  width: 340px; /* Aumentado um pouco para melhor visualização */
-  max-height: 400px;
+  width: 400px; /* AUMENTADO de 340px para 400px */
+  max-height: 450px; /* Aumentado um pouco a altura também */
   z-index: 2100; /* Garante que fique acima de outros elementos */
   border-radius: var(--border-radius-md);
   box-shadow: var(--shadow-lg);
@@ -2839,12 +2839,16 @@ a.open-link-btn:hover {
 }
 
 .fired-reminders-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   padding: 8px 12px;
   border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
+}
+
+.fired-reminders-header .header-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
 }
 
 .fired-reminders-header-actions {
@@ -2998,4 +3002,27 @@ hr.fired-reminders-separator {
 
 .fired-reminders-list h6:first-child {
   margin-top: 0;
+}
+
+/* --- Estilos para o campo de busca no painel de notificações --- */
+.fired-reminders-header .search-input {
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-color);
+  background-color: var(--background-main);
+  color: var(--text-color-main);
+  font-size: 13px;
+  margin: 4px 0;
+}
+.fired-reminders-header .search-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.empty-list-message {
+  text-align: center;
+  color: var(--text-color-muted);
+  padding: 20px;
+  font-style: italic;
 }

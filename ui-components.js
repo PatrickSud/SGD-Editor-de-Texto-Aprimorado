@@ -1379,14 +1379,10 @@ function showInPageNotification(reminder) {
 
   const snoozeBtn = notification.querySelector('.snooze-btn-main')
   if (snoozeBtn) {
+    // ALTERADO: Agora abre o modal de opções ao invés de adiar por um tempo fixo.
     snoozeBtn.addEventListener('click', () => {
-      const snoozedReminder = {
-        ...reminder,
-        dateTime: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
-        isFired: false,
-        firedAt: null
-      }
-      handleInteraction(() => saveReminder(snoozedReminder))
+      handleInteraction(() => {}) // Fecha o toast
+      openSnoozeModal(reminder, null) // Abre o modal de opções
     })
   }
 
@@ -1407,120 +1403,131 @@ async function openFiredRemindersPanel() {
   const remindersData = await getReminders()
   const allReminders = Object.values(remindersData)
 
-  // NOVO: Filtra lembretes ativos (agendados para o futuro)
-  const activeReminders = allReminders
-    .filter(r => r.isFired === false && !r.firedAt)
-    .sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime))
-
-  const pendingReminders = allReminders
-    .filter(r => r.isFired === true)
-    .sort((a, b) => (a.firedAt || 0) - (b.firedAt || 0))
-
-  const acknowledgedReminders = allReminders
-    .filter(r => r.isFired === false && r.firedAt)
-    .sort((a, b) => (b.firedAt || 0) - (a.firedAt || 0))
-
-  if (
-    pendingReminders.length === 0 &&
-    acknowledgedReminders.length === 0 &&
-    activeReminders.length === 0
-  ) {
-    showNotification('Não existem notificações ou lembretes ativos.', 'info')
-    updateNotificationStatus()
-    return
-  }
-
   const panel = document.createElement('div')
   panel.id = 'fired-reminders-panel'
   applyCurrentTheme(panel)
 
-  const renderReminderItem = (reminder, type) => {
-    const priorityClass = `priority-${reminder.priority || 'medium'}`
-    const hasUrl = reminder.url && isValidUrl(reminder.url)
-    const openUrlButtonHtml = hasUrl
-      ? `<button type="button" class="action-btn open-url-btn small-btn" title="Abrir Link">🔗</button>`
-      : ''
-    const removeButtonHtml = `<button type="button" class="action-btn remove-btn small-btn" title="Remover Lembrete">🗑️</button>`
-    let actionsHtml = ''
-    let statusText = ''
-
-    switch (type) {
-      case 'active':
-        const formattedDate = new Date(reminder.dateTime).toLocaleString(
-          'pt-BR',
-          {
-            day: '2-digit',
-            month: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-          }
-        )
-        statusText = `Ativo para ${formattedDate}`
-        actionsHtml =
-          `<button type="button" class="action-btn edit-btn small-btn" title="Editar">✏️</button>` +
-          removeButtonHtml
-        break
-      case 'pending':
-        statusText = `Pendente em ${new Date(
-          reminder.firedAt
-        ).toLocaleDateString('pt-BR')}`
-        actionsHtml = `${openUrlButtonHtml}<button type="button" class="action-btn complete-btn small-btn" title="Concluir">✅</button><button type="button" class="action-btn snooze-btn small-btn" title="Adiar">⏰</button>${removeButtonHtml}`
-        break
-      case 'acknowledged':
-        statusText = `Concluído em ${new Date(
-          reminder.firedAt
-        ).toLocaleDateString('pt-BR')}`
-        actionsHtml = openUrlButtonHtml + removeButtonHtml
-        break
-    }
-
-    return `
-      <div class="fired-reminder-item ${priorityClass} ${type}" data-id="${
-      reminder.id
-    }">
-        <div class="fired-reminder-content">
-          <h6 class="fired-reminder-title">${escapeHTML(reminder.title)}</h6>
-          <p class="fired-reminder-desc">${statusText}</p>
-        </div>
-        <div class="fired-reminder-actions">${actionsHtml}</div>
-      </div>`
-  }
-
-  const activeHtml =
-    activeReminders.length > 0
-      ? `<h6>Ativos</h6>` +
-        activeReminders.map(r => renderReminderItem(r, 'active')).join('')
-      : ''
-  const pendingHtml =
-    pendingReminders.length > 0
-      ? `<h6>Pendentes</h6>` +
-        pendingReminders.map(r => renderReminderItem(r, 'pending')).join('')
-      : ''
-  const acknowledgedHtml =
-    acknowledgedReminders.length > 0
-      ? `<h6>Concluídos</h6>` +
-        acknowledgedReminders
-          .map(r => renderReminderItem(r, 'acknowledged'))
-          .join('')
-      : ''
-
-  const sections = [activeHtml, pendingHtml, acknowledgedHtml].filter(Boolean)
-  const panelContentHtml = sections.join(
-    '<hr class="fired-reminders-separator">'
-  )
-
   panel.innerHTML = `
     <div class="fired-reminders-header">
-        <h6>Notificações</h6>
-        <div class="fired-reminders-header-actions">
-            <button type="button" class="action-btn small-btn new-reminder-btn" title="Novo Lembrete">⏰</button>
-            <button type="button" class="action-btn small-btn manage-reminders-btn" title="Gerenciar Lembretes">⏳</button>
-            <button type="button" class="close-panel-btn" title="Fechar">&times;</button>
+        <div class="header-top-row">
+            <h6>Notificações</h6>
+            <div class="fired-reminders-header-actions">
+                <button type="button" class="action-btn small-btn new-reminder-btn" title="Novo Lembrete">⏰</button>
+                <button type="button" class="action-btn small-btn manage-reminders-btn" title="Gerenciar Lembretes">⏳</button>
+                <button type="button" class="close-panel-btn" title="Fechar">&times;</button>
+            </div>
         </div>
+        <input type="text" class="search-input" placeholder="Buscar lembrete...">
     </div>
-    <div class="fired-reminders-list">${panelContentHtml}</div>`
+    <div class="fired-reminders-list"></div>`
+
+  const listContainer = panel.querySelector('.fired-reminders-list')
+  const searchInput = panel.querySelector('.search-input')
+
+  const renderLists = (filter = '') => {
+    const filterText = filter.toLowerCase()
+
+    const filterAndSort = list =>
+      list.filter(
+        r =>
+          (r.title?.toLowerCase() || '').includes(filterText) ||
+          (r.description?.toLowerCase() || '').includes(filterText)
+      )
+
+    const activeReminders = filterAndSort(
+      allReminders
+        .filter(r => r.isFired === false && !r.firedAt)
+        .sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime))
+    )
+    const pendingReminders = filterAndSort(
+      allReminders
+        .filter(r => r.isFired === true)
+        .sort((a, b) => (a.firedAt || 0) - (b.firedAt || 0))
+    )
+    const acknowledgedReminders = filterAndSort(
+      allReminders
+        .filter(r => r.isFired === false && r.firedAt)
+        .sort((a, b) => (b.firedAt || 0) - (a.firedAt || 0))
+    )
+
+    if (
+      activeReminders.length === 0 &&
+      pendingReminders.length === 0 &&
+      acknowledgedReminders.length === 0
+    ) {
+      listContainer.innerHTML = `<p class="empty-list-message">${
+        filter ? 'Nenhum lembrete encontrado.' : 'Não há lembretes para exibir.'
+      }</p>`
+      return
+    }
+
+    const renderReminderItem = (reminder, type) => {
+      const priorityClass = `priority-${reminder.priority || 'medium'}`
+      const hasUrl = reminder.url && isValidUrl(reminder.url)
+      const openUrlButtonHtml = hasUrl
+        ? `<button type="button" class="action-btn open-url-btn small-btn" title="Abrir Link">🔗</button>`
+        : ''
+      const removeButtonHtml = `<button type="button" class="action-btn remove-btn small-btn" title="Remover Lembrete">🗑️</button>`
+      let actionsHtml = ''
+      let statusText = ''
+
+      switch (type) {
+        case 'active':
+          statusText = `Ativo para ${formatRelativeTime(reminder.dateTime)}`
+          actionsHtml =
+            `<button type="button" class="action-btn edit-btn small-btn" title="Editar">✏️</button>` +
+            removeButtonHtml
+          break
+        case 'pending':
+          statusText = `Pendente (${formatRelativeTime(reminder.firedAt)})`
+          actionsHtml = `${openUrlButtonHtml}<button type="button" class="action-btn complete-btn small-btn" title="Concluir">✅</button><button type="button" class="action-btn snooze-btn small-btn" title="Adiar">⏰</button>${removeButtonHtml}`
+          break
+        case 'acknowledged':
+          statusText = `Concluído (${formatRelativeTime(reminder.firedAt)})`
+          actionsHtml = openUrlButtonHtml + removeButtonHtml
+          break
+      }
+
+      return `
+        <div class="fired-reminder-item ${priorityClass} ${type}" data-id="${
+        reminder.id
+      }">
+          <div class="fired-reminder-content">
+            <h6 class="fired-reminder-title">${escapeHTML(reminder.title)}</h6>
+            <p class="fired-reminder-desc">${statusText}</p>
+          </div>
+          <div class="fired-reminder-actions">${actionsHtml}</div>
+        </div>`
+    }
+
+    const activeHtml =
+      activeReminders.length > 0
+        ? `<h6>Ativos</h6>` +
+          activeReminders.map(r => renderReminderItem(r, 'active')).join('')
+        : ''
+    const pendingHtml =
+      pendingReminders.length > 0
+        ? `<h6>Pendentes</h6>` +
+          pendingReminders.map(r => renderReminderItem(r, 'pending')).join('')
+        : ''
+    const acknowledgedHtml =
+      acknowledgedReminders.length > 0
+        ? `<h6>Concluídos</h6>` +
+          acknowledgedReminders
+            .map(r => renderReminderItem(r, 'acknowledged'))
+            .join('')
+        : ''
+    const sections = [activeHtml, pendingHtml, acknowledgedHtml].filter(Boolean)
+    listContainer.innerHTML = sections.join(
+      '<hr class="fired-reminders-separator">'
+    )
+  }
 
   document.body.appendChild(panel)
+  renderLists() // Renderiza a lista inicial
+
+  // Adiciona o listener para o campo de busca
+  searchInput.addEventListener('input', e => renderLists(e.target.value))
 
   // --- NOVA LÓGICA DE POSICIONAMENTO ---
   const bellIcon = document.getElementById('sgd-notification-bell')
@@ -1556,28 +1563,30 @@ async function openFiredRemindersPanel() {
     openRemindersManagementModal()
   })
 
-  panel.querySelectorAll('.fired-reminder-item').forEach(item => {
-    const reminderId = item.dataset.id
-    if (!reminderId) return
+  // Adiciona listeners aos botões dos itens (usando event delegation)
+  panel.addEventListener('click', async e => {
+    const editBtn = e.target.closest('.edit-btn')
+    const openUrlBtn = e.target.closest('.open-url-btn')
+    const removeBtn = e.target.closest('.remove-btn')
+    const snoozeBtn = e.target.closest('.snooze-btn')
+    const completeBtn = e.target.closest('.complete-btn')
 
-    // Listener para o novo botão Editar
-    item.querySelector('.edit-btn')?.addEventListener('click', e => {
+    if (editBtn) {
       e.stopPropagation()
+      const reminderId = editBtn.closest('.fired-reminder-item').dataset.id
       const reminder = allReminders.find(r => r.id === reminderId)
       if (reminder) {
         closePanel()
         openNewReminderModal(reminder)
       }
-    })
-
-    item.querySelector('.open-url-btn')?.addEventListener('click', e => {
+    } else if (openUrlBtn) {
       e.stopPropagation()
+      const reminderId = openUrlBtn.closest('.fired-reminder-item').dataset.id
       const reminder = allReminders.find(r => r.id === reminderId)
       if (reminder && reminder.url) window.open(reminder.url, '_blank')
-    })
-
-    item.querySelector('.remove-btn')?.addEventListener('click', e => {
+    } else if (removeBtn) {
       e.stopPropagation()
+      const reminderId = removeBtn.closest('.fired-reminder-item').dataset.id
       showConfirmDialog(
         'Tem certeza que deseja remover este lembrete permanentemente?',
         async () => {
@@ -1586,16 +1595,14 @@ async function openFiredRemindersPanel() {
           closePanel()
         }
       )
-    })
-
-    item.querySelector('.snooze-btn')?.addEventListener('click', e => {
+    } else if (snoozeBtn) {
       e.stopPropagation()
+      const reminderId = snoozeBtn.closest('.fired-reminder-item').dataset.id
       const reminder = allReminders.find(r => r.id === reminderId)
       if (reminder) openSnoozeModal(reminder, closePanel)
-    })
-
-    item.querySelector('.complete-btn')?.addEventListener('click', async e => {
+    } else if (completeBtn) {
       e.stopPropagation()
+      const reminderId = completeBtn.closest('.fired-reminder-item').dataset.id
       const reminders = await getReminders()
       const reminderToComplete = reminders[reminderId]
       if (reminderToComplete) {
@@ -1622,7 +1629,7 @@ async function openFiredRemindersPanel() {
         chrome.runtime.sendMessage({ action: 'UPDATE_NOTIFICATION_BADGE' })
         closePanel()
       }
-    })
+    }
   })
 
   requestAnimationFrame(() => panel.classList.add('visible'))
