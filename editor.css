@@ -121,14 +121,14 @@ textarea[data-enhanced] {
 
 /* --- TEMA ROSA PINK (Versão Clara) --- */
 .pink-mode {
-  --primary-color: #db2777;
-  --primary-color-hover: #be185d;
+  --primary-color: #da4789;
+  --primary-color-hover: #c23872;
   --border-color: #fbcfe8;
   --background-main: #eea4ca;
   --background-secondary: #f7d6e8;
   --background-hover: #fcdff1;
-  --text-color-main: #a8295c;
-  --text-color-muted: #9c3f6f;
+  --text-color-main: #ac2a5e;
+  --text-color-muted: #a04e78;
   --background-glass: rgba(238, 164, 202, 0.75);
 }
 
@@ -154,8 +154,8 @@ textarea[data-enhanced] {
   --background-main: #15121e;
   --background-secondary: #1f1b2d;
   --background-hover: #272d3f;
-  --text-color-main: #e6dff2;
-  --text-color-muted: #948aa8;
+  --text-color-main: #edeaf2;
+  --text-color-muted: #b7aeca;
   --background-glass: rgba(21, 18, 30, 0.75);
 }
 
@@ -3142,10 +3142,10 @@ hr.fired-reminders-separator {
 
 /* Adicione esta regra para aumentar a largura da janela de Gerenciamento */
 #reminders-management-modal .se-modal-content {
-  max-width: 850px;
+  max-width: 860px;
 }
 
-/* --- Estilo Moderno de Lembretes (Cards) --- */
+/* --- Estilo Moderno de Lembretes (Cards Compactos) --- */
 
 @keyframes card-fade-out {
   from {
@@ -3161,22 +3161,30 @@ hr.fired-reminders-separator {
 #reminders-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px; /* Espaço entre os cards reduzido */
 }
 
 #reminders-list h6 {
-  margin-bottom: -5px; /* Reduz o espaço entre o título e o primeiro card */
+  margin-bottom: -2px;
 }
 
 .reminder-card {
   background-color: var(--background-main);
   border: 1px solid var(--border-color);
-  border-left-width: 4px; /* Adiciona a borda de prioridade */
-  border-radius: var(--border-radius-md);
-  padding: 10px 14px; /* Reduz o padding para diminuir a altura */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  cursor: pointer;
+  border-left-width: 4px;
+  border-radius: var(
+    --border-radius-sm
+  ); /* Bordas um pouco menos arredondadas */
+  padding: 8px 12px; /* Padding reduzido para compactar */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex; /* Transforma o card em um container flex */
+  align-items: center; /* Alinha verticalmente o conteúdo e os botões */
+  gap: 10px;
+}
+
+.reminder-card:not(.expanded) {
+  cursor: pointer;
 }
 
 .reminder-card:hover {
@@ -3199,66 +3207,71 @@ hr.fired-reminders-separator {
   border-left-color: var(--action-red);
 }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 10px;
+.card-main-content {
+  flex-grow: 1; /* Ocupa todo o espaço disponível à esquerda */
+  min-width: 0; /* Essencial para o text-overflow funcionar em flex containers */
 }
 
 .card-title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   margin: 0;
   color: var(--text-color-main);
-}
-
-.card-meta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  font-size: 11px;
-  color: var(--text-color-muted);
-  flex-shrink: 0;
-}
-
-.card-history {
-  font-style: italic;
-}
-
-.card-content .description-snippet {
-  font-size: 13px;
-  color: var(--text-color-muted);
-  margin: 4px 0 8px 0;
-
-  /* Limita o texto a 2 linhas por padrão */
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-
-  transition: -webkit-line-clamp 0.3s ease-in-out;
 }
 
-/* Ao expandir, remove o limite de linhas */
-.reminder-card.expanded .description-snippet {
-  -webkit-line-clamp: 20; /* Um número alto para mostrar todo o conteúdo */
-  line-clamp: 20;
+.card-details-row {
+  display: flex;
+  font-size: 11px;
+  color: var(--text-color-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-status {
+  font-weight: 500;
+  background-color: var(--background-hover);
+  padding: 2px 8px;
+  border-radius: 10px; /* Cantos arredondados para o efeito de pílula */
+  border: 1px solid var(--border-color);
+}
+
+.card-desc-preview {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Separa o histórico do status */
+.card-history {
+  margin-left: 6px;
+}
+
+/* Comportamento de expansão */
+.reminder-card.expanded .card-details-row,
+.reminder-card.expanded .card-desc-preview {
+  white-space: normal;
 }
 
 .card-actions {
   display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 10px;
+  flex-shrink: 0; /* Impede que os botões encolham */
+  gap: 6px;
 }
 
+/* Botões agora são apenas ícones */
 .card-actions .action-btn {
-  border-radius: var(--border-radius-sm);
-  padding: 5px 10px;
+  border-radius: 50%; /* Botões circulares */
+  width: 28px;
+  height: 28px;
+  padding: 0;
   font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid transparent;
 }
 

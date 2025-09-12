@@ -712,13 +712,17 @@ async function checkForMissedToasts() {
 
   if (pendingReminders.length === 0) return
 
-  // Busca todos os flags de "toast exibido" da sessão atual
-  const sessionData = await chrome.storage.session.get(null)
+  // Usa uma abordagem mais simples: verifica se já passou tempo suficiente desde a última exibição
+  const lastShownKey = 'sgd_last_toast_shown'
+  const lastShown = localStorage.getItem(lastShownKey)
+  const now = Date.now()
+  const minInterval = 5 * 60 * 1000 // 5 minutos entre exibições
 
-  for (const reminder of pendingReminders) {
-    const toastShownKey = `toast_shown_${reminder.id}`
-    // Exibe o toast apenas se o flag não existir na sessão atual
-    if (!sessionData[toastShownKey]) {
+  // Se já passou tempo suficiente desde a última exibição, mostra os toasts
+  if (!lastShown || now - parseInt(lastShown) > minInterval) {
+    localStorage.setItem(lastShownKey, now.toString())
+
+    for (const reminder of pendingReminders) {
       showInPageNotification(reminder)
     }
   }

@@ -517,7 +517,7 @@ async function renderRemindersList(modal) {
     const hasDescription =
       reminder.description && reminder.description.trim() !== ''
 
-    // Ações
+    // Botões revertidos para apenas ícones
     const openUrlButton = hasUrl
       ? `<button class="action-btn secondary" data-action="open-url" title="Abrir Link">🔗</button>`
       : ''
@@ -527,29 +527,31 @@ async function renderRemindersList(modal) {
     const snoozeButton = `<button class="action-btn primary" data-action="snooze" title="Adiar">⏰</button>`
     let actionsHtml = ''
 
-    // Status e Histórico
     let statusText = ''
     const historyText =
-      reminder.snoozeCount > 0
-        ? `Adiado ${reminder.snoozeCount} vez${
-            reminder.snoozeCount > 1 ? 'es' : ''
-          }`
-        : ''
+      reminder.snoozeCount > 0 ? `(Adiado ${reminder.snoozeCount}x)` : ''
 
     switch (type) {
       case 'active':
-        statusText = `Agendado para ${new Date(
-          reminder.dateTime
-        ).toLocaleString('pt-BR', {
+        // CORREÇÃO: Adicionado 'hour' e 'minute' à formatação da data
+        const activeDate = new Date(reminder.dateTime).toLocaleString('pt-BR', {
           day: '2-digit',
           month: '2-digit',
           hour: '2-digit',
           minute: '2-digit'
-        })}`
-        actionsHtml = openUrlButton + editButton + removeButton // Botão de link adicionado aqui
+        })
+        statusText = `Ativo para ${activeDate}`
+        actionsHtml = openUrlButton + editButton + removeButton
         break
       case 'pending':
-        statusText = `Pendente`
+        // CORREÇÃO: Adicionado 'hour' e 'minute' à formatação da data de pendência
+        const pendingDate = new Date(reminder.firedAt).toLocaleString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+        statusText = `Pendente desde ${pendingDate}`
         actionsHtml =
           openUrlButton +
           completeButton +
@@ -558,37 +560,37 @@ async function renderRemindersList(modal) {
           removeButton
         break
       case 'acknowledged':
-        statusText = `Concluído em ${new Date(
-          reminder.firedAt
-        ).toLocaleDateString('pt-BR')}`
+        // CORREÇÃO: Adicionado 'hour' e 'minute' à formatação da data
+        const ackDate = new Date(reminder.firedAt).toLocaleString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+        statusText = `Concluído em ${ackDate}`
         actionsHtml = openUrlButton + editButton + removeButton
         break
     }
 
-    // Estrutura da descrição corrigida para evitar duplicação
+    // Estrutura do card refeita para ser mais compacta
     return `
       <div class="reminder-card ${priorityClass} ${type}" data-id="${
       reminder.id
     }">
-        <div class="card-header">
+        <div class="card-main-content">
           <h5 class="card-title">${escapeHTML(reminder.title)}</h5>
-          <div class="card-meta">
+          <div class="card-details-row">
+            <span class="card-status">${statusText}</span>
+            <span class="card-history">${historyText}</span>
             ${
-              historyText
-                ? `<span class="card-history">${historyText}</span>`
+              hasDescription
+                ? `<span class="card-desc-preview">&nbsp;-&nbsp;${escapeHTML(
+                    reminder.description
+                  )}</span>`
                 : ''
             }
-            <span class="card-status">${statusText}</span>
           </div>
         </div>
-        ${
-          hasDescription
-            ? `
-        <div class="card-content">
-          <p class="description-snippet">${escapeHTML(reminder.description)}</p>
-        </div>`
-            : ''
-        }
         <div class="card-actions">${actionsHtml}</div>
       </div>`
   }
@@ -1300,9 +1302,7 @@ function showInPageNotification(reminder) {
       <button type="button" class="action-btn complete-btn-main">✅ Concluir</button>
     </div>
   `
-  // Registra que a notificação foi exibida nesta sessão para não repetir em novas abas
-  const toastShownKey = `toast_shown_${reminder.id}`
-  chrome.storage.session.set({ [toastShownKey]: true })
+  // O controle de exibição agora é feito globalmente em checkForMissedToasts
 
   container.appendChild(notification)
 
