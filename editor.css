@@ -1766,7 +1766,7 @@ a.open-link-btn:hover {
   height: 40px; /* Reduzido de 45px */
 
   /* Efeito Glassmorphism para fundo branco */
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 
@@ -1774,7 +1774,7 @@ a.open-link-btn:hover {
   border: 1px solid rgba(0, 0, 0, 0.05);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
-  color: #333; /* Cor escura para o ícone SVG */
+  color: #fff;
 
   display: flex;
   align-items: center;
@@ -1798,7 +1798,7 @@ a.open-link-btn:hover {
 
 #floating-scroll-top-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
 }
 
 #floating-scroll-top-btn svg {
@@ -2302,8 +2302,8 @@ a.open-link-btn:hover {
 }
 
 .fab-button {
-  width: 50px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: 1px solid rgba(0, 0, 0, 0.05); /* Mantido para consistência */
   display: flex;
@@ -2330,10 +2330,12 @@ a.open-link-btn:hover {
 
 .main-fab {
   /* Mantém a cor de destaque, mas com efeito glass */
-  background: rgba(0, 123, 255, 0.6); /* Azul com transparência */
-  color: #fff;
+  background: rgba(255, 255, 255, 0.5);
+  color: #333;
   z-index: 2;
   cursor: grab;
+  background: rgba(0, 0, 0, 0.6); /* Fundo preto com 60% de opacidade */
+  color: #fff; /* Ícones brancos para contraste */
 }
 .main-fab:active {
   cursor: grabbing;
@@ -2343,20 +2345,22 @@ a.open-link-btn:hover {
 }
 .fab-option {
   /* Herda de .fab-button, ajustando o tamanho e a fonte */
-  width: 45px;
-  height: 45px;
-  font-size: 20px;
+  width: 42px;
+  height: 42px;
+  font-size: 23px;
+  position: relative;
+  background: rgba(87, 87, 87, 0.6); /* Fundo cinza com 60% de opacidade */
+  color: #fff; /* Ícones brancos para contraste */
 }
 
 .fab-option:hover {
   /* Efeito de hover específico para as opções, se necessário */
-  background-color: rgba(255, 255, 255, 0.7);
+  background: rgba(0, 0, 0, 0.8);
 }
 
 .fab-option::after {
   content: attr(data-tooltip);
   position: absolute;
-  left: 110%;
   top: 50%;
   transform: translateY(-50%);
   padding: 5px 10px;
@@ -2368,29 +2372,30 @@ a.open-link-btn:hover {
   transition: opacity var(--transition-fast), visibility var(--transition-fast);
   pointer-events: none;
 
-  /* Estilo Glassmorphism para o Tooltip */
-  background: var(--background-glass);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  color: var(--text-color-main);
-  border: 1px solid var(--border-color-alpha);
+  /* Estilo do Tooltip Atualizado */
+  background-color: #2c2c2c; /* Fundo escuro e sólido */
+  color: #ffffff; /* Texto branco para alto contraste */
+  border: none; /* Borda removida para um visual mais limpo */
   box-shadow: var(--shadow-md);
 }
 
 .fab-option:hover::after {
   opacity: 1;
-  max-width: 900px;
-  display: flex;
-  border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-xl);
-  border: 1px solid var(--border-color);
-  overflow: hidden;
-  animation: fadeIn var(--transition-fast) ease-out;
+  visibility: visible;
+}
 
-  /* Estilo Glassmorphism para o Painel */
-  backdrop-filter: blur(10px) saturate(120%);
-  -webkit-backdrop-filter: blur(10px) saturate(120%);
-  background-color: var(--background-glass);
+/* NOVA REGRA: Ajusta a posição do tooltip quando o FAB está à esquerda */
+.fab-container.top-left .fab-option::after,
+.fab-container.bottom-left .fab-option::after {
+  left: 110%;
+  right: auto;
+}
+
+/* NOVA REGRA: Ajusta a posição do tooltip quando o FAB está à direita */
+.fab-container.top-right .fab-option::after,
+.fab-container.bottom-right .fab-option::after {
+  right: 110%;
+  left: auto;
 }
 
 .fab-container.dragging .fab-options {
