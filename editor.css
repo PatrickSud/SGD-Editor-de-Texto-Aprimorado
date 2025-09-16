@@ -3145,8 +3145,7 @@ hr.fired-reminders-separator {
   max-width: 860px;
 }
 
-/* --- Estilo Moderno de Lembretes (Cards Compactos) --- */
-
+/* --- Estilo Moderno de Lembretes (Cards) --- */
 @keyframes card-fade-out {
   from {
     opacity: 1;
@@ -3161,26 +3160,21 @@ hr.fired-reminders-separator {
 #reminders-list {
   display: flex;
   flex-direction: column;
-  gap: 8px; /* Espaço entre os cards reduzido */
+  gap: 12px;
 }
 
 #reminders-list h6 {
-  margin-bottom: -2px;
+  margin-bottom: -5px;
 }
 
 .reminder-card {
   background-color: var(--background-main);
   border: 1px solid var(--border-color);
   border-left-width: 4px;
-  border-radius: var(
-    --border-radius-sm
-  ); /* Bordas um pouco menos arredondadas */
-  padding: 8px 12px; /* Padding reduzido para compactar */
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  border-radius: var(--border-radius-md);
+  padding: 12px 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  display: flex; /* Transforma o card em um container flex */
-  align-items: center; /* Alinha verticalmente o conteúdo e os botões */
-  gap: 10px;
 }
 
 .reminder-card:not(.expanded) {
@@ -3196,75 +3190,75 @@ hr.fired-reminders-separator {
   animation: card-fade-out 0.4s ease forwards;
 }
 
-/* Adicione estas regras para as cores da borda de prioridade */
-.reminder-card.priority-low {
-  border-left-color: var(--action-blue);
-}
-.reminder-card.priority-medium {
-  border-left-color: var(--action-yellow);
-}
-.reminder-card.priority-high {
-  border-left-color: var(--action-red);
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
 }
 
-.card-main-content {
-  flex-grow: 1; /* Ocupa todo o espaço disponível à esquerda */
-  min-width: 0; /* Essencial para o text-overflow funcionar em flex containers */
+.card-header-main {
+  flex-grow: 1;
+  min-width: 0;
 }
 
 .card-title {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   margin: 0;
   color: var(--text-color-main);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .card-details-row {
   display: flex;
-  font-size: 11px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 12px;
   color: var(--text-color-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  margin-top: 4px;
 }
 
 .card-status {
   font-weight: 500;
   background-color: var(--background-hover);
-  padding: 2px 8px;
-  border-radius: 10px; /* Cantos arredondados para o efeito de pílula */
+  padding: 1px 7px;
+  border-radius: 10px;
   border: 1px solid var(--border-color);
+  font-size: 11px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-.card-desc-preview {
-  white-space: nowrap;
+.description-snippet {
+  font-size: 13px;
+  color: var(--text-color-muted);
+  margin: 8px 0 0 0;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-color);
+
+  /* Limita o texto a 1 linha por padrão */
   overflow: hidden;
   text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  -webkit-box-orient: vertical;
 }
 
-/* Separa o histórico do status */
-.card-history {
-  margin-left: 6px;
-}
-
-/* Comportamento de expansão */
-.reminder-card.expanded .card-details-row,
-.reminder-card.expanded .card-desc-preview {
-  white-space: normal;
+/* Ao expandir, remove o limite de linhas */
+.reminder-card.expanded .description-snippet {
+  -webkit-line-clamp: 20; /* Um número alto para mostrar todo o conteúdo */
+  line-clamp: 20;
 }
 
 .card-actions {
   display: flex;
-  flex-shrink: 0; /* Impede que os botões encolham */
+  flex-shrink: 0;
   gap: 6px;
 }
 
-/* Botões agora são apenas ícones */
 .card-actions .action-btn {
-  border-radius: 50%; /* Botões circulares */
+  border-radius: 50%;
   width: 28px;
   height: 28px;
   padding: 0;
@@ -3275,7 +3269,7 @@ hr.fired-reminders-separator {
   border: 1px solid transparent;
 }
 
-/* Estilos Sutis dos Botões */
+/* Estilos Sutis dos Botões (primary, secondary, destructive) */
 .card-actions .action-btn.primary {
   background-color: color-mix(in srgb, var(--action-blue) 15%, transparent);
   color: var(--action-blue);
@@ -3305,6 +3299,17 @@ hr.fired-reminders-separator {
 .card-actions .action-btn.destructive:hover {
   background-color: var(--action-red);
   color: white;
+}
+
+/* Adicione estas regras para as cores da borda de prioridade */
+.reminder-card.priority-low {
+  border-left-color: var(--action-blue);
+}
+.reminder-card.priority-medium {
+  border-left-color: var(--action-yellow);
+}
+.reminder-card.priority-high {
+  border-left-color: var(--action-red);
 }
 
 /* Estilo para cards Concluídos */

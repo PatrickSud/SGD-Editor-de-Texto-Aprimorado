@@ -21,6 +21,7 @@ function createReminderCardHtml(reminder, type) {
   const hasDescription =
     reminder.description && reminder.description.trim() !== ''
 
+  // A lógica dos botões permanece a mesma
   const openUrlButton = hasUrl
     ? `<button class="action-btn secondary" data-action="open-url" title="Abrir Link">🔗</button>`
     : ''
@@ -69,25 +70,30 @@ function createReminderCardHtml(reminder, type) {
       break
   }
 
+  // ESTRUTURA ATUALIZADA: Descrição movida para o seu próprio container de conteúdo.
   return `
     <div class="reminder-card ${priorityClass} ${type}" data-id="${
     reminder.id
   }">
-      <div class="card-main-content">
-        <h5 class="card-title">${escapeHTML(reminder.title)}</h5>
-        <div class="card-details-row">
-          <span class="card-status">${statusText}</span>
-          <span class="card-history">${historyText}</span>
+      <div class="card-header">
+        <div class="card-header-main">
+          <h5 class="card-title">${escapeHTML(reminder.title)}</h5>
+          <div class="card-details-row">
+            <span class="card-status">${statusText}</span>
+            <span class="card-history">${historyText}</span>
+          </div>
         </div>
-        ${
-          hasDescription
-            ? `<p class="description-snippet">${escapeHTML(
-                reminder.description
-              )}</p>`
-            : ''
-        }
+        <div class="card-actions">${actionsHtml}</div>
       </div>
-      <div class="card-actions">${actionsHtml}</div>
+      ${
+        hasDescription
+          ? `
+      <div class="card-content">
+        <p class="description-snippet">${escapeHTML(reminder.description)}</p>
+      </div>
+      `
+          : ''
+      }
     </div>`
 }
 
