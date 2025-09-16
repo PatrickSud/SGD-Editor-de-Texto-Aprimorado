@@ -3052,43 +3052,6 @@ hr.fired-reminders-separator {
   gap: 5px;
 }
 
-.reminder-search-container {
-  display: flex;
-  align-items: center;
-}
-
-.search-icon-btn {
-  background: none;
-  border: none;
-  font-size: 16px;
-  padding: 5px;
-  cursor: pointer;
-  border-radius: 50%;
-  color: var(--text-color-muted);
-}
-.search-icon-btn:hover {
-  background-color: var(--background-hover);
-}
-
-.reminder-search-input {
-  width: 0;
-  border: none;
-  outline: none;
-  padding: 4px 0;
-  font-size: 13px;
-  background-color: transparent;
-  color: var(--text-color-main);
-  transition: width 0.3s ease, padding 0.3s ease;
-  border-bottom: 1px solid transparent;
-}
-
-.reminder-search-container.expanded .reminder-search-input {
-  width: 120px;
-  padding: 4px 8px;
-  margin-left: -5px;
-  border-bottom: 1px solid var(--border-color);
-}
-
 /* --- Estilos para Descrição dos Lembretes e Mensagem de Painel Vazio --- */
 .fired-reminder-desc-snippet {
   margin: 2px 0 4px 0;

@@ -1485,10 +1485,6 @@ async function openFiredRemindersPanel() {
     <div class="fired-reminders-header">
         <h6>Notificações</h6>
         <div class="fired-reminders-header-actions">
-            <div class="reminder-search-container">
-                <button class="search-icon-btn" title="Buscar">🔍</button>
-                <input type="text" class="reminder-search-input" placeholder="Buscar...">
-            </div>
             <button type="button" class="action-btn small-btn new-reminder-btn" title="Novo Lembrete">⏰ Novo</button>
             <button type="button" class="action-btn small-btn manage-reminders-btn" title="Gerenciar Lembretes">⏳ Gerenciar</button>
         </div>
@@ -1547,22 +1543,6 @@ async function openFiredRemindersPanel() {
   panel.querySelector('.manage-reminders-btn').addEventListener('click', () => {
     closePanelAndCleanup()
     openRemindersManagementModal()
-  })
-
-  // Lógica da Busca
-  const searchIcon = panel.querySelector('.search-icon-btn')
-  const searchContainer = panel.querySelector('.reminder-search-container')
-  const searchInput = panel.querySelector('.reminder-search-input')
-  searchIcon.addEventListener('click', () => {
-    searchContainer.classList.toggle('expanded')
-    searchInput.focus()
-  })
-  searchInput.addEventListener('input', () => {
-    const searchTerm = searchInput.value.toLowerCase()
-    panel.querySelectorAll('.reminder-card').forEach(item => {
-      const title = item.querySelector('.card-title').textContent.toLowerCase()
-      item.style.display = title.includes(searchTerm) ? 'flex' : 'none'
-    })
   })
 
   panel.querySelectorAll('.reminder-card').forEach(card => {
