@@ -759,6 +759,20 @@ async function getFabPosition() {
   return settings.fabPosition || 'bottom-left'
 }
 
+/**
+ * Aplica as configurações de UI salvas (tamanho de fonte e ícones) ao documento.
+ * @param {object} settings - O objeto de configurações da extensão.
+ */
+function applyUiSettings(settings) {
+  const ui = settings.uiSettings || DEFAULT_SETTINGS.uiSettings
+  const root = document.documentElement
+
+  // Define as variáveis CSS com base nas configurações
+  root.style.setProperty('--ui-icon-scale', ui.iconSize)
+  root.style.setProperty('--ui-font-size', `${ui.uiFontSize}px`)
+  root.style.setProperty('--editor-font-size', `${ui.editorFontSize}px`)
+}
+
 // --- GERENCIAMENTO DE AMOSTRAS DE RESPOSTA (Adaptação de Estilo IA) ---
 
 /**

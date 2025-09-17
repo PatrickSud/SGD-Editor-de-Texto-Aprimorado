@@ -20,17 +20,21 @@
   --shadow-lg: 0px 8px 16px 0px rgba(0, 0, 0, 0.1);
   --shadow-xl: 0px 12px 24px 0px rgba(0, 0, 0, 0.1);
   --transition-fast: 0.2s ease;
+
+  /* --- NOVAS VARIÁVEIS DE TAMANHO --- */
+  --ui-icon-scale: 1; /* Fator de escala para ícones */
+  --ui-font-size: 14px; /* Tamanho da fonte para a UI (botões, labels) */
+  --editor-font-size: 14px; /* Tamanho da fonte para o textarea */
 }
 
 /* Fonte padrão da extensão */
 .editor-container,
 .editor-modal,
 .editor-preview-container,
-#shortcut-popup,
-textarea[data-enhanced] {
+#shortcut-popup {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     sans-serif;
-  font-size: 14px;
+  font-size: var(--ui-font-size); /* MODIFICADO */
   line-height: 1.5;
 }
 
@@ -215,6 +219,7 @@ textarea[data-enhanced] {
   resize: vertical;
   min-height: 150px;
   font-family: monospace;
+  font-size: var(--editor-font-size); /* MODIFICADO */
   width: 100% !important; /* Adicionado !important para sobrepor o estilo inline */
   box-sizing: border-box;
   border-top: none;
@@ -309,7 +314,7 @@ textarea[data-enhanced]:focus {
   border-radius: var(--border-radius-sm);
   padding: 5px 10px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--ui-font-size); /* MODIFICADO */
   color: var(--text-color-main);
   transition: background-color var(--transition-fast),
     box-shadow var(--transition-fast), transform var(--transition-fast);
@@ -320,8 +325,14 @@ textarea[data-enhanced]:focus {
 .action-btn:hover {
   background-color: var(--background-hover);
   border-color: var(--border-color);
-  transform: translateY(-1px);
+  transform: translateY(-1px) scale(var(--ui-icon-scale)); /* Adiciona escala aos ícones */
   box-shadow: var(--shadow-md);
+}
+
+/* Ajuste para que o tamanho do ícone seja controlado pela escala */
+.editor-toolbar button,
+.dropdown button {
+  transform: scale(var(--ui-icon-scale));
 }
 
 .toolbar-separator {
@@ -3286,4 +3297,97 @@ hr.fired-reminders-separator {
 }
 .reminder-card.acknowledged .card-title {
   text-decoration: line-through;
+}
+
+/* --- Estilos Aprimorados para a Seção de Interface --- */
+.slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* Espaçamento entre o label e o slider */
+  margin-bottom: 12px;
+}
+
+.slider-group label {
+  font-size: 13px;
+  color: var(--text-color-muted);
+  margin: 0;
+}
+
+/* Customização dos Sliders (input[type="range"]) */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  background: var(--background-secondary);
+  border-radius: 5px;
+  outline: none;
+  border: 1px solid var(--border-color);
+  padding: 0;
+  margin: 0;
+  transition: opacity 0.2s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--primary-color);
+  cursor: pointer;
+  border-radius: 50%;
+  border: 3px solid var(--background-main);
+  box-shadow: var(--shadow-md);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--primary-color);
+  cursor: pointer;
+  border-radius: 50%;
+  border: 3px solid var(--background-main);
+  box-shadow: var(--shadow-md);
+}
+
+input[type="range"]:hover::-webkit-slider-thumb {
+  transform: scale(1.1);
+}
+
+input[type="range"]:active::-webkit-slider-thumb {
+  background: var(--primary-color-hover);
+}
+
+/* Estilo para o botão de restaurar padrões */
+.restore-defaults-btn {
+  background-color: var(--background-hover);
+  border: 1px solid var(--border-color);
+  color: var(--text-color-muted);
+  font-weight: 500;
+  padding: 6px 12px;
+  margin-top: 10px;
+  align-self: flex-start; /* Alinha o botão à esquerda */
+}
+
+.restore-defaults-btn:hover {
+  border-color: var(--action-orange);
+  color: var(--action-orange);
+}
+/* --- Estilos para Subseções Aninhadas no Modal --- */.nested-section {
+  margin-top: 15px;
+  padding-left: 10px;
+  border-left: 2px solid var(--border-color);
+}.management-section h5.collapsible-header {
+  margin: 0;
+  font-size: 15px; /* Ligeiramente menor que o h4 principal */
+  font-weight: 500;
+  padding: 8px;
+  background-color: var(--background-main);
+  border-radius: var(--border-radius-sm);
+  transition: background-color 0.2s ease;
+}.management-section h5.collapsible-header:hover {
+  background-color: var(--background-hover);
+}.nested-section .collapsible-content {
+  padding: 10px 0 5px 5px; /* Ajusta o preenchimento interno */
 }

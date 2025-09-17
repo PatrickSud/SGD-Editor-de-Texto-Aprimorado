@@ -210,14 +210,71 @@ async function createEditorToolbarHtml(
   includeNotes,
   includeReminders
 ) {
-  const separatorHtml = '<div class="toolbar-separator"></div>'
+  const settings = await getSettings(); // Carrega as configurações
+  const buttonsVisibility = (settings.uiSettings && settings.uiSettings.toolbarButtons) || DEFAULT_SETTINGS.uiSettings.toolbarButtons;
 
-  const quickStepsHtml = includeQuickSteps
+  const separatorHtml = '<div class="toolbar-separator"></div>';
+
+  // --- LÓGICA DE VISIBILIDADE APLICADA ---
+
+  const formattingButtons = buttonsVisibility.formatting
+    ? `
+      <button type="button" data-action="bold" title="Negrito (Ctrl+B)"><b>B</b></button>
+      <button type="button" data-action="italic" title="Itálico (Ctrl+I)"><i>I</i></button>
+      <button type="button" data-action="underline" title="Sublinhado (Ctrl+U)"><u>U</u></button>
+      ${separatorHtml}
+    ` : '';
+
+  const listButtons = buttonsVisibility.lists
+    ? `
+      <div class="dropdown">
+        <button type="button" data-action="list" title="Listas (Numeração Dinâmica)">☰</button>
+        <div class="dropdown-content">
+          <button type="button" data-action="numbered">1. Numeração</button>
+          <button type="button" data-action="sub-numbered">1.1. Subnumeração</button>
+          <button type="button" data-action="lettered">A. Letra</button>
+        </div>
+      </div>
+      <button type="button" data-action="bullet" title="Adicionar Marcador (Ctrl+M)">&bull;</button>
+      ${separatorHtml}
+    ` : '';
+
+  const insertButtons = buttonsVisibility.insert
+    ? `
+      <button type="button" data-action="link" title="Inserir Hiperlink (Ctrl+Alt+H)">🔗</button>
+      <button type="button" data-action="emoji" title="Emojis (Código HTML)">😀</button>
+      <button type="button" data-action="username" title="Inserir Nome do Usuário (Alt+Shift+U)">🏷️</button>
+      ${separatorHtml}
+    ` : '';
+
+  const colorButtons = buttonsVisibility.colors
+    ? `
+      <button type="button" data-action="color" title="Cor do Texto">🎨</button>
+      <button type="button" data-action="highlight" title="Cor de Destaque">🖌️</button>
+      ${separatorHtml}
+    ` : '';
+
+  const quickStepsHtml = includeQuickSteps && buttonsVisibility['quick-steps']
     ? `<div class="dropdown">
         <button type="button" data-action="quick-steps" title="Trâmites Rápidos">⚡</button>
         <div class="dropdown-content quick-steps-dropdown"></div>
       </div>`
-    : ''
+    : '';
+
+  const remindersHtml = includeReminders && buttonsVisibility.reminders
+    ? `
+      <div class="dropdown">
+        <button type="button" title="Lembretes">⏰</button>
+        <div class="dropdown-content">
+          <button type="button" data-action="new-reminder">📅 Novo Lembrete</button>
+          <button type="button" data-action="manage-reminders">⏳ Gerenciar Lembretes</button>
+        </div>
+      </div>
+    ` : '';
+  
+  const notesButtonHtml = includeNotes && buttonsVisibility.notes
+    ? `<button type="button" data-action="toggle-notes" title="Anotações">✍️</button>`
+    : '';
 
   let themeToggleHtml = ''
   if (includeThemeToggle) {
@@ -242,28 +299,10 @@ async function createEditorToolbarHtml(
     ? `<button type="button" data-action="toggle-preview" title="Ocultar Visualização (Ctrl+Alt+V)">📝</button>`
     : ''
 
-  const notesButtonHtml = includeNotes
-    ? `<button type="button" data-action="toggle-notes" title="Anotações">✍️</button>`
-    : ''
+  let aiButtonsHtml = ''
+  const devMode = await isDevModeEnabled() 
 
-  let remindersHtml = ''
-  if (includeReminders) {
-    remindersHtml = `
-      <div class="dropdown">
-        <button type="button" title="Lembretes">⏰</button>
-        <div class="dropdown-content">
-          <button type="button" data-action="new-reminder">📅 Novo Lembrete</button>
-          <button type="button" data-action="manage-reminders">⏳ Gerenciar Lembretes</button>
-        </div>
-      </div>
-    `
-  }
-
-  let aiButtonsHtml = '' // Inicia como string vazia
-  const devMode = await isDevModeEnabled() // Verifica o modo dev
-
-  // SÓ CRIA OS BOTÕES DE IA SE O MODO DEV ESTIVER ATIVO
-  if (devMode) {
+  if (devMode && buttonsVisibility['ai-tools']) {
     aiButtonsHtml = `
       <div class="dropdown">
         <button type="button" title="Recursos de IA (Gemini)" class="ai-master-button">✨</button>
@@ -281,31 +320,14 @@ async function createEditorToolbarHtml(
       ${separatorHtml}
     `
   }
-
+  
   return `
     <div class="editor-toolbar">
       ${aiButtonsHtml}
-      <button type="button" data-action="bold" title="Negrito (Ctrl+B)"><b>B</b></button>
-      <button type="button" data-action="italic" title="Itálico (Ctrl+I)"><i>I</i></button>
-      <button type="button" data-action="underline" title="Sublinhado (Ctrl+U)"><u>U</u></button>
-      ${separatorHtml}
-      <div class="dropdown">
-        <button type="button" data-action="list" title="Listas (Numeração Dinâmica)">☰</button>
-        <div class="dropdown-content">
-          <button type="button" data-action="numbered">1. Numeração</button>
-          <button type="button" data-action="sub-numbered">1.1. Subnumeração</button>
-          <button type="button" data-action="lettered">A. Letra</button>
-        </div>
-      </div>
-      <button type="button" data-action="bullet" title="Adicionar Marcador (Ctrl+M)">&bull;</button>
-      ${separatorHtml}
-      <button type="button" data-action="link" title="Inserir Hiperlink (Ctrl+Alt+H)">🔗</button>
-      <button type="button" data-action="emoji" title="Emojis (Código HTML)">😀</button>
-      <button type="button" data-action="username" title="Inserir Nome do Usuário (Alt+Shift+U)">🏷️</button>
-      ${separatorHtml}
-      <button type="button" data-action="color" title="Cor do Texto">🎨</button>
-      <button type="button" data-action="highlight" title="Cor de Destaque">🖌️</button>
-      ${separatorHtml}
+      ${formattingButtons}
+      ${listButtons}
+      ${insertButtons}
+      ${colorButtons}
       <button type="button" data-action="manage-steps" title="Configurações">⚙️</button>
       ${quickStepsHtml}
       ${remindersHtml}
@@ -317,7 +339,7 @@ async function createEditorToolbarHtml(
     <div id="emoji-picker-${instanceId}" class="picker"></div>
     <div id="color-picker-${instanceId}" class="picker"></div>
     <div id="highlight-picker-${instanceId}" class="picker"></div>
-  `
+  `;
 }
 
 /**
@@ -708,28 +730,38 @@ function addSgdActionButtons(masterContainer) {
  */
 
 async function initializeExtension() {
-  await loadSavedTheme()
-  observeForTextArea()
-  document.addEventListener('keydown', handleShortcutListener)
-  initializeScrollToTopButton()
+  const settings = await getSettings();
+  applyUiSettings(settings);
+  
+  await loadSavedTheme();
+  observeForTextArea();
+  document.addEventListener('keydown', handleShortcutListener);
 
-  createFloatingActionButtons()
-  setupFabListeners()
+  // --- LÓGICA DE VISIBILIDADE PARA BOTÕES FLUTUANTES ---
+  const buttonsVisibility = (settings.uiSettings && settings.uiSettings.toolbarButtons) || DEFAULT_SETTINGS.uiSettings.toolbarButtons;
 
-  const fabPosition = await getFabPosition()
-  const fabContainer = document.getElementById('fab-container')
+  if (buttonsVisibility.goToTop) {
+    initializeScrollToTopButton();
+  }
+  
+  if (buttonsVisibility.fab) {
+    createFloatingActionButtons();
+    setupFabListeners();
+  }
+
+  const fabPosition = await getFabPosition();
+  const fabContainer = document.getElementById('fab-container');
   if (fabContainer) {
-    fabContainer.classList.add(fabPosition)
-    adjustGoToTopButtonPosition(fabPosition) // Ajusta o botão 'Ir ao Topo'
+    fabContainer.classList.add(fabPosition);
+    adjustGoToTopButtonPosition(fabPosition);
   }
 
   if (typeof initializeNotesPanel === 'function') {
-    initializeNotesPanel()
+    initializeNotesPanel();
   }
 
-  // Cria e injeta o sino na barra de navegação
-  createAndInjectBellIcon()
-  await updateNotificationStatus()
+  createAndInjectBellIcon();
+  await updateNotificationStatus();
 }
 
 function createFloatingActionButtons() {

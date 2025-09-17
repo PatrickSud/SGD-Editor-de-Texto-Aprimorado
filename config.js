@@ -19,8 +19,25 @@ const DEFAULT_SETTINGS = {
   reminderRetentionDays: 7, // ALTERADO: Padrão agora é 7 dias
   geminiApiKey: '', // Chave da API do Gemini fornecida pelo usuário
   previewResizable: false, // Define se o preview é redimensionável
-  fabPosition: 'bottom-left' // NOVO: Posição padrão
-}
+  fabPosition: 'bottom-left', // NOVO: Posição padrão
+  uiSettings: {
+    iconSize: 1.0,
+    uiFontSize: 14,
+    editorFontSize: 14,
+    toolbarButtons: {
+      // 'ai-tools' e 'formatting' foram REMOVIDOS (sempre visíveis)
+      'lists': true,
+      'insert': true,
+      'colors': true,
+      'quick-steps': true,
+      'reminders': false, // MODIFICADO para false
+      'notes': false,     // MODIFICADO para false
+      // --- NOVAS OPÇÕES ADICIONADAS ---
+      'fab': true,        // Botão de Acesso Rápido
+      'goToTop': true   // Botão de Ir ao Topo
+    }
+  }
+};
 
 // --- ESTADO GLOBAL (Variáveis mutáveis usadas entre os scripts) ---
 
