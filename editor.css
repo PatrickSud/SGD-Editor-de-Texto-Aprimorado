@@ -1168,15 +1168,20 @@ a.open-link-btn:hover {
 .collapsible-header {
   cursor: pointer;
   user-select: none;
+  display: flex; /* Adicionado para alinhar o ícone e o texto */
+  align-items: center; /* Adicionado para alinhar o ícone e o texto */
 }
+
 .collapsible-content {
-  display: none;
+  display: none; /* ESSENCIAL: Garante que comece recolhido */
   flex-direction: column;
   gap: 12px;
   margin-top: 8px;
+  overflow: hidden; /* Adicionado para animações suaves */
 }
+
 .collapsible-section.expanded .collapsible-content {
-  display: flex;
+  display: flex; /* Mostra o conteúdo quando a classe .expanded está presente */
 }
 .export-category {
   margin-bottom: 10px;
@@ -3314,7 +3319,7 @@ hr.fired-reminders-separator {
 }
 
 /* Customização dos Sliders (input[type="range"]) */
-input[type="range"] {
+input[type='range'] {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
@@ -3328,7 +3333,7 @@ input[type="range"] {
   transition: opacity 0.2s ease;
 }
 
-input[type="range"]::-webkit-slider-thumb {
+input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 20px;
@@ -3341,7 +3346,7 @@ input[type="range"]::-webkit-slider-thumb {
   transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
-input[type="range"]::-moz-range-thumb {
+input[type='range']::-moz-range-thumb {
   width: 18px;
   height: 18px;
   background: var(--primary-color);
@@ -3351,11 +3356,11 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: var(--shadow-md);
 }
 
-input[type="range"]:hover::-webkit-slider-thumb {
+input[type='range']:hover::-webkit-slider-thumb {
   transform: scale(1.1);
 }
 
-input[type="range"]:active::-webkit-slider-thumb {
+input[type='range']:active::-webkit-slider-thumb {
   background: var(--primary-color-hover);
 }
 
@@ -3374,20 +3379,103 @@ input[type="range"]:active::-webkit-slider-thumb {
   border-color: var(--action-orange);
   color: var(--action-orange);
 }
-/* --- Estilos para Subseções Aninhadas no Modal --- */.nested-section {
+/* --- Estilos para Subseções Aninhadas no Modal --- */
+.nested-section {
   margin-top: 15px;
   padding-left: 10px;
   border-left: 2px solid var(--border-color);
-}.management-section h5.collapsible-header {
+}
+
+/* --- Melhorias Visuais para o Modal de Configurações --- */
+
+/* Remove as linhas divisórias antigas */
+.se-modal-body hr {
+  display: none;
+}
+
+/* Estiliza cada seção principal como um card */
+.se-modal-body > .management-section {
+  background-color: var(--background-main);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 12px 16px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Ajusta o cabeçalho dentro do card */
+.se-modal-body > .management-section > .collapsible-header {
+  padding: 0;
+  margin-bottom: 8px;
+}
+/* Melhora a aparência dos cabeçalhos principais (H4) */
+.management-section > h4.collapsible-header {
+  font-size: 16px;
+  font-weight: 600; /* Mais destaque */
+  color: var(--text-color-main);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color); /* Linha sutil abaixo do título */
+  margin-bottom: 12px;
+}
+
+/* Remove o fundo dos cabeçalhos de subseção para um visual mais limpo */
+.management-section h5.collapsible-header {
   margin: 0;
   font-size: 15px; /* Ligeiramente menor que o h4 principal */
   font-weight: 500;
   padding: 8px;
-  background-color: var(--background-main);
+  background-color: transparent;
+  padding-left: 0;
   border-radius: var(--border-radius-sm);
   transition: background-color 0.2s ease;
-}.management-section h5.collapsible-header:hover {
-  background-color: var(--background-hover);
-}.nested-section .collapsible-content {
+}
+.management-section h5.collapsible-header:hover {
+  background-color: var(--background-hover); /* Mantém o feedback no hover */
+}
+.nested-section .collapsible-content {
   padding: 10px 0 5px 5px; /* Ajusta o preenchimento interno */
+}
+
+/* --- Estilização Customizada dos Checkboxes --- */
+
+.form-checkbox-group input[type='checkbox'] {
+  /* Esconde o checkbox padrão */
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border-color);
+  background-color: var(--background-secondary);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  margin-top: 2px;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.form-checkbox-group input[type='checkbox']:hover {
+  border-color: var(--primary-color);
+}
+
+/* Estilo para o estado "marcado" */
+.form-checkbox-group input[type='checkbox']:checked {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+/* Adiciona o ícone de "check" usando um pseudo-elemento */
+.form-checkbox-group input[type='checkbox']:checked::after {
+  content: '✔';
+  position: absolute;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.form-checkbox-group label {
+  cursor: pointer;
+  user-select: none;
 }

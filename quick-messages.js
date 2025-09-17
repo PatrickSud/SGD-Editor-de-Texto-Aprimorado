@@ -624,46 +624,60 @@ async function openManagementModal() {
   }
 
   const onSave = async (modalContent, closeModal) => {
-    const success = await saveAllCategoryChanges(modalContent);
+    const success = await saveAllCategoryChanges(modalContent)
     if (success) {
-      await reloadAllQuickMessagesInstances();
+      await reloadAllQuickMessagesInstances()
       showNotification(
         'Alterações de categorias salvas com sucesso!',
         'success'
-      );
+      )
     }
-    // Recarrega a instância principal para refletir as mudanças de visibilidade
-    const mainTextArea = getTargetTextArea();
+
+    // --- APLICA VISIBILIDADE DOS BOTÕES FLUTUANTES ---
+    const newSettings = await getSettings()
+    const newVisibility = newSettings.uiSettings.toolbarButtons
+
+    const fab = document.getElementById('fab-container')
+    if (fab) fab.style.display = newVisibility.fab ? 'flex' : 'none'
+
+    const goToTop = document.getElementById('floating-scroll-top-btn')
+    if (goToTop) goToTop.style.display = newVisibility.goToTop ? 'flex' : 'none'
+
+    // Recarrega a instância principal para refletir as mudanças na barra de ferramentas
+    const mainTextArea = getTargetTextArea()
     if (mainTextArea) {
-        mainTextArea.dataset.enhanced = ''; // Permite a reinicialização
-        const masterContainer = mainTextArea.closest('.editor-master-container');
-        if (masterContainer) {
-            masterContainer.before(mainTextArea);
-            masterContainer.remove();
-        }
-        await initializeEditorInstance(mainTextArea, 'main', {
-          includePreview: true,
-          includeQuickSteps: true,
-          includeThemeToggle: true,
-          includeNotes: true,
-          includeReminders: true
-        });
-        showNotification('Configurações de interface aplicadas!', 'success');
+      mainTextArea.dataset.enhanced = ''
+      const masterContainer = mainTextArea.closest('.editor-master-container')
+      if (masterContainer) {
+        masterContainer.before(mainTextArea)
+        masterContainer.remove()
+      }
+      await initializeEditorInstance(mainTextArea, 'main', {
+        includePreview: true,
+        includeQuickSteps: true,
+        includeThemeToggle: true,
+        includeNotes: true,
+        includeReminders: true
+      })
+      showNotification('Configurações de interface aplicadas!', 'success')
     }
-  };
+  }
 
   const currentApiKey = await getGeminiApiKey()
   const devMode = await isDevModeEnabled()
-  const settings = await getSettings();
-  const uiSettings = settings.uiSettings || DEFAULT_SETTINGS.uiSettings;
-  const buttonsVisibility = uiSettings.toolbarButtons || DEFAULT_SETTINGS.uiSettings.toolbarButtons;
+  const settings = await getSettings()
+  const uiSettings = settings.uiSettings || DEFAULT_SETTINGS.uiSettings
+  const buttonsVisibility =
+    uiSettings.toolbarButtons || DEFAULT_SETTINGS.uiSettings.toolbarButtons
 
   const createCheckbox = (id, label, checked) => `
     <div class="form-checkbox-group">
-        <input type="checkbox" id="visibility-${id}" data-button-key="${id}" ${checked ? 'checked' : ''}>
+        <input type="checkbox" id="visibility-${id}" data-button-key="${id}" ${
+    checked ? 'checked' : ''
+  }>
         <label for="visibility-${id}">${label}</label>
     </div>
-  `;
+  `
 
   let aiSettingsHtml = '' // Inicia como string vazia
   if (devMode) {
@@ -736,16 +750,28 @@ async function openManagementModal() {
                     <h5 class="collapsible-header">▶ Aparência da Extensão</h5>
                     <div class="collapsible-content">
                         <div class="slider-group">
-                            <label for="icon-size-slider">Tamanho dos Ícones da Barra (${Math.round(uiSettings.iconSize * 100)}%)</label>
-                            <input type="range" id="icon-size-slider" min="0.8" max="1.3" step="0.05" value="${uiSettings.iconSize}">
+                            <label for="icon-size-slider">Tamanho dos Ícones da Barra (${Math.round(
+                              uiSettings.iconSize * 100
+                            )}%)</label>
+                            <input type="range" id="icon-size-slider" min="0.8" max="1.3" step="0.05" value="${
+                              uiSettings.iconSize
+                            }">
                         </div>
                         <div class="slider-group">
-                            <label for="ui-font-size-slider">Fonte da Interface (${uiSettings.uiFontSize}px)</label>
-                            <input type="range" id="ui-font-size-slider" min="12" max="16" step="1" value="${uiSettings.uiFontSize}">
+                            <label for="ui-font-size-slider">Fonte da Interface (${
+                              uiSettings.uiFontSize
+                            }px)</label>
+                            <input type="range" id="ui-font-size-slider" min="12" max="16" step="1" value="${
+                              uiSettings.uiFontSize
+                            }">
                         </div>
                         <div class="slider-group">
-                            <label for="editor-font-size-slider">Fonte do Editor (${uiSettings.editorFontSize}px)</label>
-                            <input type="range" id="editor-font-size-slider" min="12" max="18" step="1" value="${uiSettings.editorFontSize}">
+                            <label for="editor-font-size-slider">Fonte do Editor (${
+                              uiSettings.editorFontSize
+                            }px)</label>
+                            <input type="range" id="editor-font-size-slider" min="12" max="18" step="1" value="${
+                              uiSettings.editorFontSize
+                            }">
                         </div>
                         <button type="button" id="restore-ui-defaults-btn" class="action-btn restore-defaults-btn">Restaurar Padrões de Aparência</button>
                     </div>
@@ -755,14 +781,46 @@ async function openManagementModal() {
                     <h5 class="collapsible-header">▶ Visibilidade dos Botões</h5>
                     <div class="collapsible-content">
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 5px;">
-                            ${createCheckbox('ai-tools', '✨ Ferramentas de IA', buttonsVisibility['ai-tools'])}
-                            ${createCheckbox('formatting', '🔤 Formatação (B/I/U)', buttonsVisibility.formatting)}
-                            ${createCheckbox('lists', '☰ Listas e Marcadores', buttonsVisibility.lists)}
-                            ${createCheckbox('insert', '🔗 Inserir (Link, etc.)', buttonsVisibility.insert)}
-                            ${createCheckbox('colors', '🎨 Cores', buttonsVisibility.colors)}
-                            ${createCheckbox('quick-steps', '⚡ Trâmites Rápidos', buttonsVisibility['quick-steps'])}
-                            ${createCheckbox('reminders', '⏰ Lembretes', buttonsVisibility.reminders)}
-                            ${createCheckbox('notes', '✍️ Anotações', buttonsVisibility.notes)}
+                            ${createCheckbox(
+                              'lists',
+                              '☰ Listas e Marcadores',
+                              buttonsVisibility.lists
+                            )}
+                            ${createCheckbox(
+                              'insert',
+                              '🔗 Inserir (Link, etc.)',
+                              buttonsVisibility.insert
+                            )}
+                            ${createCheckbox(
+                              'colors',
+                              '🎨 Cores',
+                              buttonsVisibility.colors
+                            )}
+                            ${createCheckbox(
+                              'quick-steps',
+                              '⚡ Trâmites Rápidos',
+                              buttonsVisibility['quick-steps']
+                            )}
+                            ${createCheckbox(
+                              'reminders',
+                              '⏰ Lembretes',
+                              buttonsVisibility.reminders
+                            )}
+                            ${createCheckbox(
+                              'notes',
+                              '✍️ Anotações',
+                              buttonsVisibility.notes
+                            )}
+                            ${createCheckbox(
+                              'fab',
+                              '🔘 Acesso Rápido (FAB)',
+                              buttonsVisibility.fab
+                            )}
+                            ${createCheckbox(
+                              'goToTop',
+                              '🔼 Ir ao Topo',
+                              buttonsVisibility.goToTop
+                            )}
                         </div>
                     </div>
                 </div>
@@ -775,15 +833,15 @@ async function openManagementModal() {
     onSave,
     true,
     'management-modal'
-  );
-  
-  document.body.appendChild(modal);
+  )
+
+  document.body.appendChild(modal)
 
   // --- LÓGICA EXISTENTE PARA SLIDERS E CHECKBOXES (SEM ALTERAÇÃO) ---
-  const iconSizeSlider = modal.querySelector('#icon-size-slider');
-  const uiFontSizeSlider = modal.querySelector('#ui-font-size-slider');
-  const editorFontSizeSlider = modal.querySelector('#editor-font-size-slider');
-  const buttonCheckboxes = modal.querySelectorAll('input[data-button-key]');
+  const iconSizeSlider = modal.querySelector('#icon-size-slider')
+  const uiFontSizeSlider = modal.querySelector('#ui-font-size-slider')
+  const editorFontSizeSlider = modal.querySelector('#editor-font-size-slider')
+  const buttonCheckboxes = modal.querySelectorAll('input[data-button-key]')
 
   const updateUiSettings = async () => {
     const newSettings = {
@@ -800,67 +858,70 @@ async function openManagementModal() {
     editorFontSizeSlider.previousElementSibling.textContent = `Fonte do Editor (${newSettings.editorFontSize}px)`
 
     const currentSettings = await getSettings()
-    currentSettings.uiSettings = { ...currentSettings.uiSettings, ...newSettings };
+    currentSettings.uiSettings = {
+      ...currentSettings.uiSettings,
+      ...newSettings
+    }
 
     // Aplica e salva as configurações
     applyUiSettings(currentSettings)
     await saveSettings(currentSettings)
   }
 
-  iconSizeSlider.addEventListener('input', updateUiSettings);
-  uiFontSizeSlider.addEventListener('input', updateUiSettings);
-  editorFontSizeSlider.addEventListener('input', updateUiSettings);
+  iconSizeSlider.addEventListener('input', updateUiSettings)
+  uiFontSizeSlider.addEventListener('input', updateUiSettings)
+  editorFontSizeSlider.addEventListener('input', updateUiSettings)
 
   const updateButtonVisibility = async () => {
-    const currentSettings = await getSettings();
-    const newVisibility = {};
+    const currentSettings = await getSettings()
+    const newVisibility = {}
     buttonCheckboxes.forEach(cb => {
-        newVisibility[cb.dataset.buttonKey] = cb.checked;
-    });
+      newVisibility[cb.dataset.buttonKey] = cb.checked
+    })
 
     if (!currentSettings.uiSettings) {
-        currentSettings.uiSettings = {};
+      currentSettings.uiSettings = {}
     }
-    currentSettings.uiSettings.toolbarButtons = newVisibility;
-    
-    await saveSettings(currentSettings);
-  };
+    currentSettings.uiSettings.toolbarButtons = newVisibility
+
+    await saveSettings(currentSettings)
+  }
 
   buttonCheckboxes.forEach(cb => {
-      cb.addEventListener('change', updateButtonVisibility);
-  });
+    cb.addEventListener('change', updateButtonVisibility)
+  })
 
   // Apenas uma pequena modificação no listener do botão de restaurar para ser mais específico
-  const restoreBtn = modal.querySelector('#restore-ui-defaults-btn');
+  const restoreBtn = modal.querySelector('#restore-ui-defaults-btn')
   restoreBtn.addEventListener('click', () => {
     showConfirmDialog(
-      "Tem certeza que deseja restaurar as configurações de aparência (tamanhos de fonte e ícones) para o padrão?",
+      'Tem certeza que deseja restaurar as configurações de aparência (tamanhos de fonte e ícones) para o padrão?',
       async () => {
-        const defaultUiSettings = DEFAULT_SETTINGS.uiSettings;
-        const currentSettings = await getSettings();
-        
+        const defaultUiSettings = DEFAULT_SETTINGS.uiSettings
+        const currentSettings = await getSettings()
+
         // Restaura apenas as configurações de aparência
-        currentSettings.uiSettings.iconSize = defaultUiSettings.iconSize;
-        currentSettings.uiSettings.uiFontSize = defaultUiSettings.uiFontSize;
-        currentSettings.uiSettings.editorFontSize = defaultUiSettings.editorFontSize;
-        
-        await saveSettings(currentSettings);
+        currentSettings.uiSettings.iconSize = defaultUiSettings.iconSize
+        currentSettings.uiSettings.uiFontSize = defaultUiSettings.uiFontSize
+        currentSettings.uiSettings.editorFontSize =
+          defaultUiSettings.editorFontSize
+
+        await saveSettings(currentSettings)
 
         // Atualiza a UI
-        iconSizeSlider.value = defaultUiSettings.iconSize;
-        uiFontSizeSlider.value = defaultUiSettings.uiFontSize;
-        editorFontSizeSlider.value = defaultUiSettings.editorFontSize;
+        iconSizeSlider.value = defaultUiSettings.iconSize
+        uiFontSizeSlider.value = defaultUiSettings.uiFontSize
+        editorFontSizeSlider.value = defaultUiSettings.editorFontSize
+        ;[iconSizeSlider, uiFontSizeSlider, editorFontSizeSlider].forEach(
+          slider => slider.dispatchEvent(new Event('input', { bubbles: true }))
+        )
 
-        [iconSizeSlider, uiFontSizeSlider, editorFontSizeSlider].forEach(slider => 
-          slider.dispatchEvent(new Event('input', { bubbles: true }))
-        );
-        
-        applyUiSettings(currentSettings);
+        applyUiSettings(currentSettings)
 
-        showNotification("Configurações de aparência restauradas.", "success");
+        showNotification('Configurações de aparência restauradas.', 'success')
       }
-    );
-  });
+    )
+  })
 
   // --- NOVO: Lógica para inserir e controlar o gatilho secreto ---
   const modalContentElement = modal.querySelector('.se-modal-content')
@@ -918,15 +979,25 @@ async function openManagementModal() {
     })
   }
 
-  // O restante da função continua o mesmo, exceto pela remoção do listener do botão de visibilidade.
+  // --- CORREÇÃO APLICADA AQUI ---
+  // Listener aprimorado para todos os cabeçalhos colapsáveis, incluindo os aninhados.
   modal.querySelectorAll('.collapsible-header').forEach(header => {
     header.addEventListener('click', e => {
-      const section = e.target.closest('.collapsible-section')
-      if (e.target === header || header.contains(e.target)) {
+      // Garante que o alvo do clique é o próprio cabeçalho e não um filho
+      const currentHeader = e.currentTarget
+      const section = currentHeader.closest('.collapsible-section')
+
+      if (section) {
         section.classList.toggle('expanded')
-        const icon = section.classList.contains('expanded') ? '▼' : '▶'
-        const textContent = header.textContent.substring(1)
-        header.textContent = icon + textContent
+        const isExpanded = section.classList.contains('expanded')
+        const icon = isExpanded ? '▼' : '▶'
+        // Atualiza o ícone de forma segura, preservando o texto
+        const textNode = Array.from(currentHeader.childNodes).find(
+          node => node.nodeType === Node.TEXT_NODE
+        )
+        if (textNode) {
+          currentHeader.firstChild.textContent = icon + ' '
+        }
       }
     })
   })
