@@ -20,24 +20,32 @@ const DEFAULT_SETTINGS = {
   geminiApiKey: '', // Chave da API do Gemini fornecida pelo usuário
   previewResizable: false, // Define se o preview é redimensionável
   fabPosition: 'bottom-left', // NOVO: Posição padrão
+  toolbarButtons: {
+    link: true,
+    emoji: true,
+    username: true,
+    color: true,
+    highlight: true,
+    lists: true,
+    bullet: true,
+    reminders: true,
+    quickSteps: true,
+    notes: true,
+    fab: true,
+    goToTop: true,
+    separator1: true, // Divisor após IA (sempre ativo, não configurável)
+    separator2: true, // Divisor após Formatação
+    separator3: true, // Divisor após Listas
+    separator4: true, // Divisor após Inserir
+    separator5: true, // Divisor após Cores
+    separator6: true // Divisor após Ferramentas
+  },
   uiSettings: {
     iconSize: 1.0,
     uiFontSize: 14,
-    editorFontSize: 14,
-    toolbarButtons: {
-      // 'ai-tools' e 'formatting' foram REMOVIDOS (sempre visíveis)
-      'lists': true,
-      'insert': true,
-      'colors': true,
-      'quick-steps': true,
-      'reminders': false, // MODIFICADO para false
-      'notes': false,     // MODIFICADO para false
-      // --- NOVAS OPÇÕES ADICIONADAS ---
-      'fab': true,        // Botão de Acesso Rápido
-      'goToTop': true   // Botão de Ir ao Topo
-    }
+    editorFontSize: 14
   }
-};
+}
 
 // --- ESTADO GLOBAL (Variáveis mutáveis usadas entre os scripts) ---
 

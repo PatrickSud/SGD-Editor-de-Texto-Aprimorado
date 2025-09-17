@@ -180,6 +180,9 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
     includePreview
   )
 
+  // Atualiza a visibilidade dos botões com base nas configurações
+  updateToolbarButtonVisibility(editorContainer)
+
   if (includeQuickSteps) {
     if (instanceId === 'main') {
       await getStoredData()
@@ -210,23 +213,25 @@ async function createEditorToolbarHtml(
   includeNotes,
   includeReminders
 ) {
-  const settings = await getSettings(); // Carrega as configurações
-  const buttonsVisibility = (settings.uiSettings && settings.uiSettings.toolbarButtons) || DEFAULT_SETTINGS.uiSettings.toolbarButtons;
-
-  const separatorHtml = '<div class="toolbar-separator"></div>';
+  const settings = await getSettings() // Carrega as configurações
+  const buttonsVisibility =
+    settings.toolbarButtons || DEFAULT_SETTINGS.toolbarButtons
 
   // --- LÓGICA DE VISIBILIDADE APLICADA ---
 
-  const formattingButtons = buttonsVisibility.formatting
-    ? `
-      <button type="button" data-action="bold" title="Negrito (Ctrl+B)"><b>B</b></button>
-      <button type="button" data-action="italic" title="Itálico (Ctrl+I)"><i>I</i></button>
-      <button type="button" data-action="underline" title="Sublinhado (Ctrl+U)"><u>U</u></button>
-      ${separatorHtml}
-    ` : '';
+  // Botões de formatação sempre visíveis
+  const formattingButtons = `
+    <button type="button" data-action="bold" title="Negrito (Ctrl+B)"><b>B</b></button>
+    <button type="button" data-action="italic" title="Itálico (Ctrl+I)"><i>I</i></button>
+    <button type="button" data-action="underline" title="Sublinhado (Ctrl+U)"><u>U</u></button>
+    ${
+      buttonsVisibility.separator2
+        ? '<div class="toolbar-separator" data-id="separator2"></div>'
+        : ''
+    }
+  `
 
-  const listButtons = buttonsVisibility.lists
-    ? `
+  const listButtons = `
       <div class="dropdown">
         <button type="button" data-action="list" title="Listas (Numeração Dinâmica)">☰</button>
         <div class="dropdown-content">
@@ -236,32 +241,42 @@ async function createEditorToolbarHtml(
         </div>
       </div>
       <button type="button" data-action="bullet" title="Adicionar Marcador (Ctrl+M)">&bull;</button>
-      ${separatorHtml}
-    ` : '';
+      ${
+        buttonsVisibility.separator3
+          ? '<div class="toolbar-separator" data-id="separator3"></div>'
+          : ''
+      }
+    `
 
-  const insertButtons = buttonsVisibility.insert
-    ? `
+  const insertButtons = `
       <button type="button" data-action="link" title="Inserir Hiperlink (Ctrl+Alt+H)">🔗</button>
       <button type="button" data-action="emoji" title="Emojis (Código HTML)">😀</button>
       <button type="button" data-action="username" title="Inserir Nome do Usuário (Alt+Shift+U)">🏷️</button>
-      ${separatorHtml}
-    ` : '';
+      ${
+        buttonsVisibility.separator4
+          ? '<div class="toolbar-separator" data-id="separator4"></div>'
+          : ''
+      }
+    `
 
-  const colorButtons = buttonsVisibility.colors
-    ? `
+  const colorButtons = `
       <button type="button" data-action="color" title="Cor do Texto">🎨</button>
       <button type="button" data-action="highlight" title="Cor de Destaque">🖌️</button>
-      ${separatorHtml}
-    ` : '';
+      ${
+        buttonsVisibility.separator5
+          ? '<div class="toolbar-separator" data-id="separator5"></div>'
+          : ''
+      }
+    `
 
-  const quickStepsHtml = includeQuickSteps && buttonsVisibility['quick-steps']
+  const quickStepsHtml = includeQuickSteps
     ? `<div class="dropdown">
         <button type="button" data-action="quick-steps" title="Trâmites Rápidos">⚡</button>
         <div class="dropdown-content quick-steps-dropdown"></div>
       </div>`
-    : '';
+    : ''
 
-  const remindersHtml = includeReminders && buttonsVisibility.reminders
+  const remindersHtml = includeReminders
     ? `
       <div class="dropdown">
         <button type="button" title="Lembretes">⏰</button>
@@ -270,11 +285,12 @@ async function createEditorToolbarHtml(
           <button type="button" data-action="manage-reminders">⏳ Gerenciar Lembretes</button>
         </div>
       </div>
-    ` : '';
-  
-  const notesButtonHtml = includeNotes && buttonsVisibility.notes
+    `
+    : ''
+
+  const notesButtonHtml = includeNotes
     ? `<button type="button" data-action="toggle-notes" title="Anotações">✍️</button>`
-    : '';
+    : ''
 
   let themeToggleHtml = ''
   if (includeThemeToggle) {
@@ -300,9 +316,9 @@ async function createEditorToolbarHtml(
     : ''
 
   let aiButtonsHtml = ''
-  const devMode = await isDevModeEnabled() 
+  const devMode = await isDevModeEnabled()
 
-  if (devMode && buttonsVisibility['ai-tools']) {
+  if (devMode) {
     aiButtonsHtml = `
       <div class="dropdown">
         <button type="button" title="Recursos de IA (Gemini)" class="ai-master-button">✨</button>
@@ -317,10 +333,14 @@ async function createEditorToolbarHtml(
           }
         </div>
       </div>
-      ${separatorHtml}
+      ${
+        buttonsVisibility.separator1
+          ? '<div class="toolbar-separator" data-id="separator1"></div>'
+          : ''
+      }
     `
   }
-  
+
   return `
     <div class="editor-toolbar">
       ${aiButtonsHtml}
@@ -332,14 +352,18 @@ async function createEditorToolbarHtml(
       ${quickStepsHtml}
       ${remindersHtml}
       ${notesButtonHtml}
-      ${separatorHtml}
+      ${
+        buttonsVisibility.separator6
+          ? '<div class="toolbar-separator" data-id="separator6"></div>'
+          : ''
+      }
       ${togglePreviewHtml}
       ${themeToggleHtml}
     </div>
     <div id="emoji-picker-${instanceId}" class="picker"></div>
     <div id="color-picker-${instanceId}" class="picker"></div>
     <div id="highlight-picker-${instanceId}" class="picker"></div>
-  `;
+  `
 }
 
 /**
@@ -730,38 +754,34 @@ function addSgdActionButtons(masterContainer) {
  */
 
 async function initializeExtension() {
-  const settings = await getSettings();
-  applyUiSettings(settings);
-  
-  await loadSavedTheme();
-  observeForTextArea();
-  document.addEventListener('keydown', handleShortcutListener);
+  const settings = await getSettings()
+  applyUiSettings(settings)
 
-  // --- LÓGICA DE VISIBILIDADE PARA BOTÕES FLUTUANTES ---
-  const buttonsVisibility = (settings.uiSettings && settings.uiSettings.toolbarButtons) || DEFAULT_SETTINGS.uiSettings.toolbarButtons;
+  await loadSavedTheme()
+  observeForTextArea()
+  document.addEventListener('keydown', handleShortcutListener)
 
-  if (buttonsVisibility.goToTop) {
-    initializeScrollToTopButton();
-  }
-  
-  if (buttonsVisibility.fab) {
-    createFloatingActionButtons();
-    setupFabListeners();
-  }
+  // Cria os elementos flutuantes
+  initializeScrollToTopButton()
+  createFloatingActionButtons()
+  setupFabListeners()
 
-  const fabPosition = await getFabPosition();
-  const fabContainer = document.getElementById('fab-container');
+  // Aplica visibilidade inicial aos elementos globais
+  applyGlobalVisibilitySettings()
+
+  const fabPosition = await getFabPosition()
+  const fabContainer = document.getElementById('fab-container')
   if (fabContainer) {
-    fabContainer.classList.add(fabPosition);
-    adjustGoToTopButtonPosition(fabPosition);
+    fabContainer.classList.add(fabPosition)
+    adjustGoToTopButtonPosition(fabPosition)
   }
 
   if (typeof initializeNotesPanel === 'function') {
-    initializeNotesPanel();
+    initializeNotesPanel()
   }
 
-  createAndInjectBellIcon();
-  await updateNotificationStatus();
+  createAndInjectBellIcon()
+  await updateNotificationStatus()
 }
 
 function createFloatingActionButtons() {
@@ -929,6 +949,68 @@ function initializeScrollToTopButton() {
   })
 }
 
+async function updateToolbarButtonVisibility(editorContainer) {
+  if (!editorContainer) return
+
+  const settings = await getSettings()
+  const buttonsVisibility = settings.toolbarButtons || {}
+
+  // Mapeamento completo de chaves para seletores de botões
+  const buttonSelectors = {
+    link: '[data-action="link"]',
+    emoji: '[data-action="emoji"]',
+    username: '[data-action="username"]',
+    color: '[data-action="color"]',
+    highlight: '[data-action="highlight"]',
+    lists: '[data-action="list"]',
+    bullet: '[data-action="bullet"]',
+    reminders: '[title="Lembretes"]',
+    quickSteps: '[data-action="quick-steps"]',
+    notes: '[data-action="toggle-notes"]',
+    separator1: '[data-id="separator1"]',
+    separator2: '[data-id="separator2"]',
+    separator3: '[data-id="separator3"]',
+    separator4: '[data-id="separator4"]',
+    separator5: '[data-id="separator5"]',
+    separator6: '[data-id="separator6"]'
+  }
+
+  for (const key in buttonSelectors) {
+    const button = editorContainer.querySelector(buttonSelectors[key])
+    if (button) {
+      // Para dropdowns, precisamos pegar o elemento pai
+      const elementToToggle = button.closest('.dropdown') || button
+      elementToToggle.style.display =
+        buttonsVisibility[key] === false ? 'none' : ''
+    }
+  }
+}
+
+async function applyGlobalVisibilitySettings() {
+  const settings = await getSettings()
+  const visibility = settings.toolbarButtons || {}
+
+  const fabContainer = document.getElementById('fab-container')
+  if (fabContainer) {
+    fabContainer.style.display = visibility.fab === false ? 'none' : 'flex'
+  }
+
+  const goToTopButton = document.getElementById('floating-scroll-top-btn')
+  if (goToTopButton) {
+    // A visibilidade do botão também depende do scroll, então usamos uma classe
+    goToTopButton.style.display = visibility.goToTop === false ? 'none' : ''
+  }
+}
+
+function applyAllVisibilitySettings() {
+  // Atualiza todas as barras de ferramentas
+  document.querySelectorAll('.editor-container').forEach(container => {
+    updateToolbarButtonVisibility(container)
+  })
+  // Atualiza os elementos globais
+  applyGlobalVisibilitySettings()
+}
+
 initializeExtension()
 
 // --- FUNÇÕES PARA GERENCIAR BADGE DE NOTIFICAÇÃO DO FAB ---
@@ -971,14 +1053,24 @@ function createAndInjectBellIcon() {
   // Se o sino já existir, não faz nada
   if (document.getElementById('sgd-notification-bell')) return
 
+  // Verifica se estamos em uma página onde o sino deve ser injetado
+  // (não em páginas de login ou outras páginas específicas)
+  const currentPath = window.location.pathname
+  if (currentPath.includes('login.html') || currentPath.includes('logout')) {
+    return // Não injeta o sino em páginas de login/logout
+  }
+
   // Encontra o elemento de referência (o nome do usuário) para injetar o sino antes dele
   const targetLink = document.querySelector(
     'p.navbar-text.navbar-right a[href*="alt-usuario.html"]'
   )
   if (!targetLink) {
-    console.warn(
-      'Editor SGD: Ponto de injeção do ícone de sino não encontrado.'
-    )
+    // Só mostra o aviso se não estivermos em uma página de login
+    if (!currentPath.includes('login')) {
+      console.warn(
+        'Editor SGD: Ponto de injeção do ícone de sino não encontrado.'
+      )
+    }
     return
   }
   const targetContainer = targetLink.parentElement

@@ -17,6 +17,25 @@ async function loadQuickMessages(editorContainer) {
 
   const listContainer = document.createElement('div')
   listContainer.classList.add('quick-steps-list')
+  // Adiciona o item de menu para abrir o painel no topo
+  const panelMenuItem = document.createElement('div')
+  panelMenuItem.className = 'quick-steps-panel-item'
+  panelMenuItem.innerHTML = `
+    <div class="panel-item-content">
+      <span class="panel-item-icon">🔍</span>
+      <span class="panel-item-text">Abrir Painel de Trâmites</span>
+    </div>
+  `
+
+  // Event listener para o item do painel
+  panelMenuItem.addEventListener('click', e => {
+    e.preventDefault()
+    e.stopPropagation()
+    openQuickInserterPanel()
+  })
+
+  dropdown.appendChild(panelMenuItem)
+
   dropdown.appendChild(listContainer)
 
   data.categories.forEach(category => {
@@ -26,13 +45,15 @@ async function loadQuickMessages(editorContainer) {
 
     // Segurança: Escapar HTML.
     const shortcutDisplay = category.shortcut
-      ? `<span class="category-shortcut-display">(${escapeHTML(
+      ? `<span class="category-shortcut-display">${escapeHTML(
           category.shortcut
-        )})</span>`
+        )}</span>`
       : ''
-    categoryContainer.innerHTML = `<h5 class="category-title">${escapeHTML(
-      category.name
-    )} ${shortcutDisplay}</h5>`
+    categoryContainer.innerHTML = `
+      <h5 class="category-title">
+        <span class="category-name">${escapeHTML(category.name)}</span>
+        ${shortcutDisplay}
+      </h5>`
 
     // Filtra e ordena as mensagens pela propriedade 'order'.
     const messagesInCategory = data.messages
@@ -65,7 +86,7 @@ async function loadQuickMessages(editorContainer) {
   const actionsContainer = document.createElement('div')
   actionsContainer.className = 'quick-steps-actions'
 
-  // Adicionado ícone "+" e removido botão "Gerenciar"
+  // Adicionado ícone "+" (botão flutuante será adicionado separadamente)
   actionsContainer.innerHTML = `
         <button type="button" class="action-btn add-message-btn">+ Adicionar Novo</button>
     `
@@ -176,6 +197,9 @@ async function removeMessageFromStorage(messageId) {
   await saveStoredData(data)
   // Recarrega todas as instâncias visíveis para refletir a exclusão.
   reloadAllQuickMessagesInstances()
+
+  // Atualiza o painel de inserção rápida se estiver aberto
+  await refreshQuickInserterPanel()
 }
 
 /**
@@ -578,6 +602,16 @@ async function openMessageModal(data = null) {
         await saveStoredData(dataToSave)
         // Recarrega todas as instâncias visíveis.
         reloadAllQuickMessagesInstances()
+
+        // Atualiza o painel de inserção rápida se estiver aberto
+        await refreshQuickInserterPanel()
+
+        // Se o modal de configurações estiver aberto, atualiza a lista de trâmites
+        const managementModal = document.getElementById('management-modal')
+        if (managementModal) {
+          await renderQuickStepsList(managementModal)
+        }
+
         closeModal()
       } else {
         showNotification('Título e Conteúdo são obrigatórios.', 'error')
@@ -615,6 +649,96 @@ async function openMessageModal(data = null) {
 }
 
 /**
+ * Renderiza a lista de trâmites na seção "Trâmites Rápidos" do modal de configurações.
+ * @param {HTMLElement} modal - O elemento do modal de gerenciamento.
+ */
+async function renderQuickStepsList(modal) {
+  const container = modal.querySelector('#quick-steps-list')
+  if (!container) return
+
+  const data = await getStoredData()
+
+  if (!data.messages || data.messages.length === 0) {
+    container.innerHTML =
+      '<p class="no-messages">Nenhum trâmite cadastrado ainda.</p>'
+    return
+  }
+
+  // Agrupa mensagens por categoria
+  const messagesByCategory = {}
+  data.messages.forEach(message => {
+    const category = data.categories.find(cat => cat.id === message.categoryId)
+    const categoryName = category ? category.name : 'Sem categoria'
+
+    if (!messagesByCategory[categoryName]) {
+      messagesByCategory[categoryName] = []
+    }
+    messagesByCategory[categoryName].push(message)
+  })
+
+  let html = ''
+  for (const [categoryName, messages] of Object.entries(messagesByCategory)) {
+    html += `<div class="quick-steps-category">
+      <h5>${escapeHTML(categoryName)} (${messages.length})</h5>
+      <div class="quick-steps-messages">`
+
+    messages.forEach(message => {
+      html += `
+        <div class="quick-steps-message-item" data-message-id="${message.id}">
+          <div class="message-info">
+            <strong>${escapeHTML(message.title)}</strong>
+            <span class="message-preview">${escapeHTML(
+              message.message.substring(0, 50)
+            )}${message.message.length > 50 ? '...' : ''}</span>
+          </div>
+          <div class="message-actions">
+            <button type="button" class="edit-message-btn" title="Editar">✏️</button>
+            <button type="button" class="delete-message-btn" title="Excluir">🗑️</button>
+          </div>
+        </div>
+      `
+    })
+
+    html += `</div></div>`
+  }
+
+  container.innerHTML = html
+
+  // Adiciona event listeners para os botões de ação
+  container.querySelectorAll('.edit-message-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.preventDefault()
+      const messageId = e.target.closest('.quick-steps-message-item').dataset
+        .messageId
+      const message = data.messages.find(m => m.id === messageId)
+      if (message) {
+        openMessageModal(message) // Abre o modal para editar (mantém configurações aberto)
+      }
+    })
+  })
+
+  container.querySelectorAll('.delete-message-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.preventDefault()
+      const messageId = e.target.closest('.quick-steps-message-item').dataset
+        .messageId
+      const message = data.messages.find(m => m.id === messageId)
+      if (message) {
+        showConfirmDialog(
+          `Excluir "${escapeHTML(message.title)}"?`,
+          async () => {
+            await removeMessageFromStorage(message.id)
+            await renderQuickStepsList(modal) // Recarrega a lista
+            // Também recarrega todas as instâncias visíveis
+            reloadAllQuickMessagesInstances()
+          }
+        )
+      }
+    })
+  })
+}
+
+/**
  * Abre o modal principal de gerenciamento de trâmites (Categorias, Import/Export, Configs IA).
  */
 async function openManagementModal() {
@@ -624,42 +748,16 @@ async function openManagementModal() {
   }
 
   const onSave = async (modalContent, closeModal) => {
-    const success = await saveAllCategoryChanges(modalContent)
-    if (success) {
-      await reloadAllQuickMessagesInstances()
-      showNotification(
-        'Alterações de categorias salvas com sucesso!',
-        'success'
-      )
-    }
+    const categoriesSuccess = await saveAllCategoryChanges(modalContent)
+    const visibilitySuccess = await saveButtonVisibilitySettings(modalContent)
 
-    // --- APLICA VISIBILIDADE DOS BOTÕES FLUTUANTES ---
-    const newSettings = await getSettings()
-    const newVisibility = newSettings.uiSettings.toolbarButtons
-
-    const fab = document.getElementById('fab-container')
-    if (fab) fab.style.display = newVisibility.fab ? 'flex' : 'none'
-
-    const goToTop = document.getElementById('floating-scroll-top-btn')
-    if (goToTop) goToTop.style.display = newVisibility.goToTop ? 'flex' : 'none'
-
-    // Recarrega a instância principal para refletir as mudanças na barra de ferramentas
-    const mainTextArea = getTargetTextArea()
-    if (mainTextArea) {
-      mainTextArea.dataset.enhanced = ''
-      const masterContainer = mainTextArea.closest('.editor-master-container')
-      if (masterContainer) {
-        masterContainer.before(mainTextArea)
-        masterContainer.remove()
+    if (categoriesSuccess && visibilitySuccess) {
+      // Atualiza a barra de ferramentas e elementos globais em tempo real
+      if (typeof applyAllVisibilitySettings === 'function') {
+        applyAllVisibilitySettings()
       }
-      await initializeEditorInstance(mainTextArea, 'main', {
-        includePreview: true,
-        includeQuickSteps: true,
-        includeThemeToggle: true,
-        includeNotes: true,
-        includeReminders: true
-      })
-      showNotification('Configurações de interface aplicadas!', 'success')
+      showNotification('Alterações salvas com sucesso!', 'success')
+      reloadAllQuickMessagesInstances() // Recarrega trâmites para refletir mudanças de categoria
     }
   }
 
@@ -667,24 +765,16 @@ async function openManagementModal() {
   const devMode = await isDevModeEnabled()
   const settings = await getSettings()
   const uiSettings = settings.uiSettings || DEFAULT_SETTINGS.uiSettings
-  const buttonsVisibility =
-    uiSettings.toolbarButtons || DEFAULT_SETTINGS.uiSettings.toolbarButtons
-
-  const createCheckbox = (id, label, checked) => `
-    <div class="form-checkbox-group">
-        <input type="checkbox" id="visibility-${id}" data-button-key="${id}" ${
-    checked ? 'checked' : ''
-  }>
-        <label for="visibility-${id}">${label}</label>
-    </div>
-  `
 
   let aiSettingsHtml = '' // Inicia como string vazia
   if (devMode) {
     aiSettingsHtml = `
       <hr>
       <div class="management-section collapsible-section">
-          <h4 class="collapsible-header">▶ ✨ Configurações de IA (Gemini)</h4>
+          <h4 class="collapsible-header">
+            <span class="collapsible-icon">▶</span>
+            <span class="collapsible-title">✨ Configurações de IA (Gemini)</span>
+          </h4>
           <div class="collapsible-content">
               <p>Insira sua chave de API do Google Gemini para habilitar os recursos de IA.</p>
               <div class="form-group">
@@ -705,14 +795,14 @@ async function openManagementModal() {
     `
   }
 
-  // Pega a versão da extensão diretamente do manifest.json
-  const extensionVersion = chrome.runtime.getManifest().version
-
   const modal = createModal(
     'Configurações',
     `
         <div class="management-section collapsible-section">
-            <h4 class="collapsible-header">▶ 🗃️ Categorias</h4>
+            <h4 class="collapsible-header">
+                <span class="collapsible-icon">▶</span>
+                <span class="collapsible-title">🗃️ Categorias</span>
+            </h4>
             <div class="collapsible-content">
                 <p>Edite o nome, defina atalhos ou exclua categorias. (Arraste para reordenar)</p>
                 <div id="category-list" class="category-list"></div>
@@ -724,7 +814,26 @@ async function openManagementModal() {
         </div>
         <hr>
         <div class="management-section collapsible-section">
-            <h4 class="collapsible-header">▶ 🔃 Importar / Exportar</h4>
+            <h4 class="collapsible-header">
+                <span class="collapsible-icon">▶</span>
+                <span class="collapsible-title">⚡ Trâmites Rápidos</span>
+            </h4>
+            <div class="collapsible-content">
+                <p>Gerencie seus trâmites rápidos e acesse o painel de inserção.</p>
+                <div id="quick-steps-list" class="quick-steps-list"></div>
+                <div class="quick-steps-actions">
+                    <button type="button" id="quick-steps-add-new-btn" class="action-btn">+ Adicionar novo</button>
+                    <button type="button" id="quick-steps-open-panel-btn" class="action-btn">🔍 Abrir Painel de Trâmites</button>
+                </div>
+            </div>
+        </div>
+        
+        <hr>
+        <div class="management-section collapsible-section">
+            <h4 class="collapsible-header">
+                <span class="collapsible-icon">▶</span>
+                <span class="collapsible-title">🔃 Importar / Exportar</span>
+            </h4>
             <div class="collapsible-content">
                 <p>Selecione um arquivo .json para importar (os dados serão mesclados) ou exporte os trâmites selecionados.</p>
                 <input type="file" id="import-file-input" accept=".json">
@@ -742,89 +851,49 @@ async function openManagementModal() {
         
         <hr>
         <div class="management-section collapsible-section">
-            <h4 class="collapsible-header">▶ 🖥️ Interface</h4>
+            <h4 class="collapsible-header">
+                <span class="collapsible-icon">▶</span>
+                <span class="collapsible-title">👁️ Visibilidade dos Botões</span>
+            </h4>
+            <div class="collapsible-content" id="button-visibility-settings">
+                <p>Marque as opções que você deseja exibir na barra de ferramentas.</p>
+                <!-- O conteúdo será preenchido pelo JavaScript -->
+            </div>
+        </div>
+        
+        <hr>
+        <div class="management-section collapsible-section">
+            <h4 class="collapsible-header">
+                <span class="collapsible-icon">▶</span>
+                <span class="collapsible-title">🖥️ Interface</span>
+            </h4>
             <div class="collapsible-content">
-                <p>Ajuste a aparência e os componentes visíveis da extensão.</p>
-
-                <div class="management-section collapsible-section nested-section">
-                    <h5 class="collapsible-header">▶ Aparência da Extensão</h5>
-                    <div class="collapsible-content">
-                        <div class="slider-group">
-                            <label for="icon-size-slider">Tamanho dos Ícones da Barra (${Math.round(
-                              uiSettings.iconSize * 100
-                            )}%)</label>
-                            <input type="range" id="icon-size-slider" min="0.8" max="1.3" step="0.05" value="${
-                              uiSettings.iconSize
-                            }">
-                        </div>
-                        <div class="slider-group">
-                            <label for="ui-font-size-slider">Fonte da Interface (${
-                              uiSettings.uiFontSize
-                            }px)</label>
-                            <input type="range" id="ui-font-size-slider" min="12" max="16" step="1" value="${
-                              uiSettings.uiFontSize
-                            }">
-                        </div>
-                        <div class="slider-group">
-                            <label for="editor-font-size-slider">Fonte do Editor (${
-                              uiSettings.editorFontSize
-                            }px)</label>
-                            <input type="range" id="editor-font-size-slider" min="12" max="18" step="1" value="${
-                              uiSettings.editorFontSize
-                            }">
-                        </div>
-                        <button type="button" id="restore-ui-defaults-btn" class="action-btn restore-defaults-btn">Restaurar Padrões de Aparência</button>
-                    </div>
+                <p>Ajuste a aparência da extensão.</p>
+                <div class="slider-group">
+                    <label for="icon-size-slider">Tamanho dos Ícones da Barra (${Math.round(
+                      uiSettings.iconSize * 100
+                    )}%)</label>
+                    <input type="range" id="icon-size-slider" min="0.8" max="1.3" step="0.05" value="${
+                      uiSettings.iconSize
+                    }">
                 </div>
-
-                <div class="management-section collapsible-section nested-section">
-                    <h5 class="collapsible-header">▶ Visibilidade dos Botões</h5>
-                    <div class="collapsible-content">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 5px;">
-                            ${createCheckbox(
-                              'lists',
-                              '☰ Listas e Marcadores',
-                              buttonsVisibility.lists
-                            )}
-                            ${createCheckbox(
-                              'insert',
-                              '🔗 Inserir (Link, etc.)',
-                              buttonsVisibility.insert
-                            )}
-                            ${createCheckbox(
-                              'colors',
-                              '🎨 Cores',
-                              buttonsVisibility.colors
-                            )}
-                            ${createCheckbox(
-                              'quick-steps',
-                              '⚡ Trâmites Rápidos',
-                              buttonsVisibility['quick-steps']
-                            )}
-                            ${createCheckbox(
-                              'reminders',
-                              '⏰ Lembretes',
-                              buttonsVisibility.reminders
-                            )}
-                            ${createCheckbox(
-                              'notes',
-                              '✍️ Anotações',
-                              buttonsVisibility.notes
-                            )}
-                            ${createCheckbox(
-                              'fab',
-                              '🔘 Acesso Rápido (FAB)',
-                              buttonsVisibility.fab
-                            )}
-                            ${createCheckbox(
-                              'goToTop',
-                              '🔼 Ir ao Topo',
-                              buttonsVisibility.goToTop
-                            )}
-                        </div>
-                    </div>
+                <div class="slider-group">
+                    <label for="ui-font-size-slider">Fonte da Interface (${
+                      uiSettings.uiFontSize
+                    }px)</label>
+                    <input type="range" id="ui-font-size-slider" min="12" max="16" step="1" value="${
+                      uiSettings.uiFontSize
+                    }">
                 </div>
-
+                <div class="slider-group">
+                    <label for="editor-font-size-slider">Fonte do Editor (${
+                      uiSettings.editorFontSize
+                    }px)</label>
+                    <input type="range" id="editor-font-size-slider" min="12" max="18" step="1" value="${
+                      uiSettings.editorFontSize
+                    }">
+                </div>
+                <button type="button" id="restore-ui-defaults-btn" class="action-btn restore-defaults-btn">Restaurar Padrões de Aparência</button>
             </div>
         </div>
         
@@ -836,6 +905,9 @@ async function openManagementModal() {
   )
 
   document.body.appendChild(modal)
+
+  // Renderiza os checkboxes de visibilidade dos botões
+  await renderButtonVisibilitySettings(modal)
 
   // --- LÓGICA EXISTENTE PARA SLIDERS E CHECKBOXES (SEM ALTERAÇÃO) ---
   const iconSizeSlider = modal.querySelector('#icon-size-slider')
@@ -871,25 +943,6 @@ async function openManagementModal() {
   iconSizeSlider.addEventListener('input', updateUiSettings)
   uiFontSizeSlider.addEventListener('input', updateUiSettings)
   editorFontSizeSlider.addEventListener('input', updateUiSettings)
-
-  const updateButtonVisibility = async () => {
-    const currentSettings = await getSettings()
-    const newVisibility = {}
-    buttonCheckboxes.forEach(cb => {
-      newVisibility[cb.dataset.buttonKey] = cb.checked
-    })
-
-    if (!currentSettings.uiSettings) {
-      currentSettings.uiSettings = {}
-    }
-    currentSettings.uiSettings.toolbarButtons = newVisibility
-
-    await saveSettings(currentSettings)
-  }
-
-  buttonCheckboxes.forEach(cb => {
-    cb.addEventListener('change', updateButtonVisibility)
-  })
 
   // Apenas uma pequena modificação no listener do botão de restaurar para ser mais específico
   const restoreBtn = modal.querySelector('#restore-ui-defaults-btn')
@@ -982,21 +1035,15 @@ async function openManagementModal() {
   // --- CORREÇÃO APLICADA AQUI ---
   // Listener aprimorado para todos os cabeçalhos colapsáveis, incluindo os aninhados.
   modal.querySelectorAll('.collapsible-header').forEach(header => {
-    header.addEventListener('click', e => {
-      // Garante que o alvo do clique é o próprio cabeçalho e não um filho
-      const currentHeader = e.currentTarget
-      const section = currentHeader.closest('.collapsible-section')
-
+    header.addEventListener('click', () => {
+      const section = header.closest('.collapsible-section')
       if (section) {
+        const iconSpan = header.querySelector('.collapsible-icon')
         section.classList.toggle('expanded')
-        const isExpanded = section.classList.contains('expanded')
-        const icon = isExpanded ? '▼' : '▶'
-        // Atualiza o ícone de forma segura, preservando o texto
-        const textNode = Array.from(currentHeader.childNodes).find(
-          node => node.nodeType === Node.TEXT_NODE
-        )
-        if (textNode) {
-          currentHeader.firstChild.textContent = icon + ' '
+        if (iconSpan) {
+          iconSpan.textContent = section.classList.contains('expanded')
+            ? '▼'
+            : '▶'
         }
       }
     })
@@ -1094,6 +1141,29 @@ async function openManagementModal() {
     e.preventDefault()
     exportQuickMessages(modal)
   })
+
+  // Renderiza a lista de trâmites na nova seção
+  await renderQuickStepsList(modal)
+
+  // Event listeners para a nova seção "Trâmites Rápidos"
+  modal
+    .querySelector('#quick-steps-add-new-btn')
+    .addEventListener('click', e => {
+      e.preventDefault()
+      openMessageModal() // Abre o modal para adicionar novo trâmite (mantém configurações aberto)
+    })
+
+  modal
+    .querySelector('#quick-steps-open-panel-btn')
+    .addEventListener('click', e => {
+      e.preventDefault()
+      // Fecha o modal de configurações apenas para o painel de inserção rápida
+      const managementModal = document.getElementById('management-modal')
+      if (managementModal) {
+        document.body.removeChild(managementModal)
+      }
+      openQuickInserterPanel() // Abre o painel de inserção rápida
+    })
 }
 
 /**
@@ -1350,6 +1420,9 @@ async function deleteCategory(id) {
 
   data.categories = data.categories.filter(c => c.id !== id)
   await saveStoredData(data)
+
+  // Atualiza o painel se estiver aberto
+  await refreshQuickInserterPanel()
 }
 
 // --- MODAIS DE CAPTURA DE ATALHO ---
@@ -1382,8 +1455,34 @@ function openShortcutModal(category, itemElement) {
 
       // Atualiza a UI
       itemElement.dataset.shortcut = finalShortcut
-      itemElement.querySelector('.shortcut-display').textContent =
-        escapeHTML(finalShortcut) || 'Nenhum'
+
+      // Verifica se está no contexto do painel de inserção rápida ou modal de configurações
+      const shortcutDisplay = itemElement.querySelector('.shortcut-display')
+      if (shortcutDisplay) {
+        // Modal de configurações
+        shortcutDisplay.textContent = escapeHTML(finalShortcut) || 'Nenhum'
+      } else {
+        // Painel de inserção rápida - atualiza o elemento qi-category-shortcut
+        const qiShortcutElement = itemElement.querySelector(
+          '.qi-category-shortcut'
+        )
+        if (qiShortcutElement) {
+          qiShortcutElement.textContent = escapeHTML(finalShortcut)
+        } else if (finalShortcut) {
+          // Se não existe o elemento de atalho, cria um novo
+          const categoryName = itemElement.querySelector('.qi-category-name')
+          if (categoryName) {
+            const shortcutSpan = document.createElement('span')
+            shortcutSpan.className = 'qi-category-shortcut'
+            shortcutSpan.textContent = escapeHTML(finalShortcut)
+            categoryName.parentNode.insertBefore(
+              shortcutSpan,
+              itemElement.querySelector('.qi-shortcut-btn')
+            )
+          }
+        }
+      }
+
       showNotification('Atalho salvo com sucesso!', 'success')
       closeModalAndRemoveListener()
       // Recarrega os trâmites no dropdown para refletir a mudança de atalho
@@ -1448,22 +1547,48 @@ function openShortcutModalForNewCategory(parentModal) {
       return
     }
 
-    const validation = await validateShortcut(finalShortcut, null)
-    if (validation.valid) {
+    // Validação de segurança para atalhos protegidos
+    if (PROTECTED_SHORTCUTS.includes(finalShortcut)) {
+      showNotification(
+        `O atalho "${finalShortcut}" é protegido pelo sistema e não pode ser usado.`,
+        'error'
+      )
+      return
+    }
+
+    // Validação simples de duplicatas
+    try {
+      const data = await getStoredData()
+      const existingShortcut = data.categories.find(
+        cat =>
+          cat.shortcut &&
+          cat.shortcut.toLowerCase() === finalShortcut.toLowerCase()
+      )
+
+      if (existingShortcut) {
+        showNotification(
+          `Já existe uma categoria com o atalho "${finalShortcut}".`,
+          'warning'
+        )
+        return
+      }
+
       shortcutInput.value = finalShortcut
       shortcutDisplay.textContent = escapeHTML(finalShortcut)
       closeModalAndRemoveListener()
-    } else {
-      showNotification(validation.message, 'error')
+      showNotification('Atalho definido com sucesso!', 'success')
+    } catch (error) {
+      showNotification(`Erro ao definir atalho: ${error.message}`, 'error')
     }
   }
 
   const modal = createModal(
     `Definir Atalho para Nova Categoria`,
-    `<p>Pressione a combinação de teclas desejada (ex: Alt+1, Ctrl+Shift+A) e clique em Salvar. Pressione ESC para limpar.</p>
+    `<p class="text-center">Pressione a combinação de teclas desejada (ex: <b>Alt + 1</b>) e clique em Salvar.</p>
          <div id="shortcut-preview" class="shortcut-preview-box">${
            escapeHTML(initialShortcut) || 'Aguardando...'
-         }</div>`,
+         }</div>
+         <p class="shortcut-recommendation"><b>Nota</b>: Pressione <b>ESC</b> para limpar o atalho.</p>`,
     onSave
   )
 
@@ -1755,6 +1880,144 @@ async function openImportSelectionModal(importedData, onCompleteCallback) {
 }
 
 /**
+ * Atualiza o painel de inserção rápida se estiver aberto.
+ * Esta função pode ser chamada de qualquer lugar para atualizar o painel.
+ */
+async function refreshQuickInserterPanel() {
+  const panel = document.getElementById('quick-inserter-panel')
+  if (!panel) return
+
+  // Dispara um evento customizado para que o painel se atualize
+  const refreshEvent = new CustomEvent('refreshQuickInserterPanel')
+  panel.dispatchEvent(refreshEvent)
+}
+
+/**
+ * Abre um modal simples para adicionar uma nova categoria.
+ */
+async function openAddCategoryModal() {
+  const modal = createModal(
+    'Nova Categoria',
+    `
+      <div class="form-group">
+        <label for="new-category-name-input">Nome da Categoria:</label>
+        <input type="text" id="new-category-name-input" placeholder="Digite o nome da categoria" maxlength="50">
+      </div>
+      <div class="form-group">
+        <label>Atalho (opcional):</label>
+        <div class="shortcut-definition-area">
+          <input type="hidden" id="modal-new-category-shortcut" value="">
+          <button type="button" id="define-new-category-shortcut-btn" class="action-btn">⌨️ Definir Atalho</button>
+          <span id="shortcut-preview-display">Nenhum</span>
+        </div>
+      </div>
+    `,
+    async (modalContent, closeModal) => {
+      const categoryName = modalContent
+        .querySelector('#new-category-name-input')
+        .value.trim()
+
+      const categoryShortcut = modalContent
+        .querySelector('#modal-new-category-shortcut')
+        .value.trim()
+
+      if (!categoryName) {
+        showNotification(
+          'Por favor, digite um nome para a categoria.',
+          'warning'
+        )
+        return
+      }
+
+      try {
+        // Verifica se já existe uma categoria com esse nome
+        const data = await getStoredData()
+        const existingCategory = data.categories.find(
+          cat => cat.name.toLowerCase() === categoryName.toLowerCase()
+        )
+
+        if (existingCategory) {
+          showNotification('Já existe uma categoria com esse nome.', 'warning')
+          return
+        }
+
+        // Verifica se já existe uma categoria com esse atalho (se fornecido)
+        if (categoryShortcut) {
+          const existingShortcut = data.categories.find(
+            cat =>
+              cat.shortcut &&
+              cat.shortcut.toLowerCase() === categoryShortcut.toLowerCase()
+          )
+
+          if (existingShortcut) {
+            showNotification(
+              `Já existe uma categoria com o atalho "${categoryShortcut}".`,
+              'warning'
+            )
+            return
+          }
+        }
+
+        // Cria a nova categoria
+        const newCategory = {
+          id: `cat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          name: categoryName,
+          shortcut: categoryShortcut,
+          order: data.categories.length
+        }
+
+        // Adiciona à lista de categorias
+        data.categories.push(newCategory)
+
+        // Salva no storage
+        await saveStoredData(data)
+
+        showNotification('Categoria adicionada com sucesso!', 'success')
+
+        // Fecha o modal
+        closeModal()
+
+        // Atualiza o painel de inserção rápida se estiver aberto
+        await refreshQuickInserterPanel()
+
+        // Recarrega todas as instâncias de trâmites rápidos
+        reloadAllQuickMessagesInstances()
+      } catch (error) {
+        showNotification(
+          `Erro ao adicionar categoria: ${error.message}`,
+          'error'
+        )
+      }
+    }
+  )
+
+  // Foca no input quando o modal abre
+  const nameInput = modal.querySelector('#new-category-name-input')
+  nameInput.focus()
+
+  // Event listener para o botão "Definir Atalho" usando o sistema existente
+  const defineShortcutBtn = modal.querySelector(
+    '#define-new-category-shortcut-btn'
+  )
+
+  defineShortcutBtn.addEventListener('click', () => {
+    // Usa o sistema padrão de definição de atalho
+    openShortcutModalForNewCategory(modal)
+  })
+
+  // Permite salvar com Enter
+  nameInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const saveBtn = modal.querySelector('#modal-save-btn')
+      saveBtn.click()
+    }
+  })
+
+  // Adiciona o modal ao DOM
+  document.body.appendChild(modal)
+}
+
+/**
  * Abre a Paleta de Comandos para inserção rápida de trâmites.
  */
 async function openQuickInserterPanel() {
@@ -1781,7 +2044,7 @@ async function openQuickInserterPanel() {
         </div>
         <div class="qi-categories-list"></div>
         <div class="qi-actions">
-          <button type="button" id="qi-open-settings-btn" class="action-btn" title="Configurações">⚙️ Configurações</button>
+          <button type="button" id="qi-add-category-btn" class="action-btn" title="Adicionar Nova Categoria">📁 Nova Categoria</button>
         </div>
       </div>
       <div class="qi-main-content">
@@ -1803,6 +2066,18 @@ async function openQuickInserterPanel() {
   const panel = document.getElementById('quick-inserter-panel')
   // Aplica o tema diretamente no painel para que o overlay mantenha o fundo escuro
   applyCurrentTheme(panel)
+
+  // Event listener para atualização do painel
+  panel.addEventListener('refreshQuickInserterPanel', async () => {
+    // Recarrega os dados
+    const newData = await getStoredData()
+    data.messages = newData.messages
+    data.categories = newData.categories
+
+    // Re-renderiza as categorias e mensagens
+    renderCategories()
+    renderMessages()
+  })
 
   const searchInput = document.getElementById('qi-search-input')
   const categoriesList = panel.querySelector('.qi-categories-list')
@@ -1919,23 +2194,160 @@ async function openQuickInserterPanel() {
     }
   }
 
+  // --- FUNÇÕES DE DRAG AND DROP PARA CATEGORIAS NO PAINEL ---
+
+  let qiDraggedCategory = null
+
+  const qiHandleCategoryDragStart = e => {
+    qiDraggedCategory = e.target.closest('.qi-category-item')
+    if (qiDraggedCategory && qiDraggedCategory.dataset.id !== 'all') {
+      qiDraggedCategory.style.opacity = '0.5'
+      e.dataTransfer.effectAllowed = 'move'
+      e.dataTransfer.setData('text/html', qiDraggedCategory.outerHTML)
+    } else {
+      e.preventDefault()
+    }
+  }
+
+  const qiHandleCategoryDragOver = e => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+
+    const targetItem = e.target.closest('.qi-category-item')
+    if (
+      targetItem &&
+      targetItem !== qiDraggedCategory &&
+      targetItem.dataset.id !== 'all'
+    ) {
+      targetItem.classList.add('qi-drag-over')
+    }
+  }
+
+  const qiHandleCategoryDragLeave = e => {
+    const targetItem = e.target.closest('.qi-category-item')
+    if (targetItem) {
+      targetItem.classList.remove('qi-drag-over')
+    }
+  }
+
+  const qiHandleCategoryDrop = async e => {
+    e.preventDefault()
+
+    const targetItem = e.target.closest('.qi-category-item')
+    if (
+      !targetItem ||
+      targetItem === qiDraggedCategory ||
+      targetItem.dataset.id === 'all'
+    ) {
+      return
+    }
+
+    targetItem.classList.remove('qi-drag-over')
+
+    const draggedId = qiDraggedCategory.dataset.id
+    const targetId = targetItem.dataset.id
+
+    // Reordena as categorias no array
+    const draggedIndex = data.categories.findIndex(cat => cat.id === draggedId)
+    const targetIndex = data.categories.findIndex(cat => cat.id === targetId)
+
+    if (draggedIndex !== -1 && targetIndex !== -1) {
+      // Remove o item arrastado
+      const [draggedCategory] = data.categories.splice(draggedIndex, 1)
+      // Insere na nova posição
+      data.categories.splice(targetIndex, 0, draggedCategory)
+
+      // Salva as alterações
+      await saveStoredData(data)
+
+      // Re-renderiza as categorias
+      renderCategories()
+
+      // Recarrega todas as instâncias para refletir a mudança
+      reloadAllQuickMessagesInstances()
+    }
+  }
+
+  const qiHandleCategoryDragEnd = e => {
+    if (qiDraggedCategory) {
+      qiDraggedCategory.style.opacity = ''
+      qiDraggedCategory = null
+    }
+
+    // Remove todas as classes de drag over
+    document.querySelectorAll('.qi-category-item').forEach(item => {
+      item.classList.remove('qi-drag-over')
+    })
+  }
+
   // --- FUNÇÕES DE RENDERIZAÇÃO ---
 
   const renderCategories = () => {
     categoriesList.innerHTML = `<div class="qi-category-item ${
       activeCategory === 'all' ? 'active' : ''
     }" data-id="all"><span class="qi-category-name">Todas as Categorias</span></div>`
+
     data.categories.forEach(cat => {
       const shortcutDisplay = cat.shortcut
         ? `<span class="qi-category-shortcut">${escapeHTML(
             cat.shortcut
           )}</span>`
         : ''
-      categoriesList.innerHTML += `<div class="qi-category-item ${
+
+      const categoryItem = document.createElement('div')
+      categoryItem.className = `qi-category-item ${
         activeCategory === cat.id ? 'active' : ''
-      }" data-id="${cat.id}"><span class="qi-category-name">${escapeHTML(
-        cat.name
-      )}</span>${shortcutDisplay}</div>`
+      }`
+      categoryItem.dataset.id = cat.id
+      categoryItem.draggable = true
+      categoryItem.innerHTML = `
+        <span class="qi-drag-handle" title="Arraste para reordenar">⠿</span>
+        <span class="qi-category-name" title="${escapeHTML(
+          cat.name
+        )}">${escapeHTML(cat.name)}</span>
+        ${shortcutDisplay}
+        <div class="qi-category-actions">
+          <button type="button" class="qi-shortcut-btn" title="Definir Atalho">⌨️</button>
+          <button type="button" class="qi-delete-btn" title="Excluir Categoria">🗑️</button>
+        </div>
+      `
+
+      // Adiciona event listeners para drag and drop
+      categoryItem.addEventListener('dragstart', qiHandleCategoryDragStart)
+      categoryItem.addEventListener('dragover', qiHandleCategoryDragOver)
+      categoryItem.addEventListener('dragleave', qiHandleCategoryDragLeave)
+      categoryItem.addEventListener('drop', qiHandleCategoryDrop)
+      categoryItem.addEventListener('dragend', qiHandleCategoryDragEnd)
+
+      // Adiciona event listeners para os botões de ação
+      categoryItem
+        .querySelector('.qi-shortcut-btn')
+        .addEventListener('click', e => {
+          e.preventDefault()
+          e.stopPropagation()
+          openShortcutModal(cat, categoryItem)
+        })
+
+      categoryItem
+        .querySelector('.qi-delete-btn')
+        .addEventListener('click', e => {
+          e.preventDefault()
+          e.stopPropagation()
+          showConfirmDialog(
+            `Excluir categoria "${escapeHTML(
+              cat.name
+            )}"? As mensagens serão movidas para outra categoria.`,
+            async () => {
+              await deleteCategory(cat.id)
+              // Recarrega as categorias no painel
+              renderCategories()
+              // Recarrega todas as instâncias
+              reloadAllQuickMessagesInstances()
+            }
+          )
+        })
+
+      categoriesList.appendChild(categoryItem)
     })
   }
 
@@ -2023,11 +2435,13 @@ async function openQuickInserterPanel() {
     openMessageModal() // Abre o modal para adicionar um novo trâmite
   })
 
-  // Listener para o novo botão de configurações
+  // Listener para o botão de adicionar nova categoria
   document
-    .getElementById('qi-open-settings-btn')
-    .addEventListener('click', () => {
-      openManagementModal() // Abre o modal de configurações
+    .getElementById('qi-add-category-btn')
+    .addEventListener('click', e => {
+      e.preventDefault()
+      e.stopPropagation()
+      openAddCategoryModal()
     })
 
   // Busca
@@ -2096,4 +2510,84 @@ async function openQuickInserterPanel() {
   renderCategories()
   renderMessages()
   searchInput.focus()
+}
+
+/**
+ * Renderiza os checkboxes para as configurações de visibilidade dos botões.
+ * @param {HTMLElement} modal - O elemento do modal de gerenciamento.
+ */
+async function renderButtonVisibilitySettings(modal) {
+  const container = modal.querySelector('#button-visibility-settings')
+  if (!container) return
+
+  const settings = await getSettings()
+  const buttons = settings.toolbarButtons || {}
+
+  // Mapeamento completo de chaves para nomes amigáveis
+  const buttonLabels = {
+    lists: '☰ Listas',
+    bullet: '• Marcadores',
+    link: '🔗 Hiperlink',
+    emoji: '😀 Emoticons',
+    username: '🏷️ Nome do Usuário',
+    color: '🎨 Cor do Texto',
+    highlight: '🖌️ Cor de Destaque',
+    reminders: '⏰ Lembretes',
+    quickSteps: '⚡ Trâmites Rápidos',
+    notes: '✍️ Anotações',
+    fab: '🔘 Acesso Rápido (FAB)',
+    goToTop: '🔼 Ir ao Topo',
+    separator2: 'Divisor 1',
+    separator3: 'Divisor 2',
+    separator4: 'Divisor 3',
+    separator5: 'Divisor 4',
+    separator6: 'Divisor 5'
+  }
+
+  let checkboxesHtml = '<div class="button-visibility-grid">' // Inicia o container da grade
+
+  for (const key in buttonLabels) {
+    // Garante que a verificação use o mapeamento correto. Padrão é true.
+    const isChecked = buttons[key] !== false
+    checkboxesHtml += `
+      <div class="form-checkbox-group">
+        <input type="checkbox" id="visibility-toggle-${key}" data-key="${key}" ${
+      isChecked ? 'checked' : ''
+    }>
+        <label for="visibility-toggle-${key}">${buttonLabels[key]}</label>
+      </div>
+    `
+  }
+
+  checkboxesHtml += '</div>' // Fecha o container da grade
+
+  container.insertAdjacentHTML('beforeend', checkboxesHtml)
+}
+
+/**
+ * Salva as configurações de visibilidade dos botões a partir do modal.
+ * @param {HTMLElement} modal - O elemento do modal de gerenciamento.
+ * @returns {Promise<boolean>} Retorna true se salvou com sucesso.
+ */
+async function saveButtonVisibilitySettings(modal) {
+  const container = modal.querySelector('#button-visibility-settings')
+  if (!container) return true // Se não houver container, não há o que salvar
+
+  const settings = await getSettings()
+  const newButtonSettings = { ...settings.toolbarButtons }
+
+  container.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+    newButtonSettings[checkbox.dataset.key] = checkbox.checked
+  })
+
+  try {
+    await saveSettings({ toolbarButtons: newButtonSettings })
+    return true
+  } catch (error) {
+    showNotification(
+      'Erro ao salvar as configurações de visibilidade.',
+      'error'
+    )
+    return false
+  }
 }

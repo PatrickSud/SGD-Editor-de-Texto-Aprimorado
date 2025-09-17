@@ -73,15 +73,15 @@
 
 /* --- TEMA SERENIDADE --- */
 .serenidade-mode {
-  --primary-color: #6366f1;
-  --primary-color-hover: #4f46e5;
+  --primary-color: #6f71ef;
+  --primary-color-hover: #5a53e7;
   --border-color: #e5e7eb;
   --background-main: #f5f3ff;
   --background-secondary: #ede9fe;
   --background-hover: #e0e7ff;
   --text-color-main: #1f2937;
   --text-color-muted: #6b7280;
-  --background-glass: rgba(255, 255, 255, 0.75);
+  --background-glass: rgba(211, 224, 252, 0.75);
 }
 
 /* --- TEMA LUMEN --- */
@@ -90,7 +90,7 @@
   --primary-color-hover: #0369a1;
   --border-color: #d8e5f3;
   --background-main: #cde9f4;
-  --background-secondary: #f4f9fc;
+  --background-secondary: #e1eef7;
   --background-hover: #eef9ff;
   --text-color-main: #0f172a;
   --text-color-muted: #475569;
@@ -99,8 +99,8 @@
 
 /* --- TEMA ESCURO --- */
 .dark-mode {
-  --primary-color: #3b82f6;
-  --primary-color-hover: #60a5fa;
+  --primary-color: #246ada;
+  --primary-color-hover: #4b9afa;
   --border-color: #222e42;
   --background-main: #111827;
   --background-secondary: #1f2937;
@@ -112,13 +112,13 @@
 
 /* --- TEMA FLORESTA --- */
 .forest-mode {
-  --primary-color: #34d399;
-  --primary-color-hover: #6ee7b7;
+  --primary-color: #0f9564;
+  --primary-color-hover: #0d6c46;
   --border-color: #1a3b2d;
   --background-main: #0d2b1f;
   --background-secondary: #1a3b2d;
   --background-hover: #2a4c3d;
-  --text-color-main: #e6f0e9;
+  --text-color-main: #dbece1;
   --text-color-muted: #a3b8ac;
   --background-glass: rgba(13, 43, 31, 0.75);
 }
@@ -128,12 +128,12 @@
   --primary-color: #da4789;
   --primary-color-hover: #c23872;
   --border-color: #fbcfe8;
-  --background-main: #eea4ca;
+  --background-main: #f9b2d7;
   --background-secondary: #f7d6e8;
   --background-hover: #fcdff1;
-  --text-color-main: #ac2a5e;
-  --text-color-muted: #a04e78;
-  --background-glass: rgba(238, 164, 202, 0.75);
+  --text-color-main: #790b37;
+  --text-color-muted: #8e3061;
+  --background-glass: rgba(254, 192, 224, 0.75);
 }
 
 /* --- TEMA DARK GRAFITE --- */
@@ -152,8 +152,8 @@
 /* --- TEMA TOKYO NIGHT --- */
 
 .tokyo-night-mode {
-  --primary-color: #ff7aa2;
-  --primary-color-hover: #e05282;
+  --primary-color: #f97140;
+  --primary-color-hover: #de4a14;
   --border-color: #202335;
   --background-main: #15121e;
   --background-secondary: #1f1b2d;
@@ -1102,6 +1102,42 @@ a.open-link-btn:hover {
   gap: 8px;
   padding: 4px;
 }
+
+.export-item input[type='checkbox'] {
+  /* Aplica o mesmo estilo dos checkboxes da seção Visibilidade dos botões */
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border-color);
+  background-color: var(--background-secondary);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  margin-top: 2px;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.export-item input[type='checkbox']:hover {
+  border-color: var(--primary-color);
+}
+
+.export-item input[type='checkbox']:checked {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.export-item input[type='checkbox']:checked::after {
+  content: '✔';
+  position: absolute;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
 .export-item label {
   user-select: none;
   cursor: pointer;
@@ -1168,8 +1204,304 @@ a.open-link-btn:hover {
 .collapsible-header {
   cursor: pointer;
   user-select: none;
-  display: flex; /* Adicionado para alinhar o ícone e o texto */
-  align-items: center; /* Adicionado para alinhar o ícone e o texto */
+  display: flex;
+  align-items: center;
+  gap: 8px; /* Espaçamento entre o ícone e o título */
+}
+
+.collapsible-icon {
+  width: 1em; /* Garante que o ícone tenha um espaço reservado */
+  text-align: center;
+}
+
+/* Layout em grade para configurações de visibilidade dos botões */
+.button-visibility-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* Cria 2 colunas */
+  gap: 10px 20px; /* Espaçamento vertical e horizontal */
+  padding-top: 10px;
+}
+
+/* Garante que os checkboxes dentro da grade se comportem bem */
+.button-visibility-grid .form-checkbox-group {
+  margin-top: 0;
+}
+
+/* Estilos para a seção Trâmites Rápidos */
+.quick-steps-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.quick-steps-actions .action-btn {
+  flex: 1;
+  min-width: 120px;
+}
+
+/* Estilos para a lista de trâmites na seção Trâmites Rápidos */
+.quick-steps-list {
+  margin: 15px 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.quick-steps-category {
+  margin-bottom: 15px;
+}
+
+.quick-steps-category h5 {
+  margin: 0 0 8px 0;
+  color: var(--text-color-secondary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.quick-steps-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.quick-steps-message-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background-color: var(--background-secondary);
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-color);
+  transition: background-color 0.2s ease;
+}
+
+.quick-steps-message-item:hover {
+  background-color: var(--background-hover);
+}
+
+.message-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.message-info strong {
+  display: block;
+  color: var(--text-color-main);
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+
+.message-preview {
+  display: block;
+  color: var(--text-color-secondary);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.message-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.message-actions button {
+  padding: 4px 6px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: var(--border-radius-sm);
+  font-size: 12px;
+  transition: background-color 0.2s ease;
+}
+
+.message-actions button:hover {
+  background-color: var(--background-hover);
+}
+
+.no-messages {
+  text-align: center;
+  color: var(--text-color-secondary);
+  font-style: italic;
+  padding: 20px;
+}
+
+/* Estilos para o item de menu do painel no dropdown de Trâmites Rápidos */
+.quick-steps-panel-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-color);
+  transition: background-color 0.2s ease;
+  background-color: var(--background-secondary);
+}
+
+.quick-steps-panel-item:hover {
+  background-color: var(--background-hover);
+}
+
+.quick-steps-panel-item:active {
+  background-color: var(--background-active);
+}
+
+.panel-item-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-item-icon {
+  font-size: 16px;
+  color: var(--primary-color);
+}
+
+.panel-item-text {
+  font-size: 14px;
+  color: var(--text-color-main);
+  font-weight: 500;
+}
+
+/* Estilos para drag and drop de categorias no painel de inserção rápida */
+.qi-category-item {
+  position: relative;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  gap: 6px;
+  min-height: 36px;
+}
+
+.qi-category-item.draggable {
+  cursor: move;
+}
+
+.qi-drag-handle {
+  display: inline-block;
+  cursor: grab;
+  color: var(--text-color-secondary);
+  font-size: 11px;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+  flex-shrink: 0;
+}
+
+.qi-drag-handle:hover {
+  opacity: 0.8;
+}
+
+.qi-category-item:active .qi-drag-handle {
+  cursor: grabbing;
+}
+
+.qi-category-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--text-color-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qi-category-shortcut {
+  font-size: 10px;
+  color: var(--text-color-secondary);
+  background-color: var(--background-secondary);
+  padding: 1px 4px;
+  border-radius: var(--border-radius-sm);
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.qi-category-actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.qi-category-item:hover .qi-category-actions {
+  opacity: 1;
+}
+
+.qi-shortcut-btn,
+.qi-delete-btn {
+  padding: 3px 5px;
+  border: none;
+  background-color: var(--background-secondary);
+  color: var(--text-color-main);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.2s ease;
+  min-width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qi-shortcut-btn:hover {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.qi-delete-btn:hover {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.qi-category-item.qi-drag-over {
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: var(--border-radius-sm);
+}
+
+.qi-category-item.qi-drag-over .qi-category-name,
+.qi-category-item.qi-drag-over .qi-category-shortcut,
+.qi-category-item.qi-drag-over .qi-shortcut-btn,
+.qi-category-item.qi-drag-over .qi-delete-btn {
+  color: white;
+}
+
+.qi-category-item.qi-drag-over .qi-category-shortcut,
+.qi-category-item.qi-drag-over .qi-shortcut-btn,
+.qi-category-item.qi-drag-over .qi-delete-btn {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Estilos para o dropdown de Trâmites Rápidos */
+.category-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  margin: 0;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.category-title:hover {
+  background-color: var(--background-hover);
+}
+
+.category-name {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text-color-main);
+  font-weight: 600;
+}
+
+.category-shortcut-display {
+  font-size: 11px;
+  color: var(--text-color-secondary);
+  background-color: var(--background-secondary);
+  padding: 2px 6px;
+  border-radius: var(--border-radius-sm);
+  font-weight: 500;
+  flex-shrink: 0;
+  margin-left: 8px;
 }
 
 .collapsible-content {
@@ -1186,12 +1518,48 @@ a.open-link-btn:hover {
 .export-category {
   margin-bottom: 10px;
 }
+
 .export-category-header {
   font-weight: bold;
   margin-bottom: 5px;
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.export-category-header input[type='checkbox'] {
+  /* Aplica o mesmo estilo dos checkboxes da seção Visibilidade dos botões */
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border-color);
+  background-color: var(--background-secondary);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  margin-top: 2px;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.export-category-header input[type='checkbox']:hover {
+  border-color: var(--primary-color);
+}
+
+.export-category-header input[type='checkbox']:checked {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.export-category-header input[type='checkbox']:checked::after {
+  content: '✔';
+  position: absolute;
+  color: var(--text-color-main);
+  font-size: 12px;
+  font-weight: bold;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 .export-messages-list {
   padding-left: 20px;
@@ -1297,6 +1665,41 @@ a.open-link-btn:hover {
   flex-wrap: wrap;
 }
 
+.import-category-header input[type='checkbox'] {
+  /* Aplica o mesmo estilo dos checkboxes da seção Visibilidade dos botões */
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border-color);
+  background-color: var(--background-secondary);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  margin-top: 2px;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.import-category-header input[type='checkbox']:hover {
+  border-color: var(--primary-color);
+}
+
+.import-category-header input[type='checkbox']:checked {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.import-category-header input[type='checkbox']:checked::after {
+  content: '✔';
+  position: absolute;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
 .import-category-header label,
 .import-item label {
   cursor: pointer;
@@ -1315,6 +1718,41 @@ a.open-link-btn:hover {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.import-item input[type='checkbox'] {
+  /* Aplica o mesmo estilo dos checkboxes da seção Visibilidade dos botões */
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border-color);
+  background-color: var(--background-secondary);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  margin-top: 2px;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.import-item input[type='checkbox']:hover {
+  border-color: var(--primary-color);
+}
+
+.import-item input[type='checkbox']:checked {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.import-item input[type='checkbox']:checked::after {
+  content: '✔';
+  position: absolute;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .import-category-destination {
@@ -2484,10 +2922,10 @@ a.open-link-btn:hover {
 }
 
 #quick-inserter-panel {
-  width: 90%;
-  max-width: 1000px;
-  height: 60vh;
-  max-height: 550px;
+  width: 95%;
+  max-width: 1200px;
+  height: 75vh;
+  max-height: 700px;
   display: flex;
   border-radius: var(--border-radius-md);
   box-shadow: var(--shadow-lg);
@@ -2501,7 +2939,7 @@ a.open-link-btn:hover {
 }
 
 .qi-sidebar {
-  width: 200px;
+  width: 260px;
   flex-shrink: 0;
   border-right: 1px solid var(--border-color);
   display: flex;
@@ -2740,6 +3178,17 @@ a.open-link-btn:hover {
   margin-top: auto;
   border-top: 1px solid var(--border-color);
   display: flex;
+  gap: 8px;
+}
+
+#qi-add-category-btn {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   gap: 8px;
 }
 
@@ -3414,7 +3863,6 @@ input[type='range']:active::-webkit-slider-thumb {
   font-weight: 600; /* Mais destaque */
   color: var(--text-color-main);
   padding-bottom: 8px;
-  border-bottom: 1px solid var(--border-color); /* Linha sutil abaixo do título */
   margin-bottom: 12px;
 }
 
