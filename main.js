@@ -795,6 +795,7 @@ async function initializeExtension() {
 
   createAndInjectBellIcon()
   await updateNotificationStatus()
+  createSpeechCommandHint()
 }
 
 function createFloatingActionButtons() {

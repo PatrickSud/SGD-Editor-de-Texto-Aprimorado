@@ -1701,3 +1701,35 @@ function openSnoozeModal(reminder, onComplete) {
 
   document.body.appendChild(modal)
 }
+
+function createSpeechCommandHint() {
+  const hintContainer = document.createElement('div')
+  hintContainer.id = 'speech-command-hint'
+  hintContainer.className = 'speech-command-hint' // Começa oculto
+
+  hintContainer.innerHTML = `
+    <div class="speech-hint-title">🎤 Comandos de Voz</div>
+    <div class="speech-hint-columns">
+      <div class="speech-hint-column">
+        <strong>Pontuação</strong>
+        <ul>
+          <li>"vírgula"<span>,</span></li>
+          <li>"ponto"<span>.</span></li>
+          <li>"exclamação"<span>!</span></li>
+          <li>"interrogação"<span>?</span></li>
+          <li>"dois pontos"<span>:</span></li>
+        </ul>
+      </div>
+      <div class="speech-hint-column">
+        <strong>Ações</strong>
+        <ul>
+          <li>"apagar"</li>
+          <li>"limpar"</li>
+          <li>"parar"</li>
+        </ul>
+      </div>
+    </div>
+  `
+  document.body.appendChild(hintContainer)
+  return hintContainer
+}

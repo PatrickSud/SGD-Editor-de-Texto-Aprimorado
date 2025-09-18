@@ -3955,7 +3955,104 @@ button[data-action='speech-to-text']:disabled {
 }
 
 button[data-action='speech-to-text']:disabled:hover {
-  background-color: var(--background-secondary); 
-  transform: none; 
-  box-shadow: none; 
+  background-color: var(--background-secondary);
+  transform: none;
+  box-shadow: none;
+}
+
+/* ... existing code ... */
+.draggable-mirror {
+  background-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 10px 15px;
+  font-size: 14px;
+  transition: opacity 0.2s ease-in-out;
+  opacity: 0.95;
+  z-index: 10001; /* Garante que fique acima de outros elementos */
+}
+
+/* --- Estilos para a Caixa de Ajuda de Comandos de Voz --- */
+
+.speech-command-hint {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 450px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  padding: 16px;
+  z-index: 10000;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(20px);
+  transition: opacity 0.3s ease-out, visibility 0.3s ease-out,
+    transform 0.3s ease-out;
+  font-family: var(--font-family-sans-serif);
+  color: var(--color-text-main);
+
+  /* EFEITO DE VIDRO E FUNDO SÓLIDO */
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  background-color: var(--background-glass);
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.07"/%3E%3C/svg%3E');
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.speech-command-hint.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.speech-hint-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-title);
+}
+
+.speech-hint-columns {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.speech-hint-column {
+  flex: 1;
+}
+
+.speech-hint-column strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border-light);
+  padding-bottom: 4px;
+}
+
+.speech-hint-column ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 13px;
+}
+
+.speech-hint-column li {
+  padding: 4px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.speech-hint-column li span {
+  font-family: 'Courier New', Courier, monospace;
+  background-color: var(--color-background-code);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
 }

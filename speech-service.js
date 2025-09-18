@@ -97,24 +97,9 @@ const SpeechService = (() => {
       { triggers: ['vírgula', 'virgula'], replacement: ',' },
       { triggers: ['ponto'], replacement: '.' },
       {
-        triggers: [
-          'nova linha',
-          'quebra de linha',
-          'próxima linha',
-          'proxima linha'
-        ],
+        triggers: ['nova linha', 'quebra de linha'],
         replacement: '\n'
-      },
-      {
-        triggers: [
-          'parágrafo',
-          'paragrafo',
-          'novo parágrafo',
-          'novo paragrafo'
-        ],
-        replacement: '\n\n'
-      },
-      { triggers: ['tabulação', 'tabulacao', 'tab'], replacement: '\t' }
+      }
     ]
 
     let processedText = ` ${text.toLowerCase()} ` // Adiciona espaços para garantir a detecção nas bordas
@@ -122,9 +107,7 @@ const SpeechService = (() => {
     commandMap.forEach(command => {
       // Adicionamos lógica para tratar quebras de linha de forma especial
       const isNewLineCommand = command.replacement.includes('\n')
-      const replacement = isNewLineCommand
-        ? command.replacement
-        : `${command.replacement} `
+      const replacement = isNewLineCommand ? command.replacement : command.replacement
       const regex = new RegExp(` (${command.triggers.join('|')}) `, 'g')
       processedText = processedText.replace(regex, replacement)
     })
@@ -182,22 +165,6 @@ const SpeechService = (() => {
       },
       'apagar palavra': () => actionCommands.apagar(),
       'apagar última palavra': () => actionCommands.apagar(),
-      desfazer: () => {
-        if (transcriptHistory.length > 1) {
-          // Remove o último fragmento adicionado
-          transcriptHistory.pop()
-          // O novo transcrito final é o estado anterior
-          finalTranscript =
-            transcriptHistory[transcriptHistory.length - 1] || ''
-
-          // Atualiza a UI com o estado restaurado
-          updateTextAreaUI()
-          showNotification('Última transcrição desfeita.', 'info', 2000)
-        } else {
-          // Se não há mais histórico, limpa o texto ditado nesta sessão
-          actionCommands.limpar()
-        }
-      },
       'selecionar tudo': () => {
         if (targetTextArea) {
           targetTextArea.focus()
@@ -274,8 +241,13 @@ const SpeechService = (() => {
       isListening = true
       updateMicButtonState(true)
 
+      const hintBox = document.getElementById('speech-command-hint')
+      if (hintBox) {
+        hintBox.classList.add('visible')
+      }
+
       showNotification(
-        'Microfone ativado! Comandos: "vírgula", "ponto", "nova linha", "parar", "apagar"',
+        'Microfone ativado! Diga "parar" ou "encerrar" para finalizar.',
         'success',
         4000
       )
@@ -297,6 +269,12 @@ const SpeechService = (() => {
     }
     isListening = false
     updateMicButtonState(false)
+
+    const hintBox = document.getElementById('speech-command-hint')
+    if (hintBox) {
+      hintBox.classList.remove('visible')
+    }
+
     showNotification('Microfone desativado.', 'info', 2000)
   }
 
@@ -407,6 +385,13 @@ const SpeechService = (() => {
       } else if (event.error === 'not-allowed') {
         showNotification('Permissão para usar o microfone foi negada.', 'error')
       }
+
+      // Garante que a caixa de ajuda seja ocultada em caso de erro
+      const hintBox = document.getElementById('speech-command-hint')
+      if (hintBox) {
+        hintBox.classList.remove('visible')
+      }
+
       stop()
     }
   }
