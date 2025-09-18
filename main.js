@@ -228,6 +228,8 @@ async function createEditorToolbarHtml(
 
   // Botões de formatação sempre visíveis
   const formattingButtons = `
+    <button type="button" data-action="speech-to-text" title="${micButtonTitle}" ${micButtonDisabled}>🎤</button>
+    <div class="toolbar-separator" data-id="mic-separator"></div>
     <button type="button" data-action="bold" title="Negrito (Ctrl+B)"><b>B</b></button>
     <button type="button" data-action="italic" title="Itálico (Ctrl+I)"><i>I</i></button>
     <button type="button" data-action="underline" title="Sublinhado (Ctrl+U)"><u>U</u></button>
@@ -352,8 +354,6 @@ async function createEditorToolbarHtml(
     <div class="editor-toolbar">
       ${aiButtonsHtml}
       ${formattingButtons}
-      <button type="button" data-action="speech-to-text" title="${micButtonTitle}" ${micButtonDisabled}>🎤</button>
-      <div class="toolbar-separator"></div>
       ${listButtons}
       ${insertButtons}
       ${colorButtons}
@@ -996,6 +996,15 @@ async function updateToolbarButtonVisibility(editorContainer) {
       const elementToToggle = button.closest('.dropdown') || button
       elementToToggle.style.display =
         buttonsVisibility[key] === false ? 'none' : ''
+      if (key === 'speechToText') {
+        const micSeparator = editorContainer.querySelector(
+          '[data-id="mic-separator"]'
+        )
+        if (micSeparator) {
+          micSeparator.style.display =
+            buttonsVisibility[key] === false ? 'none' : ''
+        }
+      }
     }
   }
 }
