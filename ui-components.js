@@ -1721,6 +1721,12 @@ function createSpeechCommandHint() {
         </ul>
       </div>
       <div class="speech-hint-column">
+        <strong>Formatação</strong>
+        <ul>
+          <li>"nova linha"<span>↵</span></li>
+        </ul>
+      </div>
+      <div class="speech-hint-column">
         <strong>Ações</strong>
         <ul>
           <li>"apagar"</li>

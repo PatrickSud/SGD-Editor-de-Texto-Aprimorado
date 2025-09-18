@@ -95,11 +95,7 @@ const SpeechService = (() => {
       { triggers: ['dois pontos'], replacement: ':' },
       { triggers: ['ponto final', 'ponto.'], replacement: '.' }, // "ponto." para evitar conflito com "ponto"
       { triggers: ['vírgula', 'virgula'], replacement: ',' },
-      { triggers: ['ponto'], replacement: '.' },
-      {
-        triggers: ['nova linha', 'quebra de linha'],
-        replacement: '\n'
-      }
+      { triggers: ['ponto'], replacement: '.' }
     ]
 
     let processedText = ` ${text.toLowerCase()} ` // Adiciona espaços para garantir a detecção nas bordas
@@ -107,7 +103,9 @@ const SpeechService = (() => {
     commandMap.forEach(command => {
       // Adicionamos lógica para tratar quebras de linha de forma especial
       const isNewLineCommand = command.replacement.includes('\n')
-      const replacement = isNewLineCommand ? command.replacement : command.replacement
+      const replacement = isNewLineCommand
+        ? command.replacement
+        : command.replacement
       const regex = new RegExp(` (${command.triggers.join('|')}) `, 'g')
       processedText = processedText.replace(regex, replacement)
     })
@@ -170,7 +168,15 @@ const SpeechService = (() => {
           targetTextArea.focus()
           targetTextArea.select()
         }
-      }
+      },
+      'nova linha': () => {
+        if (targetTextArea) {
+          finalTranscript += '\n'
+          transcriptHistory.push(finalTranscript)
+          updateTextAreaUI()
+        }
+      },
+      'quebra de linha': () => actionCommands['nova linha']()
     }
 
     // Verifica se alguma das palavras-chave de comando está na transcrição
