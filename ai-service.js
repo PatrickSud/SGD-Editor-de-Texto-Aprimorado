@@ -1,25 +1,23 @@
 /**
  * @file ai-service.js
- * @description Interface para comunicação com a API do Gemini.
+ * Interface para comunicação com a API do Gemini
  */
 
-// Usaremos o modelo Flash por ser rápido e eficiente para essas tarefas.
 const GEMINI_API_ENDPOINT =
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent'
 
 /**
- * Configuração padrão para as chamadas de API.
+ * Configuração padrão para as chamadas de API
  */
 const DEFAULT_GENERATION_CONFIG = {
-  temperature: 0.6, // Um pouco mais baixo para respostas mais consistentes
+  temperature: 0.6,
   topP: 1,
   topK: 32,
   maxOutputTokens: 4096
 }
 
 /**
- * Chamada genérica para a API do Gemini.
- * Utiliza system_instruction para maior robustez (Gemini 1.5+).
+ * Chamada genérica para a API do Gemini
  */
 async function callGeminiAPI(apiKey, contents, systemInstruction = null) {
   if (!apiKey) {
@@ -49,7 +47,6 @@ async function callGeminiAPI(apiKey, contents, systemInstruction = null) {
       const errorMessage =
         errorData.error?.message || `HTTP error! status: ${response.status}`
 
-      // --- CORREÇÃO APLICADA AQUI ---
       // Verifica se o erro é de cota excedida e traduz a mensagem
       if (errorMessage.toLowerCase().includes('quota')) {
         throw new Error(
@@ -75,19 +72,15 @@ async function callGeminiAPI(apiKey, contents, systemInstruction = null) {
       throw new Error('A API não retornou resultados válidos. Tente novamente.')
     }
 
-    // Retorna o texto gerado
     return data.candidates[0].content.parts[0].text
   } catch (error) {
     console.error('Erro ao chamar a API Gemini:', error)
-    // Propaga o erro (seja o nosso erro customizado ou outro)
     throw error
   }
 }
 
-// --- FUNÇÕES ESPECÍFICAS DE IA ---
-
 /**
- * 1. Corrige ortografia e gramática de um texto.
+ * Corrige ortografia e gramática de um texto
  */
 async function correctText(apiKey, text) {
   const systemInstruction = {
@@ -109,7 +102,7 @@ async function correctText(apiKey, text) {
 }
 
 /**
- * 2. Gera um texto profissional a partir de tópicos fornecidos.
+ * Gera um texto profissional a partir de tópicos fornecidos
  */
 async function generateFromTopics(apiKey, topics) {
   const systemInstruction = {
@@ -120,11 +113,9 @@ async function generateFromTopics(apiKey, topics) {
     ]
   }
 
-  // Prepara o "few-shot prompt" com exemplos
   const samples = await getUserResponseSamples()
   const fewShotExamples = []
 
-  // Usa até 2 exemplos recentes
   if (samples.length > 0) {
     fewShotExamples.push({
       role: 'user',
@@ -151,7 +142,7 @@ async function generateFromTopics(apiKey, topics) {
 }
 
 /**
- * 3. Analisa o histórico de um chamado e gera um resumo e sugestão de ação.
+ * Analisa o histórico de um chamado e gera um resumo e sugestão de ação
  */
 async function summarizeSupportRequest(apiKey, extractedContent) {
   const systemInstruction = {
@@ -175,7 +166,7 @@ async function summarizeSupportRequest(apiKey, extractedContent) {
 }
 
 /**
- * 4. Completa um rascunho de resposta (Co-piloto).
+ * Completa um rascunho de resposta (Co-piloto)
  */
 async function completeDraft(apiKey, extractedContent, currentDraft) {
   const systemInstruction = {
@@ -219,7 +210,7 @@ async function completeDraft(apiKey, extractedContent, currentDraft) {
 }
 
 /**
- * 5. Testa a conexão com a API do Gemini usando uma chave.
+ * Testa a conexão com a API do Gemini usando uma chave
  */
 async function testApiKey(apiKey) {
   try {

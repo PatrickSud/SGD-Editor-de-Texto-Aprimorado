@@ -1,10 +1,9 @@
 /**
  * @file config.js
- * @description Configurações globais, constantes, estado inicial e definições de UI da extensão.
+ * Configurações globais, constantes, estado inicial e definições de UI da extensão
  */
 
-// --- CONFIGURAÇÕES GERAIS E ARMAZENAMENTO ---
-const DEV_MODE_KEY = 'developerModeEnabled' // Nova chave para o modo dev
+const DEV_MODE_KEY = 'developerModeEnabled'
 const DATA_VERSION = 3
 const STORAGE_KEY = 'quickMessagesData'
 const NOTES_STORAGE_KEY = 'editorNotesData'
@@ -12,14 +11,13 @@ const REMINDERS_STORAGE_KEY = 'remindersData'
 const SETTINGS_STORAGE_KEY = 'extensionSettingsData'
 const USER_RESPONSE_SAMPLES_KEY = 'userResponseSamples'
 const MAX_RESPONSE_SAMPLES = 30
-const FAB_POSITION_KEY = 'fabPositionData' // NOVO
+const FAB_POSITION_KEY = 'fabPositionData'
 
-// Configurações Padrão
 const DEFAULT_SETTINGS = {
-  reminderRetentionDays: 7, // ALTERADO: Padrão agora é 7 dias
-  geminiApiKey: '', // Chave da API do Gemini fornecida pelo usuário
-  previewResizable: false, // Define se o preview é redimensionável
-  fabPosition: 'bottom-left', // NOVO: Posição padrão
+  reminderRetentionDays: 7,
+  geminiApiKey: '',
+  previewResizable: false,
+  fabPosition: 'bottom-left',
   toolbarButtons: {
     link: true,
     emoji: true,
@@ -33,12 +31,12 @@ const DEFAULT_SETTINGS = {
     notes: true,
     fab: true,
     goToTop: true,
-    separator1: true, // Divisor após IA (sempre ativo, não configurável)
-    separator2: true, // Divisor após Formatação
-    separator3: true, // Divisor após Listas
-    separator4: true, // Divisor após Inserir
-    separator5: true, // Divisor após Cores
-    separator6: true // Divisor após Ferramentas
+    separator1: true,
+    separator2: true,
+    separator3: true,
+    separator4: true,
+    separator5: true,
+    separator6: true
   },
   uiSettings: {
     iconSize: 1.0,
@@ -47,21 +45,15 @@ const DEFAULT_SETTINGS = {
   }
 }
 
-// --- ESTADO GLOBAL (Variáveis mutáveis usadas entre os scripts) ---
-
 let currentEditorTheme = 'padrao'
 
-// Controle de Drag & Drop
 let draggedCategoryItem = null
 let draggedMessageItem = null
 
-// Timeout para esconder os pickers
 let pickerHideTimeout
 
-// --- CONFIGURAÇÕES DO SISTEMA ALVO (SGD) ---
-
 /**
- * Lista de seletores CSS para encontrar os textareas alvo no SGD.
+ * Lista de seletores CSS para encontrar os textareas alvo no SGD
  */
 const TARGET_TEXTAREA_SELECTORS = [
   'textarea#sscForm\\:descricaoTramite',
@@ -70,17 +62,17 @@ const TARGET_TEXTAREA_SELECTORS = [
 ]
 
 /**
- * IDs/Seletores para encontrar a descrição inicial da solicitação de suporte.
+ * IDs/Seletores para encontrar a descrição inicial da solicitação de suporte
  */
 const SUPPORT_REQUEST_DESCRIPTION_SELECTORS = [
   '#sscForm\\:solicitacao',
   '#cadSscForm\\:solicitacao',
   '#ssForm\\:solicitacao',
-  'textarea[name="solicitacao"]' // Fallback
+  'textarea[name="solicitacao"]'
 ]
 
 /**
- * Seletores para encontrar a tabela de trâmites anteriores.
+ * Seletores para encontrar a tabela de trâmites anteriores
  */
 const TRAMITES_TABLE_SELECTORS = [
   '#sscForm\\:tramitesTable_data',
@@ -89,14 +81,11 @@ const TRAMITES_TABLE_SELECTORS = [
 ]
 
 /**
- * IDs de elementos usados para encontrar o nome do usuário no SGD.
+ * IDs de elementos usados para encontrar o nome do usuário no SGD
  */
 const USER_NAME_SELECT_ID = 'cadSscForm:usuario'
 const USER_NAME_LOGGED_ID = 'td:usuario_nome'
 
-// --- CONFIGURAÇÕES DE TEMA ---
-
-// Ordem de alternância dos temas
 const THEMES = [
   'padrao',
   'serenidade',
@@ -108,7 +97,6 @@ const THEMES = [
   'tokyo-night'
 ]
 
-// Mapeamento de temas para classes CSS.
 const THEME_CLASSES_MAP = {
   serenidade: 'serenidade-mode',
   lumen: 'lumen-mode',
@@ -120,10 +108,8 @@ const THEME_CLASSES_MAP = {
   padrao: 'padrao-mode'
 }
 
-// Array de todas as classes de tema para facilitar a remoção.
 const ALL_THEME_CLASSES = Object.values(THEME_CLASSES_MAP)
 
-// Ícones para o botão de alternância de tema
 const THEME_ICONS = {
   serenidade: '☁️',
   lumen: '🌐',
@@ -135,7 +121,6 @@ const THEME_ICONS = {
   padrao: '💎'
 }
 
-// Nomes amigáveis para o menu de temas
 const THEME_NAMES = {
   serenidade: 'Serenidade',
   lumen: 'Lumen',
@@ -146,8 +131,6 @@ const THEME_NAMES = {
   'tokyo-night': 'Tokyo Night',
   padrao: 'Padrão'
 }
-
-// --- DADOS DOS PICKERS (Cores e Emojis) ---
 
 const PICKER_COLORS = [
   '#fa6400',
@@ -160,7 +143,6 @@ const PICKER_COLORS = [
   '#008000'
 ]
 
-// Emojis e seus códigos HTML.
 const PICKER_EMOJIS = [
   { char: '😀', code: '&#128512;' },
   { char: '😃', code: '&#128515;' },
@@ -218,9 +200,6 @@ const PICKER_EMOJIS = [
   { char: '📌', code: '&#128204;' }
 ]
 
-// --- CONFIGURAÇÕES DE ATALHOS ---
-
-// Lista de atalhos críticos do navegador/SO que não devem ser sobrescritos.
 const PROTECTED_SHORTCUTS = [
   'ctrl+c',
   'ctrl+v',

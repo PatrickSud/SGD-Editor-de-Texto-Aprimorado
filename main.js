@@ -1,9 +1,8 @@
 /**
  * @file main.js
- * @description Ponto de entrada principal da extensão. Inicializa o editor, configura listeners e observa mudanças na página.
+ * Ponto de entrada principal da extensão
  */
 
-// --- GERENCIADOR DE HISTÓRICO PARA UNDO/REDO ---
 function createHistoryManager(initialState) {
   let history = [initialState]
   let position = 0

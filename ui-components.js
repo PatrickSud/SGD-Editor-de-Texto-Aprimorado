@@ -1,13 +1,10 @@
 /**
  * @file ui-components.js
- * @description Funções para criar e gerenciar componentes de UI (Modais, Pickers, Diálogos, Painel de Anotações).
+ * Funções para criar e gerenciar componentes de UI (Modais, Pickers, Diálogos, Painel de Anotações)
  */
 
-// --- ESTADO GLOBAL DO MÓDULO ---
-let saveNotesTimeout // Timeout para debouncing do salvamento de anotações
-let notesDataCache = null // Cache dos dados das anotações para evitar múltiplas leituras
-
-// --- COMPONENTE COMPARTILHADO DE CARD DE LEMBRETE ---
+let saveNotesTimeout
+let notesDataCache = null
 
 /**
  * Cria o HTML para um card de lembrete com o novo estilo moderno.

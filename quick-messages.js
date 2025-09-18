@@ -1,9 +1,7 @@
 /**
  * @file quick-messages.js
- * @description Gerenciamento de trâmites rápidos, categorias, modais de gerenciamento e lógica de Drag & Drop.
+ * Gerenciamento de trâmites rápidos, categorias, modais de gerenciamento e lógica de Drag & Drop
  */
-
-// --- GERENCIAMENTO DE MENSAGENS RÁPIDAS (Dropdown) ---
 
 /**
  * Carrega e renderiza os trâmites rápidos no dropdown especificado.

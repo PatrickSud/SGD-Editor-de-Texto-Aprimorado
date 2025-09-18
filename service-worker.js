@@ -1,9 +1,8 @@
 /**
  * @file service-worker.js
- * @description Service worker de segundo plano para gerenciar alarmes, notificações e outras tarefas assíncronas.
+ * Service worker de segundo plano para gerenciar alarmes, notificações e outras tarefas assíncronas
  */
 
-// --- CONSTANTES ---
 const REMINDERS_STORAGE_KEY = 'remindersData'
 const USAGE_TRACKING_KEY = 'usageTrackingData'
 const SUGGESTED_TRAMITES_KEY = 'suggestedTramites'

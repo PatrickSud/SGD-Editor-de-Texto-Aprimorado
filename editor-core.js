@@ -1,13 +1,10 @@
 /**
  * @file editor-core.js
- * @description Lógica central do editor: inserção, formatação, e gerenciamento do painel de visualização.
+ * Lógica central do editor: inserção, formatação, e gerenciamento do painel de visualização
  */
 
-// --- FUNÇÕES DE MANIPULAÇÃO DO EDITOR ---
-
 /**
- * Foca o elemento de edição (sempre o textarea).
- * @param {HTMLTextAreaElement} textArea - O textarea associado à instância.
+ * Foca o elemento de edição (sempre o textarea)
  */
 function focusEditor(textArea) {
   if (textArea && document.activeElement !== textArea) {
@@ -16,10 +13,7 @@ function focusEditor(textArea) {
 }
 
 /**
- * Implementação para inserir texto/HTML no cursor do textarea.
- * @param {HTMLTextAreaElement} textArea - O textarea associado.
- * @param {string} text - O texto ou HTML a ser inserido.
- * @param {object} options - Opções de inserção (ex: prefixNewLine).
+ * Implementação para inserir texto/HTML no cursor do textarea
  */
 function insertAtCursor(textArea, text, options = { prefixNewLine: false }) {
   if (!textArea) return
@@ -32,7 +26,7 @@ function insertAtCursor(textArea, text, options = { prefixNewLine: false }) {
 
   let textToInsert = text
   if (options.prefixNewLine) {
-    // Adiciona \n se não estiver no início e o caractere anterior não for \n.
+    // Adiciona \n se não estiver no início e o caractere anterior não for \n
     if (selectionStart > 0 && value[selectionStart - 1] !== '\n') {
       textToInsert = '\n' + textToInsert
     }
@@ -46,7 +40,7 @@ function insertAtCursor(textArea, text, options = { prefixNewLine: false }) {
     textToInsert +
     value.substring(selectionEnd)
 
-  // Reposiciona o cursor.
+  // Reposiciona o cursor
   const newCursorPosition = selectionStart + textToInsert.length
   textArea.setSelectionRange(newCursorPosition, newCursorPosition)
   textArea.scrollTop = scrollTop

@@ -1,14 +1,10 @@
 /**
  * @file utils.js
- * @description Funções utilitárias gerais, de segurança e auxiliares.
+ * Funções utilitárias gerais, de segurança e auxiliares
  */
 
-// --- UTILITÁRIOS GERAIS E DE SEGURANÇA ---
-
 /**
- * Escapa caracteres HTML para prevenir XSS.
- * @param {string} str - A string a ser escapada.
- * @returns {string} A string escapada.
+ * Escapa caracteres HTML para prevenir XSS
  */
 function escapeHTML(str) {
   if (typeof str !== 'string') return ''

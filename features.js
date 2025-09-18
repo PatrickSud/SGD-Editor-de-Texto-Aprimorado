@@ -1,14 +1,10 @@
 /**
  * @file features.js
- * @description Implementação de funcionalidades específicas: Atalhos (com filtro), Inserções Especiais (Nome, Links, Listas Dinâmicas), Importação/Exportação e Recursos de IA.
+ * Implementação de funcionalidades específicas: Atalhos, Inserções Especiais, Importação/Exportação e Recursos de IA
  */
 
-// --- FUNÇÕES AUXILIARES DE INSERÇÃO E LISTAS (Dinâmicas) ---
-
 /**
- * Helper para obter o conteúdo do editor (sempre do textarea, que é a fonte da verdade).
- * @param {HTMLTextAreaElement} textArea - O textarea associado.
- * @returns {string} O conteúdo HTML do editor.
+ * Helper para obter o conteúdo do editor (sempre do textarea, que é a fonte da verdade)
  */
 function getEditorContent(textArea) {
   return textArea.value

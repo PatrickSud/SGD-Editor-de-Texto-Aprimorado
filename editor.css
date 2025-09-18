@@ -1,6 +1,6 @@
-/* --- VARIÁVEIS DE TEMA E CORES --- */
+/* Variáveis de tema e cores */
 
-/* Cores de Ação e Estilos Globais */
+/* Cores de ação e estilos globais */
 :root {
   --action-blue: #2563eb;
   --action-blue-hover: #1d4ed8;
@@ -12,7 +12,7 @@
   --action-red-hover: #b91c1c;
   --action-orange: #f97316;
   --action-orange-hover: #ea580c;
-  --action-yellow: #f59e0b; /* Amarelo/Âmbar */
+  --action-yellow: #f59e0b;
   --action-yellow-hover: #d97706;
   --border-radius-md: 8px;
   --border-radius-sm: 6px;

@@ -1,9 +1,7 @@
 /**
  * @file storage.js
- * @description Gerenciamento de armazenamento (Chrome Storage), migração de dados e controle de temas.
+ * Gerenciamento de armazenamento (Chrome Storage), migração de dados e controle de temas
  */
-
-// --- ESTRUTURA DE DADOS E MIGRAÇÃO ---
 
 /**
  * Recupera os dados armazenados, executando migrações se necessário.
