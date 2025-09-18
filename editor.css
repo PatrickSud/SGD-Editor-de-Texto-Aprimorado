@@ -3978,10 +3978,9 @@ button[data-action='speech-to-text']:disabled:hover {
   position: fixed;
   bottom: 20px;
   right: 20px;
-  width: 450px;
-  border: 1px solid var(--border-color);
+  width: 380px;
   border-radius: 12px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2); /* Sombra mais pronunciada */
   padding: 16px;
   z-index: 10000;
   opacity: 0;
@@ -3989,15 +3988,15 @@ button[data-action='speech-to-text']:disabled:hover {
   transform: translateY(20px);
   transition: opacity 0.3s ease-out, visibility 0.3s ease-out,
     transform 0.3s ease-out;
-  font-family: var(--font-family-sans-serif);
-  color: var(--color-text-main);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    sans-serif;
 
-  /* EFEITO DE VIDRO E FUNDO SÓLIDO */
-  backdrop-filter: blur(14px) saturate(120%);
-  -webkit-backdrop-filter: blur(14px) saturate(120%);
-  background-color: var(--background-glass);
-  background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.07"/%3E%3C/svg%3E');
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  /* ESTILO GLASSMORPHISM ESCURO (como o FAB e o Go To Top) */
+  background: rgba(30, 30, 30, 0.7); /* Fundo escuro translúcido */
+  color: #ffffff; /* Texto branco */
+  border: 1px solid rgba(255, 255, 255, 0.1); /* Borda sutil */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .speech-command-hint.visible {
@@ -4013,7 +4012,7 @@ button[data-action='speech-to-text']:disabled:hover {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--color-text-title);
+  color: #ffffff; /* Título branco */
 }
 
 .speech-hint-columns {
@@ -4030,8 +4029,8 @@ button[data-action='speech-to-text']:disabled:hover {
   display: block;
   font-size: 14px;
   margin-bottom: 8px;
-  color: var(--color-text-secondary);
-  border-bottom: 1px solid var(--color-border-light);
+  color: #a0a0a0; /* Texto secundário cinza claro */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15); /* Borda sutil */
   padding-bottom: 4px;
 }
 
@@ -4051,8 +4050,16 @@ button[data-action='speech-to-text']:disabled:hover {
 
 .speech-hint-column li span {
   font-family: 'Courier New', Courier, monospace;
-  background-color: var(--color-background-code);
+  background-color: rgba(255, 255, 255, 0.1); /* Fundo sutil para o comando */
   padding: 2px 6px;
   border-radius: 4px;
   font-weight: bold;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 20px;
+  font-size: 13px;
+  line-height: 1;
 }

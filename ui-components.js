@@ -1710,30 +1710,25 @@ function createSpeechCommandHint() {
   hintContainer.innerHTML = `
     <div class="speech-hint-title">🎤 Comandos de Voz</div>
     <div class="speech-hint-columns">
-      <div class="speech-hint-column">
-        <strong>Pontuação</strong>
-        <ul>
-          <li>"vírgula"<span>,</span></li>
-          <li>"ponto"<span>.</span></li>
-          <li>"exclamação"<span>!</span></li>
-          <li>"interrogação"<span>?</span></li>
-          <li>"dois pontos"<span>:</span></li>
-        </ul>
-      </div>
-      <div class="speech-hint-column">
-        <strong>Formatação</strong>
-        <ul>
-          <li>"nova linha"<span>↵</span></li>
-        </ul>
-      </div>
-      <div class="speech-hint-column">
-        <strong>Ações</strong>
-        <ul>
-          <li>"apagar"</li>
-          <li>"limpar"</li>
-          <li>"parar"</li>
-        </ul>
-      </div>
+        <div class="speech-hint-column">
+          <strong>Pontuação</strong>
+          <ul>
+            <li>Vírgula<span>,</span></li>
+            <li>Ponto<span>.</span></li>
+            <li>Exclamação<span>!</span></li>
+            <li>Interrogação<span>?</span></li>
+            <li>Dois pontos<span>:</span></li>
+          </ul>
+        </div>
+        <div class="speech-hint-column">
+          <strong>Ações</strong>
+          <ul>
+            <li>Nova linha<span>↵</span></li>
+            <li>Apagar<span>⌫</span></li>
+            <li>Limpar<span>🗑</span></li>
+            <li>Parar<span>⏹</span></li>
+          </ul>
+        </div>
     </div>
   `
   document.body.appendChild(hintContainer)
