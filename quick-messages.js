@@ -2530,6 +2530,7 @@ async function renderButtonVisibilitySettings(modal) {
     username: '🏷️ Nome do Usuário',
     color: '🎨 Cor do Texto',
     highlight: '🖌️ Cor de Destaque',
+    speechToText: '🎤 Transcrição de Voz',
     reminders: '⏰ Lembretes',
     quickSteps: '⚡ Trâmites Rápidos',
     notes: '✍️ Anotações',

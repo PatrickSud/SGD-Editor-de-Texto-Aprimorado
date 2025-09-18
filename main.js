@@ -216,6 +216,14 @@ async function createEditorToolbarHtml(
   const buttonsVisibility =
     settings.toolbarButtons || DEFAULT_SETTINGS.toolbarButtons
 
+  // ADICIONAR ESTA VERIFICAÇÃO NO INÍCIO DA FUNÇÃO
+  const isSpeechRecognitionSupported =
+    window.SpeechRecognition || window.webkitSpeechRecognition
+  const micButtonDisabled = isSpeechRecognitionSupported ? '' : 'disabled'
+  const micButtonTitle = isSpeechRecognitionSupported
+    ? 'Gravar com Microfone'
+    : 'Reconhecimento de voz não suportado neste navegador'
+
   // --- LÓGICA DE VISIBILIDADE APLICADA ---
 
   // Botões de formatação sempre visíveis
@@ -344,6 +352,8 @@ async function createEditorToolbarHtml(
     <div class="editor-toolbar">
       ${aiButtonsHtml}
       ${formattingButtons}
+      <button type="button" data-action="speech-to-text" title="${micButtonTitle}" ${micButtonDisabled}>🎤</button>
+      <div class="toolbar-separator"></div>
       ${listButtons}
       ${insertButtons}
       ${colorButtons}
@@ -544,6 +554,9 @@ function setupEditorInstanceListeners(
         break
       case 'underline':
         applyFormatting(textArea, 'u')
+        break
+      case 'speech-to-text':
+        SpeechService.toggleRecognition(textArea)
         break
       case 'ai-correct':
         startAILoading()
@@ -757,6 +770,7 @@ async function initializeExtension() {
   applyUiSettings(settings)
 
   await loadSavedTheme()
+  SpeechService.initialize() // Inicializa o serviço de reconhecimento de voz
   observeForTextArea()
   document.addEventListener('keydown', handleShortcutListener)
 
@@ -963,6 +977,7 @@ async function updateToolbarButtonVisibility(editorContainer) {
     highlight: '[data-action="highlight"]',
     lists: '[data-action="list"]',
     bullet: '[data-action="bullet"]',
+    speechToText: '[data-action="speech-to-text"]',
     reminders: '[title="Lembretes"]',
     quickSteps: '[data-action="quick-steps"]',
     notes: '[data-action="toggle-notes"]',

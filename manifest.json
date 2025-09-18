@@ -24,6 +24,7 @@
         "utils.js",
         "storage.js",
         "ai-service.js",
+        "speech-service.js",
         "ui-components.js",
         "editor-core.js",
         "features.js",
