@@ -618,39 +618,35 @@ function setupEditorInstanceListeners(
       case 'manage-steps':
         openManagementModal()
         break
-      case 'color':
-        createColorPicker(
-          document.getElementById(`color-picker-${instanceId}`),
-          color =>
-            applyFormatting(textArea, 'span', { style: `color:${color}` })
-        )
-        break
-      case 'highlight':
-        createColorPicker(
-          document.getElementById(`highlight-picker-${instanceId}`),
-          color =>
-            applyFormatting(textArea, 'span', {
-              style: `background-color:${color}`
-            })
-        )
-        break
-      case 'emoji':
-        createEmojiPicker(
-          document.getElementById(`emoji-picker-${instanceId}`),
-          emojiHtml => insertAtCursor(textArea, emojiHtml)
-        )
-        break
-    }
-
-    if (['color', 'highlight', 'emoji'].includes(action)) {
-      setupPickerHover(
-        editorContainer,
-        action,
-        `${action}-picker-${instanceId}`
-      )
-      button.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
     }
   })
+
+  // --- Nova seção para inicializar os seletores uma única vez ---
+  // Inicializa o seletor de cores
+  createColorPicker(
+    document.getElementById(`color-picker-${instanceId}`),
+    color => applyFormatting(textArea, 'span', { style: `color:${color}` })
+  )
+  setupPickerHover(editorContainer, 'color', `color-picker-${instanceId}`)
+
+  // Inicializa o seletor de destaques
+  createColorPicker(
+    document.getElementById(`highlight-picker-${instanceId}`),
+    color =>
+      applyFormatting(textArea, 'span', { style: `background-color:${color}` })
+  )
+  setupPickerHover(
+    editorContainer,
+    'highlight',
+    `highlight-picker-${instanceId}`
+  )
+
+  // Inicializa o seletor de emojis
+  createEmojiPicker(
+    document.getElementById(`emoji-picker-${instanceId}`),
+    emojiHtml => insertAtCursor(textArea, emojiHtml)
+  )
+  setupPickerHover(editorContainer, 'emoji', `emoji-picker-${instanceId}`)
 }
 
 /**

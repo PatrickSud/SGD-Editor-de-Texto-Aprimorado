@@ -168,7 +168,7 @@ function insertUserName(textArea) {
       firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase()
     insertAtCursor(textArea, capitalizedName)
   } else {
-    console.warn('Editor SGD: Elemento com nome de usuário não encontrado.')
+    showNotification('Nome de usuário não encontrado.', 'error')
   }
 }
 
