@@ -51,6 +51,7 @@ function insertAtCursor(textArea, text, options = { prefixNewLine: false }) {
 
 /**
  * Implementação para aplicar formatação (envolver com tags) no textarea.
+ * Inclui lógica de toggle: se o texto já estiver formatado, remove a formatação.
  * @param {HTMLTextAreaElement} textArea - O textarea associado.
  * @param {string} tag - A tag HTML (ex: 'strong', 'em', 'span').
  * @param {object} attributes - Atributos para a tag (ex: {style: 'color:red'}).
@@ -72,24 +73,117 @@ function applyFormatting(textArea, tag, attributes = {}) {
 
   const openTag = `<${tag}${attrString ? ' ' + attrString : ''}>`
   const closeTag = `</${tag}>`
-  const wrappedText = `${openTag}${selectedText}${closeTag}`
+
+  // NOVA LÓGICA DE TOGGLE: Verifica se o texto selecionado já está formatado
+  let finalText = selectedText
+  let isAlreadyFormatted = false
+
+  if (selectedText) {
+    // Verifica se o texto já está envolvido pela tag atual
+    if (selectedText.startsWith(openTag) && selectedText.endsWith(closeTag)) {
+      isAlreadyFormatted = true
+      // Remove as tags para obter o texto sem formatação
+      finalText = selectedText.slice(openTag.length, -closeTag.length)
+    } else {
+      // Para tags sem atributos, também verifica versões simplificadas
+      if (!attrString) {
+        const simpleOpenTag = `<${tag}>`
+        const simpleCloseTag = `</${tag}>`
+        if (
+          selectedText.startsWith(simpleOpenTag) &&
+          selectedText.endsWith(simpleCloseTag)
+        ) {
+          isAlreadyFormatted = true
+          finalText = selectedText.slice(
+            simpleOpenTag.length,
+            -simpleCloseTag.length
+          )
+        }
+      }
+    }
+  }
+
+  // Aplica a formatação ou remove conforme necessário
+  const textToInsert = isAlreadyFormatted
+    ? finalText
+    : `${openTag}${selectedText}${closeTag}`
 
   textArea.value =
     value.substring(0, selectionStart) +
-    wrappedText +
+    textToInsert +
     value.substring(selectionEnd)
 
   if (selectedText) {
-    const newCursorPosition = selectionStart + wrappedText.length
+    const newCursorPosition = selectionStart + textToInsert.length
     textArea.setSelectionRange(newCursorPosition, newCursorPosition)
   } else {
-    // Se não havia seleção, posiciona o cursor DENTRO das tags.
-    const newCursorPosition = selectionStart + openTag.length
-    textArea.setSelectionRange(newCursorPosition, newCursorPosition)
+    // Se não havia seleção, posiciona o cursor DENTRO das tags (apenas se aplicando formatação)
+    if (!isAlreadyFormatted) {
+      const newCursorPosition = selectionStart + openTag.length
+      textArea.setSelectionRange(newCursorPosition, newCursorPosition)
+    }
   }
 
   textArea.scrollTop = scrollTop
   // Dispara evento input.
+  textArea.dispatchEvent(new Event('input', { bubbles: true }))
+}
+
+/**
+ * Remove todas as formatações (negrito, itálico, sublinhado) do texto selecionado.
+ * @param {HTMLTextAreaElement} textArea - O textarea associado.
+ */
+function removeFormatting(textArea) {
+  if (!textArea) return
+
+  if (document.activeElement !== textArea) {
+    textArea.focus()
+  }
+
+  const { selectionStart, selectionEnd, value, scrollTop } = textArea
+  const selectedText = value.substring(selectionStart, selectionEnd)
+
+  if (!selectedText) {
+    // Se não há seleção, não faz nada
+    return
+  }
+
+  // Remove todas as tags de formatação do texto selecionado
+  let cleanedText = selectedText
+
+  // Lista de tags de formatação para remover (abertura e fechamento)
+  const formattingTags = [
+    '<strong>',
+    '</strong>',
+    '<b>',
+    '</b>',
+    '<em>',
+    '</em>',
+    '<i>',
+    '</i>',
+    '<u>',
+    '</u>'
+  ]
+
+  // Remove cada tag de formatação
+  formattingTags.forEach(tag => {
+    // Usa regex global para remover todas as ocorrências da tag
+    const regex = new RegExp(tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi')
+    cleanedText = cleanedText.replace(regex, '')
+  })
+
+  // Substitui o texto selecionado pelo texto limpo
+  textArea.value =
+    value.substring(0, selectionStart) +
+    cleanedText +
+    value.substring(selectionEnd)
+
+  // Reposiciona o cursor no final do texto limpo
+  const newCursorPosition = selectionStart + cleanedText.length
+  textArea.setSelectionRange(newCursorPosition, newCursorPosition)
+  textArea.scrollTop = scrollTop
+
+  // Dispara evento input para atualizar o preview e outros listeners
   textArea.dispatchEvent(new Event('input', { bubbles: true }))
 }
 

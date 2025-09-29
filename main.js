@@ -233,6 +233,7 @@ async function createEditorToolbarHtml(
     <button type="button" data-action="bold" title="Negrito (Ctrl+B)"><b>B</b></button>
     <button type="button" data-action="italic" title="Itálico (Ctrl+I)"><i>I</i></button>
     <button type="button" data-action="underline" title="Sublinhado (Ctrl+U)"><u>U</u></button>
+    <button type="button" data-action="remove-formatting" title="Remover Formatação">🧹</button>
     ${
       buttonsVisibility.separator2
         ? '<div class="toolbar-separator" data-id="separator2"></div>'
@@ -555,6 +556,9 @@ function setupEditorInstanceListeners(
       case 'underline':
         applyFormatting(textArea, 'u')
         break
+      case 'remove-formatting':
+        removeFormatting(textArea)
+        break
       case 'speech-to-text':
         SpeechService.toggleRecognition(textArea)
         break
@@ -647,6 +651,79 @@ function setupEditorInstanceListeners(
     emojiHtml => insertAtCursor(textArea, emojiHtml)
   )
   setupPickerHover(editorContainer, 'emoji', `emoji-picker-${instanceId}`)
+
+  // --- NOVA FUNCIONALIDADE: Detecção de estado de formatação ---
+  // Adiciona listeners para detectar mudanças na posição do cursor e atualizar o estado dos botões
+  textArea.addEventListener('keyup', () =>
+    updateFormattingButtonsState(textArea, editorContainer)
+  )
+  textArea.addEventListener('mouseup', () =>
+    updateFormattingButtonsState(textArea, editorContainer)
+  )
+
+  // Atualiza o estado inicial dos botões
+  updateFormattingButtonsState(textArea, editorContainer)
+}
+
+/**
+ * Atualiza o estado visual dos botões de formatação baseado na posição do cursor.
+ * Verifica se o texto ao redor do cursor está envolto por tags de formatação.
+ * @param {HTMLTextAreaElement} textArea - O textarea associado.
+ * @param {HTMLElement} editorContainer - O container do editor.
+ */
+function updateFormattingButtonsState(textArea, editorContainer) {
+  if (!textArea || !editorContainer) return
+
+  const cursorPosition = textArea.selectionStart
+  const text = textArea.value
+
+  // Função auxiliar para verificar se o cursor está dentro de uma tag específica
+  const isInsideTag = (openTag, closeTag) => {
+    // Procura pela tag de abertura mais próxima antes do cursor
+    const beforeCursor = text.substring(0, cursorPosition)
+    const lastOpenIndex = beforeCursor.lastIndexOf(openTag)
+
+    if (lastOpenIndex === -1) return false
+
+    // Verifica se há uma tag de fechamento correspondente após o cursor
+    const afterOpenTag = text.substring(lastOpenIndex + openTag.length)
+    const closeIndex = afterOpenTag.indexOf(closeTag)
+
+    if (closeIndex === -1) return false
+
+    // Verifica se o cursor está entre a tag de abertura e fechamento
+    const tagEndPosition = lastOpenIndex + openTag.length + closeIndex
+    return cursorPosition <= tagEndPosition
+  }
+
+  // Mapeamento dos botões de formatação e suas tags correspondentes
+  const formattingButtons = [
+    { action: 'bold', tags: ['<strong>', '</strong>', '<b>', '</b>'] },
+    { action: 'italic', tags: ['<em>', '</em>', '<i>', '</i>'] },
+    { action: 'underline', tags: ['<u>', '</u>'] }
+  ]
+
+  // Atualiza o estado de cada botão
+  formattingButtons.forEach(({ action, tags }) => {
+    const button = editorContainer.querySelector(`[data-action="${action}"]`)
+    if (!button) return
+
+    // Verifica se o cursor está dentro de alguma das tags correspondentes
+    let isActive = false
+    for (let i = 0; i < tags.length; i += 2) {
+      if (isInsideTag(tags[i], tags[i + 1])) {
+        isActive = true
+        break
+      }
+    }
+
+    // Adiciona ou remove a classe CSS baseado no estado
+    if (isActive) {
+      button.classList.add('active-formatting-btn')
+    } else {
+      button.classList.remove('active-formatting-btn')
+    }
+  })
 }
 
 /**
