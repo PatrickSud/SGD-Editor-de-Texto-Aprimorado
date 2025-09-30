@@ -382,22 +382,26 @@ function openImageSizeModal(textArea, imageDataUrl) {
         <h4>Escolha o tamanho:</h4>
         <!-- Aplica a classe image-options para centralizar as opções de tamanho -->
         <div class="image-options">
-          <label class="size-option">
-            <input type="radio" name="image-size" value="small" data-size="400">
-            <span>Pequena (400px)</span>
-          </label>
-          <label class="size-option">
-            <input type="radio" name="image-size" value="medium" data-size="600" checked>
-            <span>Média (600px)</span>
-          </label>
-          <label class="size-option">
-            <input type="radio" name="image-size" value="large" data-size="800">
-            <span>Grande (800px)</span>
-          </label>
-          <label class="size-option">
-            <input type="radio" name="image-size" value="custom">
-            <span>Personalizado</span>
-          </label>
+          <div class="image-size-option" data-value="small">
+            <h5>Pequena</h5>
+            <p>400px</p>
+            <input type="radio" name="image-size" value="small" data-size="400" style="display: none;">
+          </div>
+          <div class="image-size-option active" data-value="medium">
+            <h5>Média</h5>
+            <p>600px</p>
+            <input type="radio" name="image-size" value="medium" data-size="600" checked style="display: none;">
+          </div>
+          <div class="image-size-option" data-value="large">
+            <h5>Grande</h5>
+            <p>800px</p>
+            <input type="radio" name="image-size" value="large" data-size="800" style="display: none;">
+          </div>
+          <div class="image-size-option" data-value="custom">
+            <h5>Personalizado</h5>
+            <p>Custom</p>
+            <input type="radio" name="image-size" value="custom" style="display: none;">
+          </div>
         </div>
         
         <div class="custom-size-inputs" id="custom-size-inputs" style="display: none;">
@@ -444,10 +448,34 @@ function openImageSizeModal(textArea, imageDataUrl) {
     closeModal()
   })
 
-  // Adiciona listeners para mostrar/ocultar inputs personalizados
+  // Adiciona listeners para mostrar/ocultar inputs personalizados e gerenciar seleção visual
   const customInputs = modal.querySelector('#custom-size-inputs')
   const sizeOptions = modal.querySelectorAll('input[name="image-size"]')
+  const sizeOptionDivs = modal.querySelectorAll('.image-size-option')
 
+  // Adiciona lógica de clique para as novas opções de tamanho
+  sizeOptionDivs.forEach(optionDiv => {
+    optionDiv.addEventListener('click', () => {
+      // Remove a classe active de todas as opções
+      sizeOptionDivs.forEach(div => div.classList.remove('active'))
+
+      // Adiciona a classe active à opção clicada
+      optionDiv.classList.add('active')
+
+      // Marca o radio button correspondente
+      const radioInput = optionDiv.querySelector('input[type="radio"]')
+      radioInput.checked = true
+
+      // Mostra/oculta inputs personalizados
+      if (radioInput.value === 'custom') {
+        customInputs.style.display = 'block'
+      } else {
+        customInputs.style.display = 'none'
+      }
+    })
+  })
+
+  // Mantém compatibilidade com os listeners originais
   sizeOptions.forEach(option => {
     option.addEventListener('change', () => {
       if (option.value === 'custom') {

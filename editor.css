@@ -4105,6 +4105,46 @@ input[type='range']:active::-webkit-slider-thumb {
   gap: 20px;
 }
 
+/* Estilos para as opções de tamanho compactas e modernas */
+.image-size-option {
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  padding: 10px 15px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  min-width: 80px;
+}
+
+.image-size-option:hover {
+  border-color: var(--primary-color);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.image-size-option.active {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.image-size-option h5 {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.image-size-option p {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.image-size-option.active p {
+  color: white;
+  opacity: 1;
+}
+
 .size-option {
   display: flex;
   align-items: center;
