@@ -2282,32 +2282,24 @@ a.open-link-btn:hover {
   background-color: var(--action-blue-hover);
 }
 
-/* --- BOTÃO FLUTUANTE 'IR AO TOPO' (Glass Shadow) --- */
 #floating-scroll-top-btn {
   position: fixed;
   bottom: 25px;
-  right: 25px; /* Alterado de left para right */
-  width: 40px; /* Reduzido de 45px */
-  height: 40px; /* Reduzido de 45px */
-
-  /* Efeito Glassmorphism para fundo branco */
+  right: 25px;
+  width: 40px;
+  height: 40px;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-
-  border-radius: 50%; /* Circular */
+  border-radius: 50%;
   border: 1px solid rgba(0, 0, 0, 0.05);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-
   color: #fff;
-
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   z-index: 1050;
-
-  /* Estado inicial (oculto) e transições */
   opacity: 0;
   visibility: hidden;
   transform: translateY(10px);
@@ -2328,6 +2320,7 @@ a.open-link-btn:hover {
 
 #floating-scroll-top-btn svg {
   stroke: currentColor;
+  transition: all 0.2s ease-in-out;
 }
 
 /* --- Correção de Legibilidade para Temas Escuros --- */

@@ -1007,33 +1007,83 @@ function adjustGoToTopButtonPosition(fabPosition) {
 }
 
 /**
- * Cria e gerencia o botão flutuante 'Ir ao Topo'.
+ * Cria e gerencia um botão de rolagem flutuante dinâmico.
+ * O botão alterna entre 'Ir ao Topo' e 'Ir para Baixo' e fica
+ * visível apenas se a página tiver uma barra de rolagem.
  */
 function initializeScrollToTopButton() {
-  const button = document.createElement('button')
-  button.id = 'floating-scroll-top-btn'
-  button.title = 'Ir ao topo'
-  button.innerHTML = `
+  const scrollButton = document.createElement('button')
+  scrollButton.id = 'floating-scroll-top-btn'
+  document.body.appendChild(scrollButton)
+
+  // SVGs para os dois estados do botão
+  const svgGoTop = `
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M12 19V5M5 12l7-7 7 7"/>
     </svg>`
 
-  document.body.appendChild(button)
+  const svgGoBottom = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 5v14m7-7l-7 7-7-7"/>
+    </svg>`
 
-  window.addEventListener('scroll', () => {
-    if (window.scrollY > 200) {
-      button.classList.add('visible')
+  let currentAction = 'down' // Estado que controla a ação do clique
+
+  // --- CORREÇÃO APLICADA AQUI ---
+  // Define o estado visual inicial do botão logo após a criação.
+  scrollButton.title = 'Ir para o final'
+  scrollButton.innerHTML = svgGoBottom
+  // --- FIM DA CORREÇÃO ---
+
+  // Função para verificar se o botão deve estar visível
+  const updateButtonVisibility = () => {
+    // O botão só é visível se a altura do conteúdo for maior que a da janela
+    if (document.body.scrollHeight > window.innerHeight) {
+      scrollButton.classList.add('visible')
     } else {
-      button.classList.remove('visible')
+      scrollButton.classList.remove('visible')
+    }
+  }
+
+  // Função para atualizar o ícone e a dica de ferramenta do botão
+  const updateButtonState = () => {
+    const scrollPosition = window.scrollY
+
+    // Se o usuário rolou mais de 200px, a ação é SUBIR
+    if (scrollPosition > 200) {
+      if (currentAction !== 'up') {
+        currentAction = 'up'
+        scrollButton.title = 'Ir ao topo'
+        scrollButton.innerHTML = svgGoTop
+      }
+    } else {
+      // Caso contrário, a ação é DESCER
+      if (currentAction !== 'down') {
+        currentAction = 'down'
+        scrollButton.title = 'Ir para o final'
+        scrollButton.innerHTML = svgGoBottom
+      }
+    }
+  }
+
+  // Listener de clique que usa o estado 'currentAction' para decidir o que fazer
+  scrollButton.addEventListener('click', () => {
+    if (currentAction === 'up') {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } else {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
     }
   })
 
-  button.addEventListener('click', () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    })
-  })
+  // Listener para atualizar o estado do botão durante a rolagem
+  window.addEventListener('scroll', updateButtonState, { passive: true })
+
+  // Listener para atualizar a visibilidade do botão quando a janela for redimensionada
+  window.addEventListener('resize', updateButtonVisibility, { passive: true })
+
+  // Executa as verificações iniciais ao carregar a página
+  updateButtonVisibility()
+  updateButtonState()
 }
 
 async function updateToolbarButtonVisibility(editorContainer) {
