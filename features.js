@@ -496,7 +496,26 @@ async function handleShortcutListener(e) {
   modifiers.sort()
   const combinationString = [...modifiers, mainKey].join('+')
 
-  // Verifica se a combinação corresponde a um atalho de categoria.
+  // --- LÓGICA DE DESPACHO DE ATALHOS ---
+
+  // 1. Prioridade 1: Atalhos de Inserção Direta (Saudações e Encerramentos)
+  const greetingsData = await getGreetingsAndClosings()
+  const allItems = [...greetingsData.greetings, ...greetingsData.closings]
+  const directInsertItem = allItems.find(
+    item => item.shortcut === combinationString
+  )
+
+  if (directInsertItem) {
+    e.preventDefault()
+    e.stopPropagation()
+    const resolvedContent = await resolveVariablesInText(
+      directInsertItem.content
+    )
+    insertAtCursor(textArea, resolvedContent, { prefixNewLine: true })
+    return // Atalho processado, encerra a função.
+  }
+
+  // 2. Prioridade 2: Atalhos de Categoria (Trâmites Rápidos)
   const data = await getStoredData()
   const category = data.categories.find(c => c.shortcut === combinationString)
 
@@ -509,6 +528,7 @@ async function handleShortcutListener(e) {
       .sort((a, b) => a.order - b.order)
 
     showShortcutPopup(textArea, messages)
+    return // Atalho processado, encerra a função.
   }
 }
 

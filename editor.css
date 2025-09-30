@@ -528,7 +528,8 @@ textarea[data-enhanced]:focus {
 }
 
 .message-item.drag-over-top::before,
-.category-item.drag-over-top::before {
+.category-item.drag-over-top::before,
+.gc-item.drag-over-top::before {
   content: '';
   position: absolute;
   top: 0;
@@ -540,7 +541,8 @@ textarea[data-enhanced]:focus {
 }
 
 .message-item.drag-over-bottom::after,
-.category-item.drag-over-bottom::after {
+.category-item.drag-over-bottom::after,
+.gc-item.drag-over-bottom::after {
   content: '';
   position: absolute;
   bottom: 0;
@@ -563,7 +565,8 @@ textarea[data-enhanced]:focus {
 }
 
 .message-item:hover .drag-handle,
-.category-item:hover .drag-handle {
+.category-item:hover .drag-handle,
+.gc-item:hover .drag-handle {
   opacity: 1;
 }
 
@@ -1159,7 +1162,8 @@ a.open-link-btn:hover {
   flex-grow: 1;
 }
 .export-list,
-.category-list {
+.category-list,
+.gc-list {
   max-height: 350px;
   overflow-y: auto;
   border: 1px solid var(--border-color);
@@ -1226,7 +1230,8 @@ a.open-link-btn:hover {
   margin-top: 5px;
 }
 
-.category-item {
+.category-item,
+.gc-item {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1234,25 +1239,29 @@ a.open-link-btn:hover {
   border-radius: var(--border-radius-sm);
   position: relative;
 }
-.category-item:hover {
+.category-item:hover,
+.gc-item:hover {
   background-color: var(--background-hover);
 }
 
 .message-item.is-dragging,
-.category-item.is-dragging {
+.category-item.is-dragging,
+.gc-item.is-dragging {
   opacity: 0.8;
   background-color: var(--background-hover);
   cursor: grabbing;
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
 
-.category-item .category-name {
+.category-item .category-name,
+.gc-item .gc-item-name {
   flex-grow: 1;
   user-select: none;
   cursor: text;
   padding: 2px 4px;
 }
-.category-item .category-name[contenteditable='true']:focus {
+.category-item .category-name[contenteditable='true']:focus,
+.gc-item .gc-item-name[contenteditable='true']:focus {
   outline: none;
   border: 1px solid var(--primary-color);
   border-radius: var(--border-radius-sm);
@@ -2184,6 +2193,7 @@ a.open-link-btn:hover {
 .quick-steps-list::-webkit-scrollbar,
 .export-list::-webkit-scrollbar,
 .category-list::-webkit-scrollbar,
+.gc-list::-webkit-scrollbar,
 .se-modal-body::-webkit-scrollbar,
 .editor-preview-container::-webkit-scrollbar,
 #shortcut-items-container::-webkit-scrollbar {
@@ -2192,6 +2202,7 @@ a.open-link-btn:hover {
 .quick-steps-list::-webkit-scrollbar-track,
 .export-list::-webkit-scrollbar-track,
 .category-list::-webkit-scrollbar-track,
+.gc-list::-webkit-scrollbar-track,
 .se-modal-body::-webkit-scrollbar-track,
 .editor-preview-container::-webkit-scrollbar-track,
 #shortcut-items-container::-webkit-scrollbar-track {
@@ -2201,6 +2212,7 @@ a.open-link-btn:hover {
 .quick-steps-list::-webkit-scrollbar-thumb,
 .export-list::-webkit-scrollbar-thumb,
 .category-list::-webkit-scrollbar-thumb,
+.gc-list::-webkit-scrollbar-thumb,
 .se-modal-body::-webkit-scrollbar-thumb,
 .editor-preview-container::-webkit-scrollbar-thumb,
 #shortcut-items-container::-webkit-scrollbar-thumb {
@@ -2210,6 +2222,7 @@ a.open-link-btn:hover {
 .quick-steps-list::-webkit-scrollbar-thumb:hover,
 .export-list::-webkit-scrollbar-thumb:hover,
 .category-list::-webkit-scrollbar-thumb:hover,
+.gc-list::-webkit-scrollbar-thumb:hover,
 .se-modal-body::-webkit-scrollbar-thumb:hover,
 .editor-preview-container::-webkit-scrollbar-thumb:hover,
 #shortcut-items-container::-webkit-scrollbar-thumb:hover {

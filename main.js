@@ -192,6 +192,11 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
   if (instanceId === 'main') {
     addSgdActionButtons(masterContainer)
   }
+
+  // Só executa o preenchimento automático para a instância principal do editor.
+  if (instanceId === 'main') {
+    performAutoFill(textArea)
+  }
 }
 
 /**
@@ -359,6 +364,7 @@ async function createEditorToolbarHtml(
       ${listButtons}
       ${insertButtons}
       ${colorButtons}
+      
       <button type="button" data-action="manage-steps" title="Configurações">⚙️</button>
       ${quickStepsHtml}
       ${remindersHtml}
@@ -375,6 +381,67 @@ async function createEditorToolbarHtml(
     <div id="color-picker-${instanceId}" class="picker"></div>
     <div id="highlight-picker-${instanceId}" class="picker"></div>
   `
+}
+
+/**
+ * Executa o preenchimento automático usando a saudação e/ou encerramento padrão selecionado.
+ * @param {HTMLTextAreaElement} textArea - O elemento textarea do editor.
+ */
+async function performAutoFill(textArea) {
+  if (textArea.value.trim() !== '') {
+    return
+  }
+
+  const data = await getGreetingsAndClosings()
+
+  // Se nenhum padrão estiver selecionado, não faz nada.
+  if (!data.defaultGreetingId && !data.defaultClosingId) {
+    return
+  }
+
+  let greetingContent = ''
+  let closingContent = ''
+
+  // Busca o item de saudação padrão e resolve suas variáveis
+  if (data.defaultGreetingId) {
+    const defaultGreeting = data.greetings.find(
+      g => g.id === data.defaultGreetingId
+    )
+    if (defaultGreeting) {
+      greetingContent = await resolveVariablesInText(defaultGreeting.content)
+    }
+  }
+
+  // Busca o item de encerramento padrão e resolve suas variáveis
+  if (data.defaultClosingId) {
+    const defaultClosing = data.closings.find(
+      c => c.id === data.defaultClosingId
+    )
+    if (defaultClosing) {
+      closingContent = await resolveVariablesInText(defaultClosing.content)
+    }
+  }
+
+  let finalContent = ''
+  let cursorPosition = -1
+
+  if (greetingContent && closingContent) {
+    finalContent = `${greetingContent}\n\n\n\n${closingContent}`
+    cursorPosition = greetingContent.length + 2
+  } else if (greetingContent) {
+    finalContent = greetingContent
+  } else if (closingContent) {
+    finalContent = closingContent
+  }
+
+  if (finalContent) {
+    insertAtCursor(textArea, finalContent)
+    if (cursorPosition !== -1) {
+      textArea.focus()
+      textArea.setSelectionRange(cursorPosition, cursorPosition)
+    }
+    textArea.dispatchEvent(new Event('input', { bubbles: true }))
+  }
 }
 
 /**

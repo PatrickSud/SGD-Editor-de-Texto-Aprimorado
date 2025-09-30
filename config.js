@@ -12,6 +12,7 @@ const SETTINGS_STORAGE_KEY = 'extensionSettingsData'
 const USER_RESPONSE_SAMPLES_KEY = 'userResponseSamples'
 const MAX_RESPONSE_SAMPLES = 30
 const FAB_POSITION_KEY = 'fabPositionData'
+const GREETINGS_CLOSINGS_KEY = 'greetingsAndClosingsData'
 
 const DEFAULT_SETTINGS = {
   reminderRetentionDays: 7,

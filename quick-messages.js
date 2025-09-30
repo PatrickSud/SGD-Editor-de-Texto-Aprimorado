@@ -895,6 +895,16 @@ async function openManagementModal() {
             </div>
         </div>
         
+        <hr>
+        <div class="management-section collapsible-section">
+            <h4 class="collapsible-header">
+                <span class="collapsible-icon">▶</span>
+                <span class="collapsible-title">👋 Configuração de saudação e encerramento</span>
+            </h4>
+            <div class="collapsible-content" id="greetings-closings-container">
+            </div>
+        </div>
+        
         ${aiSettingsHtml}
     `,
     onSave,
@@ -906,6 +916,9 @@ async function openManagementModal() {
 
   // Renderiza os checkboxes de visibilidade dos botões
   await renderButtonVisibilitySettings(modal)
+
+  // Renderiza as listas de saudações e encerramentos
+  await renderGreetingsClosingsManagement(modal)
 
   // --- LÓGICA EXISTENTE PARA SLIDERS E CHECKBOXES (SEM ALTERAÇÃO) ---
   const iconSizeSlider = modal.querySelector('#icon-size-slider')
@@ -1345,7 +1358,7 @@ async function addCategory(name, shortcut = '') {
  */
 async function saveAllCategoryChanges(modalContent) {
   const currentData = await getStoredData()
-  const items = modalContent.querySelectorAll('.category-item')
+  const items = modalContent.querySelectorAll('#category-list .category-item')
   let validationError = false
   const newNames = new Set()
   const newCategories = []
@@ -2589,4 +2602,357 @@ async function saveButtonVisibilitySettings(modal) {
     )
     return false
   }
+}
+
+// --- GERENCIAMENTO DE SAUDAÇÕES E ENCERRAMENTOS ---
+
+/**
+ * Renderiza as listas de saudações e encerramentos no modal de configurações.
+ * @param {HTMLElement} modal - O elemento do modal.
+ */
+async function renderGreetingsClosingsManagement(modal) {
+  const container = modal.querySelector('#greetings-closings-container')
+  if (!container) return
+
+  const data = await getGreetingsAndClosings()
+
+  const createListHtml = (title, items, type) => {
+    const defaultId =
+      type === 'greetings' ? data.defaultGreetingId : data.defaultClosingId
+
+    let itemsHtml = items
+      .map(item => {
+        const isChecked = item.id === defaultId
+        const shortcutDisplay = item.shortcut
+          ? escapeHTML(item.shortcut)
+          : 'Nenhum'
+        return `
+                <div class="gc-item" data-id="${item.id}" data-type="${type}">
+                    <div class="form-checkbox-group" style="margin-right: 10px;">
+                        <input type="radio" name="default-${type}" class="default-item-selector" id="default-${
+          item.id
+        }" data-id="${item.id}" data-type="${type}" ${
+          isChecked ? 'checked' : ''
+        }>
+                        <label for="default-${
+                          item.id
+                        }" title="Marcar como padrão para preenchimento automático"></label>
+                    </div>
+                    <span class="gc-item-name">${escapeHTML(item.title)}</span>
+                    <span class="shortcut-display">${shortcutDisplay}</span>
+                    <div class="message-actions" style="margin-left: auto;">
+                        <button type="button" class="action-btn set-shortcut-btn" title="Definir Atalho">⌨️</button>
+                        <button type="button" class="action-btn edit-item-btn">✏️</button>
+                        <button type="button" class="action-btn delete-cat-btn delete-item-btn">🗑️</button>
+                    </div>
+                </div>
+            `
+      })
+      .join('')
+
+    if (items.length === 0) {
+      itemsHtml =
+        '<p class="no-messages" style="margin-left: 10px;">Nenhum item cadastrado.</p>'
+    }
+
+    return `
+            <div class="management-section" style="padding: 0; border: none; box-shadow: none;">
+                <h5>${title}</h5>
+                <div class="gc-list">${itemsHtml}</div>
+                <button type="button" class="action-btn add-item-btn" data-type="${type}">+ Adicionar ${title}</button>
+            </div>
+        `
+  }
+
+  container.innerHTML = `
+        <p>Selecione um item de cada lista para ser inserido automaticamente. Você também pode definir um atalho de teclado para inserção direta de qualquer item.</p>
+        ${createListHtml('Saudações', data.greetings, 'greetings')}
+        <hr style="margin: 20px 0;">
+        ${createListHtml('Encerramentos', data.closings, 'closings')}
+    `
+
+  // Adicionar Listeners para os botões de atalho
+  container.querySelectorAll('.set-shortcut-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const itemEl = btn.closest('.gc-item')
+      if (itemEl) {
+        const id = itemEl.dataset.id
+        const type = itemEl.dataset.type
+        const item = (
+          type === 'greetings' ? data.greetings : data.closings
+        ).find(i => i.id === id)
+        if (item) {
+          openGreetingClosingShortcutModal(item, type, () =>
+            renderGreetingsClosingsManagement(modal)
+          )
+        }
+      }
+    })
+  })
+
+  // Adicionar Listeners para os radio buttons
+  container.querySelectorAll('.default-item-selector').forEach(radio => {
+    // Altere o evento de 'change' para 'click'
+    radio.addEventListener('click', async e => {
+      // Previne o comportamento padrão para podermos controlá-lo via script
+      e.preventDefault()
+
+      const selectedId = e.target.dataset.id
+      const type = e.target.dataset.type
+      const currentData = await getGreetingsAndClosings()
+
+      if (type === 'greetings') {
+        // Se o item clicado já era o padrão, define como nulo (desmarca). Senão, define como o novo padrão.
+        currentData.defaultGreetingId =
+          currentData.defaultGreetingId === selectedId ? null : selectedId
+      } else if (type === 'closings') {
+        currentData.defaultClosingId =
+          currentData.defaultClosingId === selectedId ? null : selectedId
+      }
+
+      await saveGreetingsAndClosings(currentData)
+
+      // Re-renderiza a lista para atualizar visualmente a seleção
+      await renderGreetingsClosingsManagement(modal)
+    })
+  })
+
+  // Adicionar Listeners
+  container.querySelectorAll('.add-item-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const type = btn.dataset.type
+      openGreetingClosingModal(null, type, () =>
+        renderGreetingsClosingsManagement(modal)
+      )
+    })
+  })
+
+  container.querySelectorAll('.edit-item-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const itemEl = btn.closest('.gc-item')
+      if (itemEl) {
+        const id = itemEl.dataset.id
+        const type = itemEl.dataset.type
+        const item = (
+          type === 'greetings' ? data.greetings : data.closings
+        ).find(i => i.id === id)
+        if (item) {
+          openGreetingClosingModal(item, type, () =>
+            renderGreetingsClosingsManagement(modal)
+          )
+        }
+      }
+    })
+  })
+
+  container.querySelectorAll('.delete-item-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const itemEl = btn.closest('.gc-item')
+      if (itemEl) {
+        const id = itemEl.dataset.id
+        const type = itemEl.dataset.type
+        const item = (
+          type === 'greetings' ? data.greetings : data.closings
+        ).find(i => i.id === id)
+        if (item) {
+          showConfirmDialog(
+            `Excluir "${escapeHTML(item.title)}"?`,
+            async () => {
+              const currentData = await getGreetingsAndClosings()
+              currentData[type] = currentData[type].filter(i => i.id !== id)
+              // Se o item excluído era o padrão, limpa a seleção
+              if (
+                type === 'greetings' &&
+                currentData.defaultGreetingId === id
+              ) {
+                currentData.defaultGreetingId = null
+              } else if (
+                type === 'closings' &&
+                currentData.defaultClosingId === id
+              ) {
+                currentData.defaultClosingId = null
+              }
+              await saveGreetingsAndClosings(currentData)
+              await renderGreetingsClosingsManagement(modal)
+            }
+          )
+        }
+      }
+    })
+  })
+}
+
+/**
+ * Abre o modal para criar/editar uma saudação ou encerramento.
+ * @param {object|null} item - O item a ser editado.
+ * @param {string} type - 'greetings' ou 'closings'.
+ * @param {function} onComplete - Callback.
+ */
+function openGreetingClosingModal(item, type, onComplete) {
+  const isEditing = item !== null
+  const title = type === 'greetings' ? 'Saudação' : 'Encerramento'
+
+  const modalContent = `
+        <div class="form-group">
+            <label for="item-title">Título (para identificação no menu)</label>
+            <input type="text" id="item-title" value="${
+              isEditing ? escapeHTML(item.title) : ''
+            }">
+        </div>
+        <div class="form-group">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                <label for="item-content" style="margin-bottom: 0;">Conteúdo do Texto</label>
+                <div class="dropdown">
+                    <button type="button" class="action-btn small-btn">Inserir Variável ▼</button>
+                    <div class="dropdown-content variable-inserter">
+                        <button type="button" data-variable="[usuario]">Nome do Usuário</button>
+                        <button type="button" data-variable="[saudacao]">Saudação (Bom dia/Boa tarde/Boa noite)</button>
+                        <button type="button" data-variable="[finalizacao]">Finalização (dia/semana)</button>
+                    </div>
+                </div>
+            </div>
+            <textarea id="item-content" rows="6" placeholder="Use as variáveis disponíveis no menu acima.">${
+              isEditing ? escapeHTML(item.content) : ''
+            }</textarea>
+        </div>
+    `
+
+  const modal = createModal(
+    isEditing ? `Editar ${title}` : `Nova ${title}`,
+    modalContent,
+    async (modalBody, closeModal) => {
+      const newTitle = modalBody.querySelector('#item-title').value.trim()
+      const newContent = modalBody.querySelector('#item-content').value.trim()
+
+      if (!newTitle || !newContent) {
+        showNotification('Título e conteúdo são obrigatórios.', 'error')
+        return
+      }
+
+      const data = await getGreetingsAndClosings()
+      const newItem = {
+        id: isEditing ? item.id : `${type.slice(0, 3)}-${Date.now()}`,
+        title: newTitle,
+        content: newContent,
+        shortcut: isEditing ? item.shortcut || '' : ''
+      }
+
+      if (isEditing) {
+        const index = data[type].findIndex(i => i.id === item.id)
+        if (index > -1) data[type][index] = newItem
+      } else {
+        data[type].push(newItem)
+      }
+
+      await saveGreetingsAndClosings(data)
+      showNotification('Item salvo com sucesso!', 'success')
+      closeModal()
+      if (onComplete) onComplete()
+
+      // Recarrega os dropdowns em todas as barras de ferramentas
+      document
+        .querySelectorAll('.editor-container')
+        .forEach(loadGreetingClosingOptions)
+    }
+  )
+
+  // Adiciona o listener para o novo menu de variáveis
+  const variableInserter = modal.querySelector('.variable-inserter')
+  if (variableInserter) {
+    variableInserter.addEventListener('click', e => {
+      const button = e.target.closest('button[data-variable]')
+      if (button) {
+        const variableToInsert = button.dataset.variable
+        const contentTextarea = modal.querySelector('#item-content')
+
+        // Reutiliza a função que já temos para inserir texto no cursor
+        insertAtCursor(contentTextarea, variableToInsert + ' ')
+      }
+    })
+  }
+
+  document.body.appendChild(modal)
+}
+
+/**
+ * Abre o modal de captura de atalho para um item de saudação ou encerramento.
+ * @param {object} item - O objeto do item (saudação ou encerramento).
+ * @param {string} type - 'greetings' ou 'closings'.
+ * @param {function} onComplete - Callback para re-renderizar a lista.
+ */
+function openGreetingClosingShortcutModal(item, type, onComplete) {
+  let capturedShortcut = null
+  const initialShortcut = item.shortcut || ''
+
+  const onSave = async (modalContent, closeModal) => {
+    const finalShortcut =
+      capturedShortcut === null ? initialShortcut : capturedShortcut
+
+    // Validação de segurança
+    if (PROTECTED_SHORTCUTS.includes(finalShortcut)) {
+      showNotification(
+        `O atalho "${finalShortcut}" é protegido e não pode ser usado.`,
+        'error'
+      )
+      return
+    }
+
+    try {
+      const data = await getGreetingsAndClosings()
+
+      // Valida duplicatas
+      const isDuplicate = [...data.greetings, ...data.closings].some(
+        i => i.id !== item.id && i.shortcut === finalShortcut
+      )
+
+      if (finalShortcut && isDuplicate) {
+        showNotification(`O atalho "${finalShortcut}" já está em uso.`, 'error')
+        return
+      }
+
+      // Encontra e atualiza o item
+      const itemToUpdate = data[type].find(i => i.id === item.id)
+      if (itemToUpdate) {
+        itemToUpdate.shortcut = finalShortcut
+        await saveGreetingsAndClosings(data)
+        showNotification('Atalho salvo com sucesso!', 'success')
+        closeModalAndRemoveListener()
+        if (onComplete) onComplete()
+      } else {
+        throw new Error('Item não encontrado para salvar o atalho.')
+      }
+    } catch (error) {
+      showNotification(`Erro ao salvar atalho: ${error.message}`, 'error')
+    }
+  }
+
+  const modal = createModal(
+    `Definir Atalho para "${escapeHTML(item.title)}"`,
+    `<p class="text-center">Pressione a combinação de teclas desejada (ex: <b>Alt + 1</b>).</p>
+     <div id="shortcut-preview" class="shortcut-preview-box">${
+       escapeHTML(initialShortcut) || 'Aguardando...'
+     }</div>
+     <p class="shortcut-recommendation">Pressione <b>ESC</b> para limpar o atalho.</p>`,
+    onSave
+  )
+
+  const keydownHandler = createKeydownHandler(modal, shortcut => {
+    capturedShortcut = shortcut
+  })
+
+  document.addEventListener('keydown', keydownHandler, true)
+
+  const closeModalAndRemoveListener = () => {
+    document.removeEventListener('keydown', keydownHandler, true)
+    if (document.body.contains(modal)) {
+      modal.remove()
+    }
+  }
+
+  modal.querySelector('.se-close-modal-btn').onclick =
+    closeModalAndRemoveListener
+  const cancelBtn = modal.querySelector('#modal-cancel-btn')
+  if (cancelBtn) cancelBtn.onclick = closeModalAndRemoveListener
+
+  document.body.appendChild(modal)
 }

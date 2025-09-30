@@ -894,3 +894,85 @@ async function saveAllReminders(reminders) {
     throw error // Propaga o erro para a UI
   }
 }
+
+// --- GERENCIAMENTO DE SAUDAÇÕES E ENCERRAMENTOS ---
+
+/**
+ * Recupera as saudações e encerramentos salvos, incluindo os IDs padrão.
+ * @returns {Promise<{greetings: Array<object>, closings: Array<object>, defaultGreetingId: string|null, defaultClosingId: string|null}>}
+ */
+async function getGreetingsAndClosings() {
+  try {
+    const result = await chrome.storage.sync.get(GREETINGS_CLOSINGS_KEY)
+    let data = result[GREETINGS_CLOSINGS_KEY]
+
+    // Se não houver dados, inicializa com exemplos e define o primeiro de cada lista como padrão
+    if (!data || !data.greetings || !data.closings) {
+      const initialGreetings = [
+        {
+          id: `grt-${Date.now()}`,
+          title: 'Saudação Padrão',
+          content:
+            "[saudacao], [usuario]! Tudo bem? Espero que sim! <nobr style='font-size:18px;'>&#128516;</nobr>",
+          shortcut: ''
+        }
+      ]
+      const initialClosings = [
+        {
+          id: `cls-${Date.now()}`,
+          title: 'Encerramento Padrão',
+          content:
+            "Se surgir alguma dúvida sobre o atendimento, estou aqui para ajudar!\n\nSeguimos à disposição.\nMuito obrigado! <nobr style='font-size:18px;'>&#128075;</nobr>",
+          shortcut: ''
+        },
+        {
+          id: `cls-${Date.now() + 1}`,
+          title: 'Aguardando Retorno',
+          content: 'Fico no aguardo de seu Retorno,',
+          shortcut: ''
+        }
+      ]
+
+      data = {
+        greetings: initialGreetings,
+        closings: initialClosings,
+        defaultGreetingId: null,
+        defaultClosingId: null
+      }
+      await saveGreetingsAndClosings(data)
+    }
+
+    // Garante que as propriedades de ID padrão existam para dados antigos
+    if (data.defaultGreetingId === undefined) data.defaultGreetingId = null
+    if (data.defaultClosingId === undefined) data.defaultClosingId = null
+
+    return data
+  } catch (error) {
+    console.error(
+      'Editor SGD: Erro ao carregar saudações e encerramentos.',
+      error
+    )
+    return {
+      greetings: [],
+      closings: [],
+      defaultGreetingId: null,
+      defaultClosingId: null
+    }
+  }
+}
+
+/**
+ * Salva o objeto de saudações e encerramentos.
+ * @param {{greetings: Array<object>, closings: Array<object>}} data
+ */
+async function saveGreetingsAndClosings(data) {
+  try {
+    await chrome.storage.sync.set({ [GREETINGS_CLOSINGS_KEY]: data })
+  } catch (error) {
+    console.error(
+      'Editor SGD: Erro ao salvar saudações e encerramentos.',
+      error
+    )
+    showNotification('Falha ao salvar as configurações.', 'error')
+  }
+}
