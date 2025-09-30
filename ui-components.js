@@ -273,6 +273,122 @@ function showInfoModal(title, contentHtml) {
 }
 
 /**
+ * Exibe um modal com instruções para inserir imagem via área de transferência.
+ */
+function showImagePasteModal() {
+  const title = 'Inserir Imagem'
+  const content = `
+    <div class="image-paste-instructions">
+      <div class="instruction-icon">🖼️</div>
+      <h4>Como inserir uma imagem:</h4>
+      <ol>
+        <li>Copie uma imagem para a área de transferência <kbd>Ctrl+C</kbd></li>
+        <li>Posicione o cursor no editor onde deseja inserir a imagem</li>
+        <li>Pressione <kbd>Ctrl+V</kbd> para colar a imagem</li>
+      </ol>
+      <p class="note">A imagem será inserida no texto conforme o tamanho selecionado.</p>
+    </div>
+  `
+  showInfoModal(title, content)
+}
+
+/**
+ * Abre um modal para redimensionar uma imagem antes de inserir no editor.
+ * @param {HTMLTextAreaElement} textArea - O textarea onde a imagem será inserida.
+ * @param {string} imageDataUrl - A URL de dados da imagem em Base64.
+ */
+function openImageSizeModal(textArea, imageDataUrl) {
+  const title = 'Redimensionar Imagem'
+  const content = `
+    <div class="image-size-modal-content">
+      <div class="image-preview-container">
+        <h4>Imagem:</h4>
+        <img src="${imageDataUrl}" alt="Pré-visualização da imagem" class="modal-image-preview" id="image-preview">
+      </div>
+      
+      <div class="size-options-container">
+        <h4>Escolha o tamanho:</h4>
+        <div class="size-options">
+          <label class="size-option">
+            <input type="radio" name="image-size" value="small" data-size="400">
+            <span>Pequena (400px)</span>
+          </label>
+          <label class="size-option">
+            <input type="radio" name="image-size" value="medium" data-size="600" checked>
+            <span>Média (600px)</span>
+          </label>
+          <label class="size-option">
+            <input type="radio" name="image-size" value="large" data-size="800">
+            <span>Grande (800px)</span>
+          </label>
+          <label class="size-option">
+            <input type="radio" name="image-size" value="custom">
+            <span>Personalizado</span>
+          </label>
+        </div>
+        
+        <div class="custom-size-inputs" id="custom-size-inputs" style="display: none;">
+          <div class="form-group">
+            <label for="custom-width">Largura (px):</label>
+            <input type="number" id="custom-width" min="50" max="2000" value="400">
+          </div>
+          <div class="form-group">
+            <label for="custom-height">Altura (px):</label>
+            <input type="number" id="custom-height" min="50" max="2000" value="auto">
+            <small>Deixe vazio ou 0 para manter proporção</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  `
+
+  const modal = createModal(title, content, (modalContent, closeModal) => {
+    // Captura o tamanho selecionado pelo usuário
+    const selectedSize = modalContent.querySelector(
+      'input[name="image-size"]:checked'
+    ).value
+    let imageHtml = ''
+
+    if (selectedSize === 'small') {
+      imageHtml = `<img src="${imageDataUrl}" alt="Imagem colada" width="400" height="auto">`
+    } else if (selectedSize === 'medium') {
+      imageHtml = `<img src="${imageDataUrl}" alt="Imagem colada" width="600" height="auto">`
+    } else if (selectedSize === 'large') {
+      imageHtml = `<img src="${imageDataUrl}" alt="Imagem colada" width="800" height="auto">`
+    } else if (selectedSize === 'custom') {
+      const customWidth = modalContent.querySelector('#custom-width').value
+      const customHeight = modalContent.querySelector('#custom-height').value
+
+      if (customHeight && customHeight > 0) {
+        imageHtml = `<img src="${imageDataUrl}" alt="Imagem colada" width="${customWidth}" height="${customHeight}">`
+      } else {
+        imageHtml = `<img src="${imageDataUrl}" alt="Imagem colada" width="${customWidth}" height="auto">`
+      }
+    }
+
+    // Insere a imagem no editor
+    insertAtCursor(textArea, imageHtml)
+    closeModal()
+  })
+
+  // Adiciona listeners para mostrar/ocultar inputs personalizados
+  const customInputs = modal.querySelector('#custom-size-inputs')
+  const sizeOptions = modal.querySelectorAll('input[name="image-size"]')
+
+  sizeOptions.forEach(option => {
+    option.addEventListener('change', () => {
+      if (option.value === 'custom') {
+        customInputs.style.display = 'block'
+      } else {
+        customInputs.style.display = 'none'
+      }
+    })
+  })
+
+  document.body.appendChild(modal)
+}
+
+/**
  * Exibe um modal com instruções sobre como obter a chave de API do Gemini.
  */
 function showHowToGetApiKeyModal() {

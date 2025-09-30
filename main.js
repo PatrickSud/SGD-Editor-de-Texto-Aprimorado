@@ -261,6 +261,7 @@ async function createEditorToolbarHtml(
   const insertButtons = `
       <button type="button" data-action="link" title="Inserir Hiperlink (Ctrl+Alt+H)">🔗</button>
       <button type="button" data-action="emoji" title="Emojis (Código HTML)">😀</button>
+      <button type="button" data-action="insert-image" title="Inserir Imagem (Ctrl+V)">🖼️</button>
       <button type="button" data-action="username" title="Inserir Nome do Usuário (Alt+Shift+U)">🏷️</button>
       ${
         buttonsVisibility.separator4
@@ -507,6 +508,9 @@ function setupEditorInstanceListeners(
 
   textArea.addEventListener('keydown', handleKeydown)
 
+  // --- Listener para colar imagens ---
+  textArea.addEventListener('paste', e => handleImagePaste(e, textArea))
+
   // --- Listeners da Toolbar (Delegação de Eventos) ---
   editorContainer.addEventListener('click', async e => {
     const themeOption = e.target.closest('.theme-option')
@@ -584,6 +588,9 @@ function setupEditorInstanceListeners(
         break
       case 'link':
         openLinkModal(textArea)
+        break
+      case 'insert-image':
+        showImagePasteModal()
         break
       case 'bullet':
         insertBullet(textArea)

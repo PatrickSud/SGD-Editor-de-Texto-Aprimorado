@@ -322,3 +322,41 @@ async function togglePreview(textArea) {
     await savePreviewState(true)
   }
 }
+
+/**
+ * Manipula o evento de colar para detectar e processar imagens da área de transferência.
+ * @param {ClipboardEvent} e - O evento de colar.
+ * @param {HTMLTextAreaElement} textArea - O textarea onde a imagem será inserida.
+ */
+function handleImagePaste(e, textArea) {
+  if (!e.clipboardData || !e.clipboardData.items) {
+    return
+  }
+
+  // Itera sobre os itens da área de transferência
+  for (let i = 0; i < e.clipboardData.items.length; i++) {
+    const item = e.clipboardData.items[i]
+
+    // Verifica se o item é uma imagem
+    if (item.type.indexOf('image/') === 0) {
+      e.preventDefault() // Previne o comportamento padrão de colar
+
+      const file = item.getAsFile()
+      if (!file) continue
+
+      // Usa FileReader para converter a imagem para Base64
+      const reader = new FileReader()
+      reader.onload = function (event) {
+        const base64Data = event.target.result
+
+        // Abre o modal de redimensionamento em vez de inserir diretamente
+        // Isso permite ao usuário escolher o tamanho desejado para a imagem
+        openImageSizeModal(textArea, base64Data)
+      }
+
+      // Lê o arquivo como Data URL (Base64)
+      reader.readAsDataURL(file)
+      break // Para após processar a primeira imagem encontrada
+    }
+  }
+}

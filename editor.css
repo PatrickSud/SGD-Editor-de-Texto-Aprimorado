@@ -4006,6 +4006,176 @@ input[type='range']:active::-webkit-slider-thumb {
   }
 }
 
+/* --- ESTILOS PARA O MODAL DE INSTRUÇÕES DE IMAGEM --- */
+.image-paste-instructions {
+  text-align: center;
+  padding: 20px;
+}
+
+.image-paste-instructions .instruction-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.image-paste-instructions h4 {
+  margin: 0 0 16px 0;
+  color: var(--text-color-main);
+  font-size: 18px;
+}
+
+.image-paste-instructions ol {
+  text-align: left;
+  margin: 0 0 16px 0;
+  padding-left: 20px;
+}
+
+.image-paste-instructions li {
+  margin-bottom: 8px;
+  color: var(--text-color-main);
+  line-height: 1.5;
+}
+
+.image-paste-instructions kbd {
+  background-color: var(--background-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-family: monospace;
+  font-size: 13px;
+  color: var(--text-color-main);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.image-paste-instructions .note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-color-muted);
+  font-style: italic;
+  background-color: var(--background-hover);
+  padding: 8px 12px;
+  border-radius: var(--border-radius-sm);
+  border-left: 3px solid var(--primary-color);
+}
+
+/* --- ESTILOS PARA O MODAL DE REDIMENSIONAMENTO DE IMAGEM --- */
+.image-size-modal-content {
+  padding: 20px;
+  max-width: 500px;
+}
+
+.image-preview-container {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.image-preview-container h4 {
+  margin: 0 0 12px 0;
+  color: var(--text-color-main);
+  font-size: 16px;
+}
+
+.modal-image-preview {
+  max-width: 100%;
+  max-height: 200px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.size-options-container h4 {
+  margin: 0 0 16px 0;
+  color: var(--text-color-main);
+  font-size: 16px;
+}
+
+.size-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.size-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: var(--background-primary);
+}
+
+.size-option:hover {
+  background: var(--background-hover);
+  border-color: var(--primary-color);
+}
+
+.size-option input[type='radio'] {
+  margin: 0;
+}
+
+.size-option input[type='radio']:checked + span {
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+.size-option:has(input[type='radio']:checked) {
+  background: var(--background-hover);
+  border-color: var(--primary-color);
+}
+
+.custom-size-inputs {
+  padding: 16px;
+  background: var(--background-secondary);
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-color);
+}
+
+.custom-size-inputs .form-group {
+  margin-bottom: 12px;
+}
+
+.custom-size-inputs .form-group:last-child {
+  margin-bottom: 0;
+}
+
+.custom-size-inputs label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 500;
+  color: var(--text-color-main);
+  font-size: 14px;
+}
+
+.custom-size-inputs input[type='number'] {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--background-primary);
+  color: var(--text-color-main);
+  font-size: 14px;
+}
+
+.custom-size-inputs input[type='number']:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2);
+}
+
+.custom-size-inputs small {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-color-muted);
+  font-size: 12px;
+  font-style: italic;
+}
+
 button[data-action='speech-to-text'].active-mic {
   background-color: var(--action-red-hover);
   color: white;
