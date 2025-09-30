@@ -293,6 +293,78 @@ function showImagePasteModal() {
 }
 
 /**
+ * Abre um modal para inserir imagem com opções de colar ou upload de arquivo.
+ * @param {HTMLTextAreaElement} textArea - O textarea onde a imagem será inserida.
+ */
+function openImageUploadModal(textArea) {
+  const title = 'Inserir Imagem'
+  const content = `
+    <div class="image-upload-modal-content">
+      <div class="upload-instructions">
+        <h4>Como inserir uma imagem:</h4>
+        <div class="upload-option">
+          <div class="option-icon">📋</div>
+          <div class="option-content">
+            <p><strong>Opção 1:</strong> Cole a imagem da área de transferência</p>
+            <p class="instruction-text">Posicione o cursor no editor e pressione <kbd>Ctrl+V</kbd></p>
+          </div>
+        </div>
+        
+        <div class="upload-option">
+          <div class="option-icon">📁</div>
+          <div class="option-content">
+            <p><strong>Opção 2:</strong> Selecione um arquivo do computador</p>
+            <div class="file-input-container">
+              <label for="image-upload-input" class="file-input-label">
+                <span class="file-input-text">Escolher arquivo...</span>
+                <input type="file" id="image-upload-input" accept="image/*" style="display: none;">
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="upload-preview-container" id="upload-preview-container" style="display: none;">
+        <h4>Pré-visualização:</h4>
+        <img id="upload-preview" class="upload-preview-image" alt="Pré-visualização da imagem">
+      </div>
+    </div>
+  `
+
+  const modal = createModal(
+    title,
+    content,
+    null // Sem botão de salvar, apenas fechar
+  )
+
+  // Adiciona listener para upload de arquivo
+  const fileInput = modal.querySelector('#image-upload-input')
+  const previewContainer = modal.querySelector('#upload-preview-container')
+  const previewImage = modal.querySelector('#upload-preview')
+
+  fileInput.addEventListener('change', event => {
+    const file = event.target.files[0]
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader()
+      reader.onload = function (e) {
+        const imageDataUrl = e.target.result
+
+        // Mostra pré-visualização
+        previewImage.src = imageDataUrl
+        previewContainer.style.display = 'block'
+
+        // Fecha o modal atual e abre o modal de redimensionamento
+        modal.remove()
+        openImageSizeModal(textArea, imageDataUrl)
+      }
+      reader.readAsDataURL(file)
+    }
+  })
+
+  document.body.appendChild(modal)
+}
+
+/**
  * Abre um modal para redimensionar uma imagem antes de inserir no editor.
  * @param {HTMLTextAreaElement} textArea - O textarea onde a imagem será inserida.
  * @param {string} imageDataUrl - A URL de dados da imagem em Base64.
@@ -308,7 +380,8 @@ function openImageSizeModal(textArea, imageDataUrl) {
       
       <div class="size-options-container">
         <h4>Escolha o tamanho:</h4>
-        <div class="size-options">
+        <!-- Aplica a classe image-options para centralizar as opções de tamanho -->
+        <div class="image-options">
           <label class="size-option">
             <input type="radio" name="image-size" value="small" data-size="400">
             <span>Pequena (400px)</span>

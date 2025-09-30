@@ -4098,6 +4098,13 @@ input[type='range']:active::-webkit-slider-thumb {
   margin-bottom: 20px;
 }
 
+/* Classe para centralizar as opções de tamanho da imagem no modal */
+.image-options {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
 .size-option {
   display: flex;
   align-items: center;
@@ -4174,6 +4181,122 @@ input[type='range']:active::-webkit-slider-thumb {
   color: var(--text-color-muted);
   font-size: 12px;
   font-style: italic;
+}
+
+/* --- ESTILOS PARA O MODAL DE UPLOAD DE IMAGEM --- */
+.image-upload-modal-content {
+  padding: 20px;
+  max-width: 500px;
+}
+
+.upload-instructions h4 {
+  margin: 0 0 20px 0;
+  color: var(--text-color-main);
+  font-size: 16px;
+  text-align: center;
+}
+
+.upload-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--background-secondary);
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-color);
+}
+
+.upload-option:last-child {
+  margin-bottom: 0;
+}
+
+.option-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.option-content {
+  flex: 1;
+}
+
+.option-content p {
+  margin: 0 0 8px 0;
+  color: var(--text-color-main);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.option-content p:last-child {
+  margin-bottom: 0;
+}
+
+.instruction-text {
+  color: var(--text-color-secondary);
+  font-size: 13px;
+}
+
+.instruction-text kbd {
+  background: var(--background-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--text-color-main);
+}
+
+.file-input-container {
+  margin-top: 8px;
+}
+
+.file-input-label {
+  display: inline-block;
+  padding: 8px 16px;
+  background: var(--primary-color);
+  color: white;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.file-input-label:hover {
+  background: var(--primary-color-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.file-input-text {
+  display: inline-block;
+}
+
+.upload-preview-container {
+  margin-top: 20px;
+  text-align: center;
+  padding: 16px;
+  background: var(--background-secondary);
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-color);
+}
+
+.upload-preview-container h4 {
+  margin: 0 0 12px 0;
+  color: var(--text-color-main);
+  font-size: 16px;
+}
+
+.upload-preview-image {
+  max-width: 100%;
+  max-height: 200px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 button[data-action='speech-to-text'].active-mic {

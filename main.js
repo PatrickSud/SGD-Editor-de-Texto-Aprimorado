@@ -590,7 +590,7 @@ function setupEditorInstanceListeners(
         openLinkModal(textArea)
         break
       case 'insert-image':
-        showImagePasteModal()
+        openImageUploadModal(textArea)
         break
       case 'bullet':
         insertBullet(textArea)
