@@ -172,6 +172,60 @@
   filter: invert(1);
 }
 
+/* --- SOMBRAS INTERNAS MODERNAS E ROBUSTAS --- */
+
+/* Botões da toolbar - Sombras internas sutis para temas claros */
+.editor-toolbar button,
+.dropdown button,
+.action-btn {
+  box-shadow: inset 0 -1px 2px rgba(0, 0, 0, 0.08),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Textarea e Preview - Sombras internas para temas claros */
+textarea[data-enhanced],
+.editor-preview-container {
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.1), 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Melhoria das sombras internas para temas escuros */
+.editor-container.dark-mode .editor-toolbar button,
+.editor-container.dark-mode .dropdown button,
+.editor-container.dark-mode .action-btn,
+.editor-container.dark-graphite-mode .editor-toolbar button,
+.editor-container.dark-graphite-mode .dropdown button,
+.editor-container.dark-graphite-mode .action-btn,
+.editor-container.forest-mode .editor-toolbar button,
+.editor-container.forest-mode .dropdown button,
+.editor-container.forest-mode .action-btn,
+.editor-container.tokyo-night-mode .editor-toolbar button,
+.editor-container.tokyo-night-mode .dropdown button,
+.editor-container.tokyo-night-mode .action-btn {
+  box-shadow: inset 0 -1px 2px rgba(255, 255, 255, 0.1),
+    inset 0 1px 1px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+.editor-master-container.dark-mode textarea[data-enhanced],
+.editor-master-container.dark-graphite-mode textarea[data-enhanced],
+.editor-master-container.forest-mode textarea[data-enhanced],
+.editor-master-container.tokyo-night-mode textarea[data-enhanced] {
+  box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.1),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
+.editor-master-container.dark-mode .editor-preview-container,
+.editor-master-container.dark-graphite-mode .editor-preview-container,
+.editor-master-container.forest-mode .editor-preview-container,
+.editor-master-container.tokyo-night-mode .editor-preview-container,
+.editor-preview-container.dark-mode,
+.editor-preview-container.dark-graphite-mode,
+.editor-preview-container.forest-mode,
+.editor-preview-container.tokyo-night-mode {
+  box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.1),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
 /* --- EFEITO DE VIDRO FOSCO (Glassmorphism) --- */
 /* Aplicado a todos os componentes flutuantes em todos os temas */
 .se-modal-content,
@@ -220,7 +274,7 @@ textarea[data-enhanced] {
   min-height: 150px;
   font-family: monospace;
   font-size: var(--editor-font-size); /* MODIFICADO */
-  width: 100% !important; /* Adicionado !important para sobrepor o estilo inline */
+  width: 100% !important;
   box-sizing: border-box;
   border-top: none;
   border-radius: 0;
@@ -242,7 +296,7 @@ textarea[data-enhanced]:focus {
   background-color: var(--background-main);
   color: var(--text-color-main);
   position: relative;
-  min-height: 100px; /* Garante uma altura mínima no modo fixo */
+  min-height: 100px;
 }
 
 .preview-content {
@@ -314,7 +368,7 @@ textarea[data-enhanced]:focus {
   border-radius: var(--border-radius-sm);
   padding: 5px 10px;
   cursor: pointer;
-  font-size: var(--ui-font-size); /* MODIFICADO */
+  font-size: var(--ui-font-size);
   color: var(--text-color-main);
   transition: background-color var(--transition-fast),
     box-shadow var(--transition-fast), transform var(--transition-fast);

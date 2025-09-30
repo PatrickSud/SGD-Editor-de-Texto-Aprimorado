@@ -323,7 +323,7 @@ async function setTheme(themeName) {
 function updateThemeOnElements() {
   // Seleciona todas as instâncias do editor, modais, popups e textareas aprimorados, incluindo o novo preview.
   const themedElements = document.querySelectorAll(
-    '.editor-container, .editor-modal, .editor-preview-container, #shortcut-popup, textarea[data-enhanced], #notes-side-panel, #floating-scroll-top-btn'
+    '.editor-master-container, .editor-container, .editor-modal, .editor-preview-container, #shortcut-popup, textarea[data-enhanced], #notes-side-panel, #floating-scroll-top-btn'
   )
 
   themedElements.forEach(el => {
