@@ -1673,10 +1673,10 @@ a.open-link-btn:hover {
   border-radius: var(--border-radius-md);
   box-shadow: var(--shadow-lg);
   z-index: 9999; /* Aumentado para garantir que fique acima de tudo */
-  padding: 12px;
+  padding: 8px;
   grid-template-columns: repeat(8, 1fr);
-  gap: 5px;
-  max-width: 340px;
+  gap: 3px;
+  max-width: 280px;
   box-sizing: border-box;
   /* Garante que o picker não seja afetado por contextos de empilhamento */
   isolation: isolate;
@@ -1695,13 +1695,13 @@ a.open-link-btn:hover {
 
 .color-swatch,
 .emoji-swatch {
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   border: 1px solid var(--border-color);
   border-radius: 50%;
   cursor: pointer;
   transition: transform var(--transition-fast);
-  font-size: 22px;
+  font-size: 18px;
   background-color: transparent;
   color: var(--text-color-main);
   display: flex;

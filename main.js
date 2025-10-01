@@ -238,7 +238,6 @@ async function createEditorToolbarHtml(
     <button type="button" data-action="bold" title="Negrito (Ctrl+B)"><b>B</b></button>
     <button type="button" data-action="italic" title="Itálico (Ctrl+I)"><i>I</i></button>
     <button type="button" data-action="underline" title="Sublinhado (Ctrl+U)"><u>U</u></button>
-    <button type="button" data-action="remove-formatting" title="Remover Formatação">🧹</button>
     ${
       buttonsVisibility.separator2
         ? '<div class="toolbar-separator" data-id="separator2"></div>'
@@ -265,7 +264,6 @@ async function createEditorToolbarHtml(
 
   const insertButtons = `
       <button type="button" data-action="link" title="Inserir Hiperlink (Ctrl+Alt+H)">🔗</button>
-      <button type="button" data-action="emoji" title="Emojis (Código HTML)">😀</button>
       <button type="button" data-action="insert-image" title="Inserir Imagem (Ctrl+V)">🖼️</button>
       <button type="button" data-action="username" title="Inserir Nome do Usuário (Alt+Shift+U)">🏷️</button>
       ${
@@ -276,6 +274,7 @@ async function createEditorToolbarHtml(
     `
 
   const colorButtons = `
+      <button type="button" data-action="emoji" title="Emojis (Código HTML)">😀</button>
       <button type="button" data-action="color" title="Cor do Texto">🎨</button>
       <button type="button" data-action="highlight" title="Cor de Destaque">🖌️</button>
       ${
@@ -626,9 +625,6 @@ function setupEditorInstanceListeners(
         break
       case 'underline':
         applyFormatting(textArea, 'u')
-        break
-      case 'remove-formatting':
-        removeFormatting(textArea)
         break
       case 'speech-to-text':
         SpeechService.toggleRecognition(textArea)
