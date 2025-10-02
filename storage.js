@@ -911,24 +911,83 @@ async function getGreetingsAndClosings() {
       const initialGreetings = [
         {
           id: `grt-${Date.now()}`,
-          title: 'Saudação Padrão',
+          title: 'Simples',
           content:
             "[saudacao], [usuario]! Tudo bem? Espero que sim! <nobr style='font-size:18px;'>&#128516;</nobr>",
+          shortcut: ''
+        },
+        {
+          id: `grt-${Date.now() + 1}`,
+          title: 'Contato e Acesso',
+          content:
+            "[saudacao], [usuario]! Tudo bem? Espero que sim!<nobr style='font-size:20px;'>&#128521;</nobr> \n \nConforme contato telefônico e conexão remota a máquina ",
+          shortcut: ''
+        },
+        {
+          id: `grt-${Date.now() + 2}`,
+          title: 'Acompanhamento de Atendimento',
+          content:
+            '[saudacao], [usuario]! Tudo bem? \n \nDando continuidade ao nosso atendimento anterior, analisei as informações que você enviou e ',
+          shortcut: ''
+        },
+        {
+          id: `grt-${Date.now() + 3}`,
+          title: 'Agradecendo Informações',
+          content:
+            "[saudacao], [usuario]! Tudo bem? \n \nAgradeço pelo envio das informações/arquivos. \nJá estou analisando o seu caso e em breve retorno com novidades. <nobr style='font-size:18px;'>👍</nobr>",
           shortcut: ''
         }
       ]
       const initialClosings = [
         {
           id: `cls-${Date.now()}`,
-          title: 'Encerramento Padrão',
+          title: 'Simples',
           content:
-            "Se surgir alguma dúvida sobre o atendimento, estou aqui para ajudar!\n\nSeguimos à disposição.\nMuito obrigado! <nobr style='font-size:18px;'>&#128075;</nobr>",
+            "Se surgir alguma dúvida sobre o atendimento, estou aqui para ajudar!\n\nSeguimos à disposição.\n[finalizacao]! <nobr style='font-size:18px;'>&#128075;</nobr>",
           shortcut: ''
         },
         {
           id: `cls-${Date.now() + 1}`,
           title: 'Aguardando Retorno',
-          content: 'Fico no aguardo de seu Retorno,',
+          content:
+            "Fico no aguardo de seu Retorno, \n[finalizacao]! <nobr style='font-size:18px;'>&#128522;</nobr>",
+          shortcut: ''
+        },
+        {
+          id: `cls-${Date.now() + 2}`,
+          title: 'Com Reforma Tributária',
+          content: `Se surgir alguma dúvida sobre o atendimento, estou aqui para ajudar! Por favor, sinta-se à vontade para retornar.
+
+Agora, se tudo estiver resolvido, marque a situação como <strong><span style="color:#fa6400">'Atendimento Concluído'</span></strong> para nos ajudar a garantir a qualidade do suporte. Estamos aqui para você! &#x1F31F;	
+   <span style="color:#FF7F00;"> __________________________________________________________________________________________________________________________________________________________________________</span>
+Prepare-se para a <strong>Reforma Tributária</strong>! Ative o módulo da Domínio até <strong>30/11/2025</strong> e tenha acesso gratuito a ele e a todas as novas funcionalidades enquanto seu contrato estiver vigente.
+ 
+<span style="font-size: 1.2em;">&#128073;</span> <a href="https://suporte.dominioatendimento.com/central/faces/solucao.html?codigo=11999" style="color: rgb(250, 100, 0);"><strong>Clique aqui para mais informações e saiba como ativar!</strong></a>
+ 
+Seguimos à disposição.
+[finalizacao]! <nobr style='font-size:19px;'>&#128075;</nobr>`,
+          shortcut: ''
+        },
+        {
+          id: `cls-${Date.now() + 3}`,
+          title: 'Conclusão',
+          content: `Se estiver com alguma dúvida ou problema, me retorne neste atendimento que estarei avaliando para você, ok?<nobr style='font-size:20px;'>&#128516;</nobr>
+Ah!, e se possível, me manda uma imagem que vai me auxiliar bastante!
+ 
+[finalizacao]!<nobr style='font-size:20px;'>&#128079;</nobr>
+Sua conclusão é muito importante para nós!`,
+          shortcut: ''
+        },
+        {
+          id: `cls-${Date.now() + 4}`,
+          title: 'Análise em Andamento',
+          content: `Sua solicitação está sendo tratada por nossa equipe e pode levar um tempo para a análise completa. Manterei você informado sobre qualquer progresso. \n\nAgradecemos a sua paciência e compreensão!\n[finalizacao]! <nobr style='font-size:18px;'>&#10024;</nobr>`,
+          shortcut: ''
+        },
+        {
+          id: `cls-${Date.now() + 6}`,
+          title: 'Com Pesquisa de Satisfação',
+          content: `Fico feliz em ajudar! Se não houver mais nenhuma dúvida, peço a gentileza de avaliar meu atendimento marcando a situação como <strong><span style="color:#fa6400">'Atendimento Concluído'</span></strong>. \nSua opinião é muito importante para nós!\n\n[finalizacao]! <nobr style='font-size:18px;'>&#10024;</nobr>`,
           shortcut: ''
         }
       ]

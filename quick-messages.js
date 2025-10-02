@@ -895,16 +895,6 @@ async function openManagementModal() {
             </div>
         </div>
         
-        <hr>
-        <div class="management-section collapsible-section">
-            <h4 class="collapsible-header">
-                <span class="collapsible-icon">▶</span>
-                <span class="collapsible-title">👋 Configuração de saudação e encerramento</span>
-            </h4>
-            <div class="collapsible-content" id="greetings-closings-container">
-            </div>
-        </div>
-        
         ${aiSettingsHtml}
     `,
     onSave,
@@ -916,9 +906,6 @@ async function openManagementModal() {
 
   // Renderiza os checkboxes de visibilidade dos botões
   await renderButtonVisibilitySettings(modal)
-
-  // Renderiza as listas de saudações e encerramentos
-  await renderGreetingsClosingsManagement(modal)
 
   // --- LÓGICA EXISTENTE PARA SLIDERS E CHECKBOXES (SEM ALTERAÇÃO) ---
   const iconSizeSlider = modal.querySelector('#icon-size-slider')
