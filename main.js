@@ -80,7 +80,7 @@ function observeForTextArea() {
  */
 async function initializeEditorInstance(textArea, instanceId, options = {}) {
   if (!textArea || textArea.dataset.enhanced) return
-  textArea.dataset.enhanced = instanceId // Trava para evitar re-inicialização
+  textArea.dataset.enhanced = instanceId
 
   const {
     includePreview,
@@ -120,7 +120,6 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
     const previewContainer = createPreviewContainer(textArea, instanceId)
     applyCurrentTheme(previewContainer)
 
-    // Lógica de visibilidade
     const isVisible = await getPreviewState()
     const toggleButton = editorContainer.querySelector(
       '[data-action="toggle-preview"]'
@@ -140,10 +139,8 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
       }
     }
 
-    // Lógica de redimensionamento com o botão PIN
     if (instanceId === 'main') {
       const pinButton = document.getElementById(`preview-pin-btn-${instanceId}`)
-
       const setPinState = isResizable => {
         previewContainer.classList.toggle('resizable', isResizable)
         pinButton.classList.toggle('unpinned', isResizable)
@@ -151,12 +148,8 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
           ? 'Fixar tamanho do painel'
           : 'Liberar para redimensionar'
       }
-
-      // Carrega o estado inicial
       const initialResizableState = await getPreviewResizableState()
       setPinState(initialResizableState)
-
-      // Adiciona o listener de clique
       pinButton.addEventListener('click', async () => {
         const currentStateIsResizable =
           previewContainer.classList.contains('resizable')
@@ -165,7 +158,6 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
         await savePreviewResizableState(newState)
       })
     }
-
     updatePreview(textArea)
   }
 
@@ -179,7 +171,6 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
     includePreview
   )
 
-  // Atualiza a visibilidade dos botões com base nas configurações
   updateToolbarButtonVisibility(editorContainer)
 
   if (includeQuickSteps) {
@@ -191,10 +182,8 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
 
   if (instanceId === 'main') {
     addSgdActionButtons(masterContainer)
-  }
-
-  // Só executa o preenchimento automático para a instância principal do editor.
-  if (instanceId === 'main') {
+    setupSolutionObserver(textArea)
+    setupUserSelectionListener(textArea)
     performAutoFill(textArea)
   }
 }
@@ -264,7 +253,7 @@ async function createEditorToolbarHtml(
 
   const insertButtons = `
       <button type="button" data-action="link" title="Inserir Hiperlink (Ctrl+Alt+H)">🔗</button>
-      <button type="button" data-action="insert-image" title="Inserir Imagem (Ctrl+V)">🖼️</button>
+      <button type="button" data-action="insert-image" title="Inserir Imagem (Ctrl+V)">📸</button>
       <button type="button" data-action="username" title="Inserir Nome do Usuário (Alt+Shift+U)">🏷️</button>
       ${
         buttonsVisibility.separator4
@@ -393,7 +382,6 @@ async function performAutoFill(textArea) {
 
   const data = await getGreetingsAndClosings()
 
-  // Se nenhum padrão estiver selecionado, não faz nada.
   if (!data.defaultGreetingId && !data.defaultClosingId) {
     return
   }
@@ -401,7 +389,6 @@ async function performAutoFill(textArea) {
   let greetingContent = ''
   let closingContent = ''
 
-  // Busca o item de saudação padrão e resolve suas variáveis
   if (data.defaultGreetingId) {
     const defaultGreeting = data.greetings.find(
       g => g.id === data.defaultGreetingId
@@ -411,7 +398,6 @@ async function performAutoFill(textArea) {
     }
   }
 
-  // Busca o item de encerramento padrão e resolve suas variáveis
   if (data.defaultClosingId) {
     const defaultClosing = data.closings.find(
       c => c.id === data.defaultClosingId
@@ -893,16 +879,6 @@ function addSgdActionButtons(masterContainer) {
   }
 }
 
-// --- LÓGICA DE SUGESTÃO DE TRÂMITES ---
-/**
- * Verifica se existem sugestões pendentes e exibe uma notificação para a primeira.
- */
-
-// --- EXECUÇÃO PRINCIPAL ---
-
-/**
- * Função de inicialização principal que carrega o tema e inicia a observação.
- */
 /**
  * Verifica se existem lembretes pendentes que ainda não foram notificados
  * nesta sessão do navegador e exibe o toast para eles.
@@ -939,6 +915,350 @@ async function initializeExtension() {
   createAndInjectBellIcon()
   await updateNotificationStatus()
   createSpeechCommandHint()
+}
+
+/**
+ * Monitora o textarea principal e corrige automaticamente o conteúdo quando a função
+ * "Utilizar Solução" do SGD é usada, substituindo os textos padrão pelos do usuário.
+ * @param {HTMLTextAreaElement} textArea - O elemento textarea do editor principal.
+ */
+function setupSolutionObserver(textArea) {
+  let lastKnownValue = textArea.value
+
+  // Usamos um intervalo para verificar mudanças, pois a função do site
+  // altera o valor do campo sem disparar eventos de input padrão.
+  setInterval(async () => {
+    // Se o valor não mudou, não faz nada.
+    if (textArea.value === lastKnownValue) {
+      return
+    }
+
+    // O valor mudou, então atualizamos nossa referência.
+    lastKnownValue = textArea.value
+
+    // Busca os elementos ocultos do SGD que contêm os textos padrão.
+    const siteGreetingEl = document.getElementById('cadSscForm:textoInicial')
+    const siteClosingEl = document.getElementById('cadSscForm:textoFinal')
+
+    // Se os elementos de referência não existirem, não podemos continuar.
+    if (!siteGreetingEl || !siteClosingEl) {
+      return
+    }
+
+    const siteDefaultGreeting = siteGreetingEl.value
+    const siteDefaultClosing = siteClosingEl.value
+    const currentText = textArea.value
+
+    // Heurística de detecção: o texto atual começa e termina com os padrões do site?
+    // Usamos trim() para ignorar espaços em branco extras.
+    if (
+      currentText.trim().startsWith(siteDefaultGreeting.trim()) &&
+      currentText.trim().endsWith(siteDefaultClosing.trim())
+    ) {
+      console.log(
+        "SGD Extensão: Botão 'Utilizar Solução' detectado. Corrigindo o texto..."
+      )
+
+      // 1. Extrai o conteúdo da solução (o "miolo").
+      const greetingLength = siteDefaultGreeting.length
+      const closingLength = siteDefaultClosing.length
+      const solutionText = currentText
+        .substring(greetingLength, currentText.length - closingLength)
+        .trim()
+
+      // 2. Busca as configurações de saudação/encerramento do usuário na extensão.
+      const data = await getGreetingsAndClosings()
+      let userGreeting = ''
+      let userClosing = ''
+
+      if (data.defaultGreetingId) {
+        const defaultGreeting = data.greetings.find(
+          g => g.id === data.defaultGreetingId
+        )
+        if (defaultGreeting) {
+          userGreeting = await resolveVariablesInText(defaultGreeting.content)
+        }
+      }
+
+      if (data.defaultClosingId) {
+        const defaultClosing = data.closings.find(
+          c => c.id === data.defaultClosingId
+        )
+        if (defaultClosing) {
+          userClosing = await resolveVariablesInText(defaultClosing.content)
+        }
+      }
+
+      // Se o usuário não tem nenhum padrão configurado, não fazemos a substituição.
+      if (!userGreeting && !userClosing) {
+        return
+      }
+
+      // 3. Remonta o texto com os padrões do usuário.
+      // Usamos um array para montar o texto, o que lida bem com casos onde
+      // o usuário só tem uma saudação ou só um encerramento padrão.
+      const textParts = []
+      if (userGreeting) textParts.push(userGreeting)
+
+      textParts.push(solutionText)
+
+      if (userClosing) textParts.push(userClosing)
+
+      const newText = textParts.join('\n\n\n') // Junta as partes com 3 linhas de espaço
+
+      // 4. Atualiza o textarea e dispara um evento para o painel de visualização atualizar.
+      textArea.value = newText
+      textArea.dispatchEvent(new Event('input', { bubbles: true }))
+
+      showNotification(
+        'Saudação/Encerramento aplicados à solução!',
+        'info',
+        2500
+      )
+    }
+  }, 250) // A verificação ocorre 4 vezes por segundo, é rápido e leve.
+}
+
+/**
+ * Monitora a seleção de usuário do SGD e atualiza dinamicamente o nome
+ * nos locais onde a variável [usuario] foi inserida.
+ * @param {HTMLTextAreaElement} textArea - O elemento textarea do editor principal.
+ */
+function setupUserSelectionListener(textArea) {
+  const userSelect = document.getElementById('cadSscForm:usuario')
+  if (!userSelect) return
+
+  userSelect.addEventListener('change', () => {
+    // Pega o primeiro nome do usuário recém-selecionado.
+    const selectedOption = userSelect.options[userSelect.selectedIndex]
+    const fullName = selectedOption.textContent.trim()
+    const newUserName = fullName.split(' ')[0] || 'Usuário'
+    const capitalizedUserName =
+      newUserName.charAt(0).toUpperCase() + newUserName.slice(1).toLowerCase()
+
+    const currentText = textArea.value
+
+    // Usa uma expressão regular para encontrar todos os spans de usuário
+    // e substituir apenas o conteúdo dentro deles, preservando o span.
+    const regex = /(<span data-variable="usuario">)(.*?)(<\/span>)/g
+
+    if (currentText.match(regex)) {
+      const newText = currentText.replace(regex, `$1${capitalizedUserName}$3`)
+
+      if (currentText !== newText) {
+        textArea.value = newText
+        textArea.dispatchEvent(new Event('input', { bubbles: true }))
+        showNotification(
+          `Nome de usuário atualizado para ${capitalizedUserName}.`,
+          'info',
+          2000
+        )
+      }
+    }
+  })
+}
+
+/**
+ * Cria e exibe um popup para troca rápida de saudações ou encerramentos.
+ * @param {'greetings'|'closings'} type - O tipo de item a ser exibido.
+ * @param {HTMLElement} triggerElement - O ícone que acionou o popup.
+ */
+async function createQuickChangePopup(type, triggerElement) {
+  // Remove popups antigos para evitar duplicatas
+  document.querySelector('.quick-change-popup')?.remove()
+
+  const data = await getGreetingsAndClosings()
+  const items = data[type]
+
+  if (!items || items.length === 0) {
+    showNotification(
+      `Nenhum(a) ${
+        type === 'greetings' ? 'saudação' : 'encerramento'
+      } cadastrado(a).`,
+      'info'
+    )
+    return
+  }
+
+  const popup = document.createElement('div')
+  popup.className = 'quick-change-popup'
+  applyCurrentTheme(popup)
+
+  const buttonsHtml = items
+    .map(
+      item =>
+        `<button type="button" class="dropdown-option" data-id="${
+          item.id
+        }">${escapeHTML(item.title)}</button>`
+    )
+    .join('')
+  popup.innerHTML = buttonsHtml
+
+  document.body.appendChild(popup)
+
+  // Posiciona o popup ao lado do ícone
+  const triggerRect = triggerElement.getBoundingClientRect()
+  popup.style.top = `${triggerRect.top}px`
+  popup.style.left = `${triggerRect.right + 5}px`
+
+  // Listener para fechar ao clicar fora
+  const closePopup = e => {
+    if (!popup.contains(e.target)) {
+      popup.remove()
+      document.removeEventListener('click', closePopup, true)
+    }
+  }
+  setTimeout(() => document.addEventListener('click', closePopup, true), 100)
+
+  // Listener para seleção de item
+  popup.addEventListener('click', async e => {
+    const button = e.target.closest('.dropdown-option')
+    if (button) {
+      const itemId = button.dataset.id
+      const item = items.find(i => i.id === itemId)
+      if (item) {
+        const textArea = getTargetTextArea()
+        const resolvedContent = await resolveVariablesInText(item.content)
+        replaceTextPart(textArea, type, resolvedContent)
+      }
+      popup.remove()
+      document.removeEventListener('click', closePopup, true)
+    }
+  })
+}
+
+/**
+ * Substitui a parte de saudação ou encerramento do texto no editor.
+ * @param {HTMLTextAreaElement} textArea - O campo de texto.
+ * @param {'greetings'|'closings'} type - A parte a ser substituída.
+ * @param {string} newContent - O novo conteúdo a ser inserido.
+ */
+function replaceTextPart(textArea, type, newContent) {
+  const fullText = textArea.value
+  const separator = '\n\n\n' // Usa 3 quebras de linha como separador principal
+  let newText = ''
+
+  if (type === 'greetings') {
+    const firstSeparatorIndex = fullText.indexOf(separator)
+    if (firstSeparatorIndex !== -1) {
+      // Se há um separador, substitui tudo antes dele
+      const restOfText = fullText.substring(firstSeparatorIndex)
+      newText = newContent + restOfText
+    } else {
+      // Se não há separador, substitui todo o texto (considerado apenas saudação)
+      newText = newContent
+    }
+  } else if (type === 'closings') {
+    const lastSeparatorIndex = fullText.lastIndexOf(separator)
+    if (lastSeparatorIndex !== -1) {
+      // Se há um separador, substitui tudo depois dele
+      const startOfText = fullText.substring(0, lastSeparatorIndex)
+      newText = startOfText + separator + newContent
+    } else {
+      // Se não há separador, anexa o encerramento com um separador
+      newText = fullText + separator + newContent
+    }
+  }
+
+  if (newText) {
+    textArea.value = newText
+    textArea.dispatchEvent(new Event('input', { bubbles: true }))
+  }
+}
+
+/**
+ * Encontra um bloco de texto interativo no editor e o substitui por um novo conteúdo.
+ * @param {string} type - 'greeting' ou 'closing'.
+ * @param {string} oldId - O ID do item que será substituído.
+ * @param {string} newContentHtml - O novo conteúdo HTML (já processado e com o novo span).
+ */
+function replaceInteractiveText(type, oldId, newContentHtml) {
+  const textArea = getTargetTextArea()
+  if (!textArea) return
+
+  const currentText = textArea.value
+
+  // Expressão regular para encontrar o span específico pelo tipo e ID
+  const regex = new RegExp(
+    `<span data-interactive-type="${type}" data-item-id="${oldId}">([\\s\\S]*?)<\\/span>`,
+    'g'
+  )
+
+  if (currentText.match(regex)) {
+    textArea.value = currentText.replace(regex, newContentHtml)
+    textArea.dispatchEvent(new Event('input', { bubbles: true })) // Atualiza o preview
+    showNotification('Item atualizado com sucesso!', 'success', 2000)
+  } else {
+    console.warn('Bloco de texto interativo para substituição não encontrado.')
+  }
+}
+
+/**
+ * Cria e exibe um popup para troca de um item interativo (saudação/encerramento).
+ * @param {HTMLElement} targetSpan - O elemento span que foi clicado no preview.
+ */
+async function createInteractiveChangePopup(targetSpan) {
+  document.querySelector('.quick-change-popup')?.remove()
+
+  const type =
+    targetSpan.dataset.interactiveType === 'greeting' ? 'greetings' : 'closings'
+  const currentId = targetSpan.dataset.itemId
+
+  const data = await getGreetingsAndClosings()
+  const items = data[type]
+
+  if (!items || items.length <= 1) return // Não mostra o menu se só houver uma opção
+
+  const popup = document.createElement('div')
+  popup.className = 'quick-change-popup'
+  applyCurrentTheme(popup)
+
+  // Filtra o item atual da lista para não aparecer como opção de troca
+  const buttonsHtml = items
+    .filter(item => item.id !== currentId)
+    .map(
+      item =>
+        `<button type="button" class="dropdown-option" data-id="${
+          item.id
+        }">${escapeHTML(item.title)}</button>`
+    )
+    .join('')
+
+  if (!buttonsHtml) return // Não mostra menu se não houver outras opções
+
+  popup.innerHTML = buttonsHtml
+  document.body.appendChild(popup)
+
+  const targetRect = targetSpan.getBoundingClientRect()
+  popup.style.top = `${targetRect.bottom + 5}px`
+  popup.style.left = `${targetRect.left}px`
+
+  const closePopup = e => {
+    if (!popup.contains(e.target)) {
+      popup.remove()
+      document.removeEventListener('click', closePopup, true)
+    }
+  }
+  setTimeout(() => document.addEventListener('click', closePopup, true), 100)
+
+  popup.addEventListener('click', async e => {
+    const button = e.target.closest('.dropdown-option')
+    if (button) {
+      const newItemId = button.dataset.id
+      const newItem = items.find(i => i.id === newItemId)
+      if (newItem) {
+        // Gera o novo HTML com o span correto
+        const newContentHtml = await processAndWrapText(
+          newItem,
+          type.slice(0, -1)
+        )
+        // Chama a função de substituição
+        replaceInteractiveText(type.slice(0, -1), currentId, newContentHtml)
+      }
+      popup.remove()
+      document.removeEventListener('click', closePopup, true)
+    }
+  })
 }
 
 function createFloatingActionButtons() {

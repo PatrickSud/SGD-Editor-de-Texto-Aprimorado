@@ -13,7 +13,6 @@ async function resolveVariablesInText(text) {
 
   if (processedText.includes('[usuario]')) {
     const userName = await _getUserNameLogic()
-    // A flag 'g' (global) garante que todas as ocorrências sejam substituídas
     processedText = processedText.replace(/\[usuario\]/g, userName)
   }
 
@@ -32,7 +31,7 @@ async function resolveVariablesInText(text) {
 
 /**
  * Lógica para obter o nome do primeiro usuário.
- * @returns {Promise<string>} O primeiro nome do usuário.
+ * @returns {Promise<string>} O primeiro nome do usuário como texto puro.
  */
 async function _getUserNameLogic() {
   const getFirstName = element => {
@@ -79,35 +78,28 @@ function _getGreetingLogic() {
 }
 
 /**
- * Lógica para a finalização baseada no dia e hora, com as novas regras.
+ * Lógica para a finalização baseada no dia e hora.
  * @returns {string} A finalização apropriada.
  */
 function _getFarewellLogic() {
   const now = new Date()
-  const dayOfWeek = now.getDay() // 0 (Domingo) a 6 (Sábado)
+  const dayOfWeek = now.getDay()
   const hour = now.getHours()
 
-  // Domingo (0) ou Segunda-feira (1)
   if (dayOfWeek === 0 || dayOfWeek === 1) {
-    return 'ótima semana'
+    return 'Ótima semana'
   }
-
-  // Sexta-feira (5)
   if (dayOfWeek === 5) {
-    return 'Ótimo final de semana!'
+    return 'Ótimo final de semana'
   }
-
-  // Terça (2) a Quinta (4) - o Sábado (6) é ignorado e cairá no 'else' final
   if (dayOfWeek >= 2 && dayOfWeek <= 4) {
     if (hour >= 5 && hour < 12) {
-      return 'Ótimo dia!'
+      return 'Ótimo dia'
     } else if (hour >= 12 && hour < 18) {
-      return 'Ótima tarde!'
+      return 'Ótima tarde'
     } else {
-      return 'Ótima noite!'
+      return 'Ótima noite'
     }
   }
-
-  // Fallback para qualquer outro caso (como Sábado)
-  return 'Ótimo final de semana!'
+  return 'Ótimo final de semana'
 }

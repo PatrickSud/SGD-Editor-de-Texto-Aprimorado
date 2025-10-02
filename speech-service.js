@@ -32,7 +32,8 @@ const SpeechService = (() => {
 
     const newContent = finalTranscript + interimTranscript
     // Usa o estado inicial para a reconstrução da UI
-    targetTextArea.value = initialTextBeforeCursor + newContent + initialTextAfterCursor
+    targetTextArea.value =
+      initialTextBeforeCursor + newContent + initialTextAfterCursor
 
     targetTextArea.dataset.interimText = newContent
 
@@ -66,8 +67,24 @@ const SpeechService = (() => {
     if (!text) return text
 
     const commandMap = [
-      { triggers: ['ponto de exclamação', 'ponto de exclamacao', 'exclamação', 'exclamacao'], replacement: '!' },
-      { triggers: ['ponto de interrogação', 'ponto de interrogacao', 'interrogação', 'interrogacao'], replacement: '?' },
+      {
+        triggers: [
+          'ponto de exclamação',
+          'ponto de exclamacao',
+          'exclamação',
+          'exclamacao'
+        ],
+        replacement: '!'
+      },
+      {
+        triggers: [
+          'ponto de interrogação',
+          'ponto de interrogacao',
+          'interrogação',
+          'interrogacao'
+        ],
+        replacement: '?'
+      },
       { triggers: ['ponto e vírgula', 'ponto e virgula'], replacement: ';' },
       { triggers: ['dois pontos'], replacement: ':' },
       { triggers: ['ponto final', 'ponto.', 'ponto'], replacement: '.' },
@@ -90,8 +107,8 @@ const SpeechService = (() => {
 
     return processedText
   }
-  
-    /**
+
+  /**
    * Detecta se o texto contém comandos de ação sem executá-los.
    */
   function detectActionCommands(transcript) {
@@ -104,7 +121,9 @@ const SpeechService = (() => {
       { pattern: /\b(nova linha|quebra de linha|parágrafo)\b/ },
       { pattern: /\b(selecionar tudo)\b/ }
     ]
-    return actionCommandPatterns.some(({ pattern }) => pattern.test(lowerTranscript))
+    return actionCommandPatterns.some(({ pattern }) =>
+      pattern.test(lowerTranscript)
+    )
   }
 
   /**
@@ -124,14 +143,15 @@ const SpeechService = (() => {
         if (targetTextArea) {
           finalTranscript = ''
           transcriptHistory = []
-          
+
           // CORREÇÃO: Restaura o conteúdo usando o estado inicial salvo
-          targetTextArea.value = initialTextBeforeCursor + initialTextAfterCursor
-          
+          targetTextArea.value =
+            initialTextBeforeCursor + initialTextAfterCursor
+
           const cursorPosition = initialTextBeforeCursor.length
           targetTextArea.selectionStart = cursorPosition
           targetTextArea.selectionEnd = cursorPosition
-          
+
           targetTextArea.dispatchEvent(new Event('input', { bubbles: true }))
           showNotification('Texto ditado limpo.', 'info', 2000)
         }
@@ -175,7 +195,9 @@ const SpeechService = (() => {
       }
     }
 
-    const sortedCommands = Object.keys(actionCommands).sort((a, b) => b.length - a.length)
+    const sortedCommands = Object.keys(actionCommands).sort(
+      (a, b) => b.length - a.length
+    )
     for (const command of sortedCommands) {
       const regex = new RegExp(`\\b${command}\\b`)
       if (regex.test(lowerTranscript)) {
@@ -190,7 +212,9 @@ const SpeechService = (() => {
    * Atualiza a aparência do botão do microfone.
    */
   function updateMicButtonState(isActive) {
-    const micButtons = document.querySelectorAll('[data-action="speech-to-text"]')
+    const micButtons = document.querySelectorAll(
+      '[data-action="speech-to-text"]'
+    )
     micButtons.forEach(button => {
       if (isActive) {
         button.classList.add('active-mic')
@@ -208,7 +232,9 @@ const SpeechService = (() => {
   function start(textArea) {
     if (isListening) return
     if (!recognition) {
-      console.error('Editor SGD: Serviço de reconhecimento de voz não inicializado.')
+      console.error(
+        'Editor SGD: Serviço de reconhecimento de voz não inicializado.'
+      )
       return
     }
 
@@ -228,7 +254,11 @@ const SpeechService = (() => {
       isListening = true
       updateMicButtonState(true)
       document.getElementById('speech-command-hint')?.classList.add('visible')
-      showNotification('Microfone ativado! Verifique algumas dicas em Comandos de Voz!', 'success', 4000)
+      showNotification(
+        'Microfone ativado! Verifique algumas dicas em Comandos de Voz!',
+        'success',
+        4000
+      )
     } catch (e) {
       console.error('Editor SGD: Erro ao iniciar o reconhecimento de voz.', e)
       isListening = false
@@ -255,7 +285,8 @@ const SpeechService = (() => {
    */
   function initialize() {
     if (!SpeechRecognition) {
-      console.error('Editor SGD: A API de Reconhecimento de Voz não é suportada neste navegador.')
+      // A API de Reconhecimento de Voz não é suportada neste navegador
+      // Isso é normal para alguns navegadores/contextos
       return
     }
 
@@ -275,19 +306,25 @@ const SpeechService = (() => {
           }
           const processedText = processVoiceCommands(transcript)
           const fullPreviousText = initialTextBeforeCursor + finalTranscript
-          let textToAppend = applyAutoCapitalization(processedText, fullPreviousText)
-          if (fullPreviousText.length > 0 && !/[\s\n]$/.test(fullPreviousText)) {
+          let textToAppend = applyAutoCapitalization(
+            processedText,
+            fullPreviousText
+          )
+          if (
+            fullPreviousText.length > 0 &&
+            !/[\s\n]$/.test(fullPreviousText)
+          ) {
             textToAppend = ' ' + textToAppend
           }
           finalTranscript += textToAppend
           transcriptHistory.push(finalTranscript)
         } else {
-            const fullInterimText = interimTranscript + transcript;
-            if (detectActionCommands(fullInterimText)) {
-                interimTranscript = ''; 
-            } else {
-                interimTranscript += transcript;
-            }
+          const fullInterimText = interimTranscript + transcript
+          if (detectActionCommands(fullInterimText)) {
+            interimTranscript = ''
+          } else {
+            interimTranscript += transcript
+          }
         }
       }
       if (targetTextArea) {
@@ -300,7 +337,8 @@ const SpeechService = (() => {
         recognition.start()
       } else {
         if (targetTextArea) {
-          targetTextArea.value = initialTextBeforeCursor + finalTranscript + initialTextAfterCursor
+          targetTextArea.value =
+            initialTextBeforeCursor + finalTranscript + initialTextAfterCursor
           delete targetTextArea.dataset.interimText
           finalTranscript = ''
           transcriptHistory = []
@@ -318,7 +356,9 @@ const SpeechService = (() => {
       } else if (event.error === 'not-allowed') {
         showNotification('Permissão para usar o microfone foi negada.', 'error')
       }
-      document.getElementById('speech-command-hint')?.classList.remove('visible')
+      document
+        .getElementById('speech-command-hint')
+        ?.classList.remove('visible')
       stop()
     }
   }

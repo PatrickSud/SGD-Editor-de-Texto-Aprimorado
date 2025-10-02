@@ -979,7 +979,7 @@ function createEmojiPicker(pickerElement, onEmojiSelect) {
                     type="button" 
                     class="emoji-swatch" 
                     title="${emoji.char}" 
-                    data-code="<nobr style='font-size:17px;'>${safeEmojiCode}</nobr>"
+                    data-code="<nobr style='font-size:19px;'>${safeEmojiCode}</nobr>"
                 >${emoji.char}</button>`
   }).join('')
 

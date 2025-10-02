@@ -199,7 +199,8 @@ const PICKER_EMOJIS = [
   { char: '🔒', code: '&#128274;' },
   { char: '🔥', code: '&#128293;' },
   { char: '🧡', code: '&#129505;' },
-  { char: '📌', code: '&#128204;' }
+  { char: '📌', code: '&#128204;' },
+  { char: '🌟', code: '&#127775;' }
 ]
 
 const PROTECTED_SHORTCUTS = [
