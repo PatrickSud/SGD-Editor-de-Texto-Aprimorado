@@ -4600,3 +4600,47 @@ button[data-action='speech-to-text']:disabled:hover {
   color: var(--text-color);
   border-color: var(--action-green);
 }
+
+/* --- Estilo para o Aviso de Configuração SGSC --- */
+.sgsc-warning-banner {
+  padding: 10px 15px;
+  background-color: var(--background-secondary);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 12px; /* Espaçamento entre os elementos */
+  font-size: 13px;
+  color: var(--text-color);
+}
+
+.sgsc-warning-banner p {
+  margin: 0;
+  line-height: 1.4;
+  flex-grow: 1; /* Faz o texto ocupar o espaço disponível */
+}
+
+.sgsc-warning-banner p strong {
+  color: var(--action-yellow);
+}
+
+.sgsc-warning-banner .dismiss-warning-btn {
+  background-color: var(--background-hover);
+  border: 1px solid var(--border-color);
+  color: var(--text-color-muted);
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.sgsc-warning-banner .dismiss-warning-btn:hover {
+  background-color: var(--background-secondary);
+  color: var(--text-color-muted);
+  border-color: var(--text-color-muted);
+}
+
+.sgsc-warning-banner .warning-text {
+  color: var(--text-color-muted) !important;
+}

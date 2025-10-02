@@ -13,40 +13,48 @@ function focusEditor(textArea) {
 }
 
 /**
- * Implementação para inserir texto/HTML no cursor do textarea
+ * Implementação para inserir texto/HTML no cursor do textarea.
+ * @param {HTMLTextAreaElement} textArea - O elemento textarea.
+ * @param {string} text - O texto a ser inserido.
+ * @param {object} userOptions - Opções como { prefixNewLine: boolean, preventScroll: boolean }.
  */
-function insertAtCursor(textArea, text, options = { prefixNewLine: false }) {
-  if (!textArea) return
+function insertAtCursor(textArea, text, userOptions = {}) {
+  // Define as opções padrão e as mescla com as que foram passadas
+  const options = {
+    prefixNewLine: false,
+    preventScroll: false, // Nova opção, desabilitada por padrão
+    ...userOptions
+  };
 
+  if (!textArea) return;
+
+  // --- ALTERAÇÃO PRINCIPAL AQUI ---
+  // Ao focar, usa a opção 'preventScroll'
   if (document.activeElement !== textArea) {
-    textArea.focus()
+    textArea.focus({ preventScroll: options.preventScroll });
   }
 
-  const { selectionStart, selectionEnd, value, scrollTop } = textArea
+  const { selectionStart, selectionEnd, value, scrollTop } = textArea;
 
-  let textToInsert = text
+  let textToInsert = text;
   if (options.prefixNewLine) {
-    // Adiciona \n se não estiver no início e o caractere anterior não for \n
     if (selectionStart > 0 && value[selectionStart - 1] !== '\n') {
-      textToInsert = '\n' + textToInsert
+      textToInsert = '\n' + textToInsert;
     }
   }
 
-  // Converte <br> para \n para consistência no textarea
   textToInsert = textToInsert.replace(/<br\s*\/?>/gi, '\n')
 
   textArea.value =
     value.substring(0, selectionStart) +
     textToInsert +
-    value.substring(selectionEnd)
+    value.substring(selectionEnd);
 
-  // Reposiciona o cursor
-  const newCursorPosition = selectionStart + textToInsert.length
-  textArea.setSelectionRange(newCursorPosition, newCursorPosition)
-  textArea.scrollTop = scrollTop
+  const newCursorPosition = selectionStart + textToInsert.length;
+  textArea.setSelectionRange(newCursorPosition, newCursorPosition);
+  textArea.scrollTop = scrollTop;
 
-  // Dispara evento input para que o site hospedeiro e o painel de visualização detectem a mudança.
-  textArea.dispatchEvent(new Event('input', { bubbles: true }))
+  textArea.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
 /**

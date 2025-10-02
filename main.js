@@ -116,6 +116,11 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
     return
   }
 
+  // Adiciona o aviso de configuração do SGSC apenas na instância principal
+  if (instanceId === 'main') {
+    createAndAppendSgscWarning(masterContainer)
+  }
+
   if (includePreview) {
     const previewContainer = createPreviewContainer(textArea, instanceId)
     applyCurrentTheme(previewContainer)
@@ -385,6 +390,36 @@ async function createEditorToolbarHtml(
 }
 
 /**
+ * Cria e anexa um banner de aviso sobre as configurações do SGSC, se ainda não foi dispensado.
+ * @param {HTMLElement} masterContainer - O contêiner principal do editor.
+ */
+function createAndAppendSgscWarning(masterContainer) {
+  const warningDismissedKey = 'sgscWarningDismissed_v1' // Chave versionada
+
+  // Não mostrar se já foi dispensado
+  if (localStorage.getItem(warningDismissedKey) === 'true') {
+    return
+  }
+
+  const warningBanner = document.createElement('div')
+  warningBanner.className = 'sgsc-warning-banner'
+  warningBanner.innerHTML = `
+    <p>
+      <strong>Atenção:</strong><span class="warning-text"> Para o correto funcionamento das 🔄 Saudações/Encerramentos, apague as configurações padrões do SGD em </span><strong>SGSC > Gerenciar > Configuração de saudação e conclusão de trâmite</strong>.
+    </p>
+    <button type="button" class="dismiss-warning-btn">Dispensar</button>
+  `
+
+  masterContainer.appendChild(warningBanner)
+
+  const dismissButton = warningBanner.querySelector('.dismiss-warning-btn')
+  dismissButton.addEventListener('click', () => {
+    warningBanner.style.display = 'none'
+    localStorage.setItem(warningDismissedKey, 'true')
+  })
+}
+
+/**
  * Executa o preenchimento automático usando a saudação e/ou encerramento padrão selecionado.
  * @param {HTMLTextAreaElement} textArea - O elemento textarea do editor.
  */
@@ -433,11 +468,15 @@ async function performAutoFill(textArea) {
   }
 
   if (finalContent) {
-    insertAtCursor(textArea, finalContent)
+    // Passamos a nova opção para a função de inserção
+    insertAtCursor(textArea, finalContent, { preventScroll: true })
+
     if (cursorPosition !== -1) {
-      textArea.focus()
+      // Também aplicamos a opção 'preventScroll' ao focar para posicionar o cursor
+      textArea.focus({ preventScroll: true })
       textArea.setSelectionRange(cursorPosition, cursorPosition)
     }
+
     textArea.dispatchEvent(new Event('input', { bubbles: true }))
   }
 }
