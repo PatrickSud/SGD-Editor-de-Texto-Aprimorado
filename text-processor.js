@@ -13,7 +13,8 @@ async function resolveVariablesInText(text) {
 
   if (processedText.includes('[usuario]')) {
     const userName = await _getUserNameLogic()
-    processedText = processedText.replace(/\[usuario\]/g, userName)
+    const userHtml = `<span data-variable="usuario">${userName}</span>`
+    processedText = processedText.replace(/\[usuario\]/g, userHtml)
   }
 
   if (processedText.includes('[saudacao]')) {

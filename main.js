@@ -171,6 +171,8 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
     includePreview
   )
 
+  loadQuickChangeOptions(editorContainer) // <-- ADICIONE ESTA LINHA
+
   updateToolbarButtonVisibility(editorContainer)
 
   if (includeQuickSteps) {
@@ -273,6 +275,15 @@ async function createEditorToolbarHtml(
       }
     `
 
+  const quickChangeButton = `
+    <div class="dropdown">
+      <button type="button" data-action="quick-change" title="Trocar Saudação/Encerramento">🔄</button>
+      <div class="dropdown-content quick-change-container">
+        <span class="loading-placeholder">Carregando...</span>
+      </div>
+    </div>
+  `
+
   const quickStepsHtml = includeQuickSteps
     ? `<div class="dropdown">
         <button type="button" data-action="quick-steps" title="Trâmites Rápidos">⚡</button>
@@ -354,6 +365,8 @@ async function createEditorToolbarHtml(
       ${colorButtons}
       
       <button type="button" data-action="manage-steps" title="Configurações">⚙️</button>
+      ${quickChangeButton}
+      
       ${quickStepsHtml}
       ${remindersHtml}
       ${notesButtonHtml}
@@ -425,6 +438,107 @@ async function performAutoFill(textArea) {
       textArea.focus()
       textArea.setSelectionRange(cursorPosition, cursorPosition)
     }
+    textArea.dispatchEvent(new Event('input', { bubbles: true }))
+  }
+}
+
+/**
+ * Carrega as opções de saudação e encerramento, incluindo os botões de "Adicionar Novo".
+ * @param {HTMLElement} editorContainer - O contêiner da barra de ferramentas.
+ */
+async function loadQuickChangeOptions(editorContainer) {
+  const container = editorContainer.querySelector('.quick-change-container')
+  if (!container) return
+
+  const data = await getGreetingsAndClosings()
+  let html = ''
+
+  // Função auxiliar para criar a lista de itens
+  const createItemsHtml = (items, type) => {
+    const defaultId =
+      type === 'greetings' ? data.defaultGreetingId : data.defaultClosingId
+    let itemsHtml = items
+      .map(item => {
+        const isActive = item.id === defaultId
+        return `
+        <div class="quick-change-item" data-id="${item.id}" data-type="${type}">
+          <button type="button" class="set-default-btn ${
+            isActive ? 'active' : ''
+          }" title="${
+          isActive ? 'Padrão atual' : 'Definir como padrão'
+        }">⭐</button>
+          <span class="quick-change-title" title="Inserir no texto">${escapeHTML(
+            item.title
+          )}</span>
+          <div class="quick-change-actions">
+            <button type="button" class="edit-item-btn" title="Editar">✏️</button>
+            <button type="button" class="delete-item-btn" title="Excluir">🗑️</button>
+          </div>
+        </div>
+      `
+      })
+      .join('')
+    // Adiciona o botão "Adicionar Novo" ao final da lista de itens
+    itemsHtml += `<button type="button" class="add-new-item-btn" data-type="${type}">+ Adicionar</button>`
+    return itemsHtml
+  }
+
+  if (data.greetings && data.greetings.length > 0) {
+    html += '<h5>Saudações</h5>'
+    html += createItemsHtml(data.greetings, 'greetings')
+  } else {
+    // Se não houver saudações, mostra apenas o botão de adicionar
+    html += '<h5>Saudações</h5>'
+    html += `<button type="button" class="add-new-item-btn" data-type="greetings">+ Adicionar Saudação</button>`
+  }
+
+  if (data.closings && data.closings.length > 0) {
+    html += '<h5>Encerramentos</h5>'
+    html += createItemsHtml(data.closings, 'closings')
+  } else {
+    // Se não houver encerramentos, mostra apenas o botão de adicionar
+    html += '<h5>Encerramentos</h5>'
+    html += `<button type="button" class="add-new-item-btn" data-type="closings">+ Adicionar Encerramento</button>`
+  }
+
+  container.innerHTML = html
+}
+
+/**
+ * Substitui a parte de saudação ou encerramento do texto no editor.
+ * @param {HTMLTextAreaElement} textArea - O campo de texto.
+ * @param {'greetings'|'closings'} type - A parte a ser substituída.
+ * @param {string} newContent - O novo conteúdo a ser inserido.
+ */
+function replaceTextPart(textArea, type, newContent) {
+  const fullText = textArea.value
+  const separator = '\n\n\n' // Define o "bloco de espaço" como separador
+  let newText = ''
+
+  if (type === 'greetings') {
+    const firstSeparatorIndex = fullText.indexOf(separator)
+    if (firstSeparatorIndex !== -1) {
+      // Se há um separador, substitui tudo ANTES dele
+      const restOfText = fullText.substring(firstSeparatorIndex)
+      newText = newContent + restOfText
+    } else {
+      // Se não há separador, substitui o texto inteiro (considerado apenas uma saudação)
+      newText = newContent
+    }
+  } else if (type === 'closings') {
+    const lastSeparatorIndex = fullText.lastIndexOf(separator)
+    if (lastSeparatorIndex !== -1) {
+      // Se há um separador, substitui tudo DEPOIS dele
+      const startOfText = fullText.substring(0, lastSeparatorIndex)
+      newText = startOfText + separator + newContent
+    } else {
+      // Se não há separador, anexa o encerramento com um separador no meio
+      newText = fullText + separator + newContent
+    }
+  }
+
+  if (newText && newText !== fullText) {
+    textArea.value = newText
     textArea.dispatchEvent(new Event('input', { bubbles: true }))
   }
 }
@@ -569,6 +683,98 @@ function setupEditorInstanceListeners(
     if (themeOption && themeOption.dataset.themeName) {
       setTheme(themeOption.dataset.themeName)
       return
+    }
+
+    const quickChangeContainer = e.target.closest('.quick-change-container')
+    if (quickChangeContainer) {
+      // Ação: Adicionar Novo Item (clique no botão + Adicionar)
+      if (e.target.closest('.add-new-item-btn')) {
+        const button = e.target.closest('.add-new-item-btn')
+        const type = button.dataset.type // 'greetings' ou 'closings'
+
+        // Abre o modal de criação, passando o tipo e um callback para recarregar o menu
+        openGreetingClosingModal(null, type, () => {
+          loadQuickChangeOptions(editorContainer)
+          // Também recarrega a lista no modal de configurações, se estiver aberto
+          const mgmtModal = document.getElementById('management-modal')
+          if (mgmtModal) renderGreetingsClosingsManagement(mgmtModal)
+        })
+        // Deixa o menu fechar naturalmente
+        return
+      }
+
+      const itemElement = e.target.closest('.quick-change-item')
+      if (!itemElement) return
+
+      const itemId = itemElement.dataset.id
+      const type = itemElement.dataset.type
+
+      // Ação: Definir como Padrão (clique na estrela)
+      if (e.target.closest('.set-default-btn')) {
+        e.stopPropagation() // Impede o menu de fechar
+        const data = await getGreetingsAndClosings()
+        const property =
+          type === 'greetings' ? 'defaultGreetingId' : 'defaultClosingId'
+        data[property] = data[property] === itemId ? null : itemId
+        await saveGreetingsAndClosings(data)
+        showNotification('Padrão atualizado!', 'success', 2000)
+        loadQuickChangeOptions(editorContainer) // Recarrega o menu para refletir a mudança
+        return
+      }
+
+      // Ação: Editar (clique no lápis)
+      if (e.target.closest('.edit-item-btn')) {
+        const data = await getGreetingsAndClosings()
+        const item = data[type]?.find(i => i.id === itemId)
+        if (item) {
+          openGreetingClosingModal(item, type, () => {
+            loadQuickChangeOptions(editorContainer)
+            // Também recarrega a lista no modal de configurações, se estiver aberto
+            const mgmtModal = document.getElementById('management-modal')
+            if (mgmtModal) renderGreetingsClosingsManagement(mgmtModal)
+          })
+        }
+        // Deixa o menu fechar
+        return
+      }
+
+      // Ação: Excluir (clique na lixeira)
+      if (e.target.closest('.delete-item-btn')) {
+        e.stopPropagation() // Impede o menu de fechar durante a confirmação
+        showConfirmDialog(
+          `Excluir "${
+            itemElement.querySelector('.quick-change-title').textContent
+          }"?`,
+          async () => {
+            const data = await getGreetingsAndClosings()
+            data[type] = data[type].filter(i => i.id !== itemId)
+            if (
+              (type === 'greetings' && data.defaultGreetingId === itemId) ||
+              (type === 'closings' && data.defaultClosingId === itemId)
+            ) {
+              data[
+                type === 'greetings' ? 'defaultGreetingId' : 'defaultClosingId'
+              ] = null
+            }
+            await saveGreetingsAndClosings(data)
+            showNotification('Item excluído.', 'success')
+            loadQuickChangeOptions(editorContainer)
+          }
+        )
+        return
+      }
+
+      // Ação Padrão: Inserir no Texto (clique no título)
+      if (e.target.closest('.quick-change-title')) {
+        const data = await getGreetingsAndClosings()
+        const item = data[type]?.find(i => i.id === itemId)
+        if (item) {
+          const resolvedContent = await resolveVariablesInText(item.content)
+          replaceTextPart(textArea, type, resolvedContent)
+        }
+        // Deixa o menu fechar
+        return
+      }
     }
 
     if (e.target.closest('.dropdown')) {
@@ -1125,45 +1331,6 @@ async function createQuickChangePopup(type, triggerElement) {
       document.removeEventListener('click', closePopup, true)
     }
   })
-}
-
-/**
- * Substitui a parte de saudação ou encerramento do texto no editor.
- * @param {HTMLTextAreaElement} textArea - O campo de texto.
- * @param {'greetings'|'closings'} type - A parte a ser substituída.
- * @param {string} newContent - O novo conteúdo a ser inserido.
- */
-function replaceTextPart(textArea, type, newContent) {
-  const fullText = textArea.value
-  const separator = '\n\n\n' // Usa 3 quebras de linha como separador principal
-  let newText = ''
-
-  if (type === 'greetings') {
-    const firstSeparatorIndex = fullText.indexOf(separator)
-    if (firstSeparatorIndex !== -1) {
-      // Se há um separador, substitui tudo antes dele
-      const restOfText = fullText.substring(firstSeparatorIndex)
-      newText = newContent + restOfText
-    } else {
-      // Se não há separador, substitui todo o texto (considerado apenas saudação)
-      newText = newContent
-    }
-  } else if (type === 'closings') {
-    const lastSeparatorIndex = fullText.lastIndexOf(separator)
-    if (lastSeparatorIndex !== -1) {
-      // Se há um separador, substitui tudo depois dele
-      const startOfText = fullText.substring(0, lastSeparatorIndex)
-      newText = startOfText + separator + newContent
-    } else {
-      // Se não há separador, anexa o encerramento com um separador
-      newText = fullText + separator + newContent
-    }
-  }
-
-  if (newText) {
-    textArea.value = newText
-    textArea.dispatchEvent(new Event('input', { bubbles: true }))
-  }
 }
 
 /**
