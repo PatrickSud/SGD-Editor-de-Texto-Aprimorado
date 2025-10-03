@@ -60,7 +60,7 @@ async function _getUserNameLogic() {
   if (firstName) {
     return firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase()
   }
-  return 'Usuário' // Fallback
+  return '' // Fallback
 }
 
 /**

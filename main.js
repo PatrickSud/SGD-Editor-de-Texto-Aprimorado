@@ -258,6 +258,8 @@ async function createEditorToolbarHtml(
       }
     `
 
+  const canInsertUsername = isUserNameInsertionAvailable();
+
   const insertButtons = `
       <button type="button" data-action="link" title="Inserir Hiperlink (Ctrl+Alt+H)">🔗</button>
       ${
@@ -265,7 +267,7 @@ async function createEditorToolbarHtml(
           ? '<button type="button" data-action="insert-image" title="Inserir Imagem (Ctrl+V)">📸</button>'
           : ''
       }
-      <button type="button" data-action="username" title="Inserir Nome do Usuário (Alt+Shift+U)">🏷️</button>
+      ${buttonsVisibility.username && canInsertUsername ? '<button type="button" data-action="username" title="Inserir Nome do Usuário (Alt+Shift+U)">🏷️</button>' : ''}
       ${
         buttonsVisibility.separator4
           ? '<div class="toolbar-separator" data-id="separator4"></div>'

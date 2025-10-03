@@ -11,6 +11,15 @@ function getEditorContent(textArea) {
 }
 
 /**
+ * Verifica se a funcionalidade de inserção de nome de usuário está disponível na página.
+ * @returns {boolean} Retorna true se o seletor de usuário existe.
+ */
+function isUserNameInsertionAvailable() {
+  const userSelectElement = document.getElementById(USER_NAME_SELECT_ID)
+  return !!userSelectElement
+}
+
+/**
  * Calcula o próximo número principal (1., 2., 3.) baseado no conteúdo existente.
  * Analisa o HTML para encontrar a maior numeração usada até o momento.
  */
