@@ -557,7 +557,7 @@ async function loadQuickChangeOptions(editorContainer) {
  */
 function replaceTextPart(textArea, type, newContent) {
   const fullText = textArea.value
-  const separator = '\n\n\n' // Define o "bloco de espaço" como separador
+  const separator = '\n\n' // Define o "bloco de espaço" como separador
   let newText = ''
 
   if (type === 'greetings') {
@@ -567,8 +567,8 @@ function replaceTextPart(textArea, type, newContent) {
       const restOfText = fullText.substring(firstSeparatorIndex)
       newText = newContent + restOfText
     } else {
-      // Se não há separador, substitui o texto inteiro (considerado apenas uma saudação)
-      newText = newContent
+      // Se não há separador, anexa o conteúdo existente depois da nova saudação
+      newText = newContent + separator + fullText
     }
   } else if (type === 'closings') {
     const lastSeparatorIndex = fullText.lastIndexOf(separator)
