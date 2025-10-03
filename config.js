@@ -21,6 +21,7 @@ const DEFAULT_SETTINGS = {
   fabPosition: 'bottom-left',
   toolbarButtons: {
     link: true,
+    insertImage: true,
     emoji: true,
     username: true,
     color: true,
@@ -29,6 +30,7 @@ const DEFAULT_SETTINGS = {
     bullet: true,
     reminders: true,
     quickSteps: true,
+    quickChange: true,
     notes: true,
     fab: true,
     goToTop: true,

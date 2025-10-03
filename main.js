@@ -260,7 +260,11 @@ async function createEditorToolbarHtml(
 
   const insertButtons = `
       <button type="button" data-action="link" title="Inserir Hiperlink (Ctrl+Alt+H)">🔗</button>
-      <button type="button" data-action="insert-image" title="Inserir Imagem (Ctrl+V)">📸</button>
+      ${
+        buttonsVisibility.insertImage
+          ? '<button type="button" data-action="insert-image" title="Inserir Imagem (Ctrl+V)">📸</button>'
+          : ''
+      }
       <button type="button" data-action="username" title="Inserir Nome do Usuário (Alt+Shift+U)">🏷️</button>
       ${
         buttonsVisibility.separator4
@@ -280,7 +284,8 @@ async function createEditorToolbarHtml(
       }
     `
 
-  const quickChangeButton = `
+  const quickChangeButton = buttonsVisibility.quickChange
+    ? `
     <div class="dropdown">
       <button type="button" data-action="quick-change" title="Trocar Saudação/Encerramento">🔄</button>
       <div class="dropdown-content quick-change-container">
@@ -288,6 +293,7 @@ async function createEditorToolbarHtml(
       </div>
     </div>
   `
+    : ''
 
   const quickStepsHtml = includeQuickSteps
     ? `<div class="dropdown">
@@ -405,7 +411,7 @@ function createAndAppendSgscWarning(masterContainer) {
   warningBanner.className = 'sgsc-warning-banner'
   warningBanner.innerHTML = `
     <p>
-      <strong>Atenção:</strong><span class="warning-text"> Para o correto funcionamento das 🔄 Saudações/Encerramentos, apague as configurações padrões do SGD em </span><strong>SGSC > Gerenciar > Configuração de saudação e conclusão de trâmite</strong>.
+      <strong>Atenção:</strong><span class="warning-text"> Para o correto funcionamento das 🔄 Saudações/Encerramentos, apague as configurações do SGD em </span><strong>SGSC > Gerenciar > Configuração de saudação e conclusão de trâmite</strong>.
     </p>
     <button type="button" class="dismiss-warning-btn">Dispensar</button>
   `
