@@ -214,33 +214,40 @@ async function getSettings() {
 
     const settings = result[SETTINGS_STORAGE_KEY] || {}
 
-    // Aplica os padrões definidos em config.js se a chave não existir
-    Object.keys(DEFAULT_SETTINGS).forEach(key => {
-      if (settings[key] === undefined) {
-        settings[key] = DEFAULT_SETTINGS[key]
+    // Mescla as configurações de forma aninhada para garantir que novas chaves sejam adicionadas
+    const mergedSettings = {
+      ...DEFAULT_SETTINGS,
+      ...settings,
+      toolbarButtons: {
+        ...DEFAULT_SETTINGS.toolbarButtons,
+        ...(settings.toolbarButtons || {})
+      },
+      uiSettings: {
+        ...DEFAULT_SETTINGS.uiSettings,
+        ...(settings.uiSettings || {})
       }
-    })
+    }
 
     // Migração suave de chaves antigas para o novo objeto de configurações
-    if (result.editorTheme && !settings.editorTheme) {
-      settings.editorTheme = result.editorTheme
+    if (result.editorTheme && !mergedSettings.editorTheme) {
+      mergedSettings.editorTheme = result.editorTheme
     }
     if (
       result.previewVisible !== undefined &&
-      settings.previewVisible === undefined
+      mergedSettings.previewVisible === undefined
     ) {
-      settings.previewVisible = result.previewVisible
+      mergedSettings.previewVisible = result.previewVisible
     }
 
     // Validação extra para o período de retenção
     if (
-      settings.reminderRetentionDays < 1 ||
-      settings.reminderRetentionDays > 30
+      mergedSettings.reminderRetentionDays < 1 ||
+      mergedSettings.reminderRetentionDays > 30
     ) {
-      settings.reminderRetentionDays = DEFAULT_SETTINGS.reminderRetentionDays
+      mergedSettings.reminderRetentionDays = DEFAULT_SETTINGS.reminderRetentionDays
     }
 
-    return settings
+    return mergedSettings
   } catch (error) {
     console.error('Editor SGD: Erro ao carregar configurações.', error)
     return { ...DEFAULT_SETTINGS } // Retorna padrões em caso de erro

@@ -1697,6 +1697,7 @@ async function updateToolbarButtonVisibility(editorContainer) {
   // Mapeamento completo de chaves para seletores de botões
   const buttonSelectors = {
     link: '[data-action="link"]',
+    insertImage: '[data-action="insert-image"]',
     emoji: '[data-action="emoji"]',
     username: '[data-action="username"]',
     color: '[data-action="color"]',
@@ -1706,6 +1707,7 @@ async function updateToolbarButtonVisibility(editorContainer) {
     speechToText: '[data-action="speech-to-text"]',
     reminders: '[title="Lembretes"]',
     quickSteps: '[data-action="quick-steps"]',
+    quickChange: '[data-action="quick-change"]',
     notes: '[data-action="toggle-notes"]',
     separator1: '[data-id="separator1"]',
     separator2: '[data-id="separator2"]',
