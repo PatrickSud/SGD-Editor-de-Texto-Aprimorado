@@ -14,6 +14,13 @@ const MAX_RESPONSE_SAMPLES = 30
 const FAB_POSITION_KEY = 'fabPositionData'
 const GREETINGS_CLOSINGS_KEY = 'greetingsAndClosingsData'
 
+/**
+ * Separadores exclusivos para delimitar saudação e encerramento no texto.
+ * Estas strings únicas evitam conflitos com quebras de linha normais no texto.
+ */
+const GREETING_SEPARATOR = '<!--Saudação-->\n\n'
+const CLOSING_SEPARATOR = '\n\n<!--Encerramento-->'
+
 const DEFAULT_SETTINGS = {
   reminderRetentionDays: 7,
   geminiApiKey: '',

@@ -465,12 +465,13 @@ async function performAutoFill(textArea) {
   let cursorPosition = -1
 
   if (greetingContent && closingContent) {
-    finalContent = `${greetingContent}\n\n\n\n${closingContent}`
-    cursorPosition = greetingContent.length + 2
+    // Usa ambos os separadores para delimitar claramente cada seção
+    finalContent = `${greetingContent}${GREETING_SEPARATOR}${CLOSING_SEPARATOR}${closingContent}`
+    cursorPosition = greetingContent.length + GREETING_SEPARATOR.length
   } else if (greetingContent) {
-    finalContent = greetingContent
+    finalContent = greetingContent + GREETING_SEPARATOR
   } else if (closingContent) {
-    finalContent = closingContent
+    finalContent = CLOSING_SEPARATOR + closingContent
   }
 
   if (finalContent) {
@@ -557,28 +558,33 @@ async function loadQuickChangeOptions(editorContainer) {
  */
 function replaceTextPart(textArea, type, newContent) {
   const fullText = textArea.value
-  const separator = '\n\n' // Define o "bloco de espaço" como separador
   let newText = ''
 
   if (type === 'greetings') {
-    const firstSeparatorIndex = fullText.indexOf(separator)
+    // Usa o separador específico de saudação
+    const greetingSep = GREETING_SEPARATOR
+    const firstSeparatorIndex = fullText.indexOf(greetingSep)
+    
     if (firstSeparatorIndex !== -1) {
-      // Se há um separador, substitui tudo ANTES dele
+      // Se há um separador de saudação, substitui tudo ANTES dele
       const restOfText = fullText.substring(firstSeparatorIndex)
       newText = newContent + restOfText
     } else {
       // Se não há separador, anexa o conteúdo existente depois da nova saudação
-      newText = newContent + separator + fullText
+      newText = newContent + greetingSep + fullText
     }
   } else if (type === 'closings') {
-    const lastSeparatorIndex = fullText.lastIndexOf(separator)
+    // Usa o separador específico de encerramento
+    const closingSep = CLOSING_SEPARATOR
+    const lastSeparatorIndex = fullText.lastIndexOf(closingSep)
+    
     if (lastSeparatorIndex !== -1) {
-      // Se há um separador, substitui tudo DEPOIS dele
+      // Se há um separador de encerramento, substitui tudo DEPOIS dele
       const startOfText = fullText.substring(0, lastSeparatorIndex)
-      newText = startOfText + separator + newContent
+      newText = startOfText + closingSep + newContent
     } else {
       // Se não há separador, anexa o encerramento com um separador no meio
-      newText = fullText + separator + newContent
+      newText = fullText + closingSep + newContent
     }
   }
 
@@ -1246,16 +1252,18 @@ function setupSolutionObserver(textArea) {
       }
 
       // 3. Remonta o texto com os padrões do usuário.
-      // Usamos um array para montar o texto, o que lida bem com casos onde
-      // o usuário só tem uma saudação ou só um encerramento padrão.
-      const textParts = []
-      if (userGreeting) textParts.push(userGreeting)
-
-      textParts.push(solutionText)
-
-      if (userClosing) textParts.push(userClosing)
-
-      const newText = textParts.join('\n\n\n') // Junta as partes com 3 linhas de espaço
+      // Usamos os separadores específicos para delimitar cada seção.
+      let newText = ''
+      
+      if (userGreeting) {
+        newText += userGreeting + GREETING_SEPARATOR
+      }
+      
+      newText += solutionText
+      
+      if (userClosing) {
+        newText += CLOSING_SEPARATOR + userClosing
+      }
 
       // 4. Atualiza o textarea e dispara um evento para o painel de visualização atualizar.
       textArea.value = newText
