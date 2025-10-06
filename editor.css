@@ -247,6 +247,7 @@ textarea[data-enhanced],
 /* --- GERAL E ESTRUTURA DO EDITOR --- */
 
 .editor-master-container {
+  position: relative;
   display: flex;
   flex-direction: column;
   margin-bottom: 5px;
@@ -434,6 +435,15 @@ textarea[data-enhanced]:focus {
   background-color: var(--primary-color-hover);
 }
 
+/* Garantir que os botões de ação do SGD mantenham cor branca */
+.action-btn-themed.enhanced-btn {
+  color: white !important;
+}
+
+.action-btn-themed.enhanced-btn:hover {
+  color: white !important;
+}
+
 /* --- DROPDOWNS --- */
 .dropdown {
   position: relative;
@@ -605,6 +615,85 @@ textarea[data-enhanced]:focus {
 }
 .quick-steps-actions .action-btn {
   flex-grow: 1;
+}
+
+/* --- BOTÃO DO PAINEL DE TRÂMITES --- */
+.panel-btn {
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--primary-color-hover)
+  );
+  color: white;
+  border: 1px solid var(--primary-color);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 12px 16px;
+  border-radius: var(--border-radius-sm);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.3px;
+}
+
+.panel-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.panel-btn:hover {
+  background: linear-gradient(
+    135deg,
+    var(--primary-color-hover),
+    var(--primary-color)
+  );
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: var(--primary-color-hover);
+}
+
+.panel-btn:hover::before {
+  left: 100%;
+}
+
+.panel-btn:active {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.panel-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.3);
+}
+
+/* Efeito de brilho adicional no hover */
+.panel-btn:hover {
+  background-size: 200% 200%;
+  animation: gradient-shift 2s ease infinite;
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 .category-shortcut-display {
   font-size: 11px;
@@ -1152,6 +1241,77 @@ a.open-link-btn:hover {
   margin: 0;
   font-size: 12px;
   color: var(--text-color-muted);
+}
+
+/* --- SEÇÃO DE COMPARTILHAMENTO --- */
+.share-section {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.share-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.share-info p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-color-main);
+}
+
+.share-link-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  padding: 8px;
+}
+
+.share-link-container input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text-color-main);
+  font-size: 12px;
+  font-family: monospace;
+  outline: none;
+}
+
+.share-link-container input:focus {
+  outline: none;
+}
+
+.share-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.share-actions .action-btn {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
+.share-btn {
+  background-color: var(--primary-color);
+  color: white;
+  border: 1px solid var(--primary-color);
+}
+
+.share-btn:hover {
+  background-color: var(--primary-color-hover);
+  border-color: var(--primary-color-hover);
 }
 .category-form {
   display: flex;
@@ -4643,4 +4803,230 @@ button[data-action='speech-to-text']:disabled:hover {
 
 .sgsc-warning-banner .warning-text {
   color: var(--text-color-muted) !important;
+}
+
+/* Botão Flutuante para Limpar Formulário */
+.clear-form-btn {
+  position: absolute;
+  top: 65px; /* Ajustado para ficar ainda mais abaixo */
+  right: 22px;
+  z-index: 10;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+  border: none;
+  color: white;
+  padding: 5px 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.clear-form-btn:hover {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* --- CLASSE BASE PARA BOTÕES APRIMORADOS --- */
+.enhanced-btn {
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--primary-color-hover)
+  );
+  color: white;
+  border: 1px solid var(--primary-color);
+  font-weight: 600;
+  border-radius: var(--border-radius-sm);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.3px;
+}
+
+.enhanced-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.enhanced-btn:hover {
+  background: linear-gradient(
+    135deg,
+    var(--primary-color-hover),
+    var(--primary-color)
+  );
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: var(--primary-color-hover);
+}
+
+.enhanced-btn:hover::before {
+  left: 100%;
+}
+
+.enhanced-btn:active {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.enhanced-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.3);
+}
+
+/* Efeito de brilho adicional no hover */
+.enhanced-btn:hover {
+  background-size: 200% 200%;
+  animation: gradient-shift 2s ease infinite;
+}
+
+/* Botão Salvar Alterações com fundo verde */
+.enhanced-btn[data-action='save-changes'],
+button[id='modal-save-btn'].enhanced-btn {
+  background: linear-gradient(135deg, #28a745, #20c997) !important;
+  border-color: #28a745 !important;
+}
+
+.enhanced-btn[data-action='save-changes']:hover,
+button[id='modal-save-btn'].enhanced-btn:hover {
+  background: linear-gradient(135deg, #20c997, #28a745) !important;
+  border-color: #20c997 !important;
+}
+
+/* Botão Fechar com fundo cinza */
+button[id='modal-cancel-btn'].enhanced-btn {
+  background: linear-gradient(135deg, #6c757d, #5a6268) !important;
+  border-color: #6c757d !important;
+}
+
+button[id='modal-cancel-btn'].enhanced-btn:hover {
+  background: linear-gradient(135deg, #5a6268, #6c757d) !important;
+  border-color: #5a6268 !important;
+}
+
+/* Garantir que o botão Fechar mantenha cor branca */
+button[id='modal-cancel-btn'].enhanced-btn {
+  color: white !important;
+}
+
+button[id='modal-cancel-btn'].enhanced-btn:hover {
+  color: white !important;
+}
+
+/* Botões de Adicionar com fundo azul claro */
+.add-message-btn.enhanced-btn,
+.add-item-btn.enhanced-btn,
+.add-new-item-btn,
+#add-category-btn.enhanced-btn,
+#quick-steps-add-new-btn.enhanced-btn,
+#qi-add-category-btn.enhanced-btn,
+#qi-add-new-btn.enhanced-btn {
+  background: linear-gradient(135deg, #17a2b8, #138496) !important;
+  border-color: #17a2b8 !important;
+  color: white !important;
+}
+
+.add-message-btn.enhanced-btn:hover,
+.add-item-btn.enhanced-btn:hover,
+.add-new-item-btn:hover,
+#add-category-btn.enhanced-btn:hover,
+#quick-steps-add-new-btn.enhanced-btn:hover,
+#qi-add-category-btn.enhanced-btn:hover,
+#qi-add-new-btn.enhanced-btn:hover {
+  background: linear-gradient(135deg, #138496, #17a2b8) !important;
+  border-color: #138496 !important;
+  color: white !important;
+}
+
+/* Adicionar efeito de brilho aos botões de adicionar */
+.add-new-item-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.add-new-item-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: left 0.6s ease;
+  pointer-events: none;
+}
+
+.add-new-item-btn:hover::before {
+  left: 100%;
+}
+
+/* --- CLASSE PARA EFEITO DE BRILHO APENAS --- */
+.shine-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.shine-effect::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: left 0.6s ease;
+  pointer-events: none;
+}
+
+.shine-effect:hover::before {
+  left: 100%;
+}
+
+/* Estilos específicos para o item do painel */
+.quick-steps-panel-item.panel-btn {
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--primary-color-hover)
+  );
+  color: white;
+  border: 1px solid var(--primary-color);
+  font-weight: 600;
+  border-radius: var(--border-radius-sm);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.quick-steps-panel-item.panel-btn .panel-item-content {
+  color: white;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.quick-steps-panel-item.panel-btn .panel-item-text {
+  color: white;
+  font-weight: 600;
 }

@@ -17,7 +17,7 @@ async function loadQuickMessages(editorContainer) {
   listContainer.classList.add('quick-steps-list')
   // Adiciona o item de menu para abrir o painel no topo
   const panelMenuItem = document.createElement('div')
-  panelMenuItem.className = 'quick-steps-panel-item'
+  panelMenuItem.className = 'quick-steps-panel-item panel-btn'
   panelMenuItem.innerHTML = `
     <div class="panel-item-content">
       <span class="panel-item-icon">🔍</span>
@@ -86,7 +86,7 @@ async function loadQuickMessages(editorContainer) {
 
   // Adicionado ícone "+" (botão flutuante será adicionado separadamente)
   actionsContainer.innerHTML = `
-        <button type="button" class="action-btn add-message-btn">+ Adicionar Novo</button>
+        <button type="button" class="action-btn add-message-btn enhanced-btn">+ Adicionar</button>
     `
   dropdown.appendChild(actionsContainer)
 
@@ -806,7 +806,7 @@ async function openManagementModal() {
                 <div id="category-list" class="category-list"></div>
                 <div class="category-form">
                     <input type="text" id="new-category-name" placeholder="Nome da Nova Categoria">
-                    <button type="button" id="add-category-btn" class="action-btn">Adicionar</button>
+                        <button type="button" id="add-category-btn" class="action-btn enhanced-btn">Adicionar</button>
                 </div>
             </div>
         </div>
@@ -820,8 +820,8 @@ async function openManagementModal() {
                 <p>Gerencie seus trâmites rápidos e acesse o painel de inserção.</p>
                 <div id="quick-steps-list" class="quick-steps-list"></div>
                 <div class="quick-steps-actions">
-                    <button type="button" id="quick-steps-add-new-btn" class="action-btn">+ Adicionar novo</button>
-                    <button type="button" id="quick-steps-open-panel-btn" class="action-btn">🔍 Abrir Painel de Trâmites</button>
+                    <button type="button" id="quick-steps-add-new-btn" class="action-btn enhanced-btn">+ Adicionar</button>
+                    <button type="button" id="quick-steps-open-panel-btn" class="action-btn panel-btn">🔍 Abrir Painel de Trâmites</button>
                 </div>
             </div>
         </div>
@@ -2042,14 +2042,14 @@ async function openQuickInserterPanel() {
         </div>
         <div class="qi-categories-list"></div>
         <div class="qi-actions">
-          <button type="button" id="qi-add-category-btn" class="action-btn" title="Adicionar Nova Categoria">📁 Nova Categoria</button>
+          <button type="button" id="qi-add-category-btn" class="action-btn enhanced-btn" title="Adicionar Nova Categoria">📁 Nova Categoria</button>
         </div>
       </div>
       <div class="qi-main-content">
         <div class="qi-messages-column">
           <div class="qi-messages-list"></div>
           <div class="qi-messages-footer">
-            <button type="button" id="qi-add-new-btn" class="action-btn">+ Adicionar novo</button>
+            <button type="button" id="qi-add-new-btn" class="action-btn enhanced-btn">+ Adicionar</button>
           </div>
         </div>
         <div class="qi-preview-area">
@@ -2648,7 +2648,7 @@ async function renderGreetingsClosingsManagement(modal) {
             <div class="management-section" style="padding: 0; border: none; box-shadow: none;">
                 <h5>${title}</h5>
                 <div class="gc-list">${itemsHtml}</div>
-                <button type="button" class="action-btn add-item-btn" data-type="${type}">+ Adicionar ${title}</button>
+                <button type="button" class="action-btn add-item-btn enhanced-btn" data-type="${type}">+ Adicionar ${title}</button>
             </div>
         `
   }

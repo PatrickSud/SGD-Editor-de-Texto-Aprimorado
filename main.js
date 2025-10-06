@@ -116,6 +116,19 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
     return
   }
 
+  // Botão para limpar o formulário - Movido para ser filho do masterContainer
+  const clearButton = document.createElement('button')
+  clearButton.type = 'button'
+  clearButton.innerHTML = '🗑️'
+  clearButton.title = 'Limpar campo de texto'
+  clearButton.classList.add('clear-form-btn')
+  clearButton.addEventListener('click', () => {
+    textArea.value = ''
+    // Dispara um evento de input para que outras partes da aplicação (ex: preview) sejam notificadas.
+    textArea.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+  masterContainer.appendChild(clearButton) // Adicionado ao contêiner mestre
+
   // Adiciona o aviso de configuração do SGSC apenas na instância principal
   if (instanceId === 'main') {
     createAndAppendSgscWarning(masterContainer)
@@ -229,11 +242,11 @@ async function createEditorToolbarHtml(
 
   // Botões de formatação sempre visíveis
   const formattingButtons = `
-    <button type="button" data-action="speech-to-text" title="${micButtonTitle}" ${micButtonDisabled}>🎤</button>
+    <button type="button" data-action="speech-to-text" class="shine-effect" title="${micButtonTitle}" ${micButtonDisabled}>🎤</button>
     <div class="toolbar-separator" data-id="mic-separator"></div>
-    <button type="button" data-action="bold" title="Negrito (Ctrl+B)"><b>B</b></button>
-    <button type="button" data-action="italic" title="Itálico (Ctrl+I)"><i>I</i></button>
-    <button type="button" data-action="underline" title="Sublinhado (Ctrl+U)"><u>U</u></button>
+    <button type="button" data-action="bold" class="shine-effect" title="Negrito (Ctrl+B)"><b>B</b></button>
+    <button type="button" data-action="italic" class="shine-effect" title="Itálico (Ctrl+I)"><i>I</i></button>
+    <button type="button" data-action="underline" class="shine-effect" title="Sublinhado (Ctrl+U)"><u>U</u></button>
     ${
       buttonsVisibility.separator2
         ? '<div class="toolbar-separator" data-id="separator2"></div>'
@@ -243,14 +256,14 @@ async function createEditorToolbarHtml(
 
   const listButtons = `
       <div class="dropdown">
-        <button type="button" data-action="list" title="Listas (Numeração Dinâmica)">☰</button>
+        <button type="button" data-action="list" class="shine-effect" title="Listas (Numeração Dinâmica)">☰</button>
         <div class="dropdown-content">
           <button type="button" data-action="numbered">1. Numeração</button>
           <button type="button" data-action="sub-numbered">1.1. Subnumeração</button>
           <button type="button" data-action="lettered">A. Letra</button>
         </div>
       </div>
-      <button type="button" data-action="bullet" title="Adicionar Marcador (Ctrl+M)">&bull;</button>
+      <button type="button" data-action="bullet" class="shine-effect" title="Adicionar Marcador (Ctrl+M)">&bull;</button>
       ${
         buttonsVisibility.separator3
           ? '<div class="toolbar-separator" data-id="separator3"></div>'
@@ -258,16 +271,20 @@ async function createEditorToolbarHtml(
       }
     `
 
-  const canInsertUsername = isUserNameInsertionAvailable();
+  const canInsertUsername = isUserNameInsertionAvailable()
 
   const insertButtons = `
-      <button type="button" data-action="link" title="Inserir Hiperlink (Ctrl+Alt+H)">🔗</button>
+      <button type="button" data-action="link" class="shine-effect" title="Inserir Hiperlink (Ctrl+Alt+H)">🔗</button>
       ${
         buttonsVisibility.insertImage
-          ? '<button type="button" data-action="insert-image" title="Inserir Imagem (Ctrl+V)">📸</button>'
+          ? '<button type="button" data-action="insert-image" class="shine-effect" title="Inserir Imagem (Ctrl+V)">📸</button>'
           : ''
       }
-      ${buttonsVisibility.username && canInsertUsername ? '<button type="button" data-action="username" title="Inserir Nome do Usuário (Alt+Shift+U)">🏷️</button>' : ''}
+      ${
+        buttonsVisibility.username && canInsertUsername
+          ? '<button type="button" data-action="username" class="shine-effect" title="Inserir Nome do Usuário (Alt+Shift+U)">🏷️</button>'
+          : ''
+      }
       ${
         buttonsVisibility.separator4
           ? '<div class="toolbar-separator" data-id="separator4"></div>'
@@ -276,9 +293,9 @@ async function createEditorToolbarHtml(
     `
 
   const colorButtons = `
-      <button type="button" data-action="emoji" title="Emojis (Código HTML)">😀</button>
-      <button type="button" data-action="color" title="Cor do Texto">🎨</button>
-      <button type="button" data-action="highlight" title="Cor de Destaque">🖌️</button>
+      <button type="button" data-action="emoji" class="shine-effect" title="Emojis (Código HTML)">😀</button>
+      <button type="button" data-action="color" class="shine-effect" title="Cor do Texto">🎨</button>
+      <button type="button" data-action="highlight" class="shine-effect" title="Cor de Destaque">🖌️</button>
       ${
         buttonsVisibility.separator5
           ? '<div class="toolbar-separator" data-id="separator5"></div>'
@@ -289,7 +306,7 @@ async function createEditorToolbarHtml(
   const quickChangeButton = buttonsVisibility.quickChange
     ? `
     <div class="dropdown">
-      <button type="button" data-action="quick-change" title="Trocar Saudação/Encerramento">🔄</button>
+      <button type="button" data-action="quick-change" class="shine-effect" title="Trocar Saudação/Encerramento">🔄</button>
       <div class="dropdown-content quick-change-container">
         <span class="loading-placeholder">Carregando...</span>
       </div>
@@ -299,7 +316,7 @@ async function createEditorToolbarHtml(
 
   const quickStepsHtml = includeQuickSteps
     ? `<div class="dropdown">
-        <button type="button" data-action="quick-steps" title="Trâmites Rápidos">⚡</button>
+        <button type="button" data-action="quick-steps" class="shine-effect" title="Trâmites Rápidos">⚡</button>
         <div class="dropdown-content quick-steps-dropdown"></div>
       </div>`
     : ''
@@ -307,7 +324,7 @@ async function createEditorToolbarHtml(
   const remindersHtml = includeReminders
     ? `
       <div class="dropdown">
-        <button type="button" title="Lembretes">⏰</button>
+        <button type="button" class="shine-effect" title="Lembretes">⏰</button>
         <div class="dropdown-content">
           <button type="button" data-action="new-reminder">📅 Novo Lembrete</button>
           <button type="button" data-action="manage-reminders">⏳ Gerenciar Lembretes</button>
@@ -317,7 +334,7 @@ async function createEditorToolbarHtml(
     : ''
 
   const notesButtonHtml = includeNotes
-    ? `<button type="button" data-action="toggle-notes" title="Anotações">✍️</button>`
+    ? `<button type="button" data-action="toggle-notes" class="shine-effect" title="Anotações">✍️</button>`
     : ''
 
   let themeToggleHtml = ''
@@ -332,7 +349,7 @@ async function createEditorToolbarHtml(
 
     themeToggleHtml = `
       <div class="dropdown">
-        <button type="button" data-action="theme-menu-button" title="Alterar Tema">🎨</button>
+        <button type="button" data-action="theme-menu-button" class="shine-effect" title="Alterar Tema">🎨</button>
         <div class="dropdown-content">
           ${themeOptionsHtml}
         </div>
@@ -340,7 +357,7 @@ async function createEditorToolbarHtml(
   }
 
   const togglePreviewHtml = includePreview
-    ? `<button type="button" data-action="toggle-preview" title="Ocultar Visualização (Ctrl+Alt+V)">📝</button>`
+    ? `<button type="button" data-action="toggle-preview" class="shine-effect" title="Ocultar Visualização (Ctrl+Alt+V)">📝</button>`
     : ''
 
   let aiButtonsHtml = ''
@@ -349,7 +366,7 @@ async function createEditorToolbarHtml(
   if (devMode) {
     aiButtonsHtml = `
       <div class="dropdown">
-        <button type="button" title="Recursos de IA (Gemini)" class="ai-master-button">✨</button>
+        <button type="button" title="Recursos de IA (Gemini)" class="ai-master-button enhanced-btn">✨</button>
         <div class="dropdown-content">
           <button type="button" data-action="ai-correct">🪄 Melhorar Texto</button>
           <button type="button" data-action="ai-generate">💡 Gerar por Tópicos</button>
@@ -377,7 +394,7 @@ async function createEditorToolbarHtml(
       ${insertButtons}
       ${colorButtons}
       
-      <button type="button" data-action="manage-steps" title="Configurações">⚙️</button>
+      <button type="button" data-action="manage-steps" class="shine-effect" title="Configurações">⚙️</button>
       ${quickChangeButton}
       
       ${quickStepsHtml}
@@ -566,7 +583,7 @@ function replaceTextPart(textArea, type, newContent) {
     // Usa o separador específico de saudação
     const greetingSep = GREETING_SEPARATOR
     const firstSeparatorIndex = fullText.indexOf(greetingSep)
-    
+
     if (firstSeparatorIndex !== -1) {
       // Se há um separador de saudação, substitui tudo ANTES dele
       const restOfText = fullText.substring(firstSeparatorIndex)
@@ -579,7 +596,7 @@ function replaceTextPart(textArea, type, newContent) {
     // Usa o separador específico de encerramento
     const closingSep = CLOSING_SEPARATOR
     const lastSeparatorIndex = fullText.lastIndexOf(closingSep)
-    
+
     if (lastSeparatorIndex !== -1) {
       // Se há um separador de encerramento, substitui tudo DEPOIS dele
       const startOfText = fullText.substring(0, lastSeparatorIndex)
@@ -925,15 +942,34 @@ function setupEditorInstanceListeners(
         openRemindersManagementModal()
         break
       case 'numbered':
-        insertListItem(textArea, `<b>${getNextMainNumber(textArea)}. </b>`)
-        break
       case 'sub-numbered':
-        const { main, sub } = getNextSubNumber(textArea)
-        insertListItem(textArea, `<b>${main}.${sub}. </b>`)
+      case 'lettered': {
+        const { selectionStart, selectionEnd, value } = textArea
+        const selectedText = value.substring(selectionStart, selectionEnd)
+
+        // Se uma seleção de múltiplas linhas existir, aplica a formatação em todas
+        if (selectionEnd > selectionStart && selectedText.includes('\n')) {
+          applyListFormattingToSelection(textArea, action)
+        } else {
+          // Caso contrário, insere um único item de lista (comportamento original)
+          switch (action) {
+            case 'numbered':
+              insertListItem(
+                textArea,
+                `<b>${getNextMainNumber(textArea)}. </b>`
+              )
+              break
+            case 'sub-numbered':
+              const { main, sub } = getNextSubNumber(textArea)
+              insertListItem(textArea, `<b>${main}.${sub}. </b>`)
+              break
+            case 'lettered':
+              insertListItem(textArea, `<b>${getNextLetter(textArea)}. </b>`)
+              break
+          }
+        }
         break
-      case 'lettered':
-        insertListItem(textArea, `<b>${getNextLetter(textArea)}. </b>`)
-        break
+      }
       case 'manage-steps':
         openManagementModal()
         break
@@ -1110,7 +1146,7 @@ function addSgdActionButtons(masterContainer) {
         clonedButton.textContent =
           originalButton.value || originalButton.textContent || 'Ação'
       }
-      clonedButton.className = 'action-btn action-btn-themed'
+      clonedButton.className = 'action-btn action-btn-themed enhanced-btn'
       clonedButton.title = `Executar ação: ${clonedButton.textContent}`
 
       clonedButton.addEventListener('click', e => {
@@ -1151,6 +1187,23 @@ async function initializeExtension() {
   SpeechService.initialize() // Inicializa o serviço de reconhecimento de voz
   observeForTextArea()
   document.addEventListener('keydown', handleShortcutListener)
+
+  // Event listener global para botões de modais
+  document.addEventListener('click', async e => {
+    const button = e.target.closest('button[data-action="share-extension"]')
+    if (button) {
+      e.preventDefault()
+      const extensionUrl =
+        'https://chromewebstore.google.com/detail/sgd-editor-de-texto-aprim/gheenkbjmfijkelccofdnlcfbfeinfpe?authuser=0&hl=pt-BR'
+      try {
+        await navigator.clipboard.writeText(extensionUrl)
+        showNotification('Link da extensão copiado!', 'success')
+      } catch (err) {
+        console.error('Falha ao copiar o link:', err)
+        showNotification('Erro ao copiar o link.', 'error')
+      }
+    }
+  })
 
   // Cria os elementos flutuantes
   initializeScrollToTopButton()
@@ -1256,13 +1309,13 @@ function setupSolutionObserver(textArea) {
       // 3. Remonta o texto com os padrões do usuário.
       // Usamos os separadores específicos para delimitar cada seção.
       let newText = ''
-      
+
       if (userGreeting) {
         newText += userGreeting + GREETING_SEPARATOR
       }
-      
+
       newText += solutionText
-      
+
       if (userClosing) {
         newText += CLOSING_SEPARATOR + userClosing
       }
@@ -1270,12 +1323,6 @@ function setupSolutionObserver(textArea) {
       // 4. Atualiza o textarea e dispara um evento para o painel de visualização atualizar.
       textArea.value = newText
       textArea.dispatchEvent(new Event('input', { bubbles: true }))
-
-      showNotification(
-        'Saudação/Encerramento aplicados à solução!',
-        'info',
-        2500
-      )
     }
   }, 250) // A verificação ocorre 4 vezes por segundo, é rápido e leve.
 }
@@ -1309,11 +1356,6 @@ function setupUserSelectionListener(textArea) {
       if (currentText !== newText) {
         textArea.value = newText
         textArea.dispatchEvent(new Event('input', { bubbles: true }))
-        showNotification(
-          `Nome de usuário atualizado para ${capitalizedUserName}.`,
-          'info',
-          2000
-        )
       }
     }
   })
@@ -1491,10 +1533,10 @@ function createFloatingActionButtons() {
 
   fabContainer.innerHTML = `
     <div class="fab-options">
-      <button type="button" class="fab-button fab-option" data-action="fab-notes" data-tooltip="Anotações">✍️</button>
-      <button type="button" class="fab-button fab-option" data-action="fab-reminders" data-tooltip="Gerenciar Lembretes">⏰</button>
-      <button type="button" class="fab-button fab-option" data-action="fab-quick-steps" data-tooltip="Trâmites">⚡</button>
-      <button type="button" class="fab-button fab-option" data-action="fab-manage-steps" data-tooltip="Configurações">⚙️</button>
+      <button type="button" class="fab-button fab-option shine-effect" data-action="fab-notes" data-tooltip="Anotações">✍️</button>
+      <button type="button" class="fab-button fab-option shine-effect" data-action="fab-reminders" data-tooltip="Gerenciar Lembretes">⏰</button>
+      <button type="button" class="fab-button fab-option shine-effect" data-action="fab-quick-steps" data-tooltip="Trâmites">⚡</button>
+      <button type="button" class="fab-button fab-option shine-effect" data-action="fab-manage-steps" data-tooltip="Configurações">⚙️</button>
     </div>
     <button type="button" class="fab-button main-fab" title="Ações Rápidas">+</button>
   `
@@ -1626,6 +1668,7 @@ function adjustGoToTopButtonPosition(fabPosition) {
 function initializeScrollToTopButton() {
   const scrollButton = document.createElement('button')
   scrollButton.id = 'floating-scroll-top-btn'
+  scrollButton.className = 'shine-effect'
   document.body.appendChild(scrollButton)
 
   // SVGs para os dois estados do botão

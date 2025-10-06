@@ -23,8 +23,7 @@ function isUserNameInsertionAvailable() {
  * Calcula o próximo número principal (1., 2., 3.) baseado no conteúdo existente.
  * Analisa o HTML para encontrar a maior numeração usada até o momento.
  */
-function getNextMainNumber(textArea) {
-  const content = getEditorContent(textArea)
+function calculateNextMainNumber(content) {
   // Regex para encontrar <b>X. </b> onde X é um número. (Flags 'gim': global, case-insensitive, multiline)
   const regex = /<b>(\d+)\.\s*<\/b>/gim
   // Extrai todos os matches
@@ -46,11 +45,15 @@ function getNextMainNumber(textArea) {
   return maxNum + 1
 }
 
+function getNextMainNumber(textArea) {
+  const content = getEditorContent(textArea)
+  return calculateNextMainNumber(content)
+}
+
 /**
  * Calcula a próxima letra (A., B., C.) baseado no conteúdo existente.
  */
-function getNextLetter(textArea) {
-  const content = getEditorContent(textArea)
+function calculateNextLetter(content) {
   // Regex para encontrar <b>X. </b> onde X é uma letra.
   const regex = /<b>([A-Z])\.\s*<\/b>/gim
   const matches = [...content.matchAll(regex)]
@@ -78,12 +81,15 @@ function getNextLetter(textArea) {
   return String.fromCharCode(maxCharCode + 1)
 }
 
+function getNextLetter(textArea) {
+  const content = getEditorContent(textArea)
+  return calculateNextLetter(content)
+}
+
 /**
  * Calcula o próximo sub-número (ex: 1.1., 1.2., 2.1.) baseado no contexto do último item de lista principal inserido no texto.
  */
-function getNextSubNumber(textArea) {
-  const content = getEditorContent(textArea)
-
+function calculateNextSubNumber(content) {
   // 1. Encontra o último item relevante (principal ou sub) para determinar o contexto principal.
   // Regex que captura o número principal do último item inserido, independentemente de ter sub-número ou não.
   // Ex: Captura '1' de '<b>1. </b>' ou '1' de '<b>1.2. </b>'.
@@ -125,6 +131,74 @@ function getNextSubNumber(textArea) {
   })
 
   return { main: mainNum, sub: maxSub + 1 }
+}
+
+function getNextSubNumber(textArea) {
+  const content = getEditorContent(textArea)
+  return calculateNextSubNumber(content)
+}
+
+/**
+ * Aplica formatação de lista a uma seleção de múltiplas linhas.
+ * @param {HTMLTextAreaElement} textArea - O textarea alvo.
+ * @param {'numbered'|'sub-numbered'|'lettered'} listType - O tipo de lista.
+ */
+function applyListFormattingToSelection(textArea, listType) {
+  const { selectionStart, selectionEnd, value, scrollTop } = textArea
+  const selectedText = value.substring(selectionStart, selectionEnd)
+  const lines = selectedText.split('\n')
+
+  const contentBefore = value.substring(0, selectionStart)
+  let formattedLines = []
+
+  switch (listType) {
+    case 'numbered': {
+      let currentNumber = calculateNextMainNumber(contentBefore)
+      formattedLines = lines.map(line => {
+        if (line.trim() !== '') {
+          return `<b>${currentNumber++}. </b>${line}`
+        }
+        return line
+      })
+      break
+    }
+    case 'lettered': {
+      let currentLetterCode = calculateNextLetter(contentBefore).charCodeAt(0)
+      formattedLines = lines.map(line => {
+        if (line.trim() !== '') {
+          const letter = String.fromCharCode(currentLetterCode)
+          // Avança para a próxima letra, parando em 'Z'
+          if (currentLetterCode < 90) {
+            currentLetterCode++
+          }
+          return `<b>${letter}. </b>${line}`
+        }
+        return line
+      })
+      break
+    }
+    case 'sub-numbered': {
+      let { main, sub } = calculateNextSubNumber(contentBefore)
+      formattedLines = lines.map(line => {
+        if (line.trim() !== '') {
+          return `<b>${main}.${sub++}. </b>${line}`
+        }
+        return line
+      })
+      break
+    }
+  }
+
+  const newText = formattedLines.join('\n')
+
+  // Substitui o texto e atualiza o estado do editor
+  textArea.value =
+    value.substring(0, selectionStart) + newText + value.substring(selectionEnd)
+
+  textArea.setSelectionRange(selectionStart, selectionStart + newText.length)
+  textArea.scrollTop = scrollTop
+  textArea.dispatchEvent(new Event('input', { bubbles: true }))
+  focusEditor(textArea)
 }
 
 /**

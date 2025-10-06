@@ -124,10 +124,11 @@ function createModal(
   let buttonsHtml = ''
   if (isManagementModal) {
     buttonsHtml =
+      `<button type="button" data-action="share-extension" class="action-btn enhanced-btn">🔗 Compartilhar</button>` +
       (onSave
-        ? `<button type="button" id="modal-save-btn" class="action-btn">Salvar Alterações</button>`
+        ? `<button type="button" id="modal-save-btn" class="action-btn enhanced-btn">Salvar Alterações</button>`
         : '') +
-      `<button type="button" id="modal-cancel-btn" class="action-btn">Fechar</button>`
+      `<button type="button" id="modal-cancel-btn" class="action-btn enhanced-btn">Fechar</button>`
   } else {
     buttonsHtml = `<button type="button" id="modal-save-btn" class="action-btn">Salvar</button><button type="button" id="modal-cancel-btn" class="action-btn">Cancelar</button>`
   }
