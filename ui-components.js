@@ -730,7 +730,7 @@ async function openRemindersManagementModal() {
         </div>
         `,
     null,
-    true,
+    false,
     'reminders-management-modal'
   )
 

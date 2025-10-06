@@ -604,11 +604,12 @@ async function openMessageModal(data = null) {
         // Atualiza o painel de inserção rápida se estiver aberto
         await refreshQuickInserterPanel()
 
+        // Seção inativada - funcionalidade duplicada com Painel de Trâmites
         // Se o modal de configurações estiver aberto, atualiza a lista de trâmites
-        const managementModal = document.getElementById('management-modal')
-        if (managementModal) {
-          await renderQuickStepsList(managementModal)
-        }
+        // const managementModal = document.getElementById('management-modal')
+        // if (managementModal) {
+        //   await renderQuickStepsList(managementModal)
+        // }
 
         closeModal()
       } else {
@@ -627,7 +628,10 @@ async function openMessageModal(data = null) {
     await initializeEditorInstance(modalTextArea, modalInstanceId, {
       includeWysiwyg: true,
       includeQuickSteps: true,
-      includeThemeToggle: false
+      includeThemeToggle: false,
+      includeManageSteps: false,
+      includeUsername: false,
+      includeQuickStepsDropdown: false
     })
   }
 
@@ -746,10 +750,12 @@ async function openManagementModal() {
   }
 
   const onSave = async (modalContent, closeModal) => {
-    const categoriesSuccess = await saveAllCategoryChanges(modalContent)
+    // Seção de categorias inativada - funcionalidade duplicada com Painel de Trâmites
+    // const categoriesSuccess = await saveAllCategoryChanges(modalContent)
     const visibilitySuccess = await saveButtonVisibilitySettings(modalContent)
 
-    if (categoriesSuccess && visibilitySuccess) {
+    if (visibilitySuccess) {
+      // Removido categoriesSuccess da condição
       // Atualiza a barra de ferramentas e elementos globais em tempo real
       if (typeof applyAllVisibilitySettings === 'function') {
         applyAllVisibilitySettings()
@@ -796,6 +802,16 @@ async function openManagementModal() {
   const modal = createModal(
     'Configurações',
     `
+        <!-- 
+        SEÇÕES INATIVADAS - Sugerido para remoção em próximas versões
+        Motivo: Funcionalidades duplicadas com o Painel de Trâmites
+        
+        IMPORTANTE: As funções renderCategoryManagementList e renderExportList 
+        ainda são chamadas para manter o Importar/Exportar funcionando.
+        
+        TODO: Remover completamente nas próximas versões após confirmação do usuário
+        -->
+        <!--
         <div class="management-section collapsible-section">
             <h4 class="collapsible-header">
                 <span class="collapsible-icon">▶</span>
@@ -825,6 +841,7 @@ async function openManagementModal() {
                 </div>
             </div>
         </div>
+        -->
         
         <hr>
         <div class="management-section collapsible-section">
@@ -1103,23 +1120,25 @@ async function openManagementModal() {
       })
   }
 
-  await renderCategoryManagementList(modal)
+  // Seção de categorias inativada - funcionalidade duplicada com Painel de Trâmites
+  // await renderCategoryManagementList(modal)
 
-  modal
-    .querySelector('#add-category-btn')
-    .addEventListener('click', async e => {
-      e.preventDefault()
-      const input = modal.querySelector('#new-category-name')
-      const name = input.value.trim()
-      if (name) {
-        const newCat = await addCategory(name)
-        if (newCat) {
-          input.value = ''
-          await renderCategoryManagementList(modal)
-          await renderExportList(modal)
-        }
-      }
-    })
+  // Seção de categorias inativada - funcionalidade duplicada com Painel de Trâmites
+  // modal
+  //   .querySelector('#add-category-btn')
+  //   .addEventListener('click', async e => {
+  //     e.preventDefault()
+  //     const input = modal.querySelector('#new-category-name')
+  //     const name = input.value.trim()
+  //     if (name) {
+  //       const newCat = await addCategory(name)
+  //       if (newCat) {
+  //         input.value = ''
+  //         await renderCategoryManagementList(modal)
+  //         await renderExportList(modal)
+  //       }
+  //     }
+  //   })
 
   modal.querySelector('#import-btn').addEventListener('click', e => {
     e.preventDefault()
@@ -1140,28 +1159,29 @@ async function openManagementModal() {
     exportQuickMessages(modal)
   })
 
+  // Seções inativadas - funcionalidades duplicadas com Painel de Trâmites
   // Renderiza a lista de trâmites na nova seção
-  await renderQuickStepsList(modal)
+  // await renderQuickStepsList(modal)
 
   // Event listeners para a nova seção "Trâmites Rápidos"
-  modal
-    .querySelector('#quick-steps-add-new-btn')
-    .addEventListener('click', e => {
-      e.preventDefault()
-      openMessageModal() // Abre o modal para adicionar novo trâmite (mantém configurações aberto)
-    })
+  // modal
+  //   .querySelector('#quick-steps-add-new-btn')
+  //   .addEventListener('click', e => {
+  //     e.preventDefault()
+  //     openMessageModal() // Abre o modal para adicionar novo trâmite (mantém configurações aberto)
+  //   })
 
-  modal
-    .querySelector('#quick-steps-open-panel-btn')
-    .addEventListener('click', e => {
-      e.preventDefault()
-      // Fecha o modal de configurações apenas para o painel de inserção rápida
-      const managementModal = document.getElementById('management-modal')
-      if (managementModal) {
-        document.body.removeChild(managementModal)
-      }
-      openQuickInserterPanel() // Abre o painel de inserção rápida
-    })
+  // modal
+  //   .querySelector('#quick-steps-open-panel-btn')
+  //   .addEventListener('click', e => {
+  //     e.preventDefault()
+  //     // Fecha o modal de configurações apenas para o painel de inserção rápida
+  //     const managementModal = document.getElementById('management-modal')
+  //     if (managementModal) {
+  //       document.body.removeChild(managementModal)
+  //     }
+  //     openQuickInserterPanel() // Abre o painel de inserção rápida
+  //   })
 }
 
 /**
@@ -1191,6 +1211,11 @@ function showHowToGetApiKeyModal() {
  */
 async function renderCategoryManagementList(modal) {
   const list = modal.querySelector('#category-list')
+  if (!list) {
+    // Seção de categorias foi inativada - não renderizar
+    return
+  }
+
   const data = await getStoredData()
   list.innerHTML = ''
   data.categories.forEach(cat => {
@@ -1249,6 +1274,11 @@ async function renderCategoryManagementList(modal) {
  */
 async function renderExportList(modal) {
   const exportList = modal.querySelector('#export-list')
+  if (!exportList) {
+    // Seção de exportação não encontrada - não renderizar
+    return
+  }
+
   const data = await getStoredData()
   exportList.innerHTML = ''
   const exportBtn = modal.querySelector('#export-btn')

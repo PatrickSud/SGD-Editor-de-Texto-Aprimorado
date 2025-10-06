@@ -244,7 +244,8 @@ async function getSettings() {
       mergedSettings.reminderRetentionDays < 1 ||
       mergedSettings.reminderRetentionDays > 30
     ) {
-      mergedSettings.reminderRetentionDays = DEFAULT_SETTINGS.reminderRetentionDays
+      mergedSettings.reminderRetentionDays =
+        DEFAULT_SETTINGS.reminderRetentionDays
     }
 
     return mergedSettings
@@ -927,19 +928,12 @@ async function getGreetingsAndClosings() {
           id: `grt-${Date.now() + 1}`,
           title: 'Contato e Acesso',
           content:
-            "[saudacao], [usuario]! Tudo bem? Espero que sim!<nobr style='font-size:20px;'>&#128521;</nobr> \n \nConforme contato telefônico e conexão remota a máquina ",
-          shortcut: ''
-        },
-        {
-          id: `grt-${Date.now() + 2}`,
-          title: 'Acompanhamento de Atendimento',
-          content:
-            '[saudacao], [usuario]! Tudo bem? \n \nDando continuidade ao nosso atendimento anterior, analisei as informações que você enviou e ',
+            "[saudacao], [usuario]! Tudo ???bem? Espero que sim!<nobr style='font-size:20px;'>&#128521;</nobr> \n \nConforme contato telefônico e conexão remota a máquina ",
           shortcut: ''
         },
         {
           id: `grt-${Date.now() + 3}`,
-          title: 'Agradecendo Informações',
+          title: 'Agradecendo',
           content:
             "[saudacao], [usuario]! Tudo bem? \n \nAgradeço pelo envio das informações/arquivos. \nJá estou analisando o seu caso e em breve retorno com novidades. <nobr style='font-size:18px;'>👍</nobr>",
           shortcut: ''
@@ -976,24 +970,8 @@ Seguimos à disposição.
           shortcut: ''
         },
         {
-          id: `cls-${Date.now() + 3}`,
-          title: 'Conclusão',
-          content: `Se estiver com alguma dúvida ou problema, me retorne neste atendimento que estarei avaliando para você, ok?<nobr style='font-size:20px;'>&#128516;</nobr>
-Ah!, e se possível, me manda uma imagem que vai me auxiliar bastante!
- 
-[finalizacao]!<nobr style='font-size:20px;'>&#128079;</nobr>
-Sua conclusão é muito importante para nós!`,
-          shortcut: ''
-        },
-        {
-          id: `cls-${Date.now() + 4}`,
-          title: 'Análise em Andamento',
-          content: `Sua solicitação está sendo tratada por nossa equipe e pode levar um tempo para a análise completa. Manterei você informado sobre qualquer progresso. \n\nAgradecemos a sua paciência e compreensão!\n[finalizacao]! <nobr style='font-size:18px;'>&#10024;</nobr>`,
-          shortcut: ''
-        },
-        {
           id: `cls-${Date.now() + 6}`,
-          title: 'Com Pesquisa de Satisfação',
+          title: 'Feliz em ajudar',
           content: `Fico feliz em ajudar! Se não houver mais nenhuma dúvida, peço a gentileza de avaliar meu atendimento marcando a situação como <strong><span style="color:#fa6400">'Atendimento Concluído'</span></strong>. \nSua opinião é muito importante para nós!\n\n[finalizacao]! <nobr style='font-size:18px;'>&#10024;</nobr>`,
           shortcut: ''
         }

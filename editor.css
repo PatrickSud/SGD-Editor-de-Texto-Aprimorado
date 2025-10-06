@@ -4713,7 +4713,36 @@ button[data-action='speech-to-text']:disabled:hover {
 
 .quick-change-item .set-default-btn.active {
   opacity: 1;
-  color: var(--action-yellow); /* Cor de estrela ativa */
+}
+
+/* Botões de Editar e Excluir no dropdown de Trâmites Rápidos */
+.message-item .edit-message-btn,
+.message-item .delete-message-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  font-size: 16px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+  opacity: 0; /* Fica invisível por padrão */
+}
+
+.message-item:hover .edit-message-btn,
+.message-item:hover .delete-message-btn {
+  opacity: 0.6; /* Aparece no hover */
+}
+
+.message-item .edit-message-btn:hover,
+.message-item .delete-message-btn:hover {
+  opacity: 1;
+  background-color: var(--background-secondary);
 }
 
 /* --- Estilo para o botão "Adicionar Novo" no menu de troca rápida --- */

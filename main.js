@@ -87,7 +87,10 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
     includeQuickSteps,
     includeThemeToggle,
     includeNotes,
-    includeReminders
+    includeReminders,
+    includeManageSteps = true,
+    includeUsername = true,
+    includeQuickStepsDropdown = true
   } = options
 
   const masterContainer = document.createElement('div')
@@ -102,7 +105,10 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
     includeThemeToggle,
     includePreview,
     includeNotes,
-    includeReminders
+    includeReminders,
+    includeManageSteps,
+    includeUsername,
+    includeQuickStepsDropdown
   )
 
   if (textArea.parentNode) {
@@ -224,7 +230,10 @@ async function createEditorToolbarHtml(
   includeThemeToggle,
   includePreview,
   includeNotes,
-  includeReminders
+  includeReminders,
+  includeManageSteps = true,
+  includeUsername = true,
+  includeQuickStepsDropdown = true
 ) {
   const settings = await getSettings() // Carrega as configurações
   const buttonsVisibility =
@@ -281,7 +290,7 @@ async function createEditorToolbarHtml(
           : ''
       }
       ${
-        buttonsVisibility.username && canInsertUsername
+        buttonsVisibility.username && canInsertUsername && includeUsername
           ? '<button type="button" data-action="username" class="shine-effect" title="Inserir Nome do Usuário (Alt+Shift+U)">🏷️</button>'
           : ''
       }
@@ -314,12 +323,13 @@ async function createEditorToolbarHtml(
   `
     : ''
 
-  const quickStepsHtml = includeQuickSteps
-    ? `<div class="dropdown">
+  const quickStepsHtml =
+    includeQuickSteps && includeQuickStepsDropdown
+      ? `<div class="dropdown">
         <button type="button" data-action="quick-steps" class="shine-effect" title="Trâmites Rápidos">⚡</button>
         <div class="dropdown-content quick-steps-dropdown"></div>
       </div>`
-    : ''
+      : ''
 
   const remindersHtml = includeReminders
     ? `
@@ -394,7 +404,11 @@ async function createEditorToolbarHtml(
       ${insertButtons}
       ${colorButtons}
       
-      <button type="button" data-action="manage-steps" class="shine-effect" title="Configurações">⚙️</button>
+      ${
+        includeManageSteps
+          ? '<button type="button" data-action="manage-steps" class="shine-effect" title="Configurações">⚙️</button>'
+          : ''
+      }
       ${quickChangeButton}
       
       ${quickStepsHtml}
