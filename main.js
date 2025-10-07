@@ -239,6 +239,16 @@ async function createEditorToolbarHtml(
   const buttonsVisibility =
     settings.toolbarButtons || DEFAULT_SETTINGS.toolbarButtons
 
+  // Debug: Log das configurações carregadas
+  console.log(
+    'Editor SGD: Debug configurações - settings.toolbarButtons:',
+    settings.toolbarButtons
+  )
+  console.log(
+    'Editor SGD: Debug configurações - buttonsVisibility.username:',
+    buttonsVisibility.username
+  )
+
   // ADICIONAR ESTA VERIFICAÇÃO NO INÍCIO DA FUNÇÃO
   const isSpeechRecognitionSupported =
     window.SpeechRecognition || window.webkitSpeechRecognition
@@ -282,6 +292,16 @@ async function createEditorToolbarHtml(
 
   const canInsertUsername = isUserNameInsertionAvailable()
 
+  // Debug: Log das condições de visibilidade do botão username
+  console.log(
+    'Editor SGD: Debug botão username - buttonsVisibility.username:',
+    buttonsVisibility.username,
+    'canInsertUsername:',
+    canInsertUsername,
+    'includeUsername:',
+    includeUsername
+  )
+
   const insertButtons = `
       <button type="button" data-action="link" class="shine-effect" title="Inserir Hiperlink (Ctrl+Alt+H)">🔗</button>
       ${
@@ -290,7 +310,9 @@ async function createEditorToolbarHtml(
           : ''
       }
       ${
-        buttonsVisibility.username && canInsertUsername && includeUsername
+        buttonsVisibility.username !== false &&
+        canInsertUsername &&
+        includeUsername
           ? '<button type="button" data-action="username" class="shine-effect" title="Inserir Nome do Usuário (Alt+Shift+U)">🏷️</button>'
           : ''
       }
@@ -1155,13 +1177,17 @@ function addSgdActionButtons(masterContainer) {
       const clonedButton = document.createElement('button')
       clonedButton.type = 'button'
       if (id === 'cadSscForm:gravarVisualizar') {
-        clonedButton.textContent = 'Gravar e Visualizar'
+        clonedButton.textContent = 'Visualizar'
+      } else if (id === 'sscForm:btnSalvarContinuar') {
+        clonedButton.textContent = 'Continuar'
+      } else if (id === 'cadSscForm:inserir') { 
+        clonedButton.textContent = 'Continuar'
       } else {
         clonedButton.textContent =
           originalButton.value || originalButton.textContent || 'Ação'
       }
       clonedButton.className = 'action-btn action-btn-themed enhanced-btn'
-      clonedButton.title = `Executar ação: ${clonedButton.textContent}`
+      clonedButton.title = `${clonedButton.textContent}`
 
       clonedButton.addEventListener('click', e => {
         e.preventDefault()

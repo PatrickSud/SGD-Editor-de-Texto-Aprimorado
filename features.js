@@ -16,7 +16,54 @@ function getEditorContent(textArea) {
  */
 function isUserNameInsertionAvailable() {
   const userSelectElement = document.getElementById(USER_NAME_SELECT_ID)
-  return !!userSelectElement
+  const userLoggedElement = document.getElementById(USER_NAME_LOGGED_ID)
+
+  // Debug: Log dos elementos encontrados
+  console.log(
+    'Editor SGD: Debug username elements - USER_NAME_SELECT_ID:',
+    USER_NAME_SELECT_ID,
+    'found:',
+    !!userSelectElement
+  )
+  console.log(
+    'Editor SGD: Debug username elements - USER_NAME_LOGGED_ID:',
+    USER_NAME_LOGGED_ID,
+    'found:',
+    !!userLoggedElement
+  )
+
+  // Tenta encontrar elementos alternativos se os principais não existirem
+  let alternativeFound = false
+  if (!userSelectElement && !userLoggedElement) {
+    // Procura por elementos que possam conter o nome do usuário
+    const possibleSelectors = [
+      'select[name*="usuario"]',
+      'select[id*="usuario"]',
+      'td:contains("usuario")',
+      '[id*="usuario_nome"]',
+      '[name*="usuario_nome"]'
+    ]
+
+    for (const selector of possibleSelectors) {
+      try {
+        const element = document.querySelector(selector)
+        if (element) {
+          console.log(
+            'Editor SGD: Elemento alternativo encontrado:',
+            selector,
+            element
+          )
+          alternativeFound = true
+          break
+        }
+      } catch (e) {
+        // Ignora seletores inválidos
+      }
+    }
+  }
+
+  // Retorna true se pelo menos um dos elementos existe ou se encontrou alternativa
+  return !!(userSelectElement || userLoggedElement || alternativeFound)
 }
 
 /**
