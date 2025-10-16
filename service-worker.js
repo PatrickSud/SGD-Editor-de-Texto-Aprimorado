@@ -67,6 +67,26 @@ async function saveReminders(reminders) {
 // --- LÓGICA DE LEMBRETES E NOTIFICAÇÕES ---
 
 /**
+ * Exibe uma notificação do Chrome (Windows).
+ * @param {object} reminder - O objeto do lembrete.
+ */
+function showChromeNotification(reminder) {
+  const notificationId = `chrome-notification-${reminder.id}-${Date.now()}`;
+
+  chrome.notifications.create(notificationId, {
+    type: 'basic',
+    iconUrl: 'logo.png', // Caminho para o ícone da sua extensão
+    title: `Lembrete: ${reminder.title}`,
+    message: reminder.description || 'Você tem um novo lembrete.',
+    priority: 2,
+    buttons: [
+      { title: 'Dispensar' }
+    ],
+    requireInteraction: true // Mantém a notificação visível até a interação do usuário
+  });
+}
+
+/**
  * Calcula a próxima data de um alarme recorrente.
  * @param {Date} lastDate A última data do alarme.
  * @param {string} recurrence A regra ('daily', 'weekly', 'monthly').
@@ -242,6 +262,14 @@ chrome.alarms.onAlarm.addListener(async alarm => {
   // Isso garante que o sino comece a pulsar imediatamente em todas as guias.
   broadcastToSgdTabs({ action: 'UPDATE_NOTIFICATION_BADGE' })
 
+  // Verifica se a notificação do Windows está habilitada
+  const settings = await getStorageData('extensionSettingsData', 'sync') || {};
+  const preferences = settings.preferences || { enableWindowsNotifications: true };
+  
+  if (preferences.enableWindowsNotifications) {
+      showChromeNotification(reminder);
+  }
+
   // Passo 3: Verifica se o toast de notificação único para esta sessão já foi exibido.
   const toastShownKey = `toast_shown_${reminder.id}`
   const sessionData = await chrome.storage.session.get(toastShownKey)
@@ -254,14 +282,12 @@ chrome.alarms.onAlarm.addListener(async alarm => {
   }
 })
 
-// ATENÇÃO: Todos os listeners de chrome.notifications foram REMOVIDOS
-
-// --- LÓGICA DE ANÁLISE DE SUGESTÕES ---
-
-/**
- * Analisa o uso de trâmites e sugere novos para adicionar às mensagens rápidas.
- * (A lógica interna desta função permanece a mesma)
- */
+// Listener para cliques nos botões da notificação do Windows
+chrome.notifications.onButtonClicked.addListener((notificationId, buttonIndex) => {
+    if (buttonIndex === 0) { // Índice do botão "Dispensar"
+        chrome.notifications.clear(notificationId);
+    }
+});
 
 /**
  * Gera um hash simples de uma string.

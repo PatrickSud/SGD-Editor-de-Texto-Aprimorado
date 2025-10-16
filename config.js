@@ -16,7 +16,6 @@ const GREETINGS_CLOSINGS_KEY = 'greetingsAndClosingsData'
 
 /**
  * Separadores exclusivos para delimitar saudação e encerramento no texto.
- * Estas strings únicas evitam conflitos com quebras de linha normais no texto.
  */
 const GREETING_SEPARATOR = '<!--Saudação-->\n\n'
 const CLOSING_SEPARATOR = '\n\n<!--Encerramento-->'
@@ -52,6 +51,9 @@ const DEFAULT_SETTINGS = {
     iconSize: 1.0,
     uiFontSize: 14,
     editorFontSize: 14
+  },
+  preferences: {
+    enableWindowsNotifications: true
   }
 }
 

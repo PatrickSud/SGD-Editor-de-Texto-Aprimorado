@@ -753,8 +753,9 @@ async function openManagementModal() {
     // Seção de categorias inativada - funcionalidade duplicada com Painel de Trâmites
     // const categoriesSuccess = await saveAllCategoryChanges(modalContent)
     const visibilitySuccess = await saveButtonVisibilitySettings(modalContent)
+    const preferencesSuccess = await savePreferencesSettings(modalContent)
 
-    if (visibilitySuccess) {
+    if (visibilitySuccess && preferencesSuccess) {
       // Removido categoriesSuccess da condição
       // Atualiza a barra de ferramentas e elementos globais em tempo real
       if (typeof applyAllVisibilitySettings === 'function') {
@@ -769,6 +770,7 @@ async function openManagementModal() {
   const devMode = await isDevModeEnabled()
   const settings = await getSettings()
   const uiSettings = settings.uiSettings || DEFAULT_SETTINGS.uiSettings
+  const preferences = settings.preferences || DEFAULT_SETTINGS.preferences
 
   let aiSettingsHtml = '' // Inicia como string vazia
   if (devMode) {
@@ -909,6 +911,21 @@ async function openManagementModal() {
                     }">
                 </div>
                 <button type="button" id="restore-ui-defaults-btn" class="action-btn restore-defaults-btn">Restaurar Padrões de Aparência</button>
+            </div>
+        </div>
+        
+        <hr>
+        <div class="management-section collapsible-section">
+            <h4 class="collapsible-header">
+                <span class="collapsible-icon">▶</span>
+                <span class="collapsible-title">⚙️ Preferências</span>
+            </h4>
+            <div class="collapsible-content" id="preferences-settings">
+                <h5>Notificações</h5>
+                <div class="form-checkbox-group">
+                    <input type="checkbox" id="enable-windows-notifications" ${preferences.enableWindowsNotifications ? 'checked' : ''}>
+                    <label for="enable-windows-notifications">Habilitar notificações do Windows para lembretes</label>
+                </div>
             </div>
         </div>
         
@@ -2621,6 +2638,32 @@ async function saveButtonVisibilitySettings(modal) {
     )
     return false
   }
+}
+
+/**
+ * Salva as configurações de preferências a partir do modal.
+ * @param {HTMLElement} modal - O elemento do modal de gerenciamento.
+ * @returns {Promise<boolean>} Retorna true se salvou com sucesso.
+ */
+async function savePreferencesSettings(modal) {
+    const container = modal.querySelector('#preferences-settings');
+    if (!container) return true;
+
+    const settings = await getSettings();
+    const newPreferences = { ...settings.preferences };
+
+    const windowsNotificationsCheckbox = container.querySelector('#enable-windows-notifications');
+    if (windowsNotificationsCheckbox) {
+        newPreferences.enableWindowsNotifications = windowsNotificationsCheckbox.checked;
+    }
+
+    try {
+        await saveSettings({ preferences: newPreferences });
+        return true;
+    } catch (error) {
+        showNotification('Erro ao salvar as preferências.', 'error');
+        return false;
+    }
 }
 
 // --- GERENCIAMENTO DE SAUDAÇÕES E ENCERRAMENTOS ---
