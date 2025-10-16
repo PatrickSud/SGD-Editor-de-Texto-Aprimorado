@@ -70,7 +70,8 @@ let pickerHideTimeout
 const TARGET_TEXTAREA_SELECTORS = [
   'textarea#sscForm\\:descricaoTramite',
   'textarea#cadSscForm\\:tramiteDescricao',
-  'textarea#ssForm\\:descricaoTramite'
+  'textarea#ssForm\\:descricaoTramite',
+  'textarea#ocorrenciaForm\\:descricaoTramite'
 ]
 
 /**
