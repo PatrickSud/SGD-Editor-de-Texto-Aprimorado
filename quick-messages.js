@@ -126,7 +126,7 @@ function createMessageElement(message, editorContainer) {
   handle.addEventListener('dragend', handleDragEnd)
 
   // Listener de Clique (para inserção).
-  container.addEventListener('click', e => {
+  container.addEventListener('click', async e => {
     // Impede a inserção se o clique for nos botões de ação ou na alça.
     if (
       e.target.closest('.message-actions') ||
@@ -145,7 +145,8 @@ function createMessageElement(message, editorContainer) {
 
     // insertAtCursor lida com a inserção correta (WYSIWYG ou Textarea).
     if (targetTextArea) {
-      insertAtCursor(targetTextArea, message.message)
+      const resolvedContent = await resolveVariablesInText(message.message)
+      insertAtCursor(targetTextArea, resolvedContent)
     } else {
       console.error(
         'Editor SGD: Não foi possível encontrar o textarea associado ao inserir trâmite rápido.'
@@ -506,7 +507,18 @@ async function openMessageModal(data = null) {
             }">
         </div>
         <div class="form-group">
-            <label for="modal-message-input">Conteúdo</label>
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                <label for="modal-message-input" style="margin-bottom: 0;">Conteúdo</label>
+                <div class="dropdown">
+                    <button type="button" class="action-btn small-btn">Inserir Variável ▼</button>
+                    <div class="dropdown-content variable-inserter">
+                        <button type="button" data-variable="[usuario]">Nome do Usuário</button>
+                        <button type="button" data-variable="[saudacao]">Saudação (Bom dia/Boa tarde/Boa noite)</button>
+                        <button type="button" data-variable="[finalizacao]">Finalização (dia/semana)</button>
+                        <button type="button" data-variable="[solicitacao]">Número da Solicitação</button>
+                    </div>
+                </div>
+            </div>
             <textarea id="modal-message-input" placeholder="Conteúdo">${
               isEditing && data ? escapeHTML(data.message) : ''
             }</textarea>
@@ -617,6 +629,21 @@ async function openMessageModal(data = null) {
       }
     }
   )
+  // Adiciona o listener para o novo menu de variáveis
+  const variableInserter = modal.querySelector('.variable-inserter')
+  if (variableInserter) {
+    variableInserter.addEventListener('click', e => {
+      const button = e.target.closest('button[data-variable]')
+      if (button) {
+        const variableToInsert = button.dataset.variable
+        const contentTextarea = modal.querySelector('#modal-message-input')
+
+        // Reutiliza a função que já temos para inserir texto no cursor
+        insertAtCursor(contentTextarea, variableToInsert + ' ')
+      }
+    })
+  }
+
   document.body.appendChild(modal)
 
   // Inicializa o editor aprimorado no textarea do modal.
@@ -2850,9 +2877,11 @@ async function renderGreetingsClosingsManagement(modal) {
  * @param {string} type - 'greetings' ou 'closings'.
  * @param {function} onComplete - Callback.
  */
-function openGreetingClosingModal(item, type, onComplete) {
+async function openGreetingClosingModal(item, type, onComplete) {
   const isEditing = item !== null
   const title = type === 'greetings' ? 'Saudação' : 'Encerramento'
+
+  const modalInstanceId = `modal-gc-${Date.now()}` // ID único para a instância do editor no modal
 
   const modalContent = `
         <div class="form-group">
@@ -2870,6 +2899,7 @@ function openGreetingClosingModal(item, type, onComplete) {
                         <button type="button" data-variable="[usuario]">Nome do Usuário</button>
                         <button type="button" data-variable="[saudacao]">Saudação (Bom dia/Boa tarde/Boa noite)</button>
                         <button type="button" data-variable="[finalizacao]">Finalização (dia/semana)</button>
+                        <button type="button" data-variable="[solicitacao]">Número da Solicitação</button>
                     </div>
                 </div>
             </div>
@@ -2934,6 +2964,18 @@ function openGreetingClosingModal(item, type, onComplete) {
   }
 
   document.body.appendChild(modal)
+
+  // Inicializa o editor aprimorado no textarea do modal
+  const modalTextArea = modal.querySelector('#item-content')
+  if (modalTextArea) {
+    await initializeEditorInstance(modalTextArea, modalInstanceId, {
+      includeQuickSteps: true,
+      includeThemeToggle: false,
+      includeManageSteps: false,
+      includeUsername: false,
+      includeQuickStepsDropdown: false
+    })
+  }
 }
 
 /**

@@ -747,12 +747,13 @@ function showShortcutPopup(textArea, messages) {
     renderItems()
   }
 
-  const selectItem = index => {
+  const selectItem = async index => {
     if (filteredMessages.length === 0 || !filteredMessages[index]) return
 
     const message = filteredMessages[index]
     if (message) {
-      insertAtCursor(textArea, message.message)
+      const resolvedContent = await resolveVariablesInText(message.message)
+      insertAtCursor(textArea, resolvedContent)
     }
 
     if (editorContainer.contains(popup)) {
@@ -760,7 +761,7 @@ function showShortcutPopup(textArea, messages) {
     }
   }
 
-  const navigatePopup = e => {
+  const navigatePopup = async e => {
     if (['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.key)) {
       e.preventDefault()
       e.stopPropagation()
@@ -788,7 +789,7 @@ function showShortcutPopup(textArea, messages) {
           ensureVisible(activeIndex)
           break
         case 'Enter':
-          selectItem(activeIndex)
+          await selectItem(activeIndex)
           break
         case 'Escape':
           if (editorContainer.contains(popup)) {
@@ -861,11 +862,11 @@ function showShortcutPopup(textArea, messages) {
 
   observer.observe(editorContainer, { childList: true })
 
-  itemsContainer.addEventListener('click', event => {
+  itemsContainer.addEventListener('click', async event => {
     const item = event.target.closest('.shortcut-item')
     if (item && !item.classList.contains('no-results') && item.dataset.index) {
       const index = parseInt(item.dataset.index)
-      selectItem(index)
+      await selectItem(index)
     }
   })
 }

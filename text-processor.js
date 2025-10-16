@@ -27,6 +27,11 @@ async function resolveVariablesInText(text) {
     processedText = processedText.replace(/\[finalizacao\]/g, farewell)
   }
 
+  if (processedText.includes('[solicitacao]')) {
+    const requestNumber = await _getRequestNumberLogic()
+    processedText = processedText.replace(/\[solicitacao\]/g, requestNumber)
+  }
+
   return processedText
 }
 
@@ -76,6 +81,45 @@ function _getGreetingLogic() {
   } else {
     return 'Boa noite'
   }
+}
+
+/**
+ * Lógica para obter o número da solicitação da página.
+ * @returns {Promise<string>} O número da solicitação como texto puro.
+ */
+async function _getRequestNumberLogic() {
+  // Tentativa 1: ID específico
+  const elementById = document.getElementById('td:numero');
+  if (elementById && elementById.textContent) {
+    const number = elementById.textContent.trim();
+    if (/^\d+$/.test(number)) {
+      return number;
+    }
+  }
+
+  // Tentativa 2: Célula que contém "Número:"
+  const allTds = document.querySelectorAll('td.tableVisualizacaoField');
+  for (const td of allTds) {
+    const boldTag = td.querySelector('b');
+    if (boldTag && (boldTag.innerText || '').trim().toLowerCase() === 'número:') {
+      // O número é o texto do nó seguinte ao <b>
+      const numberTextNode = boldTag.nextSibling;
+      if (numberTextNode && numberTextNode.nodeType === Node.TEXT_NODE) {
+          const number = numberTextNode.textContent.trim();
+          if (/^\d+$/.test(number)) {
+              return number;
+          }
+      }
+      // Fallback se o número não for um text node (improvável, mas seguro)
+      const fullText = td.textContent || '';
+      const match = fullText.match(/Número:\s*(\d+)/);
+      if (match && match[1]) {
+        return match[1];
+      }
+    }
+  }
+
+  return ''; // Retorna vazio se não encontrar
 }
 
 /**
