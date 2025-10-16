@@ -187,6 +187,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         })
 
         sendResponse({ success: true })
+      } else if (message.action === 'RESET_TOAST_FLAG' && message.reminderId) {
+        // NOVA AÇÃO: Limpa o flag de notificação da sessão
+        const toastShownKey = `toast_shown_${message.reminderId}`;
+        console.log('Resetando flag de notificação para:', toastShownKey);
+        
+        try {
+          // Remove completamente o flag da sessão
+          await chrome.storage.session.remove(toastShownKey);
+          console.log('Flag removido com sucesso');
+          sendResponse({ success: true });
+        } catch (error) {
+          console.error('Erro ao resetar flag:', error);
+          sendResponse({ success: false, error: error.message });
+        }
       } else if (message.action === 'UPDATE_NOTIFICATION_BADGE') {
         // Atualiza o badge em todas as abas
         await broadcastToSgdTabs({
@@ -273,12 +287,22 @@ chrome.alarms.onAlarm.addListener(async alarm => {
   // Passo 3: Verifica se o toast de notificação único para esta sessão já foi exibido.
   const toastShownKey = `toast_shown_${reminder.id}`
   const sessionData = await chrome.storage.session.get(toastShownKey)
+  
+  console.log('Verificando flag de notificação:', toastShownKey, 'Valor:', sessionData[toastShownKey]);
+  console.log('Lembrete disparado em:', new Date(reminder.firedAt).toISOString());
 
-  if (!sessionData[toastShownKey]) {
-    // Se ainda não foi exibido, define o flag de visualização para a sessão...
-    await chrome.storage.session.set({ [toastShownKey]: true })
+  // Verifica se a notificação já foi exibida para este disparo específico
+  const lastShownTime = sessionData[toastShownKey];
+  const currentFireTime = reminder.firedAt;
+  
+  if (!lastShownTime || lastShownTime < currentFireTime) {
+    // Se ainda não foi exibido para este disparo, define o flag de visualização...
+    await chrome.storage.session.set({ [toastShownKey]: currentFireTime })
     // ...e então envia a mensagem para mostrar o toast.
+    console.log('Exibindo notificação interna para lembrete:', reminder.id);
     broadcastToSgdTabs({ action: 'SHOW_IN_PAGE_NOTIFICATION', reminder })
+  } else {
+    console.log('Notificação interna já foi exibida para este disparo do lembrete:', reminder.id);
   }
 })
 

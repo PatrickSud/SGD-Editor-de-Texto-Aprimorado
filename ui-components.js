@@ -879,6 +879,9 @@ async function renderRemindersList(modal) {
         const reminders = await getReminders()
         const reminderToComplete = reminders[reminderId]
         if (reminderToComplete) {
+          // Ação para resetar o flag de notificação
+          chrome.runtime.sendMessage({ action: 'RESET_TOAST_FLAG', reminderId: reminderId });
+          
           reminderToComplete.isFired = false
           reminderToComplete.firedAt = Date.now()
 
@@ -1587,6 +1590,9 @@ function showInPageNotification(reminder) {
         const reminders = await getReminders()
         const reminderToComplete = reminders[reminder.id]
         if (reminderToComplete) {
+          // Ação para resetar o flag de notificação
+          chrome.runtime.sendMessage({ action: 'RESET_TOAST_FLAG', reminderId: reminder.id });
+
           reminderToComplete.isFired = false
           reminderToComplete.firedAt = Date.now()
 
@@ -1820,6 +1826,9 @@ async function openFiredRemindersPanel() {
         const reminders = await getReminders()
         const reminderToComplete = reminders[reminderId]
         if (reminderToComplete) {
+          // Ação para resetar o flag de notificação
+          chrome.runtime.sendMessage({ action: 'RESET_TOAST_FLAG', reminderId: reminderId });
+          
           if (
             reminderToComplete.recurrence &&
             reminderToComplete.recurrence !== 'none'
@@ -1897,13 +1906,29 @@ function openSnoozeModal(reminder, onComplete) {
         const reminders = await getReminders()
         const reminderToSnooze = reminders[reminder.id]
         if (reminderToSnooze) {
-          reminderToSnooze.dateTime = btn.dataset.time
-          reminderToSnooze.isFired = false
-          reminderToSnooze.isSnoozed = true // Adicione esta linha
-          await saveReminder(reminderToSnooze)
-          chrome.runtime.sendMessage({ action: 'UPDATE_NOTIFICATION_BADGE' })
-          modal.querySelector('.se-close-modal-btn').click()
-          if (onComplete) onComplete()
+          try {
+            // Limpa o alarme antigo antes de criar o novo
+            await chrome.runtime.sendMessage({ action: 'CLEAR_ALARM', reminderId: reminder.id });
+
+            // Ação para resetar o flag de notificação
+            console.log('Enviando comando para resetar flag de notificação para lembrete:', reminder.id);
+            const resetResult = await chrome.runtime.sendMessage({ action: 'RESET_TOAST_FLAG', reminderId: reminder.id });
+            console.log('Resultado do reset do flag:', resetResult);
+
+            reminderToSnooze.dateTime = btn.dataset.time
+            reminderToSnooze.isFired = false
+            reminderToSnooze.isSnoozed = true
+            await saveReminder(reminderToSnooze)
+
+            showNotification(`Lembrete adiado (${btn.textContent})`, 'success')
+
+            chrome.runtime.sendMessage({ action: 'UPDATE_NOTIFICATION_BADGE' })
+            modal.querySelector('.se-close-modal-btn').click()
+            if (onComplete) onComplete()
+          } catch (error) {
+            console.error('Erro ao adiar lembrete:', error)
+            showNotification(`Erro ao adiar o lembrete: ${error.message}`, 'error')
+          }
         }
       })
     })
