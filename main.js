@@ -215,6 +215,14 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
 }
 
 /**
+ * Detecta se o usuário está usando o navegador Opera.
+ * @returns {boolean} True se for Opera, false caso contrário.
+ */
+function isOperaBrowser() {
+  return /Opera|OPR/.test(navigator.userAgent)
+}
+
+/**
  * Cria o HTML da toolbar do editor.
  * @param {string} instanceId - ID da instância.
  * @param {boolean} includeQuickSteps - Se deve incluir o botão de Trâmites Rápidos.
@@ -252,17 +260,21 @@ async function createEditorToolbarHtml(
   // ADICIONAR ESTA VERIFICAÇÃO NO INÍCIO DA FUNÇÃO
   const isSpeechRecognitionSupported =
     window.SpeechRecognition || window.webkitSpeechRecognition
-  const micButtonDisabled = isSpeechRecognitionSupported ? '' : 'disabled'
-  const micButtonTitle = isSpeechRecognitionSupported
+  const isOpera = isOperaBrowser()
+  const shouldShowMicButton = isSpeechRecognitionSupported && !isOpera
+  const micButtonDisabled = shouldShowMicButton ? '' : 'disabled'
+  const micButtonTitle = shouldShowMicButton
     ? 'Gravar com Microfone'
+    : isOpera
+    ? 'Reconhecimento de voz não suportado no Opera'
     : 'Reconhecimento de voz não suportado neste navegador'
 
   // --- LÓGICA DE VISIBILIDADE APLICADA ---
 
   // Botões de formatação sempre visíveis
   const formattingButtons = `
-    <button type="button" data-action="speech-to-text" class="shine-effect" title="${micButtonTitle}" ${micButtonDisabled}>🎤</button>
-    <div class="toolbar-separator" data-id="mic-separator"></div>
+    ${shouldShowMicButton ? `<button type="button" data-action="speech-to-text" class="shine-effect" title="${micButtonTitle}" ${micButtonDisabled}>🎤</button>
+    <div class="toolbar-separator" data-id="mic-separator"></div>` : ''}
     <button type="button" data-action="bold" class="shine-effect" title="Negrito (Ctrl+B)"><b>B</b></button>
     <button type="button" data-action="italic" class="shine-effect" title="Itálico (Ctrl+I)"><i>I</i></button>
     <button type="button" data-action="underline" class="shine-effect" title="Sublinhado (Ctrl+U)"><u>U</u></button>
@@ -1822,8 +1834,9 @@ async function updateToolbarButtonVisibility(editorContainer) {
           '[data-id="mic-separator"]'
         )
         if (micSeparator) {
-          micSeparator.style.display =
-            buttonsVisibility[key] === false ? 'none' : ''
+          // No Opera, sempre oculta o separador do microfone
+          const shouldHide = buttonsVisibility[key] === false || isOperaBrowser()
+          micSeparator.style.display = shouldHide ? 'none' : ''
         }
       }
     }
