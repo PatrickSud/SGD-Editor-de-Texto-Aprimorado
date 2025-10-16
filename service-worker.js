@@ -18,7 +18,7 @@ const MIN_SUGGESTION_LENGTH = 100
  * @param {'sync' | 'local'} storageArea A área de armazenamento a ser usada.
  * @returns {Promise<any>} Os dados encontrados ou undefined.
  */
-async function getStorageData(key, storageArea = 'sync') {
+async function getStorageData(key, storageArea = 'local') {
   try {
     const result = await chrome.storage[storageArea].get(key)
     return result[key]
@@ -37,7 +37,7 @@ async function getStorageData(key, storageArea = 'sync') {
  * @param {any} value O valor a ser salvo.
  * @param {'sync' | 'local'} storageArea A área de armazenamento a ser usada.
  */
-async function setStorageData(key, value, storageArea = 'sync') {
+async function setStorageData(key, value, storageArea = 'local') {
   try {
     await chrome.storage[storageArea].set({ [key]: value })
   } catch (error) {
@@ -53,7 +53,7 @@ async function setStorageData(key, value, storageArea = 'sync') {
  * @returns {Promise<object>} Um objeto com todos os lembretes.
  */
 async function getReminders() {
-  return (await getStorageData(REMINDERS_STORAGE_KEY, 'sync')) || {}
+  return (await getStorageData(REMINDERS_STORAGE_KEY, 'local')) || {}
 }
 
 /**
@@ -61,7 +61,7 @@ async function getReminders() {
  * @param {object} reminders O objeto de lembretes a ser salvo.
  */
 async function saveReminders(reminders) {
-  await setStorageData(REMINDERS_STORAGE_KEY, reminders, 'sync')
+  await setStorageData(REMINDERS_STORAGE_KEY, reminders, 'local')
 }
 
 // --- LÓGICA DE LEMBRETES E NOTIFICAÇÕES ---

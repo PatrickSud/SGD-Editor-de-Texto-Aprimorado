@@ -5,16 +5,32 @@
 
 /**
  * Recupera os dados armazenados, executando migrações se necessário.
+ * Esta versão inclui uma migração transparente de chrome.storage.sync para chrome.storage.local.
  */
 async function getStoredData() {
   try {
-    const result = await chrome.storage.sync.get(STORAGE_KEY)
+    // 1. Tenta ler do novo local de armazenamento (local)
+    let localResult = await chrome.storage.local.get(STORAGE_KEY);
+    let data = localResult[STORAGE_KEY];
 
-    let data = result[STORAGE_KEY]
+    // 2. Se não encontrou dados no local, verifica o local antigo (sync)
+    if (!data) {
+      const syncResult = await chrome.storage.sync.get(STORAGE_KEY);
+      const syncData = syncResult[STORAGE_KEY];
 
-    // Verifica se a migração é necessária (qualquer versão anterior ou dados corrompidos)
+      // 3. Se encontrou dados no sync, migra para o local
+      if (syncData) {
+        console.log('Editor SGD: Migrando dados do storage.sync para storage.local.');
+        await chrome.storage.local.set({ [STORAGE_KEY]: syncData }); // Salva no local
+        await chrome.storage.sync.remove(STORAGE_KEY); // Limpa o local antigo
+        data = syncData; // Usa os dados migrados para continuar
+        showNotification('Dados da extensão atualizados para a nova versão!', 'info', 4000);
+      }
+    }
+
+    // A partir daqui, o código original de migração de versão continua
     if (!data || data.version !== DATA_VERSION || Array.isArray(data)) {
-      data = await runDataMigration(data)
+      data = await runDataMigration(data);
     }
 
     // Verifica corrupção final.
@@ -23,26 +39,27 @@ async function getStoredData() {
       !Array.isArray(data.categories) ||
       !Array.isArray(data.messages)
     ) {
-      return initializeDefaultData(true)
+      return initializeDefaultData(true);
     }
 
-    return data
+    return data;
   } catch (error) {
-    console.error('Editor SGD: Erro ao carregar dados.', error)
-    return initializeDefaultData(false)
+    console.error('Editor SGD: Erro ao carregar dados.', error);
+    return initializeDefaultData(false);
   }
 }
 
 /**
- * Salva os dados no armazenamento.
+ * Salva os dados no armazenamento local.
  */
 async function saveStoredData(data) {
   try {
-    data.version = DATA_VERSION
-    await chrome.storage.sync.set({ [STORAGE_KEY]: data })
+    data.version = DATA_VERSION;
+    // Agora sempre salva no local, que tem mais espaço.
+    await chrome.storage.local.set({ [STORAGE_KEY]: data });
   } catch (error) {
-    console.error('Editor SGD: Erro ao salvar dados.', error)
-    showNotification('Falha ao salvar alterações.', 'error')
+    console.error('Editor SGD: Erro ao salvar dados.', error);
+    showNotification('Falha ao salvar alterações.', 'error');
   }
 }
 
