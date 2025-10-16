@@ -338,33 +338,39 @@ async function togglePreview(textArea) {
  */
 function handleImagePaste(e, textArea) {
   if (!e.clipboardData || !e.clipboardData.items) {
-    return
+    return;
   }
 
-  // Itera sobre os itens da área de transferência
+  // 1. Analisa todos os itens na área de transferência antes de tomar uma decisão.
+  let hasText = false;
+  let imageFile = null;
+
   for (let i = 0; i < e.clipboardData.items.length; i++) {
-    const item = e.clipboardData.items[i]
-
-    // Verifica se o item é uma imagem
-    if (item.type.indexOf('image/') === 0) {
-      e.preventDefault() // Previne o comportamento padrão de colar
-
-      const file = item.getAsFile()
-      if (!file) continue
-
-      // Usa FileReader para converter a imagem para Base64
-      const reader = new FileReader()
-      reader.onload = function (event) {
-        const base64Data = event.target.result
-
-        // Abre o modal de redimensionamento em vez de inserir diretamente
-        // Isso permite ao usuário escolher o tamanho desejado para a imagem
-        openImageSizeModal(textArea, base64Data)
-      }
-
-      // Lê o arquivo como Data URL (Base64)
-      reader.readAsDataURL(file)
-      break // Para após processar a primeira imagem encontrada
+    const item = e.clipboardData.items[i];
+    if (item.kind === 'string' && item.type.startsWith('text/')) {
+      hasText = true;
+    }
+    if (item.kind === 'file' && item.type.startsWith('image/')) {
+      imageFile = item.getAsFile();
     }
   }
+
+  // 2. Decide a ação com base no que foi encontrado.
+  // Se houver texto, a prioridade é colar o texto. Deixa o navegador fazer a ação padrão.
+  if (hasText || !imageFile) {
+    return;
+  }
+
+  // 3. Apenas se NÃO houver texto e houver uma imagem, tratamos como uma colagem de imagem.
+  e.preventDefault(); // Previne o comportamento padrão de colar
+
+  const reader = new FileReader();
+  reader.onload = function (event) {
+    const base64Data = event.target.result;
+    // Abre o modal de redimensionamento para o usuário escolher o tamanho.
+    openImageSizeModal(textArea, base64Data);
+  };
+
+  // Lê o arquivo de imagem como Data URL (Base64).
+  reader.readAsDataURL(imageFile);
 }
