@@ -1028,7 +1028,23 @@ Seguimos à disposição.
  */
 async function saveGreetingsAndClosings(data) {
   try {
-    await chrome.storage.sync.set({ [GREETINGS_CLOSINGS_KEY]: data })
+    // Garante que a propriedade 'order' exista para compatibilidade com drag-drop
+    if (data.greetings) {
+      data.greetings.forEach((item, index) => {
+        if (item.order === undefined) {
+          item.order = index;
+        }
+      });
+    }
+    if (data.closings) {
+      data.closings.forEach((item, index) => {
+        if (item.order === undefined) {
+          item.order = index;
+        }
+      });
+    }
+
+    await chrome.storage.sync.set({ [GREETINGS_CLOSINGS_KEY]: data });
   } catch (error) {
     console.error(
       'Editor SGD: Erro ao salvar saudações e encerramentos.',

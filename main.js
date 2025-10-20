@@ -53,6 +53,8 @@ let temporaryGreetingClosing = {
   closing: ''
 }
 
+let draggedGcItem = null; // Variável global para rastrear o item arrastado
+
 /**
  * Extrai apenas o conteúdo interno do texto, removendo saudação e encerramento.
  * @param {string} fullText - O texto completo do textarea.
@@ -720,7 +722,7 @@ async function performAutoFill(textArea) {
 }
 
 /**
- * Carrega as opções de saudação e encerramento, incluindo os botões de "Adicionar Novo".
+ * Carrega as opções de saudação e encerramento, incluindo os botões de "Adicionar Novo" e habilita drag-and-drop.
  * @param {HTMLElement} editorContainer - O contêiner da barra de ferramentas.
  */
 async function loadQuickChangeOptions(editorContainer) {
@@ -730,15 +732,20 @@ async function loadQuickChangeOptions(editorContainer) {
   const data = await getGreetingsAndClosings()
   let html = ''
 
-  // Função auxiliar para criar a lista de itens
+  // Função auxiliar para criar a lista de itens arrastáveis
   const createItemsHtml = (items, type) => {
     const defaultId =
       type === 'greetings' ? data.defaultGreetingId : data.defaultClosingId
-    let itemsHtml = items
+    
+    // Ordena os itens pela propriedade 'order' antes de gerar o HTML
+    const sortedItems = items.sort((a, b) => (a.order || 0) - (b.order || 0))
+
+    let itemsHtml = sortedItems
       .map(item => {
         const isActive = item.id === defaultId
         return `
-        <div class="quick-change-item" data-id="${item.id}" data-type="${type}">
+        <div class="quick-change-item gc-item" draggable="true" data-id="${item.id}" data-type="${type}" data-order="${item.order || 0}">
+          <span class="drag-handle" title="Arraste para reordenar">⠿</span>
           <button type="button" class="set-default-btn ${
             isActive ? 'active' : ''
           }" title="${
@@ -760,25 +767,174 @@ async function loadQuickChangeOptions(editorContainer) {
     return itemsHtml
   }
 
+  // Renderiza Saudações
+  html += '<div class="gc-list" data-list-type="greetings">'; // Wrapper para drop
+  html += '<h5>Saudações</h5>'
   if (data.greetings && data.greetings.length > 0) {
-    html += '<h5>Saudações</h5>'
     html += createItemsHtml(data.greetings, 'greetings')
   } else {
     // Se não houver saudações, mostra apenas o botão de adicionar
     html += '<h5>Saudações</h5>'
     html += `<button type="button" class="add-new-item-btn" data-type="greetings">+ Adicionar Saudação</button>`
   }
+  html += '</div>'
 
+  // Renderiza Encerramentos
+  html += '<div class="gc-list" data-list-type="closings">'; // Wrapper para drop
+  html += '<h5>Encerramentos</h5>'
   if (data.closings && data.closings.length > 0) {
-    html += '<h5>Encerramentos</h5>'
     html += createItemsHtml(data.closings, 'closings')
   } else {
     // Se não houver encerramentos, mostra apenas o botão de adicionar
     html += '<h5>Encerramentos</h5>'
     html += `<button type="button" class="add-new-item-btn" data-type="closings">+ Adicionar Encerramento</button>`
   }
+  html += '</div>'
 
   container.innerHTML = html
+
+  // ADICIONADO: Adiciona listeners de drag-and-drop aos itens e listas
+  container.querySelectorAll('.quick-change-item[draggable="true"]').forEach(item => {
+     item.addEventListener('dragstart', handleGcDragStart)
+     item.addEventListener('dragend', handleGcDragEnd)
+  })
+  container.querySelectorAll('.gc-list').forEach(list => {
+     list.addEventListener('dragover', handleGcDragOver)
+     list.addEventListener('dragleave', handleGcDragLeave)
+     list.addEventListener('drop', handleGcDrop)
+  })
+}
+
+function handleGcDragStart(e) {
+  draggedGcItem = e.target.closest('.quick-change-item')
+  if (draggedGcItem) {
+    e.dataTransfer.setData('text/plain', draggedGcItem.dataset.id)
+    e.dataTransfer.effectAllowed = 'move'
+    // Adiciona classe com delay para visualização correta
+    requestAnimationFrame(() => {
+      draggedGcItem.classList.add('is-dragging')
+    })
+  }
+}
+
+function handleGcDragEnd(e) {
+  if (draggedGcItem) {
+    draggedGcItem.classList.remove('is-dragging')
+  }
+  draggedGcItem = null
+  // Limpa indicadores visuais de drop
+  document.querySelectorAll('.gc-item.drag-over-top, .gc-item.drag-over-bottom')
+    .forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'))
+}
+
+function handleGcDragOver(e) {
+  e.preventDefault() // Necessário para permitir o drop
+  if (!draggedGcItem) return
+
+  const targetList = e.currentTarget.closest('.gc-list')
+  const targetItem = e.target.closest('.quick-change-item')
+
+  // Verifica se o arraste é válido (mesmo tipo de item: saudação com saudação)
+  const draggedType = draggedGcItem.dataset.type
+  const targetListType = targetList.dataset.listType
+  
+  if (draggedType !== targetListType) {
+     e.dataTransfer.dropEffect = 'none' // Indica drop inválido
+     return
+  } else {
+     e.dataTransfer.dropEffect = 'move' // Indica drop válido
+  }
+
+
+  // Limpa indicadores anteriores
+  targetList.querySelectorAll('.gc-item.drag-over-top, .gc-item.drag-over-bottom')
+    .forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'))
+
+  if (targetItem && targetItem !== draggedGcItem) {
+    const rect = targetItem.getBoundingClientRect()
+    const isBottomHalf = (e.clientY - rect.top) / rect.height > 0.5
+    targetItem.classList.add(isBottomHalf ? 'drag-over-bottom' : 'drag-over-top')
+  }
+}
+
+function handleGcDragLeave(e) {
+     // Remove indicadores se sair da área do item ou da lista
+     const targetItem = e.target.closest('.quick-change-item')
+     if (targetItem) {
+         targetItem.classList.remove('drag-over-top', 'drag-over-bottom')
+     }
+     // Verifica se saiu da lista inteira
+     const list = e.currentTarget.closest('.gc-list')
+     if (list && !list.contains(e.relatedTarget)) {
+         list.querySelectorAll('.gc-item.drag-over-top, .gc-item.drag-over-bottom')
+             .forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'))
+     }
+}
+
+async function handleGcDrop(e) {
+  e.preventDefault()
+  if (!draggedGcItem) return
+
+  const currentDraggedItem = draggedGcItem // Guarda referência antes de limpar
+  const targetList = e.currentTarget.closest('.gc-list')
+  const targetItem = document.elementFromPoint(e.clientX, e.clientY)?.closest('.quick-change-item')
+
+  // Verifica se o drop é válido (mesmo tipo)
+  const draggedType = currentDraggedItem.dataset.type
+  const targetListType = targetList.dataset.listType
+  if (draggedType !== targetListType) {
+     handleGcDragEnd(e) // Limpa o estado
+     return
+  }
+
+  handleGcDragEnd(e) // Limpa o estado visual do drag
+
+  // Pega todos os itens da lista alvo (no DOM) para determinar a nova ordem
+  const itemsInList = Array.from(targetList.querySelectorAll('.quick-change-item'))
+  let targetIndex = -1
+
+  if (targetItem && targetItem !== currentDraggedItem) {
+    const rect = targetItem.getBoundingClientRect()
+    const isBottomHalf = (e.clientY - rect.top) / rect.height > 0.5
+    const currentTargetIndex = itemsInList.findIndex(item => item === targetItem)
+    targetIndex = isBottomHalf ? currentTargetIndex + 1 : currentTargetIndex
+  } else {
+    // Se soltar no espaço vazio da lista (ou sobre ele mesmo), vai para o final
+    targetIndex = itemsInList.length
+  }
+
+  // Recalcula a ordem
+  const data = await getGreetingsAndClosings()
+  const listKey = draggedType // 'greetings' ou 'closings'
+
+  // Filtra a lista correta e remove o item arrastado temporariamente
+  let updatedList = data[listKey].filter(item => item.id !== currentDraggedItem.dataset.id)
+  
+  // Encontra o objeto do item que foi arrastado
+  const draggedObject = data[listKey].find(item => item.id === currentDraggedItem.dataset.id)
+  
+  if(draggedObject){
+     // Insere o objeto arrastado na nova posição calculada
+     updatedList.splice(targetIndex, 0, draggedObject)
+  }
+
+
+  // Reatribui a propriedade 'order' sequencialmente
+  updatedList.forEach((item, index) => {
+    item.order = index
+  })
+
+  // Atualiza a lista no objeto de dados principal
+  data[listKey] = updatedList
+
+  // Salva os dados atualizados
+  await saveGreetingsAndClosings(data)
+
+  // Recarrega o menu para refletir a nova ordem
+  const editorContainer = targetList.closest('.editor-container')
+  if (editorContainer) {
+    loadQuickChangeOptions(editorContainer)
+  }
 }
 
 /**

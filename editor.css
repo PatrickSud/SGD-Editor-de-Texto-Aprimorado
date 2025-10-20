@@ -5059,3 +5059,59 @@ button[id='modal-cancel-btn'].enhanced-btn:hover {
   color: white;
   font-weight: 600;
 }
+
+/* Adapte ou reutilize de quick-messages.js */
+.gc-item { /* Usando a classe adicionada */
+   position: relative; /* Necessário para os pseudo-elementos ::before/::after */
+   /* Outros estilos existentes... */
+}
+
+.gc-item.is-dragging {
+  opacity: 0.8;
+  background-color: var(--background-hover);
+  cursor: grabbing;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+.gc-item .drag-handle {
+  cursor: move;
+  color: var(--text-color-muted);
+  user-select: none;
+  padding: 0 4px;
+  font-size: 16px;
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity var(--transition-fast);
+}
+
+ .gc-item:hover .drag-handle {
+   opacity: 1;
+ }
+
+/* Indicadores visuais de drop (linhas azuis) */
+.gc-item.drag-over-top::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--primary-color);
+  z-index: 1;
+}
+
+.gc-item.drag-over-bottom::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--primary-color);
+  z-index: 1;
+}
+
+/* Adicione ao seu editor.css se ainda não existirem regras similares */
+.gc-list {
+   /* Pode adicionar um padding ou estilo para indicar a área de drop */
+}
