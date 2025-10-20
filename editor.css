@@ -248,13 +248,50 @@ textarea[data-enhanced],
 
 .editor-master-container {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 5px;
+  width: 100%;
 }
+
+/* --- Estilos para o Layout Vertical --- */
+.vertical-layout .editor-content-wrapper {
+  display: flex;
+  flex-direction: row; /* Editor na esquerda, preview na direita */
+  align-items: stretch;
+}
+
+.vertical-layout .editor-preview-container {
+  order: 2; /* Preview fica na direita */
+  position: relative;
+  width: 65%;
+  max-width: 800px;
+  min-width: 300px;
+  height: auto;
+  border-left: 1px solid var(--border-color);
+  border-top: 1px solid var(--border-color); /* Adiciona borda superior */
+  resize: horizontal;
+  overflow: hidden; /* Remove a barra de rolagem interna */
+  margin-top: 0; /* Remove margem superior no modo vertical */
+  border-radius: 0 0 var(--border-radius-md) 0; /* Apenas canto inferior direito arredondado */
+}
+
+.vertical-layout .editor-content-wrapper > textarea {
+  order: 1; /* Editor fica na esquerda */
+  flex-grow: 1;
+  width: 35%; /* Ocupa o espaço restante */
+  min-height: 350px; /* Mantém uma altura mínima consistente */
+  height: auto;
+  overflow-y: hidden; /* Esconde a barra de rolagem vertical */
+}
+
+.vertical-layout .preview-content {
+  padding: 0 15px; /* Adiciona espaçamento lateral no modo vertical */
+  padding-top: 0; /* Remove o espaçamento superior no modo vertical */
+}
+
+/* -- Fim do Layout Vertical -- */
 
 .editor-container {
   border: 1px solid var(--border-color);
+  border-bottom: none;
   border-radius: var(--border-radius-md);
   padding: 8px;
   background-color: var(--background-main);
@@ -281,6 +318,8 @@ textarea[data-enhanced] {
   border-radius: 0;
   border-bottom-left-radius: var(--border-radius-md);
   border-bottom-right-radius: var(--border-radius-md);
+  max-height: 500px; /* Limita a altura máxima */
+  overflow-y: auto !important; /* Adiciona uma barra de rolagem quando necessário */
 }
 
 textarea[data-enhanced]:focus {
@@ -293,7 +332,7 @@ textarea[data-enhanced]:focus {
   border: 1px solid var(--border-color);
   border-top: 1px dashed var(--border-color);
   border-radius: var(--border-radius-md);
-  margin-top: 8px;
+  margin-top: 4px;
   background-color: var(--background-main);
   color: var(--text-color-main);
   position: relative;
@@ -303,6 +342,11 @@ textarea[data-enhanced]:focus {
 .preview-content {
   padding: 12px;
   word-wrap: break-word;
+}
+
+/* Remove a margem superior do primeiro elemento no preview para alinhar ao topo */
+.preview-content > :first-child {
+  margin-top: 0;
 }
 
 .preview-pin-btn {
@@ -317,12 +361,29 @@ textarea[data-enhanced]:focus {
   padding: 6px;
   border-radius: 50%;
   line-height: 1;
-  opacity: 0.7; /* Sempre visível */
+  opacity: 0.7;
   transform: scale(1);
   transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
 }
 
-.preview-pin-btn:hover {
+.preview-layout-btn {
+  position: absolute;
+  top: 6px;
+  right: 40px; /* Ao lado do botão pin */
+  z-index: 1;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 6px;
+  border-radius: 50%;
+  line-height: 1;
+  opacity: 0.7;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.preview-pin-btn:hover,
+.preview-layout-btn:hover {
   opacity: 1;
   background-color: var(--background-hover);
 }
@@ -4837,7 +4898,7 @@ button[data-action='speech-to-text']:disabled:hover {
 /* Botão Flutuante para Limpar Formulário */
 .clear-form-btn {
   position: absolute;
-  top: 65px; /* Ajustado para ficar ainda mais abaixo */
+  top: 65px;
   right: 22px;
   z-index: 10;
   background-color: rgba(0, 0, 0, 0.1);
@@ -4848,6 +4909,12 @@ button[data-action='speech-to-text']:disabled:hover {
   cursor: pointer;
   font-size: 14px;
   transition: background-color 0.2s;
+}
+
+/* Ajusta a posição do botão Limpar no layout vertical */
+.vertical-layout .clear-form-btn {
+  top: 65px;
+  right: 75px;
 }
 
 .clear-form-btn:hover {
@@ -5127,4 +5194,38 @@ button[id='modal-cancel-btn'].enhanced-btn:hover {
 .gc-list.drag-over {
   background-color: var(--background-hover);
   border-color: var(--primary-color);
+}
+
+/* Define uma altura mínima para o painel redimensionável no modo vertical */
+.vertical-layout .editor-preview-container.resizable {
+  min-height: 350px;
+}
+
+/* --- ESTILOS GLOBAIS PARA BARRAS DE ROLAGEM --- */
+/* Aplica a estilização em textareas aprimorados e no painel de visualização */
+textarea[data-enhanced]::-webkit-scrollbar,
+.editor-preview-container::-webkit-scrollbar,
+.preview-scroll-wrapper::-webkit-scrollbar {
+  width: 4px; /* Largura da barra de rolagem */
+}
+
+textarea[data-enhanced]::-webkit-scrollbar-track,
+.editor-preview-container::-webkit-scrollbar-track,
+.preview-scroll-wrapper::-webkit-scrollbar-track {
+  background: var(--background-secondary); /* Fundo da barra */
+  border-radius: 10px;
+}
+
+textarea[data-enhanced]::-webkit-scrollbar-thumb,
+.editor-preview-container::-webkit-scrollbar-thumb,
+.preview-scroll-wrapper::-webkit-scrollbar-thumb {
+  background-color: var(--primary-color); /* Cor do "polegar" */
+  border-radius: 10px;
+}
+
+textarea[data-enhanced]::-webkit-scrollbar-thumb:hover,
+.editor-preview-container::-webkit-scrollbar-thumb:hover,
+.preview-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+  background-color: var(--primary-color-hover); /* Cor do polegar ao passar o mouse */
+  cursor: default; /* Garante que o cursor seja a seta padrão */
 }

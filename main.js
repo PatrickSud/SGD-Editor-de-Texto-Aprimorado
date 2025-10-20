@@ -262,7 +262,11 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
   if (textArea.parentNode) {
     textArea.parentNode.insertBefore(masterContainer, textArea)
     masterContainer.appendChild(editorContainer)
-    masterContainer.appendChild(textArea)
+    // Cria um wrapper para o textarea e o preview para o layout vertical
+    const contentWrapper = document.createElement('div')
+    contentWrapper.className = 'editor-content-wrapper'
+    contentWrapper.appendChild(textArea)
+    masterContainer.appendChild(contentWrapper)
   } else {
     console.error(
       'Editor SGD: Não foi possível encontrar o elemento pai do textarea.'
@@ -313,6 +317,12 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
 
     if (instanceId === 'main') {
       const pinButton = document.getElementById(`preview-pin-btn-${instanceId}`)
+      const layoutButton = document.getElementById(
+        `preview-layout-btn-${instanceId}`
+      )
+      const masterContainer = textArea.closest('.editor-master-container')
+
+      // Lógica do Pin
       const setPinState = isResizable => {
         previewContainer.classList.toggle('resizable', isResizable)
         pinButton.classList.toggle('unpinned', isResizable)
@@ -328,6 +338,39 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
         const newState = !currentStateIsResizable
         setPinState(newState)
         await savePreviewResizableState(newState)
+      })
+
+      // Lógica do Layout
+      const setLayoutState = orientation => {
+        masterContainer.classList.toggle(
+          'vertical-layout',
+          orientation === 'vertical'
+        )
+        layoutButton.innerHTML = orientation === 'vertical' ? '↔️' : '↕️'
+        layoutButton.title =
+          orientation === 'vertical'
+            ? 'Alternar para visualização horizontal'
+            : 'Alternar para visualização vertical'
+      }
+
+      const initialOrientation = await getPreviewOrientationState()
+      setLayoutState(initialOrientation)
+      if (initialOrientation === 'vertical') {
+        autoGrowTextArea(textArea)
+      }
+
+      layoutButton.addEventListener('click', async () => {
+        const isVertical = masterContainer.classList.contains('vertical-layout')
+        const newOrientation = isVertical ? 'horizontal' : 'vertical'
+        setLayoutState(newOrientation)
+        await savePreviewOrientationState(newOrientation)
+
+        // Ajusta a altura ao mudar o layout
+        if (newOrientation === 'vertical') {
+          autoGrowTextArea(textArea)
+        } else {
+          textArea.style.height = '' // Reseta para o padrão
+        }
       })
     }
     updatePreview(textArea)
@@ -1038,6 +1081,12 @@ function setupEditorInstanceListeners(
           history.add(textArea.value)
         }, 400) // Aguarda 400ms de inatividade para salvar
       }
+
+      // Ajusta a altura do textarea no modo vertical
+      const masterContainer = textArea.closest('.editor-master-container')
+      if (masterContainer && masterContainer.classList.contains('vertical-layout')) {
+        autoGrowTextArea(textArea)
+      }
     })
 
     if (instanceId === 'main') {
@@ -1449,6 +1498,20 @@ function updateFormattingButtonsState(textArea, editorContainer) {
       button.classList.remove('active-formatting-btn')
     }
   })
+}
+
+/**
+ * Ajusta a altura de um textarea para corresponder ao seu conteúdo.
+ * @param {HTMLTextAreaElement} textArea - O elemento textarea.
+ */
+function autoGrowTextArea(textArea) {
+  textArea.style.height = 'auto';
+  const maxHeight = 350; // O mesmo valor definido no CSS
+  if (textArea.scrollHeight <= maxHeight) {
+    textArea.style.height = textArea.scrollHeight + 'px';
+  } else {
+    textArea.style.height = maxHeight + 'px';
+  }
 }
 
 /**
