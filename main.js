@@ -819,36 +819,41 @@ function handleGcDragStart(e) {
 
 function handleGcDragEnd(e) {
   if (draggedGcItem) {
-    draggedGcItem.classList.remove('is-dragging')
+    draggedGcItem.classList.remove('is-dragging');
   }
-  draggedGcItem = null
+  draggedGcItem = null;
   // Limpa indicadores visuais de drop
   document.querySelectorAll('.gc-item.drag-over-top, .gc-item.drag-over-bottom')
-    .forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'))
+    .forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'));
+  // Limpa o feedback de todas as listas
+  document.querySelectorAll('.gc-list.drag-over')
+    .forEach(el => el.classList.remove('drag-over'));
 }
 
 function handleGcDragOver(e) {
-  e.preventDefault() // Necessário para permitir o drop
-  if (!draggedGcItem) return
+  e.preventDefault(); // Necessário para permitir o drop
+  if (!draggedGcItem) return;
 
-  const targetList = e.currentTarget.closest('.gc-list')
-  const targetItem = e.target.closest('.quick-change-item')
+  const targetList = e.currentTarget.closest('.gc-list');
+  const targetItem = e.target.closest('.quick-change-item');
 
   // Verifica se o arraste é válido (mesmo tipo de item: saudação com saudação)
-  const draggedType = draggedGcItem.dataset.type
-  const targetListType = targetList.dataset.listType
+  const draggedType = draggedGcItem.dataset.type;
+  const targetListType = targetList.dataset.listType;
   
   if (draggedType !== targetListType) {
-     e.dataTransfer.dropEffect = 'none' // Indica drop inválido
-     return
+     e.dataTransfer.dropEffect = 'none'; // Indica drop inválido
+     targetList.classList.remove('drag-over'); // Garante que o feedback seja removido
+     return; 
   } else {
-     e.dataTransfer.dropEffect = 'move' // Indica drop válido
+     e.dataTransfer.dropEffect = 'move'; // Indica drop válido
+     targetList.classList.add('drag-over'); // Adiciona feedback visual à lista
   }
 
 
   // Limpa indicadores anteriores
   targetList.querySelectorAll('.gc-item.drag-over-top, .gc-item.drag-over-bottom')
-    .forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'))
+    .forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'));
 
   if (targetItem && targetItem !== draggedGcItem) {
     const rect = targetItem.getBoundingClientRect()
@@ -866,6 +871,7 @@ function handleGcDragLeave(e) {
      // Verifica se saiu da lista inteira
      const list = e.currentTarget.closest('.gc-list')
      if (list && !list.contains(e.relatedTarget)) {
+         list.classList.remove('drag-over') // Remove o feedback da lista
          list.querySelectorAll('.gc-item.drag-over-top, .gc-item.drag-over-bottom')
              .forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'))
      }

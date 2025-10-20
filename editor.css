@@ -5111,7 +5111,20 @@ button[id='modal-cancel-btn'].enhanced-btn:hover {
   z-index: 1;
 }
 
-/* Adicione ao seu editor.css se ainda não existirem regras similares */
+/* Estilo para a lista de saudações/encerramentos */
 .gc-list {
-   /* Pode adicionar um padding ou estilo para indicar a área de drop */
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border: 1px dashed transparent;
+  border-radius: 6px;
+  min-height: 40px; /* Garante área de drop mesmo com a lista vazia */
+  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+}
+
+/* Feedback visual quando um item válido é arrastado sobre a lista */
+.gc-list.drag-over {
+  background-color: var(--background-hover);
+  border-color: var(--primary-color);
 }
