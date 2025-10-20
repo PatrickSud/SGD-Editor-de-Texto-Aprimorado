@@ -47,6 +47,152 @@ function createHistoryManager(initialState) {
 
 let lastKnownTextAreaValue = ''
 
+// Variável para armazenar temporariamente saudações e encerramentos removidos
+let temporaryGreetingClosing = {
+  greeting: '',
+  closing: ''
+}
+
+/**
+ * Extrai apenas o conteúdo interno do texto, removendo saudação e encerramento.
+ * @param {string} fullText - O texto completo do textarea.
+ * @returns {object} Objeto contendo {greeting, content, closing}
+ */
+function extractContentParts(fullText) {
+  let greeting = ''
+  let content = fullText
+  let closing = ''
+
+  const greetingIndex = fullText.indexOf(GREETING_SEPARATOR)
+  const closingIndex = fullText.lastIndexOf(CLOSING_SEPARATOR)
+
+  // Se há separador de saudação
+  if (greetingIndex !== -1) {
+    greeting = fullText.substring(0, greetingIndex)
+    // Se também há separador de encerramento
+    if (closingIndex !== -1 && closingIndex > greetingIndex) {
+      content = fullText.substring(greetingIndex + GREETING_SEPARATOR.length, closingIndex)
+      closing = fullText.substring(closingIndex + CLOSING_SEPARATOR.length)
+    } else {
+      // Só tem saudação
+      content = fullText.substring(greetingIndex + GREETING_SEPARATOR.length)
+    }
+  } else if (closingIndex !== -1) {
+    // Só tem encerramento (sem saudação)
+    content = fullText.substring(0, closingIndex)
+    closing = fullText.substring(closingIndex + CLOSING_SEPARATOR.length)
+  }
+
+  return {
+    greeting: greeting.trim(),
+    content: content.trim(),
+    closing: closing.trim()
+  }
+}
+
+/**
+ * Adiciona saudação e encerramento ao conteúdo, usando textos salvos ou padrões.
+ * @param {string} content - O conteúdo interno atual.
+ * @param {boolean} useTemporary - Se deve tentar usar textos temporários salvos.
+ * @returns {Promise<string>} O texto completo com saudação e encerramento.
+ */
+async function addGreetingAndClosing(content, useTemporary = true) {
+  let greeting = ''
+  let closing = ''
+
+  // Tenta usar textos temporários salvos
+  if (useTemporary && (temporaryGreetingClosing.greeting || temporaryGreetingClosing.closing)) {
+    greeting = temporaryGreetingClosing.greeting
+    closing = temporaryGreetingClosing.closing
+    
+    // Limpa o cache temporário após uso
+    temporaryGreetingClosing = { greeting: '', closing: '' }
+  } else {
+    // Busca os padrões configurados
+    const data = await getGreetingsAndClosings()
+    
+    if (data.defaultGreetingId) {
+      const defaultGreeting = data.greetings.find(g => g.id === data.defaultGreetingId)
+      if (defaultGreeting) {
+        greeting = await resolveVariablesInText(defaultGreeting.content)
+      }
+    }
+    
+    if (data.defaultClosingId) {
+      const defaultClosing = data.closings.find(c => c.id === data.defaultClosingId)
+      if (defaultClosing) {
+        closing = await resolveVariablesInText(defaultClosing.content)
+      }
+    }
+  }
+
+  // Monta o texto final
+  let finalText = content
+
+  if (greeting) {
+    finalText = greeting + GREETING_SEPARATOR + (content ? '\n' : '') + finalText
+  }
+
+  if (closing) {
+    finalText = finalText + (content ? '\n' : '') + CLOSING_SEPARATOR + closing
+  }
+
+  return finalText
+}
+
+/**
+ * Configura o listener para os selects de situação do trâmite.
+ * @param {HTMLTextAreaElement} textArea - O textarea do editor principal.
+ */
+function setupSituationListener(textArea) {
+  const situationSelects = [
+    document.getElementById('cadSscForm:situacaoTramite'),
+    document.getElementById('sscForm:situacaoTramite')
+  ]
+
+  situationSelects.forEach(select => {
+    if (!select) return
+
+    select.addEventListener('change', async () => {
+      const selectedValue = select.value
+
+      // Aguarda a função nativa do SGD executar primeiro (carregaDescricaoTramiteSaudacaoBySituacaoTipoResposta)
+      setTimeout(async () => {
+        const currentText = textArea.value
+
+        // Valor 3 = "Respondido ao Cliente"
+        if (selectedValue === '3') {
+          // Adicionar saudação e encerramento
+          const parts = extractContentParts(currentText)
+          const newText = await addGreetingAndClosing(parts.content, true)
+          
+          if (newText !== currentText) {
+            textArea.value = newText
+            textArea.dispatchEvent(new Event('input', { bubbles: true }))
+          }
+        } else {
+          // Remover saudação e encerramento (manter apenas conteúdo)
+          const parts = extractContentParts(currentText)
+          
+          // Salva temporariamente se houver saudação ou encerramento
+          if (parts.greeting || parts.closing) {
+            temporaryGreetingClosing = {
+              greeting: parts.greeting,
+              closing: parts.closing
+            }
+            
+            // Atualiza o textarea apenas com o conteúdo interno
+            if (parts.content !== currentText) {
+              textArea.value = parts.content
+              textArea.dispatchEvent(new Event('input', { bubbles: true }))
+            }
+          }
+        }
+      }, 300) // Aguarda 300ms para garantir que a função do SGD termine
+    })
+  })
+}
+
 /**
  * Observa mudanças no DOM para lidar com carregamento dinâmico (AJAX) do SGD.
  */
@@ -210,6 +356,7 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
     addSgdActionButtons(masterContainer)
     setupSolutionObserver(textArea)
     setupUserSelectionListener(textArea)
+    setupSituationListener(textArea)
     performAutoFill(textArea)
   }
 }
@@ -499,6 +646,23 @@ function createAndAppendSgscWarning(masterContainer) {
 async function performAutoFill(textArea) {
   if (textArea.value.trim() !== '') {
     return
+  }
+
+  // Verifica se o select ssForm:situacaoTramite existe e tem as opções específicas
+  const ssFormSelect = document.getElementById('ssForm:situacaoTramite')
+  if (ssFormSelect) {
+    // Verifica se existem as opções com value "4" ou "5"
+    const hasRespondidoOption = Array.from(ssFormSelect.options).some(
+      option => option.value === '4'
+    )
+    const hasConcluidoOption = Array.from(ssFormSelect.options).some(
+      option => option.value === '5'
+    )
+    
+    // Se ambas as opções existirem, não preenche automaticamente
+    if (hasRespondidoOption && hasConcluidoOption) {
+      return
+    }
   }
 
   const data = await getGreetingsAndClosings()
