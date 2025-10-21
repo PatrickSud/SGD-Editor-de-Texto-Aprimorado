@@ -693,6 +693,20 @@ async function performAutoFill(textArea) {
     return
   }
 
+  // Verifica todos os selects de situação
+  const situationSelects = [
+    document.getElementById('cadSscForm:situacaoTramite'),
+    document.getElementById('sscForm:situacaoTramite'),
+    document.getElementById('ssForm:situacaoTramite')
+  ]
+
+  // Verifica se algum select está com o valor "1" (Em análise)
+  for (const select of situationSelects) {
+    if (select && select.value === '1') {
+      return // Não preenche automaticamente quando está "Em análise"
+    }
+  }
+
   // Verifica se o select ssForm:situacaoTramite existe e tem as opções específicas
   const ssFormSelect = document.getElementById('ssForm:situacaoTramite')
   if (ssFormSelect) {
