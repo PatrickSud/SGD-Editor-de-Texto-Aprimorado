@@ -230,7 +230,7 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
   if (!textArea || textArea.dataset.enhanced) return
   textArea.dataset.enhanced = instanceId
 
-  const {
+const {
     includePreview,
     includeQuickSteps,
     includeThemeToggle,
@@ -438,6 +438,8 @@ async function createEditorToolbarHtml(
   const settings = await getSettings() // Carrega as configurações
   const buttonsVisibility =
     settings.toolbarButtons || DEFAULT_SETTINGS.toolbarButtons
+  const uiSettings = settings.uiSettings || DEFAULT_SETTINGS.uiSettings
+  const buttonLabelType = uiSettings.buttonLabelType || 'symbol'
 
   // Debug: Log das configurações carregadas
   console.log(
@@ -461,15 +463,20 @@ async function createEditorToolbarHtml(
     ? 'Reconhecimento de voz não suportado no Opera'
     : 'Reconhecimento de voz não suportado neste navegador'
 
-  // --- LÓGICA DE VISIBILIDADE APLICADA ---
+  // --- LÓGICA DE VISIBILIDADE E RÓTULOS APLICADA ---
+
+  // Define os rótulos dos botões baseado na configuração
+  const boldLabel = buttonLabelType === 'text' ? '<b>Negrito</b>' : '<b>B</b>'
+  const italicLabel = buttonLabelType === 'text' ? '<i>Itálico</i>' : '<i>I</i>'
+  const underlineLabel = buttonLabelType === 'text' ? '<u>Sublinhado</u>' : '<u>U</u>'
 
   // Botões de formatação sempre visíveis
   const formattingButtons = `
     ${shouldShowMicButton ? `<button type="button" data-action="speech-to-text" class="shine-effect" title="${micButtonTitle}" ${micButtonDisabled}>🎤</button>
     <div class="toolbar-separator" data-id="mic-separator"></div>` : ''}
-    <button type="button" data-action="bold" class="shine-effect" title="Negrito (Ctrl+B)"><b>B</b></button>
-    <button type="button" data-action="italic" class="shine-effect" title="Itálico (Ctrl+I)"><i>I</i></button>
-    <button type="button" data-action="underline" class="shine-effect" title="Sublinhado (Ctrl+U)"><u>U</u></button>
+    <button type="button" data-action="bold" class="shine-effect" title="Negrito (Ctrl+B)">${boldLabel}</button>
+    <button type="button" data-action="italic" class="shine-effect" title="Itálico (Ctrl+I)">${italicLabel}</button>
+    <button type="button" data-action="underline" class="shine-effect" title="Sublinhado (Ctrl+U)">${underlineLabel}</button>
     ${
       buttonsVisibility.separator2
         ? '<div class="toolbar-separator" data-id="separator2"></div>'
@@ -2260,6 +2267,30 @@ async function applyGlobalVisibilitySettings() {
     // A visibilidade do botão também depende do scroll, então usamos uma classe
     goToTopButton.style.display = visibility.goToTop === false ? 'none' : ''
   }
+}
+
+/**
+ * Atualiza os rótulos dos botões de formatação em todas as toolbars abertas.
+ */
+async function updateAllToolbarButtonLabels() {
+  const settings = await getSettings()
+  const buttonLabelType = settings.uiSettings?.buttonLabelType || 'symbol'
+  
+  // Define os rótulos baseado na configuração
+  const boldLabel = buttonLabelType === 'text' ? '<b>Negrito</b>' : '<b>B</b>'
+  const italicLabel = buttonLabelType === 'text' ? '<i>Itálico</i>' : '<i>I</i>'
+  const underlineLabel = buttonLabelType === 'text' ? '<u>Sublinhado</u>' : '<u>U</u>'
+  
+  // Atualiza todas as toolbars abertas
+  document.querySelectorAll('.editor-container').forEach(container => {
+    const boldBtn = container.querySelector('[data-action="bold"]')
+    const italicBtn = container.querySelector('[data-action="italic"]')
+    const underlineBtn = container.querySelector('[data-action="underline"]')
+    
+    if (boldBtn) boldBtn.innerHTML = boldLabel
+    if (italicBtn) italicBtn.innerHTML = italicLabel
+    if (underlineBtn) underlineBtn.innerHTML = underlineLabel
+  })
 }
 
 function applyAllVisibilitySettings() {
