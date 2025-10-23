@@ -1,0 +1,512 @@
+/* Estilos da barra de ferramentas principal */
+
+/* --- BARRA DE FERRAMENTAS --- */
+.editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
+}
+
+.editor-toolbar button,
+.dropdown button,
+.action-btn {
+  background-color: var(--background-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: var(--ui-font-size);
+  color: var(--text-color-main);
+  transition: background-color var(--transition-fast),
+    box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.editor-toolbar button:hover,
+.dropdown button:hover,
+.action-btn:hover {
+  background-color: var(--background-hover);
+  border-color: var(--border-color);
+  transform: translateY(-1px) scale(var(--ui-icon-scale)); /* Adiciona escala aos ícones */
+  box-shadow: var(--shadow-md);
+}
+
+/* NOVA CLASSE: Estado ativo para botões de formatação */
+.editor-toolbar button.active-formatting-btn {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
+  transform: scale(var(--ui-icon-scale));
+}
+
+.editor-toolbar button.active-formatting-btn:hover {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+  transform: translateY(-1px) scale(var(--ui-icon-scale));
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2), var(--shadow-md);
+}
+
+/* Ajuste para que o tamanho do ícone seja controlado pela escala */
+.editor-toolbar button,
+.dropdown button {
+  transform: scale(var(--ui-icon-scale));
+}
+
+.toolbar-separator {
+  width: 1.5px;
+  height: 18px;
+  background-color: var(--border-color);
+  margin: 0 5px;
+  border-radius: 2px;
+  opacity: 0.5;
+  align-self: center;
+}
+
+/* --- BOTÕES DE AÇÃO SGD NA TOOLBAR --- */
+.sgd-toolbar-action-group {
+  margin-left: auto; /* Empurra os botões para a direita */
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn-themed {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: transparent;
+  font-weight: 500;
+}
+
+.action-btn-themed:hover {
+  background-color: var(--primary-color-hover);
+}
+
+/* Garantir que os botões de ação do SGD mantenham cor branca */
+.action-btn-themed.enhanced-btn {
+  color: white !important;
+}
+
+.action-btn-themed.enhanced-btn:hover {
+  color: white !important;
+}
+
+/* --- DROPDOWNS --- */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+.dropdown-content {
+  display: none;
+  flex-direction: column;
+  position: absolute;
+  width: max-content;
+  box-shadow: var(--shadow-lg);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-color);
+  z-index: 1001;
+  padding: 8px;
+
+  /* Efeito de Vidro Fosco */
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  background-color: var(--background-glass);
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.07"/%3E%3C/svg%3E');
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.dropdown-content button {
+  width: 100%;
+  text-align: left;
+  margin-bottom: 4px;
+}
+.dropdown-content button:last-child {
+  margin-bottom: 0;
+}
+.dropdown:hover .dropdown-content {
+  display: flex;
+}
+
+/* --- TRÂMITES RÁPIDOS (Drag & Drop) --- */
+.quick-steps-list {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 8px;
+  padding-right: 5px;
+}
+.category-title {
+  cursor: pointer;
+  font-weight: bold;
+  padding: 5px 8px;
+  border-radius: 4px;
+  margin: 5px 0 2px 0;
+  user-select: none;
+  position: relative;
+  transition: background-color var(--transition-fast);
+  background-color: var(--background-main);
+  border-bottom: 1px solid var(--border-color);
+}
+.category-title:hover {
+  background-color: var(--background-hover);
+}
+.category-title::before {
+  content: '▶';
+  font-size: 10px;
+  margin-right: 5px;
+  transition: transform var(--transition-fast);
+  display: inline-block;
+  color: var(--text-color-muted);
+}
+.category-container:not(.collapsed) .category-title::before {
+  transform: rotate(90deg);
+}
+.category-container.collapsed .messages-list {
+  display: none;
+}
+
+.category-container.drag-over {
+  border: 2px dashed var(--primary-color);
+  border-radius: var(--border-radius-sm);
+  background-color: color-mix(in srgb, var(--primary-color) 10%, transparent);
+}
+
+.message-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  position: relative;
+}
+.message-item:hover {
+  background-color: var(--background-hover);
+}
+
+.message-item.drag-over-top::before,
+.category-item.drag-over-top::before,
+.gc-item.drag-over-top::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--primary-color);
+  z-index: 1;
+}
+
+.message-item.drag-over-bottom::after,
+.category-item.drag-over-bottom::after,
+.gc-item.drag-over-bottom::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--primary-color);
+  z-index: 1;
+}
+
+.drag-handle {
+  cursor: move;
+  color: var(--text-color-muted);
+  user-select: none;
+  padding: 0 4px;
+  font-size: 16px;
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity var(--transition-fast);
+}
+
+.message-item:hover .drag-handle,
+.category-item:hover .drag-handle,
+.gc-item:hover .drag-handle {
+  opacity: 1;
+}
+
+.message-title {
+  flex-grow: 1;
+  user-select: none;
+}
+
+.message-actions {
+  display: flex;
+}
+.message-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-color-main);
+  transition: background-color var(--transition-fast);
+}
+.message-actions button:hover {
+  background-color: var(--background-hover);
+  filter: brightness(0.9);
+}
+
+.quick-steps-actions {
+  display: flex;
+  gap: 8px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 8px;
+}
+.quick-steps-actions .action-btn {
+  flex-grow: 1;
+}
+
+/* --- BOTÃO DO PAINEL DE TRÂMITES --- */
+.panel-btn {
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--primary-color-hover)
+  );
+  color: white;
+  border: 1px solid var(--primary-color);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 12px 16px;
+  border-radius: var(--border-radius-sm);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.3px;
+}
+
+.panel-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.panel-btn:hover {
+  background: linear-gradient(
+    135deg,
+    var(--primary-color-hover),
+    var(--primary-color)
+  );
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: var(--primary-color-hover);
+}
+
+.panel-btn:hover::before {
+  left: 100%;
+}
+
+.panel-btn:active {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.panel-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.3);
+}
+
+/* Efeito de brilho adicional no hover */
+.panel-btn:hover {
+  background-size: 200% 200%;
+  animation: gradient-shift 2s ease infinite;
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+.category-shortcut-display {
+  font-size: 11px;
+  font-weight: normal;
+  color: var(--text-color-muted);
+  margin-left: 8px;
+  background-color: var(--background-secondary);
+  padding: 2px 6px;
+  border-radius: var(--border-radius-sm);
+}
+
+/* Estilos para botões de IA e feedback de carregamento */
+
+/* Efeito de "pulso/brilho" para indicar carregamento da IA */
+@keyframes ai-pulse {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.ai-loading {
+  /* Aplica a animação */
+  animation: ai-pulse 1.5s infinite ease-in-out;
+}
+
+button.ai-loading,
+button.ai-loading:hover {
+  cursor: wait;
+  /* Garante que o fundo permaneça visível durante a animação em botões de dropdown */
+  background-color: var(--background-hover);
+}
+
+/* --- POPUP DE ATALHO --- */
+#shortcut-popup {
+  position: absolute;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  box-shadow: var(--shadow-lg);
+  z-index: 1005;
+  min-width: 250px;
+  display: flex;
+  flex-direction: column;
+  max-height: 250px;
+
+  /* Efeito de Vidro Fosco */
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  background-color: var(--background-glass);
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.07"/%3E%3C/svg%3E');
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+#shortcut-filter-display {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--background-main);
+  color: var(--text-color-muted);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+#shortcut-filter-display span {
+  font-weight: bold;
+  color: var(--text-color-main);
+  font-family: monospace;
+  margin-left: 5px;
+}
+
+#shortcut-items-container {
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+#gemini-api-key-input {
+  font-family: monospace; /* Facilita a leitura da chave */
+  flex-grow: 1; /* Ocupa o espaço disponível no form-group */
+}
+
+/* Garante que o header recolhível mostre o cursor correto */
+.collapsible-header {
+  cursor: pointer;
+  user-select: none;
+}
+
+.shortcut-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  color: var(--text-color-main);
+}
+
+.shortcut-item.no-results {
+  color: var(--text-color-muted);
+  text-align: center;
+  cursor: default;
+  font-style: italic;
+}
+
+.shortcut-item.active-item {
+  background-color: var(--primary-color);
+  color: color-mix(in srgb, var(--primary-color) 15%, white);
+}
+
+.shortcut-item:not(.no-results):hover {
+  background-color: color-mix(
+    in srgb,
+    var(--background-hover) 80%,
+    var(--primary-color)
+  );
+}
+
+/* --- PICKERS - Emojis e Cores --- */
+.picker {
+  display: none;
+  position: absolute;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 9999; /* Aumentado para garantir que fique acima de tudo */
+  padding: 8px;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 3px;
+  max-width: 280px;
+  box-sizing: border-box;
+  /* Garante que o picker não seja afetado por contextos de empilhamento */
+  isolation: isolate;
+  transform: translateZ(0); /* Força um novo contexto de empilhamento */
+  /* Força o picker a estar sempre visível */
+  will-change: transform;
+  contain: layout style paint;
+
+  /* Efeito de Vidro Fosco */
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  background-color: var(--background-glass);
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.07"/%3E%3C/svg%3E');
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.color-swatch,
+.emoji-swatch {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+  font-size: 18px;
+  background-color: transparent;
+  color: var(--text-color-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.color-swatch:hover,
+.emoji-swatch:hover {
+  transform: scale(1.15);
+  border-color: var(--primary-color);
+}

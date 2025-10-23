@@ -1,2195 +1,4 @@
-/* Variáveis de tema e cores */
-
-/* Cores de ação e estilos globais */
-:root {
-  --action-blue: #2563eb;
-  --action-blue-hover: #1d4ed8;
-  --action-lightblue: #b886fe;
-  --action-lightblue-hover: #8864bb;
-  --action-green: #16a34a;
-  --action-green-hover: #15803d;
-  --action-red: #dc2626;
-  --action-red-hover: #b91c1c;
-  --action-orange: #f97316;
-  --action-orange-hover: #ea580c;
-  --action-yellow: #f59e0b;
-  --action-yellow-hover: #d97706;
-  --border-radius-md: 8px;
-  --border-radius-sm: 6px;
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0px 8px 16px 0px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0px 12px 24px 0px rgba(0, 0, 0, 0.1);
-  --transition-fast: 0.2s ease;
-
-  /* --- NOVAS VARIÁVEIS DE TAMANHO --- */
-  --ui-icon-scale: 1; /* Fator de escala para ícones */
-  --ui-font-size: 14px; /* Tamanho da fonte para a UI (botões, labels) */
-  --editor-font-size: 14px; /* Tamanho da fonte para o textarea */
-}
-
-/* Fonte padrão da extensão */
-.editor-container,
-.editor-modal,
-.editor-preview-container,
-#shortcut-popup {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    sans-serif;
-  font-size: var(--ui-font-size); /* MODIFICADO */
-  line-height: 1.5;
-}
-
-/* Escopos de tema (Usando :where() para baixa especificidade) */
-:where(
-    .editor-container,
-    .editor-modal,
-    .editor-preview-container,
-    #shortcut-popup,
-    #notes-side-panel,
-    textarea[data-enhanced]
-  ) {
-  --primary-color: rgba(99, 102, 241, 0.8);
-  --primary-color-hover: rgba(79, 70, 229, 0.85);
-  --border-color: rgba(229, 231, 235, 0.4);
-  --background-main: rgba(255, 255, 255, 0.5);
-  --background-secondary: rgba(232, 233, 233, 0.45);
-  --background-hover: rgba(243, 244, 246, 0.45);
-  --text-color-main: #1f2937;
-  --text-color-muted: #6b7280;
-  --background-glass: rgba(255, 255, 255, 0.75);
-}
-
-/* --- TEMA PADRÃO (Glassmorphism) --- */
-.padrao-mode {
-  --primary-color: rgba(99, 102, 241, 0.8);
-  --primary-color-hover: rgba(79, 70, 229, 0.85);
-  --border-color: rgba(229, 231, 235, 0.4);
-  --background-main: rgba(255, 255, 255, 0.5);
-  --background-secondary: rgba(232, 233, 233, 0.45);
-  --background-hover: rgba(243, 244, 246, 0.45);
-  --text-color-main: #1f2937;
-  --text-color-muted: #6b7280;
-  --background-glass: rgba(255, 255, 255, 0.75);
-}
-
-/* --- TEMA SERENIDADE --- */
-.serenidade-mode {
-  --primary-color: #6f71ef;
-  --primary-color-hover: #5a53e7;
-  --border-color: #e5e7eb;
-  --background-main: #f5f3ff;
-  --background-secondary: #ede9fe;
-  --background-hover: #e0e7ff;
-  --text-color-main: #1f2937;
-  --text-color-muted: #6b7280;
-  --background-glass: rgba(211, 224, 252, 0.75);
-}
-
-/* --- TEMA LUMEN --- */
-.lumen-mode {
-  --primary-color: #0ea5e9;
-  --primary-color-hover: #0369a1;
-  --border-color: #d8e5f3;
-  --background-main: #cde9f4;
-  --background-secondary: #e1eef7;
-  --background-hover: #eef9ff;
-  --text-color-main: #0f172a;
-  --text-color-muted: #475569;
-  --background-glass: rgba(207, 240, 251, 0.85);
-}
-
-/* --- TEMA ESCURO --- */
-.dark-mode {
-  --primary-color: #246ada;
-  --primary-color-hover: #4b9afa;
-  --border-color: #222e42;
-  --background-main: #111827;
-  --background-secondary: #1f2937;
-  --background-hover: #374151;
-  --text-color-main: #f9fafb;
-  --text-color-muted: #9ca3af;
-  --background-glass: rgba(17, 24, 39, 0.75);
-}
-
-/* --- TEMA FLORESTA --- */
-.forest-mode {
-  --primary-color: #0f9564;
-  --primary-color-hover: #0d6c46;
-  --border-color: #1a3b2d;
-  --background-main: #0d2b1f;
-  --background-secondary: #1a3b2d;
-  --background-hover: #2a4c3d;
-  --text-color-main: #dbece1;
-  --text-color-muted: #a3b8ac;
-  --background-glass: rgba(13, 43, 31, 0.75);
-}
-
-/* --- TEMA ROSA PINK (Versão Clara) --- */
-.pink-mode {
-  --primary-color: #da4789;
-  --primary-color-hover: #c23872;
-  --border-color: #fbcfe8;
-  --background-main: #f9b2d7;
-  --background-secondary: #f7d6e8;
-  --background-hover: #fcdff1;
-  --text-color-main: #790b37;
-  --text-color-muted: #8e3061;
-  --background-glass: rgba(254, 192, 224, 0.75);
-}
-
-/* --- TEMA DARK GRAFITE --- */
-.dark-graphite-mode {
-  --primary-color: #3b82f6;
-  --primary-color-hover: #333333;
-  --border-color: #2a2a2a;
-  --background-main: #121212;
-  --background-secondary: #1f1f1f;
-  --background-hover: #2e2e2e;
-  --text-color-main: #f5f5f5;
-  --text-color-muted: #bfbfbf;
-  --background-glass: rgba(18, 18, 18, 0.75);
-}
-
-/* --- TEMA TOKYO NIGHT --- */
-
-.tokyo-night-mode {
-  --primary-color: #f97140;
-  --primary-color-hover: #de4a14;
-  --border-color: #202335;
-  --background-main: #15121e;
-  --background-secondary: #1f1b2d;
-  --background-hover: #272d3f;
-  --text-color-main: #edeaf2;
-  --text-color-muted: #b7aeca;
-  --background-glass: rgba(21, 18, 30, 0.75);
-}
-
-/* Correção para visibilidade do ícone de calendário/relógio em temas escuros (Webkit/Blink) */
-.dark-mode input[type='datetime-local']::-webkit-calendar-picker-indicator,
-.dark-graphite-mode
-  input[type='datetime-local']::-webkit-calendar-picker-indicator,
-.forest-mode input[type='datetime-local']::-webkit-calendar-picker-indicator {
-  /* Adicionado */
-  filter: invert(1);
-}
-
-/* --- SOMBRAS INTERNAS MODERNAS E ROBUSTAS --- */
-
-/* Botões da toolbar - Sombras internas sutis para temas claros */
-.editor-toolbar button,
-.dropdown button,
-.action-btn {
-  box-shadow: inset 0 -1px 2px rgba(0, 0, 0, 0.08),
-    inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-/* Textarea e Preview - Sombras internas para temas claros */
-textarea[data-enhanced],
-.editor-preview-container {
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08),
-    inset 0 -1px 1px rgba(255, 255, 255, 0.1), 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-/* Melhoria das sombras internas para temas escuros */
-.editor-container.dark-mode .editor-toolbar button,
-.editor-container.dark-mode .dropdown button,
-.editor-container.dark-mode .action-btn,
-.editor-container.dark-graphite-mode .editor-toolbar button,
-.editor-container.dark-graphite-mode .dropdown button,
-.editor-container.dark-graphite-mode .action-btn,
-.editor-container.forest-mode .editor-toolbar button,
-.editor-container.forest-mode .dropdown button,
-.editor-container.forest-mode .action-btn,
-.editor-container.tokyo-night-mode .editor-toolbar button,
-.editor-container.tokyo-night-mode .dropdown button,
-.editor-container.tokyo-night-mode .action-btn {
-  box-shadow: inset 0 -1px 2px rgba(255, 255, 255, 0.1),
-    inset 0 1px 1px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.3) !important;
-}
-
-.editor-master-container.dark-mode textarea[data-enhanced],
-.editor-master-container.dark-graphite-mode textarea[data-enhanced],
-.editor-master-container.forest-mode textarea[data-enhanced],
-.editor-master-container.tokyo-night-mode textarea[data-enhanced] {
-  box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.1),
-    inset 0 -1px 1px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.3) !important;
-}
-
-.editor-master-container.dark-mode .editor-preview-container,
-.editor-master-container.dark-graphite-mode .editor-preview-container,
-.editor-master-container.forest-mode .editor-preview-container,
-.editor-master-container.tokyo-night-mode .editor-preview-container,
-.editor-preview-container.dark-mode,
-.editor-preview-container.dark-graphite-mode,
-.editor-preview-container.forest-mode,
-.editor-preview-container.tokyo-night-mode {
-  box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.1),
-    inset 0 -1px 1px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.3) !important;
-}
-
-/* --- EFEITO DE VIDRO FOSCO (Glassmorphism) --- */
-/* Aplicado a todos os componentes flutuantes em todos os temas */
-.se-modal-content,
-#shortcut-popup,
-.dropdown-content,
-.picker,
-#notes-side-panel {
-  backdrop-filter: blur(14px) saturate(120%);
-  -webkit-backdrop-filter: blur(14px) saturate(120%);
-  background-color: var(--background-glass);
-
-  /* Textura de ruído sutil para o efeito "fosco" */
-  background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.07"/%3E%3C/svg%3E');
-
-  /* Sombra de texto para destacar o conteúdo interno */
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-/* --- GERAL E ESTRUTURA DO EDITOR --- */
-
-.editor-master-container {
-  position: relative;
-  width: 100%;
-}
-
-/* --- Estilos para o Layout Vertical --- */
-.vertical-layout .editor-content-wrapper {
-  display: flex;
-  flex-direction: row; /* Editor na esquerda, preview na direita */
-  align-items: stretch;
-}
-
-.vertical-layout .editor-preview-container {
-  order: 2; /* Preview fica na direita */
-  position: relative;
-  width: 65%;
-  max-width: 800px;
-  min-width: 300px;
-  height: auto;
-  border-left: 1px solid var(--border-color);
-  border-top: 1px solid var(--border-color); /* Adiciona borda superior */
-  resize: horizontal;
-  overflow: hidden; /* Remove a barra de rolagem interna */
-  margin-top: 0; /* Remove margem superior no modo vertical */
-  border-radius: 0 0 var(--border-radius-md) 0; /* Apenas canto inferior direito arredondado */
-}
-
-.vertical-layout .editor-content-wrapper > textarea {
-  order: 1; /* Editor fica na esquerda */
-  flex-grow: 1;
-  width: 35%; /* Ocupa o espaço restante */
-  min-height: 350px; /* Mantém uma altura mínima consistente */
-  height: auto;
-  overflow-y: hidden; /* Esconde a barra de rolagem vertical */
-}
-
-.vertical-layout .preview-content {
-  padding: 0 15px; /* Adiciona espaçamento lateral no modo vertical */
-  padding-top: 0; /* Remove o espaçamento superior no modo vertical */
-}
-
-/* -- Fim do Layout Vertical -- */
-
-.editor-container {
-  border: 1px solid var(--border-color);
-  border-bottom: none;
-  border-radius: var(--border-radius-md);
-  padding: 8px;
-  background-color: var(--background-main);
-  box-sizing: border-box;
-  color: var(--text-color-main);
-  position: relative;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-  margin-bottom: 0;
-}
-
-textarea[data-enhanced] {
-  background-color: var(--background-secondary);
-  color: var(--text-color-main);
-  border: 1px solid var(--border-color);
-  padding: 12px;
-  resize: vertical;
-  min-height: 150px;
-  font-family: monospace;
-  font-size: var(--editor-font-size); /* MODIFICADO */
-  width: 100% !important;
-  box-sizing: border-box;
-  border-top: none;
-  border-radius: 0;
-  border-bottom-left-radius: var(--border-radius-md);
-  border-bottom-right-radius: var(--border-radius-md);
-  max-height: 500px; /* Limita a altura máxima */
-  overflow-y: auto !important; /* Adiciona uma barra de rolagem quando necessário */
-}
-
-textarea[data-enhanced]:focus {
-  outline: none;
-  border-color: var(--primary-color);
-}
-
-/* --- PAINEL DE VISUALIZAÇÃO --- */
-.editor-preview-container {
-  border: 1px solid var(--border-color);
-  border-top: 1px dashed var(--border-color);
-  border-radius: var(--border-radius-md);
-  margin-top: 4px;
-  background-color: var(--background-main);
-  color: var(--text-color-main);
-  position: relative;
-  min-height: 100px;
-}
-
-.preview-content {
-  padding: 12px;
-  word-wrap: break-word;
-}
-
-/* Remove a margem superior do primeiro elemento no preview para alinhar ao topo */
-.preview-content > :first-child {
-  margin-top: 0;
-}
-
-.preview-pin-btn {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  z-index: 1;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 16px;
-  padding: 6px;
-  border-radius: 50%;
-  line-height: 1;
-  opacity: 0.7;
-  transform: scale(1);
-  transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
-}
-
-.preview-layout-btn {
-  position: absolute;
-  top: 6px;
-  right: 40px; /* Ao lado do botão pin */
-  z-index: 1;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 16px;
-  padding: 6px;
-  border-radius: 50%;
-  line-height: 1;
-  opacity: 0.7;
-  transition: opacity 0.2s ease, background-color 0.2s ease;
-}
-
-.preview-pin-btn:hover,
-.preview-layout-btn:hover {
-  opacity: 1;
-  background-color: var(--background-hover);
-}
-
-.preview-pin-btn.unpinned {
-  transform: scale(1) rotate(45deg);
-  opacity: 0.6;
-}
-
-/* Novo wrapper para o conteúdo que pode rolar */
-.preview-scroll-wrapper {
-  height: 100%;
-}
-
-/* Estilos para o modo redimensionável */
-.editor-preview-container.resizable {
-  resize: vertical;
-  overflow: hidden; /* O container principal não rola mais, apenas redimensiona */
-  height: 180px;
-  min-height: 120px;
-  max-height: 70vh;
-}
-
-/* A barra de rolagem é aplicada ao wrapper interno */
-.editor-preview-container.resizable .preview-scroll-wrapper {
-  overflow: auto;
-}
-
-/* --- BARRA DE FERRAMENTAS --- */
-.editor-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 8px;
-}
-
-.editor-toolbar button,
-.dropdown button,
-.action-btn {
-  background-color: var(--background-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  padding: 5px 10px;
-  cursor: pointer;
-  font-size: var(--ui-font-size);
-  color: var(--text-color-main);
-  transition: background-color var(--transition-fast),
-    box-shadow var(--transition-fast), transform var(--transition-fast);
-}
-
-.editor-toolbar button:hover,
-.dropdown button:hover,
-.action-btn:hover {
-  background-color: var(--background-hover);
-  border-color: var(--border-color);
-  transform: translateY(-1px) scale(var(--ui-icon-scale)); /* Adiciona escala aos ícones */
-  box-shadow: var(--shadow-md);
-}
-
-/* NOVA CLASSE: Estado ativo para botões de formatação */
-.editor-toolbar button.active-formatting-btn {
-  background-color: var(--primary-color);
-  color: white;
-  border-color: var(--primary-color);
-  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
-  transform: scale(var(--ui-icon-scale));
-}
-
-.editor-toolbar button.active-formatting-btn:hover {
-  background-color: var(--primary-color);
-  color: white;
-  border-color: var(--primary-color);
-  transform: translateY(-1px) scale(var(--ui-icon-scale));
-  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2), var(--shadow-md);
-}
-
-/* Ajuste para que o tamanho do ícone seja controlado pela escala */
-.editor-toolbar button,
-.dropdown button {
-  transform: scale(var(--ui-icon-scale));
-}
-
-.toolbar-separator {
-  width: 1.5px;
-  height: 18px;
-  background-color: var(--border-color);
-  margin: 0 5px;
-  border-radius: 2px;
-  opacity: 0.5;
-  align-self: center;
-}
-
-/* --- BOTÕES DE AÇÃO SGD NA TOOLBAR --- */
-.sgd-toolbar-action-group {
-  margin-left: auto; /* Empurra os botões para a direita */
-  display: flex;
-  gap: 8px;
-}
-
-.action-btn-themed {
-  background-color: var(--primary-color);
-  color: white;
-  border-color: transparent;
-  font-weight: 500;
-}
-
-.action-btn-themed:hover {
-  background-color: var(--primary-color-hover);
-}
-
-/* Garantir que os botões de ação do SGD mantenham cor branca */
-.action-btn-themed.enhanced-btn {
-  color: white !important;
-}
-
-.action-btn-themed.enhanced-btn:hover {
-  color: white !important;
-}
-
-/* --- DROPDOWNS --- */
-.dropdown {
-  position: relative;
-  display: inline-block;
-}
-.dropdown-content {
-  display: none;
-  flex-direction: column;
-  position: absolute;
-  width: max-content;
-  box-shadow: var(--shadow-lg);
-  border-radius: var(--border-radius-md);
-  border: 1px solid var(--border-color);
-  z-index: 1001;
-  padding: 8px;
-
-  /* Efeito de Vidro Fosco */
-  backdrop-filter: blur(14px) saturate(120%);
-  -webkit-backdrop-filter: blur(14px) saturate(120%);
-  background-color: var(--background-glass);
-  background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.07"/%3E%3C/svg%3E');
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-.dropdown-content button {
-  width: 100%;
-  text-align: left;
-  margin-bottom: 4px;
-}
-.dropdown-content button:last-child {
-  margin-bottom: 0;
-}
-.dropdown:hover .dropdown-content {
-  display: flex;
-}
-
-/* --- TRÂMITES RÁPIDOS (Drag & Drop) --- */
-.quick-steps-list {
-  max-height: 300px;
-  overflow-y: auto;
-  margin-bottom: 8px;
-  padding-right: 5px;
-}
-.category-title {
-  cursor: pointer;
-  font-weight: bold;
-  padding: 5px 8px;
-  border-radius: 4px;
-  margin: 5px 0 2px 0;
-  user-select: none;
-  position: relative;
-  transition: background-color var(--transition-fast);
-  background-color: var(--background-main);
-  border-bottom: 1px solid var(--border-color);
-}
-.category-title:hover {
-  background-color: var(--background-hover);
-}
-.category-title::before {
-  content: '▶';
-  font-size: 10px;
-  margin-right: 5px;
-  transition: transform var(--transition-fast);
-  display: inline-block;
-  color: var(--text-color-muted);
-}
-.category-container:not(.collapsed) .category-title::before {
-  transform: rotate(90deg);
-}
-.category-container.collapsed .messages-list {
-  display: none;
-}
-
-.category-container.drag-over {
-  border: 2px dashed var(--primary-color);
-  border-radius: var(--border-radius-sm);
-  background-color: color-mix(in srgb, var(--primary-color) 10%, transparent);
-}
-
-.message-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
-  position: relative;
-}
-.message-item:hover {
-  background-color: var(--background-hover);
-}
-
-.message-item.drag-over-top::before,
-.category-item.drag-over-top::before,
-.gc-item.drag-over-top::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background-color: var(--primary-color);
-  z-index: 1;
-}
-
-.message-item.drag-over-bottom::after,
-.category-item.drag-over-bottom::after,
-.gc-item.drag-over-bottom::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background-color: var(--primary-color);
-  z-index: 1;
-}
-
-.drag-handle {
-  cursor: move;
-  color: var(--text-color-muted);
-  user-select: none;
-  padding: 0 4px;
-  font-size: 16px;
-  line-height: 1;
-  opacity: 0.6;
-  transition: opacity var(--transition-fast);
-}
-
-.message-item:hover .drag-handle,
-.category-item:hover .drag-handle,
-.gc-item:hover .drag-handle {
-  opacity: 1;
-}
-
-.message-title {
-  flex-grow: 1;
-  user-select: none;
-}
-
-.message-actions {
-  display: flex;
-}
-.message-actions button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-color-main);
-  transition: background-color var(--transition-fast);
-}
-.message-actions button:hover {
-  background-color: var(--background-hover);
-  filter: brightness(0.9);
-}
-
-.quick-steps-actions {
-  display: flex;
-  gap: 8px;
-  border-top: 1px solid var(--border-color);
-  padding-top: 8px;
-}
-.quick-steps-actions .action-btn {
-  flex-grow: 1;
-}
-
-/* --- BOTÃO DO PAINEL DE TRÂMITES --- */
-.panel-btn {
-  background: linear-gradient(
-    135deg,
-    var(--primary-color),
-    var(--primary-color-hover)
-  );
-  color: white;
-  border: 1px solid var(--primary-color);
-  font-weight: 600;
-  font-size: 13px;
-  padding: 12px 16px;
-  border-radius: var(--border-radius-sm);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-  letter-spacing: 0.3px;
-}
-
-.panel-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.2),
-    transparent
-  );
-  transition: left 0.5s;
-}
-
-.panel-btn:hover {
-  background: linear-gradient(
-    135deg,
-    var(--primary-color-hover),
-    var(--primary-color)
-  );
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  border-color: var(--primary-color-hover);
-}
-
-.panel-btn:hover::before {
-  left: 100%;
-}
-
-.panel-btn:active {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.panel-btn:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.3);
-}
-
-/* Efeito de brilho adicional no hover */
-.panel-btn:hover {
-  background-size: 200% 200%;
-  animation: gradient-shift 2s ease infinite;
-}
-
-@keyframes gradient-shift {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-.category-shortcut-display {
-  font-size: 11px;
-  font-weight: normal;
-  color: var(--text-color-muted);
-  margin-left: 8px;
-  background-color: var(--background-secondary);
-  padding: 2px 6px;
-  border-radius: var(--border-radius-sm);
-}
-
-/* Estilos para botões de IA e feedback de carregamento */
-
-/* Efeito de "pulso/brilho" para indicar carregamento da IA */
-@keyframes ai-pulse {
-  0% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.6;
-    transform: scale(1.1);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.ai-loading {
-  /* Aplica a animação */
-  animation: ai-pulse 1.5s infinite ease-in-out;
-}
-
-button.ai-loading,
-button.ai-loading:hover {
-  cursor: wait;
-  /* Garante que o fundo permaneça visível durante a animação em botões de dropdown */
-  background-color: var(--background-hover);
-}
-
-/* --- POPUP DE ATALHO --- */
-#shortcut-popup {
-  position: absolute;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  box-shadow: var(--shadow-lg);
-  z-index: 1005;
-  min-width: 250px;
-  display: flex;
-  flex-direction: column;
-  max-height: 250px;
-
-  /* Efeito de Vidro Fosco */
-  backdrop-filter: blur(14px) saturate(120%);
-  -webkit-backdrop-filter: blur(14px) saturate(120%);
-  background-color: var(--background-glass);
-  background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.07"/%3E%3C/svg%3E');
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-#shortcut-filter-display {
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border-color);
-  background-color: var(--background-main);
-  color: var(--text-color-muted);
-  font-size: 13px;
-  flex-shrink: 0;
-}
-
-#shortcut-filter-display span {
-  font-weight: bold;
-  color: var(--text-color-main);
-  font-family: monospace;
-  margin-left: 5px;
-}
-
-#shortcut-items-container {
-  overflow-y: auto;
-  flex-grow: 1;
-}
-
-#gemini-api-key-input {
-  font-family: monospace; /* Facilita a leitura da chave */
-  flex-grow: 1; /* Ocupa o espaço disponível no form-group */
-}
-
-/* Garante que o header recolhível mostre o cursor correto */
-.collapsible-header {
-  cursor: pointer;
-  user-select: none;
-}
-
-.shortcut-item {
-  padding: 8px 12px;
-  cursor: pointer;
-  color: var(--text-color-main);
-}
-
-.shortcut-item.no-results {
-  color: var(--text-color-muted);
-  text-align: center;
-  cursor: default;
-  font-style: italic;
-}
-
-.shortcut-item.active-item {
-  background-color: var(--primary-color);
-  color: color-mix(in srgb, var(--primary-color) 15%, white);
-}
-
-.shortcut-item:not(.no-results):hover {
-  background-color: color-mix(
-    in srgb,
-    var(--background-hover) 80%,
-    var(--primary-color)
-  );
-}
-
-/* --- MODAIS ('se-') --- */
-
-.editor-modal {
-  position: fixed;
-  z-index: 2000;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: fadeIn 0.3s ease;
-}
-
-.se-modal-content {
-  color: var(--text-color-main);
-  border-radius: var(--border-radius-md);
-  box-shadow: var(--shadow-lg);
-  width: 90%;
-  max-width: 700px;
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--border-color);
-  max-height: 90vh;
-
-  /* Efeito de Vidro Fosco */
-  backdrop-filter: blur(14px) saturate(120%);
-  -webkit-backdrop-filter: blur(14px) saturate(120%);
-  background-color: var(--background-glass);
-  background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.07"/%3E%3C/svg%3E');
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-#management-modal .se-modal-content {
-  position: relative;
-}
-
-.se-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border-color);
-}
-.se-modal-header h3 {
-  margin: 0;
-  font-size: 18px;
-  color: var(--text-color-main);
-}
-
-.se-close-modal-btn {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: var(--text-color-main);
-}
-
-.se-modal-body {
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  color: var(--text-color-main);
-  flex-grow: 1;
-  overflow-y: auto;
-}
-
-.se-modal-body .form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.se-modal-body .form-row {
-  display: flex;
-  gap: 15px;
-  align-items: flex-end;
-}
-
-.se-modal-body .form-row .form-group {
-  flex: 1;
-}
-
-.url-group input[type='text']:disabled {
-  background-color: var(--background-hover);
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-.form-checkbox-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 5px;
-}
-
-.form-checkbox-group input[type='checkbox'] {
-  cursor: pointer;
-  width: auto;
-}
-
-.form-checkbox-group label {
-  font-weight: normal;
-  font-size: 13px;
-  color: var(--text-color-muted);
-  cursor: pointer;
-  user-select: none;
-}
-
-.fired-reminder {
-  opacity: 0.6;
-  background-color: var(--background-main);
-  border-left: 3px solid var(--action-green);
-}
-
-.fired-reminder:hover {
-  opacity: 0.9;
-  background-color: var(--background-hover);
-}
-
-.fired-reminder .category-name {
-  text-decoration: line-through;
-  font-weight: normal;
-}
-
-.fired-reminder .shortcut-display {
-  background-color: var(--background-secondary);
-  color: var(--text-color-muted);
-}
-
-.dismiss-now-btn {
-  background-color: var(--background-secondary);
-  color: var(--text-color-main);
-  border: 1px solid var(--border-color);
-}
-
-.dismiss-now-btn:hover {
-  background-color: var(--background-hover);
-  color: var(--text-color-main);
-}
-
-.reschedule-btn {
-  background-color: var(--action-green);
-  color: white;
-  border-color: transparent;
-}
-.reschedule-btn:hover {
-  background-color: var(--action-green-hover);
-}
-
-.action-btn.small-btn {
-  padding: 5px 10px;
-  font-size: 13px;
-}
-
-.reminder-settings-form {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px;
-  background-color: var(--background-main);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-}
-
-.reminder-settings-form label {
-  white-space: nowrap;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.reminder-settings-form input[type='number'] {
-  width: 70px;
-  padding: 6px 8px;
-  background-color: var(--background-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  color: var(--text-color-main);
-}
-
-.reminder-settings-form span {
-  font-size: 14px;
-}
-
-.reminder-settings-form button {
-  margin-left: auto;
-}
-
-#bulk-actions-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border-color);
-  margin-bottom: 8px;
-}
-
-#selected-count-info {
-  font-size: 12px;
-  color: var(--text-color-muted);
-  margin-left: 0;
-  margin-right: 10px;
-}
-
-.reminder-checkbox {
-  cursor: pointer;
-  margin-right: 8px;
-  flex-shrink: 0;
-  align-self: flex-start;
-  margin-top: 4px;
-}
-
-.reminder-actions-container {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-a.open-link-btn {
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--action-blue);
-  color: white;
-  border-color: transparent;
-}
-
-a.open-link-btn:hover {
-  background-color: var(--action-blue-hover);
-  color: white;
-}
-
-.reschedule-btn {
-  background-color: var(--action-green);
-  color: white;
-  border-color: transparent;
-}
-.reschedule-btn:hover {
-  background-color: var(--action-green-hover);
-}
-
-.se-modal-body label {
-  font-weight: 500;
-  color: var(--text-color-main);
-  font-size: 14px;
-}
-
-.se-modal-body input[type='text'],
-.se-modal-body input[type='datetime-local'],
-.se-modal-body textarea,
-.se-modal-body select,
-.se-modal-body input[type='file'] {
-  width: 100%;
-  padding: 8px 12px;
-  font-size: 14px;
-  background-color: var(--background-main);
-  color: var(--text-color-main);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  box-sizing: border-box;
-}
-.se-modal-body input[type='text']:focus,
-.se-modal-body input[type='datetime-local']:focus,
-.se-modal-body textarea:focus,
-.se-modal-body select:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px
-    color-mix(in srgb, var(--primary-color) 40%, transparent);
-}
-.se-modal-body textarea {
-  min-height: 200px;
-  resize: vertical;
-}
-
-.se-modal-body .editor-master-container {
-  margin-bottom: 0;
-}
-
-.se-modal-body input[type='text']::placeholder,
-.se-modal-body textarea::placeholder {
-  color: var(--text-color-muted);
-  opacity: 0.8;
-}
-
-#new-category-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 10px;
-  background-color: var(--background-main);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-}
-
-.shortcut-definition-area {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-#shortcut-preview-display {
-  font-family: monospace;
-  background-color: var(--background-secondary);
-  padding: 5px 10px;
-  border-radius: var(--border-radius-sm);
-  border: 1px solid var(--border-color);
-  color: var(--text-color-main);
-}
-
-.se-modal-body {
-  padding: 15px 20px;
-  max-height: 70vh;
-  overflow-y: auto;
-}
-
-.modal-footer-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 20px;
-  font-size: 12px;
-  color: var(--text-color-muted);
-  border-top: 1px solid var(--border-color);
-  margin-top: 15px;
-}
-
-#extension-version-trigger {
-  cursor: pointer;
-  user-select: none;
-}
-
-.se-modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 12px 16px;
-  border-top: 1px solid var(--border-color);
-  background-color: var(--background-main);
-}
-.se-modal-actions button {
-  padding: 8px 16px;
-  border-radius: var(--border-radius-sm);
-  border: 1px solid transparent;
-  cursor: pointer;
-  font-weight: 500;
-}
-.link-as-button-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 5px;
-}
-
-#modal-save-btn,
-.save-cat-btn {
-  background-color: var(--action-green);
-  color: white;
-}
-#modal-save-btn:hover,
-.save-cat-btn:hover {
-  background-color: var(--action-green-hover);
-}
-.delete-cat-btn {
-  background-color: var(--action-red);
-  color: white;
-}
-.delete-cat-btn:hover {
-  background-color: var(--action-red-hover);
-}
-#add-category-btn {
-  background-color: var(--action-orange);
-  color: white;
-}
-#add-category-btn:hover {
-  background-color: var(--action-orange-hover);
-}
-
-.add-message-btn,
-#export-btn {
-  background-color: var(--action-blue);
-  color: white;
-}
-.add-message-btn:hover,
-#export-btn:hover {
-  background-color: var(--action-blue-hover);
-}
-
-#import-btn {
-  background-color: var(--action-lightblue);
-  color: white;
-}
-#import-btn:hover {
-  background-color: var(--action-lightblue-hover);
-}
-
-#modal-cancel-btn {
-  background-color: var(--background-hover);
-  border-color: var(--border-color);
-  color: var(--text-color-main);
-}
-#modal-cancel-btn:hover {
-  background-color: color-mix(
-    in srgb,
-    var(--text-color-main) 10%,
-    var(--background-hover)
-  );
-}
-
-/* --- MODAL DE GERENCIAMENTO --- */
-.management-section {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.management-section h4 {
-  margin: 10px 0 0 0;
-  color: var(--text-color-main);
-  font-size: 16px;
-}
-.management-section p {
-  margin: 0;
-  font-size: 12px;
-  color: var(--text-color-muted);
-}
-
-/* --- SEÇÃO DE COMPARTILHAMENTO --- */
-.share-section {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.share-info {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.share-info p {
-  margin: 0;
-  font-size: 13px;
-  color: var(--text-color-main);
-}
-
-.share-link-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background-color: var(--background-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  padding: 8px;
-}
-
-.share-link-container input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  color: var(--text-color-main);
-  font-size: 12px;
-  font-family: monospace;
-  outline: none;
-}
-
-.share-link-container input:focus {
-  outline: none;
-}
-
-.share-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.share-actions .action-btn {
-  flex: 1;
-  min-width: 140px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px 12px;
-  font-size: 12px;
-}
-
-.share-btn {
-  background-color: var(--primary-color);
-  color: white;
-  border: 1px solid var(--primary-color);
-}
-
-.share-btn:hover {
-  background-color: var(--primary-color-hover);
-  border-color: var(--primary-color-hover);
-}
-.category-form {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.category-form input {
-  flex-grow: 1;
-}
-.export-list,
-.category-list,
-.gc-list {
-  max-height: 350px;
-  overflow-y: auto;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  padding: 8px;
-  background-color: var(--background-main);
-}
-.export-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px;
-}
-
-.export-item input[type='checkbox'] {
-  /* Aplica o mesmo estilo dos checkboxes da seção Visibilidade dos botões */
-  appearance: none;
-  -webkit-appearance: none;
-  position: relative;
-  width: 18px;
-  height: 18px;
-  border: 1px solid var(--border-color);
-  background-color: var(--background-secondary);
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  margin-top: 2px;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
-}
-
-.export-item input[type='checkbox']:hover {
-  border-color: var(--primary-color);
-}
-
-.export-item input[type='checkbox']:checked {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
-}
-
-.export-item input[type='checkbox']:checked::after {
-  content: '✔';
-  position: absolute;
-  color: white;
-  font-size: 12px;
-  font-weight: bold;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.export-item label {
-  user-select: none;
-  cursor: pointer;
-  flex-grow: 1;
-}
-
-.import-export-actions {
-  display: flex;
-  justify-content: flex-start;
-}
-
-#import-btn,
-#export-btn {
-  width: auto;
-  margin-top: 5px;
-}
-
-.category-item,
-.gc-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px;
-  border-radius: var(--border-radius-sm);
-  position: relative;
-}
-.category-item:hover,
-.gc-item:hover {
-  background-color: var(--background-hover);
-}
-
-.message-item.is-dragging,
-.category-item.is-dragging,
-.gc-item.is-dragging {
-  opacity: 0.8;
-  background-color: var(--background-hover);
-  cursor: grabbing;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-}
-
-.category-item .category-name,
-.gc-item .gc-item-name {
-  flex-grow: 1;
-  user-select: none;
-  cursor: text;
-  padding: 2px 4px;
-}
-.category-item .category-name[contenteditable='true']:focus,
-.gc-item .gc-item-name[contenteditable='true']:focus {
-  outline: none;
-  border: 1px solid var(--primary-color);
-  border-radius: var(--border-radius-sm);
-  background-color: var(--background-secondary);
-}
-.category-item .shortcut-display {
-  background-color: var(--background-hover);
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  color: var(--text-color-muted);
-  margin-left: auto;
-  flex-shrink: 0;
-  font-family: monospace;
-}
-.set-shortcut-btn {
-  flex-shrink: 0;
-}
-
-.collapsible-header {
-  cursor: pointer;
-  user-select: none;
-  display: flex;
-  align-items: center;
-  gap: 8px; /* Espaçamento entre o ícone e o título */
-}
-
-.collapsible-icon {
-  width: 1em; /* Garante que o ícone tenha um espaço reservado */
-  text-align: center;
-}
-
-/* Layout em grade para configurações de visibilidade dos botões */
-.button-visibility-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr); /* Cria 2 colunas */
-  gap: 10px 20px; /* Espaçamento vertical e horizontal */
-  padding-top: 10px;
-}
-
-/* Garante que os checkboxes dentro da grade se comportem bem */
-.button-visibility-grid .form-checkbox-group {
-  margin-top: 0;
-}
-
-/* Estilos para a seção Trâmites Rápidos */
-.quick-steps-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.quick-steps-actions .action-btn {
-  flex: 1;
-  min-width: 120px;
-}
-
-/* Estilos para a lista de trâmites na seção Trâmites Rápidos */
-.quick-steps-list {
-  margin: 15px 0;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.quick-steps-category {
-  margin-bottom: 15px;
-}
-
-.quick-steps-category h5 {
-  margin: 0 0 8px 0;
-  color: var(--text-color-secondary);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.quick-steps-messages {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.quick-steps-message-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  background-color: var(--background-secondary);
-  border-radius: var(--border-radius-sm);
-  border: 1px solid var(--border-color);
-  transition: background-color 0.2s ease;
-}
-
-.quick-steps-message-item:hover {
-  background-color: var(--background-hover);
-}
-
-.message-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.message-info strong {
-  display: block;
-  color: var(--text-color-main);
-  font-size: 13px;
-  margin-bottom: 2px;
-}
-
-.message-preview {
-  display: block;
-  color: var(--text-color-secondary);
-  font-size: 11px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.message-actions {
-  display: flex;
-  gap: 4px;
-  margin-left: 8px;
-}
-
-.message-actions button {
-  padding: 4px 6px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  border-radius: var(--border-radius-sm);
-  font-size: 12px;
-  transition: background-color 0.2s ease;
-}
-
-.message-actions button:hover {
-  background-color: var(--background-hover);
-}
-
-.no-messages {
-  text-align: center;
-  color: var(--text-color-secondary);
-  font-style: italic;
-  padding: 20px;
-}
-
-/* Estilos para o item de menu do painel no dropdown de Trâmites Rápidos */
-.quick-steps-panel-item {
-  padding: 8px 12px;
-  cursor: pointer;
-  border-bottom: 1px solid var(--border-color);
-  transition: background-color 0.2s ease;
-  background-color: var(--background-secondary);
-}
-
-.quick-steps-panel-item:hover {
-  background-color: var(--background-hover);
-}
-
-.quick-steps-panel-item:active {
-  background-color: var(--background-active);
-}
-
-.panel-item-content {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.panel-item-icon {
-  font-size: 16px;
-  color: var(--primary-color);
-}
-
-.panel-item-text {
-  font-size: 14px;
-  color: var(--text-color-main);
-  font-weight: 500;
-}
-
-/* Estilos para drag and drop de categorias no painel de inserção rápida */
-.qi-category-item {
-  position: relative;
-  transition: background-color 0.2s ease;
-  display: flex;
-  align-items: center;
-  padding: 6px 10px;
-  gap: 6px;
-  min-height: 36px;
-}
-
-.qi-category-item.draggable {
-  cursor: move;
-}
-
-.qi-drag-handle {
-  display: inline-block;
-  cursor: grab;
-  color: var(--text-color-secondary);
-  font-size: 11px;
-  opacity: 0.5;
-  transition: opacity 0.2s ease;
-  flex-shrink: 0;
-}
-
-.qi-drag-handle:hover {
-  opacity: 0.8;
-}
-
-.qi-category-item:active .qi-drag-handle {
-  cursor: grabbing;
-}
-
-.qi-category-name {
-  flex: 1;
-  min-width: 0;
-  font-size: 13px;
-  color: var(--text-color-main);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.qi-category-shortcut {
-  font-size: 10px;
-  color: var(--text-color-secondary);
-  background-color: var(--background-secondary);
-  padding: 1px 4px;
-  border-radius: var(--border-radius-sm);
-  flex-shrink: 0;
-  font-weight: 500;
-}
-
-.qi-category-actions {
-  display: flex;
-  gap: 2px;
-  flex-shrink: 0;
-  opacity: 0.6;
-  transition: opacity 0.2s ease;
-}
-
-.qi-category-item:hover .qi-category-actions {
-  opacity: 1;
-}
-
-.qi-shortcut-btn,
-.qi-delete-btn {
-  padding: 3px 5px;
-  border: none;
-  background-color: var(--background-secondary);
-  color: var(--text-color-main);
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  font-size: 11px;
-  transition: all 0.2s ease;
-  min-width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.qi-shortcut-btn:hover {
-  background-color: var(--primary-color);
-  color: white;
-}
-
-.qi-delete-btn:hover {
-  background-color: #e74c3c;
-  color: white;
-}
-
-.qi-category-item.qi-drag-over {
-  background-color: var(--primary-color);
-  color: white;
-  border-radius: var(--border-radius-sm);
-}
-
-.qi-category-item.qi-drag-over .qi-category-name,
-.qi-category-item.qi-drag-over .qi-category-shortcut,
-.qi-category-item.qi-drag-over .qi-shortcut-btn,
-.qi-category-item.qi-drag-over .qi-delete-btn {
-  color: white;
-}
-
-.qi-category-item.qi-drag-over .qi-category-shortcut,
-.qi-category-item.qi-drag-over .qi-shortcut-btn,
-.qi-category-item.qi-drag-over .qi-delete-btn {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-/* Estilos para o dropdown de Trâmites Rápidos */
-.category-title {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  margin: 0;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.category-title:hover {
-  background-color: var(--background-hover);
-}
-
-.category-name {
-  flex: 1;
-  font-size: 14px;
-  color: var(--text-color-main);
-  font-weight: 600;
-}
-
-.category-shortcut-display {
-  font-size: 11px;
-  color: var(--text-color-secondary);
-  background-color: var(--background-secondary);
-  padding: 2px 6px;
-  border-radius: var(--border-radius-sm);
-  font-weight: 500;
-  flex-shrink: 0;
-  margin-left: 8px;
-}
-
-.collapsible-content {
-  display: none; /* ESSENCIAL: Garante que comece recolhido */
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 8px;
-  overflow: hidden; /* Adicionado para animações suaves */
-}
-
-.collapsible-section.expanded .collapsible-content {
-  display: flex; /* Mostra o conteúdo quando a classe .expanded está presente */
-}
-.export-category {
-  margin-bottom: 10px;
-}
-
-.export-category-header {
-  font-weight: bold;
-  margin-bottom: 5px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.export-category-header input[type='checkbox'] {
-  /* Aplica o mesmo estilo dos checkboxes da seção Visibilidade dos botões */
-  appearance: none;
-  -webkit-appearance: none;
-  position: relative;
-  width: 18px;
-  height: 18px;
-  border: 1px solid var(--border-color);
-  background-color: var(--background-secondary);
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  margin-top: 2px;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
-}
-
-.export-category-header input[type='checkbox']:hover {
-  border-color: var(--primary-color);
-}
-
-.export-category-header input[type='checkbox']:checked {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
-}
-
-.export-category-header input[type='checkbox']:checked::after {
-  content: '✔';
-  position: absolute;
-  color: var(--text-color-main);
-  font-size: 12px;
-  font-weight: bold;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-.export-messages-list {
-  padding-left: 20px;
-}
-
-/* --- MODAL DE CAPTURA DE ATALHO --- */
-.shortcut-preview-box {
-  background-color: var(--background-main);
-  border: 2px dashed var(--border-color);
-  border-radius: var(--border-radius-sm);
-  padding: 20px;
-  text-align: center;
-  font-size: 18px;
-  font-weight: bold;
-  min-height: 30px;
-  color: var(--text-color-main);
-  font-family: monospace;
-}
-.shortcut-recommendation {
-  font-size: 12px;
-  color: var(--text-color-muted);
-  text-align: center;
-  margin-top: 12px;
-}
-
-/* --- PICKERS - Emojis e Cores --- */
-.picker {
-  display: none;
-  position: absolute;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-md);
-  box-shadow: var(--shadow-lg);
-  z-index: 9999; /* Aumentado para garantir que fique acima de tudo */
-  padding: 8px;
-  grid-template-columns: repeat(8, 1fr);
-  gap: 3px;
-  max-width: 280px;
-  box-sizing: border-box;
-  /* Garante que o picker não seja afetado por contextos de empilhamento */
-  isolation: isolate;
-  transform: translateZ(0); /* Força um novo contexto de empilhamento */
-  /* Força o picker a estar sempre visível */
-  will-change: transform;
-  contain: layout style paint;
-
-  /* Efeito de Vidro Fosco */
-  backdrop-filter: blur(14px) saturate(120%);
-  -webkit-backdrop-filter: blur(14px) saturate(120%);
-  background-color: var(--background-glass);
-  background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.07"/%3E%3C/svg%3E');
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-.color-swatch,
-.emoji-swatch {
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--border-color);
-  border-radius: 50%;
-  cursor: pointer;
-  transition: transform var(--transition-fast);
-  font-size: 18px;
-  background-color: transparent;
-  color: var(--text-color-main);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.color-swatch:hover,
-.emoji-swatch:hover {
-  transform: scale(1.15);
-  border-color: var(--primary-color);
-}
-
-/* --- MODAL DE SELEÇÃO DE IMPORTAÇÃO --- */
-
-.import-selection-list {
-  max-height: 250px;
-  overflow-y: auto;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  padding: 10px;
-  background-color: var(--background-main);
-  margin-bottom: 15px;
-}
-
-.import-category {
-  margin-bottom: 12px;
-}
-
-.import-category:last-child {
-  margin-bottom: 0;
-}
-
-.import-category-header {
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-  padding-bottom: 5px;
-  border-bottom: 1px solid var(--border-color);
-  flex-wrap: wrap;
-}
-
-.import-category-header input[type='checkbox'] {
-  /* Aplica o mesmo estilo dos checkboxes da seção Visibilidade dos botões */
-  appearance: none;
-  -webkit-appearance: none;
-  position: relative;
-  width: 18px;
-  height: 18px;
-  border: 1px solid var(--border-color);
-  background-color: var(--background-secondary);
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  margin-top: 2px;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
-}
-
-.import-category-header input[type='checkbox']:hover {
-  border-color: var(--primary-color);
-}
-
-.import-category-header input[type='checkbox']:checked {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
-}
-
-.import-category-header input[type='checkbox']:checked::after {
-  content: '✔';
-  position: absolute;
-  color: white;
-  font-size: 12px;
-  font-weight: bold;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.import-category-header label,
-.import-item label {
-  cursor: pointer;
-  user-select: none;
-  flex-grow: 1;
-}
-
-.import-messages-list {
-  padding-left: 25px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.import-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.import-item input[type='checkbox'] {
-  /* Aplica o mesmo estilo dos checkboxes da seção Visibilidade dos botões */
-  appearance: none;
-  -webkit-appearance: none;
-  position: relative;
-  width: 18px;
-  height: 18px;
-  border: 1px solid var(--border-color);
-  background-color: var(--background-secondary);
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  margin-top: 2px;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
-}
-
-.import-item input[type='checkbox']:hover {
-  border-color: var(--primary-color);
-}
-
-.import-item input[type='checkbox']:checked {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
-}
-
-.import-item input[type='checkbox']:checked::after {
-  content: '✔';
-  position: absolute;
-  color: white;
-  font-size: 12px;
-  font-weight: bold;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-.import-category-destination {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
-}
-
-.import-category-destination span {
-  font-weight: bold;
-  color: var(--text-color-muted);
-}
-
-.import-category-destination select {
-  padding: 4px 8px;
-  font-size: 13px;
-  background-color: var(--background-secondary);
-  color: var(--text-color-main);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-sm);
-  max-width: 250px;
-}
-
-.import-destination-container {
-  display: none;
-}
-
-/* --- ANIMAÇÕES --- */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* --- SISTEMA DE NOTIFICAÇÕES (TOASTS) --- */
-#notification-container {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 3000;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-width: 320px;
-}
-
-.editor-notification {
-  background-color: var(--background-secondary, #4b78f5);
-  color: var(--text-color-main, #f2f7ff);
-  padding: 12px 16px;
-  border-radius: var(--border-radius-sm);
-  box-shadow: var(--shadow-lg);
-  border-left: 4px solid var(--text-color-muted);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  animation: slideIn 0.3s ease forwards;
-  opacity: 1;
-  transition: opacity 0.5s ease;
-}
-
-.editor-notification.fade-out {
-  opacity: 0;
-}
-
-.notification-icon {
-  font-size: 20px;
-}
-
-.editor-notification.success {
-  border-left-color: var(--action-green);
-}
-
-.editor-notification.error {
-  border-left-color: var(--action-red);
-}
-
-.editor-notification.info {
-  border-left-color: var(--action-blue);
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-/* --- MENU DE SELEÇÃO DE TEMA --- */
-.theme-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  width: 100%;
-  text-align: left;
-  white-space: nowrap;
-}
-
-.theme-option:hover {
-  background-color: var(--background-hover);
-}
-
-.theme-icon {
-  font-size: 16px;
-  width: 20px;
-  display: inline-block;
-  text-align: center;
-}
-
-.open-link-btn-note {
-  background: none;
-  border: none;
-  color: var(--text-color-muted);
-  cursor: pointer;
-  padding: 4px;
-  font-size: 16px;
-  border-radius: 4px;
-  transition: background-color 0.2s ease, color 0.2s ease;
-}
-.open-link-btn-note:hover {
-  background-color: var(--background-secondary);
-  color: var(--text-color-main);
-}
-
-/* --- PAINEL DE ANOTAÇÕES LATERAL --- */
+﻿/* --- PAINEL DE ANOTAÃ‡Ã•ES LATERAL --- */
 #notes-side-panel {
   position: fixed;
   top: 0;
@@ -2306,7 +115,7 @@ a.open-link-btn:hover {
 }
 
 .note-block-header::before {
-  content: '▶';
+  content: 'â–¶';
   font-size: 10px;
   margin-right: 8px;
   transition: transform 0.2s ease;
@@ -2454,9 +263,9 @@ a.open-link-btn:hover {
 
 .reminder-item {
   align-items: flex-start;
-  border-left: 4px solid transparent; /* Espaçamento padrão */
+  border-left: 4px solid transparent; /* EspaÃ§amento padrÃ£o */
   padding-left: 10px;
-  margin-left: -10px; /* Compensa o padding para alinhar o conteúdo */
+  margin-left: -10px; /* Compensa o padding para alinhar o conteÃºdo */
 }
 
 .reminder-item.priority-low {
@@ -2557,17 +366,17 @@ a.open-link-btn:hover {
   transition: all 0.2s ease-in-out;
 }
 
-/* --- Correção de Legibilidade para Temas Escuros --- */
+/* --- CorreÃ§Ã£o de Legibilidade para Temas Escuros --- */
 .se-modal-body b,
 .se-modal-body strong {
   color: var(--text-color-main);
 }
 
-/* --- Estilos Aprimorados para Configurações de IA --- */
+/* --- Estilos Aprimorados para ConfiguraÃ§Ãµes de IA --- */
 
 #gemini-api-key-input {
   font-family: monospace; /* Facilita a leitura da chave */
-  flex-grow: 1; /* Ocupa o espaço disponível no form-group */
+  flex-grow: 1; /* Ocupa o espaÃ§o disponÃ­vel no form-group */
   background-color: var(--background-main);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
@@ -2584,7 +393,7 @@ a.open-link-btn:hover {
     0 0 0 3px color-mix(in srgb, var(--primary-color) 25%, transparent);
 }
 
-/* Garante que o link estilizado como botão no modal informativo se comporte bem */
+/* Garante que o link estilizado como botÃ£o no modal informativo se comporte bem */
 .se-modal-body a.action-btn {
   text-decoration: none;
   display: inline-block;
@@ -2714,7 +523,7 @@ a.open-link-btn:hover {
   margin-bottom: 0;
 }
 
-/* --- ESTILOS PARA O MODAL DE DIAGNÓSTICO --- */
+/* --- ESTILOS PARA O MODAL DE DIAGNÃ“STICO --- */
 .se-modal-content.diagnostic-modal {
   max-width: 900px; /* Aumenta a largura para acomodar a grade */
 }
@@ -2819,7 +628,7 @@ a.open-link-btn:hover {
   color: var(--action-green);
 }
 
-/* --- NOTIFICAÇÃO DE LEMBRETE NA PÁGINA --- */
+/* --- NOTIFICAÃ‡ÃƒO DE LEMBRETE NA PÃGINA --- */
 #in-page-notification-container {
   position: fixed;
   bottom: 20px;
@@ -2927,7 +736,7 @@ a.open-link-btn:hover {
   background-color: var(--primary-color-hover);
 }
 
-/* --- MENU DE AÇÃO FLUTUANTE (FAB) --- */
+/* --- MENU DE AÃ‡ÃƒO FLUTUANTE (FAB) --- */
 .fab-container {
   position: fixed;
   z-index: 1040;
@@ -2957,7 +766,7 @@ a.open-link-btn:hover {
   color: var(--text-color-main);
   cursor: pointer;
   position: relative;
-  margin-right: 15px; /* Espaço entre o sino e o nome do usuário */
+  margin-right: 15px; /* EspaÃ§o entre o sino e o nome do usuÃ¡rio */
   padding: 5px;
   border-radius: 50%;
   transition: background-color 0.2s ease;
@@ -2967,12 +776,12 @@ a.open-link-btn:hover {
   background-color: var(--background-hover);
 }
 
-/* Aplica a animação de pulso apenas quando houver notificações pendentes */
+/* Aplica a animaÃ§Ã£o de pulso apenas quando houver notificaÃ§Ãµes pendentes */
 #sgd-notification-bell.pulsing {
   animation: bell-pulse 1.5s infinite;
 }
 
-/* Badge posicionado no canto do ícone de sino */
+/* Badge posicionado no canto do Ã­cone de sino */
 #sgd-notification-bell .notification-badge {
   position: absolute;
   top: 0;
@@ -2990,16 +799,16 @@ a.open-link-btn:hover {
   border: 2px solid var(--background-main);
 }
 
-/* Adiciona a "ponte" de hover com padding e alinha o botão principal */
+/* Adiciona a "ponte" de hover com padding e alinha o botÃ£o principal */
 .fab-container.bottom-left,
 .fab-container.bottom-right {
-  padding-top: 12px; /* Ponte invisível acima do botão */
-  align-items: flex-end; /* Alinha o botão na base do container */
+  padding-top: 12px; /* Ponte invisÃ­vel acima do botÃ£o */
+  align-items: flex-end; /* Alinha o botÃ£o na base do container */
 }
 .fab-container.top-left,
 .fab-container.top-right {
-  padding-bottom: 12px; /* Ponte invisível abaixo do botão */
-  align-items: flex-start; /* Alinha o botão no topo do container */
+  padding-bottom: 12px; /* Ponte invisÃ­vel abaixo do botÃ£o */
+  align-items: flex-start; /* Alinha o botÃ£o no topo do container */
 }
 
 .fab-container.bottom-left {
@@ -3030,7 +839,7 @@ a.open-link-btn:hover {
   pointer-events: none;
 }
 
-/* Comportamento para posições na BASE (abrir para cima) */
+/* Comportamento para posiÃ§Ãµes na BASE (abrir para cima) */
 .fab-container.bottom-left .fab-options,
 .fab-container.bottom-right .fab-options {
   bottom: 100%; /* Posiciona acima do padding do container */
@@ -3039,7 +848,7 @@ a.open-link-btn:hover {
   transform-origin: bottom;
 }
 
-/* Comportamento para posições no TOPO (abrir para baixo) */
+/* Comportamento para posiÃ§Ãµes no TOPO (abrir para baixo) */
 .fab-container.top-left .fab-options,
 .fab-container.top-right .fab-options {
   top: 100%; /* Posiciona abaixo do padding do container */
@@ -3057,22 +866,22 @@ a.open-link-btn:hover {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  border: 1px solid rgba(0, 0, 0, 0.05); /* Mantido para consistência */
+  border: 1px solid rgba(0, 0, 0, 0.05); /* Mantido para consistÃªncia */
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 24px;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Sombra do botão Ir ao Topo */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Sombra do botÃ£o Ir ao Topo */
   transition: transform var(--transition-fast),
-    background-color var(--transition-fast), box-shadow 0.2s ease; /* Transições */
+    background-color var(--transition-fast), box-shadow 0.2s ease; /* TransiÃ§Ãµes */
   position: relative;
 
   /* Efeito Glassmorphism */
   background: rgba(255, 255, 255, 0.5);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  color: #333; /* Cor escura para o ícone */
+  color: #333; /* Cor escura para o Ã­cone */
 }
 
 .fab-button:hover {
@@ -3081,13 +890,13 @@ a.open-link-btn:hover {
 }
 
 .main-fab {
-  /* Mantém a cor de destaque, mas com efeito glass */
+  /* MantÃ©m a cor de destaque, mas com efeito glass */
   background: rgba(255, 255, 255, 0.5);
   color: #333;
   z-index: 2;
   cursor: grab;
   background: rgba(0, 0, 0, 0.6); /* Fundo preto com 60% de opacidade */
-  color: #fff; /* Ícones brancos para contraste */
+  color: #fff; /* Ãcones brancos para contraste */
 }
 .main-fab:active {
   cursor: grabbing;
@@ -3102,11 +911,11 @@ a.open-link-btn:hover {
   font-size: 23px;
   position: relative;
   background: rgba(87, 87, 87, 0.6); /* Fundo cinza com 60% de opacidade */
-  color: #fff; /* Ícones brancos para contraste */
+  color: #fff; /* Ãcones brancos para contraste */
 }
 
 .fab-option:hover {
-  /* Efeito de hover específico para as opções, se necessário */
+  /* Efeito de hover especÃ­fico para as opÃ§Ãµes, se necessÃ¡rio */
   background: rgba(0, 0, 0, 0.8);
 }
 
@@ -3125,7 +934,7 @@ a.open-link-btn:hover {
   pointer-events: none;
 
   /* Estilo do Tooltip Atualizado */
-  background-color: #2c2c2c; /* Fundo escuro e sólido */
+  background-color: #2c2c2c; /* Fundo escuro e sÃ³lido */
   color: #ffffff; /* Texto branco para alto contraste */
   border: none; /* Borda removida para um visual mais limpo */
   box-shadow: var(--shadow-md);
@@ -3136,14 +945,14 @@ a.open-link-btn:hover {
   visibility: visible;
 }
 
-/* NOVA REGRA: Ajusta a posição do tooltip quando o FAB está à esquerda */
+/* NOVA REGRA: Ajusta a posiÃ§Ã£o do tooltip quando o FAB estÃ¡ Ã  esquerda */
 .fab-container.top-left .fab-option::after,
 .fab-container.bottom-left .fab-option::after {
   left: 110%;
   right: auto;
 }
 
-/* NOVA REGRA: Ajusta a posição do tooltip quando o FAB está à direita */
+/* NOVA REGRA: Ajusta a posiÃ§Ã£o do tooltip quando o FAB estÃ¡ Ã  direita */
 .fab-container.top-right .fab-option::after,
 .fab-container.bottom-right .fab-option::after {
   right: 110%;
@@ -3204,7 +1013,7 @@ a.open-link-btn:hover {
   transform-origin: bottom right;
 }
 
-/* --- PALETA DE COMANDOS / INSERÇÃO RÁPIDA --- */
+/* --- PALETA DE COMANDOS / INSERÃ‡ÃƒO RÃPIDA --- */
 #quick-inserter-overlay {
   position: fixed;
   top: 0;
@@ -3470,7 +1279,7 @@ a.open-link-btn:hover {
   font-size: 14px;
 }
 
-/* Estilos para o botão Adicionar Novo (Mantido) */
+/* Estilos para o botÃ£o Adicionar Novo (Mantido) */
 .qi-actions {
   padding: 8px 12px 12px;
   margin-top: auto;
@@ -3493,7 +1302,7 @@ a.open-link-btn:hover {
 #qi-open-settings-btn {
   width: 100%;
   padding: 10px 12px;
-  font-size: 14px; /* Ajustado para consistência */
+  font-size: 14px; /* Ajustado para consistÃªncia */
   line-height: 1;
   display: flex;
   align-items: center;
@@ -3502,71 +1311,6 @@ a.open-link-btn:hover {
 }
 
 /* --- Fim da Paleta de Comandos --- */
-
-/* --- AJUSTES DE TEMA ESPECÍFICOS PARA A PALETA DE COMANDOS --- */
-/* ----------------------------------- */
-
-/* Cor de texto geral para temas escuros */
-#quick-inserter-panel.tokyo-night-mode,
-#quick-inserter-panel.forest-mode,
-#quick-inserter-panel.dark-mode,
-#quick-inserter-panel.dark-graphite-mode {
-  color: #e0e0e0; /* Branco suave para texto principal */
-}
-
-/* Títulos no preview dos temas escuros */
-#quick-inserter-panel.tokyo-night-mode .qi-preview-area h5,
-#quick-inserter-panel.forest-mode .qi-preview-area h5,
-#quick-inserter-panel.dark-mode .qi-preview-area h5,
-#quick-inserter-panel.dark-graphite-mode .qi-preview-area h5 {
-  color: #ffffff;
-}
-
-/* Input de busca nos temas escuros */
-#quick-inserter-panel.tokyo-night-mode #qi-search-input,
-#quick-inserter-panel.forest-mode #qi-search-input,
-#quick-inserter-panel.dark-mode #qi-search-input,
-#quick-inserter-panel.dark-graphite-mode #qi-search-input {
-  background-color: #2c2c2c;
-  color: #e0e0e0;
-  border-color: #444;
-}
-
-/* Placeholder do input nos temas escuros */
-#quick-inserter-panel.tokyo-night-mode #qi-search-input::placeholder,
-#quick-inserter-panel.forest-mode #qi-search-input::placeholder,
-#quick-inserter-panel.dark-mode #qi-search-input::placeholder,
-#quick-inserter-panel.dark-graphite-mode #qi-search-input::placeholder {
-  color: #888;
-}
-
-/* Área de preview e textos secundários nos temas escuros */
-#quick-inserter-panel.tokyo-night-mode .qi-preview-area,
-#quick-inserter-panel.forest-mode .qi-preview-area,
-#quick-inserter-panel.dark-mode .qi-preview-area,
-#quick-inserter-panel.dark-graphite-mode .qi-preview-area {
-  color: #a0a0a0; /* Cinza claro para textos secundários */
-}
-
-/*
-  Correção para o Tema Alvorada (light):
-  Agora com uma classe dedicada, garantimos um fundo sólido sem afetar outros temas.
-*/
-#quick-inserter-panel.light-mode {
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  background-color: var(--background-main) !important;
-}
-
-/* Override para a lista de mensagens em temas escuros */
-#quick-inserter-panel.tokyo-night-mode .qi-messages-list,
-#quick-inserter-panel.forest-mode .qi-messages-list,
-#quick-inserter-panel.dark-mode .qi-messages-list,
-#quick-inserter-panel.dark-graphite-mode .qi-messages-list {
-  background-color: var(
-    --background-main
-  ); /* Usar o fundo principal mais escuro */
-}
 
 /* --- FAB (Floating Action Button) --- */
 .fab-container {
@@ -3582,7 +1326,7 @@ a.open-link-btn:hover {
 #fired-reminders-panel {
   position: absolute; /* Alterado para posicionamento absoluto */
   width: 400px; /* AUMENTADO de 340px para 400px */
-  max-height: 450px; /* Aumentado um pouco a altura também */
+  max-height: 450px; /* Aumentado um pouco a altura tambÃ©m */
   z-index: 2100; /* Garante que fique acima de outros elementos */
   border-radius: var(--border-radius-md);
   box-shadow: var(--shadow-lg);
@@ -3592,7 +1336,7 @@ a.open-link-btn:hover {
   overflow: hidden;
   opacity: 0;
   transform: scale(0.95);
-  transform-origin: top center; /* Animação surge do topo */
+  transform-origin: top center; /* AnimaÃ§Ã£o surge do topo */
   transition: transform 0.2s ease-out, opacity 0.2s ease-out;
 
   /* Efeito Glassmorphism */
@@ -3728,7 +1472,7 @@ p.fired-reminder-desc {
   color: white;
 }
 
-/* Estilos para lembretes já dispensados */
+/* Estilos para lembretes jÃ¡ dispensados */
 .fired-reminder-item.acknowledged {
   opacity: 0.65;
   background-color: var(--background-hover);
@@ -3741,7 +1485,7 @@ p.fired-reminder-desc {
 
 /* --- Ajustes de Legibilidade para Painel de Lembretes --- */
 
-/* Garante que os títulos de seção (Pendentes, Concluídos) usem a cor de texto principal do tema */
+/* Garante que os tÃ­tulos de seÃ§Ã£o (Pendentes, ConcluÃ­dos) usem a cor de texto principal do tema */
 .fired-reminders-list h6 {
   color: var(--text-color-main);
 }
@@ -3752,7 +1496,7 @@ p.fired-reminder-desc {
   ); /* Borda cinza neutra para lembretes agendados */
 }
 
-/* Adiciona um estilo para o botão de edição para que ele se alinhe com os outros */
+/* Adiciona um estilo para o botÃ£o de ediÃ§Ã£o para que ele se alinhe com os outros */
 .fired-reminder-actions .edit-btn {
   background-color: var(--action-blue);
   color: white;
@@ -3776,7 +1520,7 @@ hr.fired-reminders-separator {
   margin-top: 0;
 }
 
-/* --- Estilos para o campo de busca no painel de notificações --- */
+/* --- Estilos para o campo de busca no painel de notificaÃ§Ãµes --- */
 .fired-reminders-header .search-input {
   width: 100%;
   padding: 6px 10px;
@@ -3799,7 +1543,7 @@ hr.fired-reminders-separator {
   font-style: italic;
 }
 
-/* --- Botões de Ação do Painel de Lembretes --- */
+/* --- BotÃµes de AÃ§Ã£o do Painel de Lembretes --- */
 .fired-reminder-actions .complete-btn {
   background-color: var(--action-blue);
   color: white;
@@ -3809,7 +1553,7 @@ hr.fired-reminders-separator {
   color: white;
 }
 
-/* --- Cabeçalho do Painel de Lembretes Aprimorado --- */
+/* --- CabeÃ§alho do Painel de Lembretes Aprimorado --- */
 .fired-reminders-header-actions .action-btn {
   width: auto;
   height: auto;
@@ -3820,13 +1564,13 @@ hr.fired-reminders-separator {
   gap: 5px;
 }
 
-/* --- Estilos para Descrição dos Lembretes e Mensagem de Painel Vazio --- */
+/* --- Estilos para DescriÃ§Ã£o dos Lembretes e Mensagem de Painel Vazio --- */
 .fired-reminder-desc-snippet {
   margin: 2px 0 4px 0;
   font-size: 12px;
   color: var(--text-color-muted);
 
-  /* Limita o texto a uma única linha com reticências para não poluir a interface */
+  /* Limita o texto a uma Ãºnica linha com reticÃªncias para nÃ£o poluir a interface */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3840,7 +1584,7 @@ hr.fired-reminders-separator {
   color: var(--text-color-muted);
 }
 
-/* --- Prioridade no Toast de Notificação --- */
+/* --- Prioridade no Toast de NotificaÃ§Ã£o --- */
 .in-page-notification.priority-low {
   border-left-color: var(--action-blue);
 }
@@ -3851,7 +1595,7 @@ hr.fired-reminders-separator {
   border-left-color: var(--action-red);
 }
 
-/* --- Consistência de Estilo para Botões no Gerenciamento de Lembretes --- */
+/* --- ConsistÃªncia de Estilo para BotÃµes no Gerenciamento de Lembretes --- */
 .management-section .reminder-actions-container .complete-btn {
   background-color: var(--action-blue);
   color: white;
@@ -3865,7 +1609,7 @@ hr.fired-reminders-separator {
   color: white;
 }
 
-/* --- Título Riscado para Lembretes Concluídos no Gerenciamento --- */
+/* --- TÃ­tulo Riscado para Lembretes ConcluÃ­dos no Gerenciamento --- */
 .management-section .reminder-item.acknowledged .category-name {
   text-decoration: line-through;
   opacity: 0.7;
@@ -3967,7 +1711,7 @@ hr.fired-reminders-separator {
   padding-top: 8px;
   border-top: 1px dashed var(--border-color);
 
-  /* Limita o texto a 1 linha por padrão */
+  /* Limita o texto a 1 linha por padrÃ£o */
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -3978,7 +1722,7 @@ hr.fired-reminders-separator {
 
 /* Ao expandir, remove o limite de linhas */
 .reminder-card.expanded .description-snippet {
-  -webkit-line-clamp: 20; /* Um número alto para mostrar todo o conteúdo */
+  -webkit-line-clamp: 20; /* Um nÃºmero alto para mostrar todo o conteÃºdo */
   line-clamp: 20;
 }
 
@@ -4000,7 +1744,7 @@ hr.fired-reminders-separator {
   border: 1px solid transparent;
 }
 
-/* Estilos Sutis dos Botões (primary, secondary, destructive) */
+/* Estilos Sutis dos BotÃµes (primary, secondary, destructive) */
 .card-actions .action-btn.primary {
   background-color: color-mix(in srgb, var(--action-blue) 15%, transparent);
   color: var(--action-blue);
@@ -4043,7 +1787,7 @@ hr.fired-reminders-separator {
   border-left-color: var(--action-red);
 }
 
-/* Estilo para cards Concluídos */
+/* Estilo para cards ConcluÃ­dos */
 .reminder-card.acknowledged {
   opacity: 0.7;
 }
@@ -4051,11 +1795,11 @@ hr.fired-reminders-separator {
   text-decoration: line-through;
 }
 
-/* --- Estilos Aprimorados para a Seção de Interface --- */
+/* --- Estilos Aprimorados para a SeÃ§Ã£o de Interface --- */
 .slider-group {
   display: flex;
   flex-direction: column;
-  gap: 8px; /* Espaçamento entre o label e o slider */
+  gap: 8px; /* EspaÃ§amento entre o label e o slider */
   margin-bottom: 12px;
 }
 
@@ -4065,7 +1809,7 @@ hr.fired-reminders-separator {
   margin: 0;
 }
 
-/* Customização dos Sliders (input[type="range"]) */
+/* CustomizaÃ§Ã£o dos Sliders (input[type="range"]) */
 input[type='range'] {
   -webkit-appearance: none;
   appearance: none;
@@ -4111,7 +1855,7 @@ input[type='range']:active::-webkit-slider-thumb {
   background: var(--primary-color-hover);
 }
 
-/* Estilo para o botão de restaurar padrões */
+/* Estilo para o botÃ£o de restaurar padrÃµes */
 .restore-defaults-btn {
   background-color: var(--background-hover);
   border: 1px solid var(--border-color);
@@ -4119,28 +1863,28 @@ input[type='range']:active::-webkit-slider-thumb {
   font-weight: 500;
   padding: 6px 12px;
   margin-top: 10px;
-  align-self: flex-start; /* Alinha o botão à esquerda */
+  align-self: flex-start; /* Alinha o botÃ£o Ã  esquerda */
 }
 
 .restore-defaults-btn:hover {
   border-color: var(--action-orange);
   color: var(--action-orange);
 }
-/* --- Estilos para Subseções Aninhadas no Modal --- */
+/* --- Estilos para SubseÃ§Ãµes Aninhadas no Modal --- */
 .nested-section {
   margin-top: 15px;
   padding-left: 10px;
   border-left: 2px solid var(--border-color);
 }
 
-/* --- Melhorias Visuais para o Modal de Configurações --- */
+/* --- Melhorias Visuais para o Modal de ConfiguraÃ§Ãµes --- */
 
-/* Remove as linhas divisórias antigas */
+/* Remove as linhas divisÃ³rias antigas */
 .se-modal-body hr {
   display: none;
 }
 
-/* Estiliza cada seção principal como um card */
+/* Estiliza cada seÃ§Ã£o principal como um card */
 .se-modal-body > .management-section {
   background-color: var(--background-main);
   border: 1px solid var(--border-color);
@@ -4150,12 +1894,12 @@ input[type='range']:active::-webkit-slider-thumb {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-/* Ajusta o cabeçalho dentro do card */
+/* Ajusta o cabeÃ§alho dentro do card */
 .se-modal-body > .management-section > .collapsible-header {
   padding: 0;
   margin-bottom: 8px;
 }
-/* Melhora a aparência dos cabeçalhos principais (H4) */
+/* Melhora a aparÃªncia dos cabeÃ§alhos principais (H4) */
 .management-section > h4.collapsible-header {
   font-size: 16px;
   font-weight: 600; /* Mais destaque */
@@ -4164,7 +1908,7 @@ input[type='range']:active::-webkit-slider-thumb {
   margin-bottom: 12px;
 }
 
-/* Remove o fundo dos cabeçalhos de subseção para um visual mais limpo */
+/* Remove o fundo dos cabeÃ§alhos de subseÃ§Ã£o para um visual mais limpo */
 .management-section h5.collapsible-header {
   margin: 0;
   font-size: 15px; /* Ligeiramente menor que o h4 principal */
@@ -4176,16 +1920,16 @@ input[type='range']:active::-webkit-slider-thumb {
   transition: background-color 0.2s ease;
 }
 .management-section h5.collapsible-header:hover {
-  background-color: var(--background-hover); /* Mantém o feedback no hover */
+  background-color: var(--background-hover); /* MantÃ©m o feedback no hover */
 }
 .nested-section .collapsible-content {
   padding: 10px 0 5px 5px; /* Ajusta o preenchimento interno */
 }
 
-/* --- Estilização Customizada dos Checkboxes --- */
+/* --- EstilizaÃ§Ã£o Customizada dos Checkboxes --- */
 
 .form-checkbox-group input[type='checkbox'] {
-  /* Esconde o checkbox padrão */
+  /* Esconde o checkbox padrÃ£o */
   appearance: none;
   -webkit-appearance: none;
   position: relative;
@@ -4209,9 +1953,9 @@ input[type='range']:active::-webkit-slider-thumb {
   border-color: var(--primary-color);
 }
 
-/* Adiciona o ícone de "check" usando um pseudo-elemento */
+/* Adiciona o Ã­cone de "check" usando um pseudo-elemento */
 .form-checkbox-group input[type='checkbox']:checked::after {
-  content: '✔';
+  content: 'âœ”';
   position: absolute;
   color: white;
   font-size: 12px;
@@ -4226,7 +1970,7 @@ input[type='range']:active::-webkit-slider-thumb {
   user-select: none;
 }
 
-/* --- ESTILOS PARA O BOTÃO DE MICROFONE --- */
+/* --- ESTILOS PARA O BOTÃƒO DE MICROFONE --- */
 
 @keyframes mic-pulse {
   0% {
@@ -4240,7 +1984,7 @@ input[type='range']:active::-webkit-slider-thumb {
   }
 }
 
-/* --- ESTILOS PARA O MODAL DE INSTRUÇÕES DE IMAGEM --- */
+/* --- ESTILOS PARA O MODAL DE INSTRUÃ‡Ã•ES DE IMAGEM --- */
 .image-paste-instructions {
   text-align: center;
   padding: 20px;
@@ -4332,14 +2076,14 @@ input[type='range']:active::-webkit-slider-thumb {
   margin-bottom: 20px;
 }
 
-/* Classe para centralizar as opções de tamanho da imagem no modal */
+/* Classe para centralizar as opÃ§Ãµes de tamanho da imagem no modal */
 .image-options {
   display: flex;
   justify-content: center;
   gap: 20px;
 }
 
-/* Estilos para as opções de tamanho compactas e modernas */
+/* Estilos para as opÃ§Ãµes de tamanho compactas e modernas */
 .image-size-option {
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
@@ -4623,7 +2367,7 @@ button[data-action='speech-to-text']:disabled:hover {
     sans-serif;
 
   /* ESTILO GLASSMORPHISM ESCURO (como o FAB e o Go To Top) */
-  background: rgba(30, 30, 30, 0.7); /* Fundo escuro translúcido */
+  background: rgba(30, 30, 30, 0.7); /* Fundo escuro translÃºcido */
   color: #ffffff; /* Texto branco */
   border: 1px solid rgba(255, 255, 255, 0.1); /* Borda sutil */
   backdrop-filter: blur(10px);
@@ -4643,7 +2387,7 @@ button[data-action='speech-to-text']:disabled:hover {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #ffffff; /* Título branco */
+  color: #ffffff; /* TÃ­tulo branco */
 }
 
 .speech-hint-columns {
@@ -4660,7 +2404,7 @@ button[data-action='speech-to-text']:disabled:hover {
   display: block;
   font-size: 14px;
   margin-bottom: 8px;
-  color: #a0a0a0; /* Texto secundário cinza claro */
+  color: #a0a0a0; /* Texto secundÃ¡rio cinza claro */
   border-bottom: 1px solid rgba(255, 255, 255, 0.15); /* Borda sutil */
   padding-bottom: 4px;
 }
@@ -4695,7 +2439,7 @@ button[data-action='speech-to-text']:disabled:hover {
   line-height: 1;
 }
 
-/* --- Estilos para o Dropdown de Troca Rápida (Layout Aprimorado) --- */
+/* --- Estilos para o Dropdown de Troca RÃ¡pida (Layout Aprimorado) --- */
 .quick-change-container h5 {
   margin: 4px 0 6px 0;
   padding: 4px 8px;
@@ -4757,7 +2501,7 @@ button[data-action='speech-to-text']:disabled:hover {
 
 .quick-change-item .edit-item-btn,
 .quick-change-item .delete-item-btn {
-  opacity: 0; /* Fica invisível por padrão */
+  opacity: 0; /* Fica invisÃ­vel por padrÃ£o */
 }
 
 .quick-change-item:hover .edit-item-btn,
@@ -4776,7 +2520,7 @@ button[data-action='speech-to-text']:disabled:hover {
   opacity: 1;
 }
 
-/* Botões de Editar e Excluir no dropdown de Trâmites Rápidos */
+/* BotÃµes de Editar e Excluir no dropdown de TrÃ¢mites RÃ¡pidos */
 .message-item .edit-message-btn,
 .message-item .delete-message-btn {
   background: none;
@@ -4792,7 +2536,7 @@ button[data-action='speech-to-text']:disabled:hover {
   align-items: center;
   justify-content: center;
   transition: opacity 0.2s ease, background-color 0.2s ease;
-  opacity: 0; /* Fica invisível por padrão */
+  opacity: 0; /* Fica invisÃ­vel por padrÃ£o */
 }
 
 .message-item:hover .edit-message-btn,
@@ -4806,7 +2550,7 @@ button[data-action='speech-to-text']:disabled:hover {
   background-color: var(--background-secondary);
 }
 
-/* --- Estilo para o botão "Adicionar Novo" no menu de troca rápida --- */
+/* --- Estilo para o botÃ£o "Adicionar Novo" no menu de troca rÃ¡pida --- */
 .quick-change-container .add-new-item-btn {
   width: 100%;
   margin-top: 8px;
@@ -4827,7 +2571,7 @@ button[data-action='speech-to-text']:disabled:hover {
   border-color: var(--action-green);
 }
 
-/* --- Estilo para o botão "Adicionar Novo" nos menus dropdown --- */
+/* --- Estilo para o botÃ£o "Adicionar Novo" nos menus dropdown --- */
 .quick-change-container .add-new-item-btn,
 .quick-steps-actions .add-message-btn {
   width: 100%;
@@ -4851,14 +2595,14 @@ button[data-action='speech-to-text']:disabled:hover {
   border-color: var(--action-green);
 }
 
-/* --- Estilo para o Aviso de Configuração SGSC --- */
+/* --- Estilo para o Aviso de ConfiguraÃ§Ã£o SGSC --- */
 .sgsc-warning-banner {
   padding: 10px 15px;
   background-color: var(--background-secondary);
   border-top: 1px solid var(--border-color);
   display: flex;
   align-items: center;
-  gap: 12px; /* Espaçamento entre os elementos */
+  gap: 12px; /* EspaÃ§amento entre os elementos */
   font-size: 13px;
   color: var(--text-color);
 }
@@ -4866,7 +2610,7 @@ button[data-action='speech-to-text']:disabled:hover {
 .sgsc-warning-banner p {
   margin: 0;
   line-height: 1.4;
-  flex-grow: 1; /* Faz o texto ocupar o espaço disponível */
+  flex-grow: 1; /* Faz o texto ocupar o espaÃ§o disponÃ­vel */
 }
 
 .sgsc-warning-banner p strong {
@@ -4895,7 +2639,7 @@ button[data-action='speech-to-text']:disabled:hover {
   color: var(--text-color-muted) !important;
 }
 
-/* Botão Flutuante para Limpar Formulário */
+/* BotÃ£o Flutuante para Limpar FormulÃ¡rio */
 .clear-form-btn {
   position: absolute;
   top: 65px;
@@ -4911,7 +2655,7 @@ button[data-action='speech-to-text']:disabled:hover {
   transition: background-color 0.2s;
 }
 
-/* Ajusta a posição do botão Limpar no layout vertical */
+/* Ajusta a posiÃ§Ã£o do botÃ£o Limpar no layout vertical */
 .vertical-layout .clear-form-btn {
   top: 65px;
   right: 75px;
@@ -4921,7 +2665,7 @@ button[data-action='speech-to-text']:disabled:hover {
   background-color: rgba(0, 0, 0, 0.3);
 }
 
-/* --- CLASSE BASE PARA BOTÕES APRIMORADOS --- */
+/* --- CLASSE BASE PARA BOTÃ•ES APRIMORADOS --- */
 .enhanced-btn {
   background: linear-gradient(
     135deg,
@@ -4986,7 +2730,7 @@ button[data-action='speech-to-text']:disabled:hover {
   animation: gradient-shift 2s ease infinite;
 }
 
-/* Botão Salvar Alterações com fundo verde */
+/* BotÃ£o Salvar AlteraÃ§Ãµes com fundo verde */
 .enhanced-btn[data-action='save-changes'],
 button[id='modal-save-btn'].enhanced-btn {
   background: linear-gradient(135deg, #28a745, #20c997) !important;
@@ -4999,7 +2743,7 @@ button[id='modal-save-btn'].enhanced-btn:hover {
   border-color: #20c997 !important;
 }
 
-/* Botão Fechar com fundo cinza */
+/* BotÃ£o Fechar com fundo cinza */
 button[id='modal-cancel-btn'].enhanced-btn {
   background: linear-gradient(135deg, #6c757d, #5a6268) !important;
   border-color: #6c757d !important;
@@ -5010,7 +2754,7 @@ button[id='modal-cancel-btn'].enhanced-btn:hover {
   border-color: #5a6268 !important;
 }
 
-/* Garantir que o botão Fechar mantenha cor branca */
+/* Garantir que o botÃ£o Fechar mantenha cor branca */
 button[id='modal-cancel-btn'].enhanced-btn {
   color: white !important;
 }
@@ -5019,7 +2763,7 @@ button[id='modal-cancel-btn'].enhanced-btn:hover {
   color: white !important;
 }
 
-/* Botões de Adicionar com fundo azul claro */
+/* BotÃµes de Adicionar com fundo azul claro */
 .add-message-btn.enhanced-btn,
 .add-item-btn.enhanced-btn,
 .add-new-item-btn,
@@ -5044,7 +2788,7 @@ button[id='modal-cancel-btn'].enhanced-btn:hover {
   color: white !important;
 }
 
-/* Adicionar efeito de brilho aos botões de adicionar */
+/* Adicionar efeito de brilho aos botÃµes de adicionar */
 .add-new-item-btn {
   position: relative;
   overflow: hidden;
@@ -5098,7 +2842,7 @@ button[id='modal-cancel-btn'].enhanced-btn:hover {
   left: 100%;
 }
 
-/* Estilos específicos para o item do painel */
+/* Estilos especÃ­ficos para o item do painel */
 .quick-steps-panel-item.panel-btn {
   background: linear-gradient(
     135deg,
@@ -5129,7 +2873,7 @@ button[id='modal-cancel-btn'].enhanced-btn:hover {
 
 /* Adapte ou reutilize de quick-messages.js */
 .gc-item { /* Usando a classe adicionada */
-   position: relative; /* Necessário para os pseudo-elementos ::before/::after */
+   position: relative; /* NecessÃ¡rio para os pseudo-elementos ::before/::after */
    /* Outros estilos existentes... */
 }
 
@@ -5178,7 +2922,7 @@ button[id='modal-cancel-btn'].enhanced-btn:hover {
   z-index: 1;
 }
 
-/* Estilo para a lista de saudações/encerramentos */
+/* Estilo para a lista de saudaÃ§Ãµes/encerramentos */
 .gc-list {
   display: flex;
   flex-direction: column;
@@ -5186,46 +2930,12 @@ button[id='modal-cancel-btn'].enhanced-btn:hover {
   padding: 6px;
   border: 1px dashed transparent;
   border-radius: 6px;
-  min-height: 40px; /* Garante área de drop mesmo com a lista vazia */
+  min-height: 40px; /* Garante Ã¡rea de drop mesmo com a lista vazia */
   transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
 }
 
-/* Feedback visual quando um item válido é arrastado sobre a lista */
+/* Feedback visual quando um item vÃ¡lido Ã© arrastado sobre a lista */
 .gc-list.drag-over {
   background-color: var(--background-hover);
   border-color: var(--primary-color);
-}
-
-/* Define uma altura mínima para o painel redimensionável no modo vertical */
-.vertical-layout .editor-preview-container.resizable {
-  min-height: 350px;
-}
-
-/* --- ESTILOS GLOBAIS PARA BARRAS DE ROLAGEM --- */
-/* Aplica a estilização em textareas aprimorados e no painel de visualização */
-textarea[data-enhanced]::-webkit-scrollbar,
-.editor-preview-container::-webkit-scrollbar,
-.preview-scroll-wrapper::-webkit-scrollbar {
-  width: 4px; /* Largura da barra de rolagem */
-}
-
-textarea[data-enhanced]::-webkit-scrollbar-track,
-.editor-preview-container::-webkit-scrollbar-track,
-.preview-scroll-wrapper::-webkit-scrollbar-track {
-  background: var(--background-secondary); /* Fundo da barra */
-  border-radius: 10px;
-}
-
-textarea[data-enhanced]::-webkit-scrollbar-thumb,
-.editor-preview-container::-webkit-scrollbar-thumb,
-.preview-scroll-wrapper::-webkit-scrollbar-thumb {
-  background-color: var(--primary-color); /* Cor do "polegar" */
-  border-radius: 10px;
-}
-
-textarea[data-enhanced]::-webkit-scrollbar-thumb:hover,
-.editor-preview-container::-webkit-scrollbar-thumb:hover,
-.preview-scroll-wrapper::-webkit-scrollbar-thumb:hover {
-  background-color: var(--primary-color-hover); /* Cor do polegar ao passar o mouse */
-  cursor: default; /* Garante que o cursor seja a seta padrão */
 }

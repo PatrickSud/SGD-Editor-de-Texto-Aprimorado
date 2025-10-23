@@ -33,6 +33,12 @@
         "main.js"
       ],
       "css": [
+        "styles/base.css",
+        "styles/toolbar.css",
+        "styles/editor.css",
+        "styles/modal.css",
+        "styles/panel.css",
+        "styles/fab.css",
         "editor.css"
       ],
       "run_at": "document_idle"
