@@ -118,8 +118,8 @@
   --background-main: #0d2b1f;
   --background-secondary: #1a3b2d;
   --background-hover: #2a4c3d;
-  --text-color-main: #dbece1;
-  --text-color-muted: #a3b8ac;
+  --text-color-main: #ebf8f0;
+  --text-color-muted: #c0d7ca;
   --background-glass: rgba(13, 43, 31, 0.75);
 }
 
@@ -244,6 +244,242 @@ textarea[data-enhanced],
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
+/* --- CHECKBOX - ESTILO BASE GLOBAL DA EXTENSÃO --- */
+/* Aplica a todos os checkboxes dentro dos containers da extensão */
+:where(
+  .editor-container,
+  .editor-modal,
+  .editor-preview-container,
+  .se-modal-content,
+  .dropdown-content,
+  #shortcut-popup,
+  #notes-side-panel,
+  #quick-inserter-panel,
+  .editor-master-container,
+  #fired-reminders-panel,
+  .reminder-settings-form,
+  .button-visibility-grid
+) input[type='checkbox'] {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border-color);
+  background-color: var(--background-secondary);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+:where(
+  .editor-container,
+  .editor-modal,
+  .editor-preview-container,
+  .se-modal-content,
+  .dropdown-content,
+  #shortcut-popup,
+  #notes-side-panel,
+  #quick-inserter-panel,
+  .editor-master-container,
+  #fired-reminders-panel,
+  .reminder-settings-form,
+  .button-visibility-grid
+) input[type='checkbox']:hover {
+  border-color: var(--primary-color);
+}
+
+:where(
+  .editor-container,
+  .editor-modal,
+  .editor-preview-container,
+  .se-modal-content,
+  .dropdown-content,
+  #shortcut-popup,
+  #notes-side-panel,
+  #quick-inserter-panel,
+  .editor-master-container,
+  #fired-reminders-panel,
+  .reminder-settings-form,
+  .button-visibility-grid
+) input[type='checkbox']:checked {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+:where(
+  .editor-container,
+  .editor-modal,
+  .editor-preview-container,
+  .se-modal-content,
+  .dropdown-content,
+  #shortcut-popup,
+  #notes-side-panel,
+  #quick-inserter-panel,
+  .editor-master-container,
+  #fired-reminders-panel,
+  .reminder-settings-form,
+  .button-visibility-grid
+) input[type='checkbox']:checked::after {
+  content: '✔';
+  position: absolute;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* --- CHECKBOX - PADRÃO ROBUSTO VIA LABEL (compatível e unificado) --- */
+/* Esconde o checkbox nativo e usa o label como superfície de renderização */
+:where(
+  .editor-container,
+  .editor-modal,
+  .editor-preview-container,
+  .se-modal-content,
+  .dropdown-content,
+  #shortcut-popup,
+  #notes-side-panel,
+  #quick-inserter-panel,
+  .editor-master-container,
+  #fired-reminders-panel,
+  .reminder-settings-form,
+  .button-visibility-grid
+) input[type='checkbox'] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+:where(
+  .editor-container,
+  .editor-modal,
+  .editor-preview-container,
+  .se-modal-content,
+  .dropdown-content,
+  #shortcut-popup,
+  #notes-side-panel,
+  #quick-inserter-panel,
+  .editor-master-container,
+  #fired-reminders-panel,
+  .reminder-settings-form,
+  .button-visibility-grid
+) input[type='checkbox'] + label {
+  position: relative;
+  padding-left: 26px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+:where(
+  .editor-container,
+  .editor-modal,
+  .editor-preview-container,
+  .se-modal-content,
+  .dropdown-content,
+  #shortcut-popup,
+  #notes-side-panel,
+  #quick-inserter-panel,
+  .editor-master-container,
+  #fired-reminders-panel,
+  .reminder-settings-form,
+  .button-visibility-grid
+) input[type='checkbox'] + label::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border-color);
+  background-color: var(--background-secondary);
+  border-radius: var(--border-radius-sm);
+  box-sizing: border-box;
+}
+
+:where(
+  .editor-container,
+  .editor-modal,
+  .editor-preview-container,
+  .se-modal-content,
+  .dropdown-content,
+  #shortcut-popup,
+  #notes-side-panel,
+  #quick-inserter-panel,
+  .editor-master-container,
+  #fired-reminders-panel,
+  .reminder-settings-form,
+  .button-visibility-grid
+) input[type='checkbox']:hover + label::before {
+  border-color: var(--primary-color);
+}
+
+:where(
+  .editor-container,
+  .editor-modal,
+  .editor-preview-container,
+  .se-modal-content,
+  .dropdown-content,
+  #shortcut-popup,
+  #notes-side-panel,
+  #quick-inserter-panel,
+  .editor-master-container,
+  #fired-reminders-panel,
+  .reminder-settings-form,
+  .button-visibility-grid
+) input[type='checkbox']:focus-visible + label::before {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 35%, transparent);
+}
+
+:where(
+  .editor-container,
+  .editor-modal,
+  .editor-preview-container,
+  .se-modal-content,
+  .dropdown-content,
+  #shortcut-popup,
+  #notes-side-panel,
+  #quick-inserter-panel,
+  .editor-master-container,
+  #fired-reminders-panel,
+  .reminder-settings-form,
+  .button-visibility-grid
+) input[type='checkbox']:checked + label::before {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+:where(
+  .editor-container,
+  .editor-modal,
+  .editor-preview-container,
+  .se-modal-content,
+  .dropdown-content,
+  #shortcut-popup,
+  #notes-side-panel,
+  #quick-inserter-panel,
+  .editor-master-container,
+  #fired-reminders-panel,
+  .reminder-settings-form,
+  .button-visibility-grid
+) input[type='checkbox']:checked + label::after {
+  content: '✔';
+  position: absolute;
+  left: 9px; /* metade de 18px */
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 /* --- AJUSTES DE TEMA ESPECÍFICOS PARA A PALETA DE COMANDOS --- */
 /* ----------------------------------- */
 
@@ -307,4 +543,293 @@ textarea[data-enhanced],
   background-color: var(
     --background-main
   ); /* Usar o fundo principal mais escuro */
+}
+
+/* --- SCROLLBARS CUSTOMIZADOS --- */
+.quick-steps-list::-webkit-scrollbar,
+.export-list::-webkit-scrollbar,
+.category-list::-webkit-scrollbar,
+.gc-list::-webkit-scrollbar,
+.se-modal-body::-webkit-scrollbar,
+.editor-preview-container::-webkit-scrollbar,
+#shortcut-items-container::-webkit-scrollbar {
+  width: 8px;
+}
+.quick-steps-list::-webkit-scrollbar-track,
+.export-list::-webkit-scrollbar-track,
+.category-list::-webkit-scrollbar-track,
+.gc-list::-webkit-scrollbar-track,
+.se-modal-body::-webkit-scrollbar-track,
+.editor-preview-container::-webkit-scrollbar-track,
+#shortcut-items-container::-webkit-scrollbar-track {
+  background: var(--background-hover);
+  border-radius: 10px;
+}
+.quick-steps-list::-webkit-scrollbar-thumb,
+.export-list::-webkit-scrollbar-thumb,
+.category-list::-webkit-scrollbar-thumb,
+.gc-list::-webkit-scrollbar-thumb,
+.se-modal-body::-webkit-scrollbar-thumb,
+.editor-preview-container::-webkit-scrollbar-thumb,
+#shortcut-items-container::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 10px;
+}
+.quick-steps-list::-webkit-scrollbar-thumb:hover,
+.export-list::-webkit-scrollbar-thumb:hover,
+.category-list::-webkit-scrollbar-thumb:hover,
+.gc-list::-webkit-scrollbar-thumb:hover,
+.se-modal-body::-webkit-scrollbar-thumb:hover,
+.editor-preview-container::-webkit-scrollbar-thumb:hover,
+#shortcut-items-container::-webkit-scrollbar-thumb:hover {
+  background: var(--text-color-muted);
+}
+
+/* --- DRAG & DROP --- */
+.draggable-mirror {
+  background-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 10px 15px;
+  font-size: 14px;
+  transition: opacity 0.2s ease-in-out;
+  opacity: 0.95;
+  z-index: 10001; /* Garante que fique acima de outros elementos */
+}
+
+/* --- BOTÕES APRIMORADOS --- */
+.enhanced-btn {
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--primary-color-hover)
+  );
+  color: white;
+  border: 1px solid var(--primary-color);
+  font-weight: 600;
+  border-radius: var(--border-radius-sm);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.3px;
+}
+
+.enhanced-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.enhanced-btn:hover {
+  background: linear-gradient(
+    135deg,
+    var(--primary-color-hover),
+    var(--primary-color)
+  );
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: var(--primary-color-hover);
+}
+
+.enhanced-btn:hover::before {
+  left: 100%;
+}
+
+.enhanced-btn:active {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.enhanced-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.3);
+}
+
+/* Efeito de brilho adicional no hover */
+.enhanced-btn:hover {
+  background-size: 200% 200%;
+  animation: gradient-shift 2s ease infinite;
+}
+
+/* Botão Salvar Alterações com fundo verde */
+.enhanced-btn[data-action='save-changes'],
+button[id='modal-save-btn'].enhanced-btn {
+  background: linear-gradient(135deg, #28a745, #20c997) !important;
+  border-color: #28a745 !important;
+}
+
+.enhanced-btn[data-action='save-changes']:hover,
+button[id='modal-save-btn'].enhanced-btn:hover {
+  background: linear-gradient(135deg, #20c997, #28a745) !important;
+  border-color: #20c997 !important;
+}
+
+/* Botão Fechar com fundo cinza */
+button[id='modal-cancel-btn'].enhanced-btn {
+  background: linear-gradient(135deg, #6c757d, #5a6268) !important;
+  border-color: #6c757d !important;
+}
+
+button[id='modal-cancel-btn'].enhanced-btn:hover {
+  background: linear-gradient(135deg, #5a6268, #6c757d) !important;
+  border-color: #5a6268 !important;
+}
+
+/* Garantir que o botão Fechar mantenha cor branca */
+button[id='modal-cancel-btn'].enhanced-btn {
+  color: white !important;
+}
+
+button[id='modal-cancel-btn'].enhanced-btn:hover {
+  color: white !important;
+}
+
+/* Botões de Adicionar com fundo azul claro */
+.add-message-btn.enhanced-btn,
+.add-item-btn.enhanced-btn,
+.add-new-item-btn,
+#add-category-btn.enhanced-btn,
+#quick-steps-add-new-btn.enhanced-btn,
+#qi-add-category-btn.enhanced-btn,
+#qi-add-new-btn.enhanced-btn {
+  background: linear-gradient(135deg, #17a2b8, #138496) !important;
+  border-color: #17a2b8 !important;
+  color: white !important;
+}
+
+.add-message-btn.enhanced-btn:hover,
+.add-item-btn.enhanced-btn:hover,
+.add-new-item-btn:hover,
+#add-category-btn.enhanced-btn:hover,
+#quick-steps-add-new-btn.enhanced-btn:hover,
+#qi-add-category-btn.enhanced-btn:hover,
+#qi-add-new-btn.enhanced-btn:hover {
+  background: linear-gradient(135deg, #138496, #17a2b8) !important;
+  border-color: #138496 !important;
+  color: white !important;
+}
+
+/* Adicionar efeito de brilho aos botões de adicionar */
+.add-new-item-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.add-new-item-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: left 0.6s ease;
+  pointer-events: none;
+}
+
+.add-new-item-btn:hover::before {
+  left: 100%;
+}
+
+/* --- CLASSE PARA EFEITO DE BRILHO APENAS --- */
+.shine-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.shine-effect::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: left 0.6s ease;
+  pointer-events: none;
+}
+
+.shine-effect:hover::before {
+  left: 100%;
+}
+
+/* --- SLIDERS E INTERFACE (MIGRADOS DO EDITOR.CSS) --- */
+.slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.slider-group label {
+  font-size: 13px;
+  color: var(--text-color-muted);
+  margin: 0;
+}
+
+/* Customização dos Sliders (input[type="range"]) */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  background: var(--background-secondary);
+  border-radius: 5px;
+  outline: none;
+  border: 1px solid var(--border-color);
+  padding: 0;
+  margin: 0;
+  transition: opacity 0.2s ease;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--primary-color);
+  cursor: pointer;
+  border-radius: 50%;
+  border: 3px solid var(--background-main);
+  box-shadow: var(--shadow-md);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--primary-color);
+  cursor: pointer;
+  border-radius: 50%;
+  border: 3px solid var(--background-main);
+  box-shadow: var(--shadow-md);
+}
+
+input[type='range']:hover::-webkit-slider-thumb {
+  transform: scale(1.1);
+}
+
+input[type='range']:active::-webkit-slider-thumb {
+  background: var(--primary-color-hover);
 }

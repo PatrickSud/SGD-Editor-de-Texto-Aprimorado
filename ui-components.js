@@ -186,13 +186,14 @@ function createModal(
 
 /**
  * Exibe uma notificação (toast) no canto superior direito.
- * Adicionada a opção de um callback `onClick`.
+ * Adicionada a opção de um callback `onClick` e botão dispensar.
  */
 function showNotification(
   message,
   type = 'info',
   duration = 3000,
-  onClick = null
+  onClick = null,
+  showDismissButton = false
 ) {
   let container = document.getElementById('notification-container')
   if (!container) {
@@ -211,10 +212,20 @@ function showNotification(
     suggestion: '💡' // Ícone para sugestões
   }
 
-  notification.innerHTML = `
-    <span class="notification-icon">${icons[type] || icons['info']}</span>
-    <span>${escapeHTML(message)}</span>
+  // Se deve mostrar botão dispensar, adiciona o botão na parte inferior
+  const dismissButtonHtml = showDismissButton 
+    ? '<div class="notification-actions"><button type="button" class="notification-dismiss-btn" title="Dispensar">Dispensar</button></div>'
+    : ''
+
+  const notificationHtml = `
+    <div class="notification-content">
+      <span class="notification-icon">${icons[type] || icons['info']}</span>
+      <span class="notification-message">${escapeHTML(message)}</span>
+    </div>
+    ${dismissButtonHtml}
   `
+  
+  notification.innerHTML = notificationHtml
 
   if (onClick) {
     notification.style.cursor = 'pointer'
@@ -226,6 +237,22 @@ function showNotification(
         container.removeChild(notification)
       }
     })
+  }
+
+  // Adiciona listener para o botão dispensar
+  if (showDismissButton) {
+    const dismissBtn = notification.querySelector('.notification-dismiss-btn')
+    if (dismissBtn) {
+      dismissBtn.addEventListener('click', (e) => {
+        e.stopPropagation() // Evita que o clique no botão dispare o onClick da notificação
+        notification.classList.add('fade-out')
+        setTimeout(() => {
+          if (container.contains(notification)) {
+            container.removeChild(notification)
+          }
+        }, 500)
+      })
+    }
   }
 
   container.appendChild(notification)

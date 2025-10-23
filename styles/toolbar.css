@@ -510,3 +510,190 @@ button.ai-loading:hover {
   transform: scale(1.15);
   border-color: var(--primary-color);
 }
+
+/* --- BOTÃO DE MICROFONE (MIGRADO DO EDITOR.CSS) --- */
+@keyframes mic-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(220, 38, 38, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+  }
+}
+
+button[data-action='speech-to-text'].active-mic {
+  background-color: var(--action-red-hover);
+  color: white;
+  animation: mic-pulse 1.5s infinite;
+}
+
+button[data-action='speech-to-text']:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  filter: grayscale(1);
+}
+
+button[data-action='speech-to-text']:disabled:hover {
+  background-color: var(--background-secondary);
+  transform: none;
+  box-shadow: none;
+}
+
+/* --- ESTILOS PARA DROPDOWN DE TROCA RÁPIDA --- */
+.quick-change-container h5 {
+  margin: 4px 0 6px 0;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--text-color-muted);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.quick-change-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border-radius: var(--border-radius-sm);
+}
+
+.quick-change-actions {
+  display: flex;
+  align-items: center;
+}
+
+.quick-change-item:hover {
+  background-color: var(--background-hover);
+}
+
+.quick-change-title {
+  flex-grow: 1;
+  padding: 6px 8px;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.quick-change-item .set-default-btn,
+.quick-change-item .edit-item-btn,
+.quick-change-item .delete-item-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  font-size: 16px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.quick-change-item .set-default-btn {
+  opacity: 0.3;
+}
+
+.quick-change-item .edit-item-btn,
+.quick-change-item .delete-item-btn {
+  opacity: 0;
+}
+
+.quick-change-item:hover .edit-item-btn,
+.quick-change-item:hover .delete-item-btn {
+  opacity: 0.6; /* Aparece no hover */
+}
+
+.quick-change-item .set-default-btn:hover,
+.quick-change-item .edit-item-btn:hover,
+.quick-change-item .delete-item-btn:hover {
+  opacity: 1;
+  background-color: var(--background-secondary);
+}
+
+.quick-change-item .set-default-btn.active {
+  opacity: 1;
+}
+
+/* Botões de Editar e Excluir no dropdown de Trâmites Rápidos */
+.message-item .edit-message-btn,
+.message-item .delete-message-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  font-size: 16px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+  opacity: 0;
+}
+
+.message-item:hover .edit-message-btn,
+.message-item:hover .delete-message-btn {
+  opacity: 0.6; /* Aparece no hover */
+}
+
+.message-item .edit-message-btn:hover,
+.message-item .delete-message-btn:hover {
+  opacity: 1;
+  background-color: var(--background-secondary);
+}
+
+/* --- Estilo para o botão "Adicionar Novo" no menu de troca rápida --- */
+.quick-change-container .add-new-item-btn {
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px;
+  background-color: transparent;
+  color: var(--text-color-muted);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  font-weight: 500;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.quick-change-container .add-new-item-btn:hover {
+  background-color: var(--background-hover);
+  color: var(--text-color);
+  border-color: var(--action-green);
+}
+
+/* --- Estilo para o botão "Adicionar Novo" nos menus dropdown --- */
+.quick-change-container .add-new-item-btn,
+.quick-steps-actions .add-message-btn {
+  width: 100%;
+  margin-top: 8px;
+  padding: 4px 8px;
+  background-color: transparent;
+  color: var(--text-color-muted);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  font-weight: 500;
+  text-align: center;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.quick-change-container .add-new-item-btn:hover,
+.quick-steps-actions .add-message-btn:hover {
+  background-color: var(--background-hover);
+  color: var(--text-color);
+  border-color: var(--action-green);
+}

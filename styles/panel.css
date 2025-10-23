@@ -1,2 +1,824 @@
-/* Estilos para painéis laterais/flutuantes (notes-side-panel, quick-inserter-panel) */
+/* --- PAINÉIS LATERAIS E FLUTUANTES --- */
 
+/* --- PAINEL DE ANOTAÇÕES LATERAL --- */
+#notes-side-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 350px;
+  height: 100vh;
+  color: var(--text-color-main);
+  border-left: 1px solid var(--border-color);
+  box-shadow: -8px 0 30px -5px rgba(0, 0, 0, 0.25);
+  z-index: 1999;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.3s ease-in-out;
+  border-top-left-radius: var(--border-radius-md);
+  border-bottom-left-radius: var(--border-radius-md);
+
+  /* Efeito de Vidro Fosco */
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  background-color: var(--background-glass);
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.07"/%3E%3C/svg%3E');
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+#notes-side-panel.visible {
+  transform: translateX(0);
+}
+
+.notes-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.notes-panel-header h4 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.notes-panel-close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--text-color-main);
+  transition: color 0.2s ease, transform 0.2s ease;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notes-panel-close-btn:hover {
+  color: var(--action-red);
+  transform: scale(1.1);
+  background-color: var(--background-hover);
+}
+
+.notes-panel-body {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 12px;
+  gap: 10px;
+}
+
+.notes-panel-footer {
+  padding: 12px;
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+#add-note-block-btn {
+  width: 100%;
+  background-color: var(--action-green);
+  color: white;
+}
+#add-note-block-btn:hover {
+  background-color: var(--action-green-hover);
+}
+
+.note-block {
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+
+.note-block:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+}
+
+.note-block-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 12px;
+  background-color: var(--background-hover);
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.note-block.active > .note-block-header {
+  border-color: var(--border-color);
+}
+
+.note-block-header::before {
+  content: "\25B6"; /* ▶ - triângulo à direita (unicode) */
+  display: inline-block;
+  font-size: 10px;
+  margin-right: 8px;
+  transition: transform 0.2s ease;
+}
+
+.note-block.active > .note-block-header::before {
+  transform: rotate(90deg);
+}
+
+.note-title {
+  flex-grow: 1;
+  font-weight: 500;
+  position: relative;
+}
+
+.edit-title-btn {
+  background: none;
+  border: none;
+  color: var(--text-color-muted);
+  cursor: pointer;
+  padding: 4px;
+  font-size: 14px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+  margin-left: 8px;
+}
+
+.note-block-header:hover .edit-title-btn {
+  opacity: 0.7;
+}
+.edit-title-btn:hover {
+  opacity: 1;
+  background-color: var(--background-secondary);
+}
+
+.note-title[contenteditable='true'] {
+  background-color: var(--background-secondary);
+  outline: 1px solid var(--primary-color);
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+  padding: 2px 4px;
+  margin: -2px -4px;
+  border-radius: 4px;
+  cursor: text;
+}
+
+.edit-actions {
+  display: none;
+}
+
+.note-block-header.is-editing .edit-actions {
+  display: none;
+}
+
+.note-block-header.is-editing .note-block-actions {
+  display: none;
+}
+
+.note-block-actions button,
+.edit-actions button {
+  background: none;
+  border: none;
+  color: var(--text-color-muted);
+  cursor: pointer;
+  padding: 4px;
+  font-size: 16px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.note-block-actions button:hover,
+.edit-actions button:hover {
+  background-color: var(--background-secondary);
+  color: var(--text-color-main);
+}
+
+.note-block-content {
+  display: none;
+  padding: 0;
+}
+
+.note-block.active .note-block-content {
+  display: block;
+}
+
+.note-block-content textarea {
+  width: 100%;
+  height: 200px;
+  resize: vertical;
+  border: none;
+  background-color: var(--background-secondary);
+  color: var(--text-color-main);
+  padding: 10px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.note-block-content textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+/* --- PALETA DE COMANDOS / INSERÇÃO RÁPIDA --- */
+#quick-inserter-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1900; /* Abaixo dos modais (2000), mas acima do resto */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+#quick-inserter-panel {
+  width: 95%;
+  max-width: 1200px;
+  height: 75vh;
+  max-height: 700px;
+  display: flex;
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+
+  /* Efeito de Vidro Fosco */
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  background-color: var(--background-glass);
+}
+
+.qi-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+}
+
+.qi-search-container {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+#qi-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-color);
+  background-color: var(--background-main);
+  color: var(--text-color-main);
+  font-size: 14px;
+}
+#qi-search-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.qi-categories-list {
+  overflow-y: auto;
+  padding: 8px;
+  flex-grow: 1;
+}
+
+.qi-category-item {
+  padding: 8px 12px;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  user-select: none;
+  margin-bottom: 4px;
+  font-weight: 500;
+  transition: background-color var(--transition-fast),
+    color var(--transition-fast);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.qi-category-item:hover {
+  background-color: var(--background-hover);
+}
+
+.qi-category-item.active {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.qi-category-name {
+  flex-grow: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qi-category-shortcut {
+  font-size: 11px;
+  font-weight: normal;
+  color: var(--text-color-muted);
+  background-color: var(--background-secondary);
+  padding: 2px 6px;
+  border-radius: var(--border-radius-sm);
+  margin-left: 8px;
+  font-family: monospace;
+}
+
+.qi-category-item.active .qi-category-shortcut {
+  color: var(--primary-color);
+  background-color: white;
+}
+
+.qi-main-content {
+  flex-grow: 1;
+  display: flex;
+  min-width: 0;
+}
+
+.qi-messages-column {
+  width: 40%;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+}
+
+.qi-messages-header {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.qi-messages-footer {
+  padding: 12px;
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+#qi-add-new-btn {
+  width: 100%;
+}
+
+.qi-messages-list {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 8px;
+  background-color: var(--background-secondary);
+}
+
+.qi-message-item {
+  padding: 8px 12px;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  margin-bottom: 4px;
+  transition: background-color var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.qi-message-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-grow: 1;
+}
+
+.qi-message-actions {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.qi-message-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-color-main);
+  transition: background-color var(--transition-fast);
+}
+
+.qi-message-actions button:hover {
+  background-color: var(--background-hover);
+}
+
+.qi-message-item:hover,
+.qi-message-item.active {
+  background-color: var(--background-hover);
+}
+
+.qi-drag-handle {
+  cursor: move;
+  color: var(--text-color-muted);
+  user-select: none;
+  padding: 0 4px;
+  font-size: 16px;
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity var(--transition-fast);
+}
+
+.qi-message-item:hover .qi-drag-handle {
+  opacity: 1;
+}
+
+.qi-message-item.is-dragging {
+  opacity: 0.8;
+  background-color: var(--background-hover);
+  cursor: grabbing;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+.qi-message-item.drag-over-top::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--primary-color);
+  z-index: 1;
+}
+
+.qi-message-item.drag-over-bottom::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--primary-color);
+  z-index: 1;
+}
+
+.qi-preview-area {
+  flex-grow: 1;
+  padding: 16px;
+  overflow-y: auto;
+  word-wrap: break-word;
+  color: var(--text-color-muted);
+}
+.qi-preview-area h5 {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  color: var(--text-color-main);
+}
+.qi-preview-content {
+  font-size: 14px;
+  line-height: 1.6;
+}
+.qi-preview-placeholder {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--text-color-muted);
+  font-size: 14px;
+}
+
+/* Estilos para o botão Adicionar Novo (Mantido) */
+.qi-actions {
+  padding: 8px 12px 12px;
+  margin-top: auto;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  gap: 8px;
+}
+
+#qi-add-category-btn {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+#qi-open-settings-btn {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px; /* Ajustado para consistência */
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* --- PAINEL DE LEMBRETES FIRED (ESTILOS RESTANTES) --- */
+.fired-reminders-header .close-panel-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: var(--text-color-muted);
+}
+.fired-reminders-header .close-panel-btn:hover {
+  color: var(--text-color-main);
+}
+
+.fired-reminders-list {
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.fired-reminder-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: var(--border-radius-sm);
+  margin-bottom: 5px;
+  border-left: 4px solid transparent;
+  background-color: var(--background-main);
+}
+.fired-reminder-item:last-child {
+  margin-bottom: 0;
+}
+
+.fired-reminder-item.priority-low {
+  border-left-color: var(--action-blue);
+}
+.fired-reminder-item.priority-medium {
+  border-left-color: var(--action-yellow);
+}
+.fired-reminder-item.priority-high {
+  border-left-color: var(--action-red);
+}
+
+.fired-reminder-content {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.fired-reminder-title {
+  font-weight: 600;
+  color: var(--text-color-main);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fired-reminder-description {
+  font-size: 12px;
+  color: var(--text-color-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fired-reminder-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.fired-reminder-actions .action-btn {
+  padding: 4px 8px;
+  font-size: 11px;
+  border-radius: var(--border-radius-sm);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.fired-reminder-actions .complete-btn {
+  background-color: var(--action-green);
+  color: white;
+}
+
+.fired-reminder-actions .complete-btn:hover {
+  background-color: var(--action-green-hover);
+}
+
+.fired-reminder-actions .dismiss-btn {
+  background-color: var(--action-red);
+  color: white;
+}
+
+.fired-reminder-actions .dismiss-btn:hover {
+  background-color: var(--action-red-hover);
+}
+
+/* Garante que os títulos de seção (Pendentes, Concluídos) usem a cor de texto principal do tema */
+.fired-reminders-list h6 {
+  color: var(--text-color-main);
+  font-size: 12px;
+  font-weight: 600;
+  margin: 12px 0 6px 0;
+  padding: 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+hr.fired-reminders-separator {
+  border: none;
+  height: 1px;
+  background-color: var(--border-color);
+  margin: 8px 0;
+}
+
+.fired-reminders-list h6 {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-color-muted);
+  margin: 8px 0 4px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.fired-reminders-list h6:first-child {
+  margin-top: 0;
+}
+
+/* --- Estilos para o campo de busca no painel de notificações --- */
+.fired-reminders-header .search-input {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--background-main);
+  color: var(--text-color-main);
+  font-size: 13px;
+  margin-bottom: 8px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.fired-reminders-header .search-input::placeholder {
+  color: var(--text-color-muted);
+  font-size: 12px;
+}
+
+.fired-reminders-header .search-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 25%, transparent);
+}
+
+/* --- Cabeçalho do Painel de Lembretes Aprimorado --- */
+.fired-reminders-header-actions .action-btn {
+  width: auto;
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: var(--border-radius-sm);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: var(--background-secondary);
+  color: var(--text-color-main);
+}
+
+.fired-reminders-header-actions .action-btn:hover {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+/* --- QUICK STEPS E PAINÉIS --- */
+.quick-change-container .add-new-item-btn,
+.quick-steps-actions .add-message-btn {
+  width: 100%;
+  padding: 8px 12px;
+  background-color: var(--background-secondary);
+  color: var(--text-color-main);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.quick-change-container .add-new-item-btn:hover,
+.quick-steps-actions .add-message-btn:hover {
+  background-color: var(--background-hover);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+/* Estilos específicos para o item do painel */
+.quick-steps-panel-item.panel-btn {
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--primary-color-hover)
+  );
+  color: white;
+  border: 1px solid var(--primary-color);
+  font-weight: 600;
+  border-radius: var(--border-radius-sm);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.quick-steps-panel-item.panel-btn .panel-item-content {
+  color: white;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.quick-steps-panel-item.panel-btn .panel-item-text {
+  color: white;
+  font-weight: 600;
+}
+
+/* --- LISTAS DE SAUDAÇÕES/ENCERRAMENTOS --- */
+.gc-item { /* Usando a classe adicionada */
+   position: relative; /* Necessário para os pseudo-elementos ::before/::after */
+   transition: all 0.2s ease;
+}
+
+.gc-item.is-dragging {
+  opacity: 0.8;
+  transform: rotate(2deg);
+  z-index: 1000;
+}
+
+.gc-item .drag-handle {
+  cursor: move;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+  padding: 4px;
+  border-radius: 3px;
+}
+
+ .gc-item:hover .drag-handle {
+   opacity: 1;
+   background-color: var(--background-hover);
+}
+
+/* Indicadores visuais de drop (linhas azuis) */
+.gc-item.drag-over-top::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--primary-color);
+  z-index: 1;
+}
+
+.gc-item.drag-over-bottom::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--primary-color);
+  z-index: 1;
+}
+
+/* Estilo para a lista de saudações/encerramentos */
+.gc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border: 1px dashed transparent;
+  border-radius: 6px;
+  min-height: 40px; /* Garante área de drop mesmo com a lista vazia */
+  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+}
+
+/* Feedback visual quando um item válido é arrastado sobre a lista */
+.gc-list.drag-over {
+  background-color: var(--background-hover);
+  border-color: var(--primary-color);
+}
+
+.empty-reminders-message {
+  padding: 20px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-color-muted);
+}
+
+.fired-reminders-header h6 {
+  color: var(--text-color-main);
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}

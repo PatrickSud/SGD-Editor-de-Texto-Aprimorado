@@ -1333,7 +1333,7 @@ function setupEditorInstanceListeners(
         applyFormatting(textArea, 'u')
         break
       case 'speech-to-text':
-        SpeechService.toggleRecognition(textArea)
+        await SpeechService.toggleRecognition(textArea)
         break
       case 'ai-correct':
         startAILoading()

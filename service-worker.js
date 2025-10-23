@@ -53,7 +53,7 @@ async function setStorageData(key, value, storageArea = 'local') {
  * @returns {Promise<object>} Um objeto com todos os lembretes.
  */
 async function getReminders() {
-  return (await getStorageData(REMINDERS_STORAGE_KEY, 'local')) || {}
+  return (await getStorageData(REMINDERS_STORAGE_KEY, 'sync')) || {}
 }
 
 /**
@@ -61,7 +61,7 @@ async function getReminders() {
  * @param {object} reminders O objeto de lembretes a ser salvo.
  */
 async function saveReminders(reminders) {
-  await setStorageData(REMINDERS_STORAGE_KEY, reminders, 'local')
+  await setStorageData(REMINDERS_STORAGE_KEY, reminders, 'sync')
 }
 
 // --- LÓGICA DE LEMBRETES E NOTIFICAÇÕES ---

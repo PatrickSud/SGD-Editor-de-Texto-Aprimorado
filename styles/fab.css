@@ -1,2 +1,303 @@
-/* Estilos para o Floating Action Button e botão "Ir ao Topo" */
+/* --- FLOATING ACTION BUTTON (FAB) E BOTÃO "IR AO TOPO" --- */
 
+/* --- MENU DE AÇÃO FLUTUANTE (FAB) --- */
+.fab-container {
+  position: fixed;
+  z-index: 1040;
+  transition: top 0.3s ease, bottom 0.3s ease, left 0.3s ease, right 0.3s ease;
+  /* Define um contexto de posicionamento e alinhamento */
+  display: flex;
+  justify-content: center;
+}
+
+/* Adiciona a "ponte" de hover com padding e alinha o botão principal */
+.fab-container.bottom-left,
+.fab-container.bottom-right {
+  padding-top: 12px; /* Ponte invisível acima do botão */
+  align-items: flex-end; /* Alinha o botão na base do container */
+}
+.fab-container.top-left,
+.fab-container.top-right {
+  padding-bottom: 12px; /* Ponte invisível abaixo do botão */
+  align-items: flex-start; /* Alinha o botão no topo do container */
+}
+
+.fab-container.bottom-left {
+  bottom: 25px;
+  left: 25px;
+}
+.fab-container.bottom-right {
+  bottom: 25px;
+  right: 25px;
+}
+.fab-container.top-left {
+  top: 25px;
+  left: 25px;
+}
+.fab-container.top-right {
+  top: 25px;
+  right: 25px;
+}
+
+.fab-options {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+  pointer-events: none;
+}
+
+/* Comportamento para posições na BASE (abrir para cima) */
+.fab-container.bottom-left .fab-options,
+.fab-container.bottom-right .fab-options {
+  bottom: 100%; /* Posiciona acima do padding do container */
+  flex-direction: column-reverse;
+  transform: translateY(10px) scale(0.9);
+  transform-origin: bottom;
+}
+
+/* Comportamento para posições no TOPO (abrir para baixo) */
+.fab-container.top-left .fab-options,
+.fab-container.top-right .fab-options {
+  top: 100%; /* Posiciona abaixo do padding do container */
+  transform: translateY(-10px) scale(0.9);
+  transform-origin: top;
+}
+
+.fab-container:hover .fab-options {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.fab-button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.05); /* Mantido para consistência */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Sombra do botão Ir ao Topo */
+  transition: transform var(--transition-fast),
+    background-color var(--transition-fast), box-shadow 0.2s ease; /* Transições */
+  position: relative;
+
+  /* Efeito Glassmorphism */
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #333; /* Cor escura para o ícone */
+}
+
+.fab-button:hover {
+  transform: scale(1.1) translateY(-2px); /* Efeito de hover combinado */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.main-fab {
+  /* Mantém a cor de destaque, mas com efeito glass */
+  background: rgba(255, 255, 255, 0.5);
+  color: #333;
+  z-index: 2;
+  cursor: grab;
+  background: rgba(0, 0, 0, 0.6); /* Fundo preto com 60% de opacidade */
+  color: #fff; /* Ícones brancos para contraste */
+}
+.main-fab:active {
+  cursor: grabbing;
+}
+.fab-container:hover .main-fab {
+  transform: rotate(45deg);
+}
+.fab-option {
+  /* Herda de .fab-button, ajustando o tamanho e a fonte */
+  width: 42px;
+  height: 42px;
+  font-size: 23px;
+  position: relative;
+  background: rgba(87, 87, 87, 0.6); /* Fundo cinza com 60% de opacidade */
+  color: #fff; /* Ícones brancos para contraste */
+}
+
+.fab-option:hover {
+  /* Efeito de hover específico para as opções, se necessário */
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.fab-option::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 5px 10px;
+  border-radius: var(--border-radius-sm);
+  white-space: nowrap;
+  font-size: 14px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--transition-fast), visibility var(--transition-fast);
+  pointer-events: none;
+
+  /* Estilo do Tooltip Atualizado */
+  background-color: #2c2c2c; /* Fundo escuro e sólido */
+  color: #ffffff; /* Texto branco para alto contraste */
+  border: none; /* Borda removida para um visual mais limpo */
+  box-shadow: var(--shadow-md);
+}
+
+.fab-option:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* NOVA REGRA: Ajusta a posição do tooltip quando o FAB está à esquerda */
+.fab-container.top-left .fab-option::after,
+.fab-container.bottom-left .fab-option::after {
+  left: 110%;
+  right: auto;
+}
+
+/* NOVA REGRA: Ajusta a posição do tooltip quando o FAB está à direita */
+.fab-container.top-right .fab-option::after,
+.fab-container.bottom-right .fab-option::after {
+  right: 110%;
+  left: auto;
+}
+
+.fab-container.dragging .fab-options {
+  opacity: 0;
+  transform: translateY(20px) scale(0.9);
+  pointer-events: none;
+}
+
+.fab-drop-zone-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 1039;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.fab-drop-zone-container.visible {
+  opacity: 1;
+}
+.fab-drop-zone {
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  background-color: rgba(0, 0, 0, 0.1);
+  transform: scale(0.8);
+}
+.fab-drop-zone.active {
+  background-color: color-mix(in srgb, var(--action-blue) 40%, transparent);
+  transform: scale(1);
+}
+#fab-drop-zone-tl {
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+}
+#fab-drop-zone-tr {
+  top: 0;
+  right: 0;
+  transform-origin: top right;
+}
+#fab-drop-zone-bl {
+  bottom: 0;
+  left: 0;
+  transform-origin: bottom left;
+}
+#fab-drop-zone-br {
+  bottom: 0;
+  right: 0;
+  transform-origin: bottom right;
+}
+
+/* --- STANDALONE NOTIFICATION BELL --- */
+@keyframes bell-pulse {
+  0% {
+    text-shadow: 0 0 0 rgba(220, 38, 38, 0.7);
+  }
+  70% {
+    text-shadow: 0 0 12px rgba(220, 38, 38, 0);
+  }
+  100% {
+    text-shadow: 0 0 0 rgba(220, 38, 38, 0);
+  }
+}
+
+#sgd-notification-bell {
+  display: inline-flex;
+  align-items: center;
+  font-size: 22px;
+  color: var(--text-color-main);
+  cursor: pointer;
+  position: relative;
+  margin-right: 15px;
+  padding: 5px;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+#sgd-notification-bell:hover {
+  background-color: var(--background-hover);
+}
+
+/* Aplica a animação de pulso apenas quando houver notificações pendentes */
+#sgd-notification-bell.pulsing {
+  animation: bell-pulse 1.5s infinite;
+}
+
+/* Badge posicionado no canto do ícone de sino */
+#sgd-notification-bell .notification-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 18px;
+  height: 18px;
+  background-color: var(--action-red);
+  color: white;
+  border-radius: 50%;
+  display: none; /* Controlado via JS */
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  border: 2px solid var(--background-main);
+}
+
+/* --- BOTÃO LIMPAR FORMULÁRIO (MIGRADO DO EDITOR.CSS) --- */
+.clear-form-btn {
+  position: absolute;
+  top: 65px;
+  right: 22px;
+  z-index: 10;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+  border: none;
+  color: white;
+  padding: 5px 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.vertical-layout .clear-form-btn {
+  top: 65px;
+  right: 75px;
+}
+
+.clear-form-btn:hover {
+  background-color: rgba(0, 0, 0, 0.3);
+}
