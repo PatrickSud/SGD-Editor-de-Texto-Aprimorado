@@ -122,6 +122,68 @@
   margin-top: 5px;
 }
 
+.form-radio-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.form-radio-group label {
+  font-weight: normal;
+  font-size: 13px;
+  color: var(--text-color-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.radio-inline-group {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* --- Estilo de checkbox para os rádios de comportamento --- */
+.form-radio-group input[type='radio'] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.form-radio-group label {
+  display: inline-flex;
+  align-items: center;
+}
+
+.form-radio-group label::before {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 3px; /* quadrado como checkbox */
+  background-color: var(--background-main);
+  box-sizing: border-box;
+}
+
+.form-radio-group input[type='radio']:checked + label::before {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  box-shadow: inset 0 0 0 3px color-mix(in srgb, white 92%, transparent);
+}
+
+.form-radio-group input[type='radio']:focus + label::before {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 35%, transparent);
+}
+
+.form-radio-group label:hover::before {
+  border-color: var(--primary-color);
+}
+
 /* Usa o estilo base global de checkboxes (styles/base.css) */
 
 .form-checkbox-group label {
@@ -408,6 +470,13 @@ a.open-link-btn:hover {
   border: 1px solid transparent;
   cursor: pointer;
   font-weight: 500;
+}
+.se-modal-actions button[data-action='share-extension'] {
+  color: #fff !important;
+}
+.se-modal-actions button[data-action='share-extension']:hover,
+.se-modal-actions button[data-action='share-extension']:focus {
+  color: #fff !important;
 }
 .link-as-button-container {
   display: flex;

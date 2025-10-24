@@ -962,6 +962,18 @@ async function openManagementModal() {
                     <input type="checkbox" id="enable-windows-notifications" ${preferences.enableWindowsNotifications ? 'checked' : ''}>
                     <label for="enable-windows-notifications">Habilitar notificações do Windows para lembretes</label>
                 </div>
+                <hr style="margin: 15px 0;">
+                <h5>Comportamento dos Menus Flutuantes</h5>
+                <div class="radio-inline-group">
+                    <div class="form-radio-group">
+                        <input type="radio" id="dropdown-hover" name="dropdownBehavior" value="hover" ${preferences.dropdownBehavior === 'hover' ? 'checked' : ''}>
+                        <label for="dropdown-hover">Abrir ao passar o mouse</label>
+                    </div>
+                    <div class="form-radio-group">
+                        <input type="radio" id="dropdown-click" name="dropdownBehavior" value="click" ${preferences.dropdownBehavior === 'click' ? 'checked' : ''}>
+                        <label for="dropdown-click">Abrir ao clicar</label>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -2698,15 +2710,25 @@ async function savePreferencesSettings(modal) {
     if (!container) return true;
 
     const settings = await getSettings();
-    const newPreferences = { ...settings.preferences };
+    const newPreferences = { ...(settings.preferences || DEFAULT_SETTINGS.preferences) };
 
     const windowsNotificationsCheckbox = container.querySelector('#enable-windows-notifications');
     if (windowsNotificationsCheckbox) {
         newPreferences.enableWindowsNotifications = windowsNotificationsCheckbox.checked;
     }
 
+    // NOVO: Ler comportamento do dropdown
+    const selectedBehavior = container.querySelector('input[name="dropdownBehavior"]:checked');
+    if (selectedBehavior) {
+        newPreferences.dropdownBehavior = selectedBehavior.value;
+    }
+
     try {
         await saveSettings({ preferences: newPreferences });
+        // Aplicar imediatamente
+        if (typeof applyDropdownBehaviorSetting === 'function') {
+            await applyDropdownBehaviorSetting();
+        }
         return true;
     } catch (error) {
         showNotification('Erro ao salvar as preferências.', 'error');

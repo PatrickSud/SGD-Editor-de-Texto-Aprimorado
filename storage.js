@@ -33,6 +33,7 @@ async function getStoredData() {
       data = await runDataMigration(data);
     }
 
+
     // Verifica corrupção final.
     if (
       !data ||
@@ -213,6 +214,7 @@ async function runDataMigration(data) {
 
   return newData
 }
+
 
 // --- CONFIGURAÇÕES GERAIS (Consolidado) ---
 
@@ -965,7 +967,7 @@ async function getGreetingsAndClosings() {
           id: `grt-${Date.now() + 1}`,
           title: 'Contato e Acesso',
           content:
-            "[saudacao], [usuario]! Tudo ???bem? Espero que sim!<nobr style='font-size:20px;'>&#128521;</nobr> \n \nConforme contato telefônico e conexão remota a máquina ",
+            "[saudacao], [usuario]! Tudo bem? Espero que sim!<nobr style='font-size:20px;'>&#128521;</nobr> \n \nConforme contato telefônico e conexão remota a máquina ",
           shortcut: ''
         },
         {

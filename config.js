@@ -54,7 +54,8 @@ const DEFAULT_SETTINGS = {
     buttonLabelType: 'symbol' // 'symbol' ou 'text'
   },
   preferences: {
-    enableWindowsNotifications: true
+    enableWindowsNotifications: true,
+    dropdownBehavior: 'hover' // 'hover' ou 'click'
   }
 }
 

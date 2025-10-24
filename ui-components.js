@@ -912,13 +912,7 @@ function setupPickerHover(editorContainer, actionName, pickerId) {
   const picker = document.getElementById(pickerId)
   if (!button || !picker) return
 
-  const show = () => {
-    clearTimeout(pickerHideTimeout)
-    document
-      .querySelectorAll('.picker')
-      .forEach(p => (p.style.display = 'none'))
-
-    picker.style.display = 'grid'
+  const positionPicker = () => {
     const buttonRect = button.getBoundingClientRect()
     const containerRect = editorContainer.getBoundingClientRect()
     picker.style.top = `${buttonRect.bottom - containerRect.top + 5}px`
@@ -932,16 +926,53 @@ function setupPickerHover(editorContainer, actionName, pickerId) {
     }
   }
 
+  const show = () => {
+    if (document.body.classList.contains('dropdown-click-mode')) return
+    clearTimeout(pickerHideTimeout)
+    document
+      .querySelectorAll('.picker')
+      .forEach(p => (p.style.display = 'none'))
+    picker.style.display = 'grid'
+    positionPicker()
+  }
+
   const hide = () => {
+    if (document.body.classList.contains('dropdown-click-mode')) return
     pickerHideTimeout = setTimeout(() => {
       picker.style.display = 'none'
     }, 300)
   }
 
-  button.addEventListener('mouseover', show)
-  button.addEventListener('mouseout', hide)
-  picker.addEventListener('mouseover', () => clearTimeout(pickerHideTimeout))
-  picker.addEventListener('mouseout', hide)
+  // Se o modo click estiver ativo, usa clique para abrir/fechar
+  if (document.body.classList.contains('dropdown-click-mode')) {
+    const clickHandler = e => {
+      e.preventDefault()
+      e.stopPropagation()
+      const isOpen = picker.style.display === 'grid'
+      document.querySelectorAll('.picker').forEach(p => (p.style.display = 'none'))
+      if (!isOpen) {
+        picker.style.display = 'grid'
+        positionPicker()
+        // Fecha ao clicar fora
+        const outside = ev => {
+          if (!picker.contains(ev.target) && !button.contains(ev.target)) {
+            picker.style.display = 'none'
+            document.removeEventListener('click', outside, true)
+          }
+        }
+        setTimeout(() => document.addEventListener('click', outside, true), 0)
+      }
+    }
+    button.addEventListener('click', clickHandler)
+    // Evita fechar ao interagir dentro do picker
+    picker.addEventListener('click', e => e.stopPropagation())
+  } else {
+    // Comportamento padrão: hover
+    button.addEventListener('mouseover', show)
+    button.addEventListener('mouseout', hide)
+    picker.addEventListener('mouseover', () => clearTimeout(pickerHideTimeout))
+    picker.addEventListener('mouseout', hide)
+  }
 }
 
 function createColorPicker(pickerElement, onColorSelect) {

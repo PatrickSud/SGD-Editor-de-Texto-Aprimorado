@@ -397,6 +397,11 @@ const {
     loadQuickMessages(editorContainer)
   }
 
+  // Aplica comportamento de dropdowns conforme preferência
+  if (typeof applyDropdownBehaviorSetting === 'function') {
+    applyDropdownBehaviorSetting()
+  }
+
   if (instanceId === 'main') {
     addSgdActionButtons(masterContainer)
     setupSolutionObserver(textArea)
@@ -1636,6 +1641,89 @@ function addSgdActionButtons(masterContainer) {
   }
 }
 
+// --- CONTROLE DE COMPORTAMENTO DOS DROPDOWNS (hover/click) ---
+let dropdownClickHandlers = []
+let documentClickCloser = null
+
+async function applyDropdownBehaviorSetting() {
+  const settings = await getSettings()
+  const behavior = settings.preferences?.dropdownBehavior || 'hover'
+  const body = document.body
+
+  if (behavior === 'click') {
+    body.classList.add('dropdown-click-mode')
+    body.classList.remove('dropdown-hover-mode')
+    setupClickDropdowns()
+    removeHoverDropdowns()
+  } else {
+    body.classList.add('dropdown-hover-mode')
+    body.classList.remove('dropdown-click-mode')
+    setupHoverDropdowns()
+    removeClickDropdowns()
+  }
+}
+
+function setupHoverDropdowns() {
+  // Sem necessidade de listeners específicos; CSS controla no modo hover
+}
+
+function removeHoverDropdowns() {
+  // Sem listeners para remover no modo hover
+}
+
+function setupClickDropdowns() {
+  // Evita múltiplas instalações
+  if (dropdownClickHandlers.length > 0) return
+
+  // Fecha todos os dropdowns abertos
+  const closeAll = () => {
+    document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'))
+  }
+
+  // Instala o fechador global (clique fora)
+  documentClickCloser = e => {
+    if (!e.target.closest('.dropdown')) {
+      closeAll()
+    }
+  }
+  document.addEventListener('click', documentClickCloser, true)
+
+  // Adiciona listeners de clique aos gatilhos
+  const triggers = document.querySelectorAll('.editor-container .dropdown > button')
+  triggers.forEach(btn => {
+    const handler = e => {
+      e.preventDefault()
+      e.stopPropagation()
+      const dropdown = btn.closest('.dropdown')
+      if (!dropdown) return
+      // Fecha outros
+      document.querySelectorAll('.dropdown.open').forEach(d => {
+        if (d !== dropdown) d.classList.remove('open')
+      })
+      // Alterna atual
+      dropdown.classList.toggle('open')
+    }
+    btn.addEventListener('click', handler)
+    dropdownClickHandlers.push({ btn, handler })
+  })
+
+  // Observação: não interrompemos a propagação dentro do conteúdo para permitir
+  // que os cliques cheguem ao listener delegado da toolbar
+}
+
+function removeClickDropdowns() {
+  dropdownClickHandlers.forEach(({ btn, handler }) => {
+    btn.removeEventListener('click', handler)
+  })
+  dropdownClickHandlers = []
+  if (documentClickCloser) {
+    document.removeEventListener('click', documentClickCloser, true)
+    documentClickCloser = null
+  }
+  // Garante que nenhum permaneça aberto
+  document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'))
+}
+
 /**
  * Verifica se existem lembretes pendentes que ainda não foram notificados
  * nesta sessão do navegador e exibe o toast para eles.
@@ -1646,6 +1734,10 @@ async function initializeExtension() {
   applyUiSettings(settings)
 
   await loadSavedTheme()
+  // Aplica comportamento de dropdowns conforme preferência global
+  if (typeof applyDropdownBehaviorSetting === 'function') {
+    await applyDropdownBehaviorSetting()
+  }
   SpeechService.initialize() // Inicializa o serviço de reconhecimento de voz
   observeForTextArea()
   document.addEventListener('keydown', handleShortcutListener)

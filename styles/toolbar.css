@@ -125,7 +125,14 @@
 .dropdown-content button:last-child {
   margin-bottom: 0;
 }
-.dropdown:hover .dropdown-content {
+
+/* Modo HOVER: exibe via :hover quando habilitado */
+body.dropdown-hover-mode .dropdown:hover > .dropdown-content {
+  display: flex;
+}
+
+/* Modo CLICK: exibe quando .open é aplicado via JS */
+body.dropdown-click-mode .dropdown.open > .dropdown-content {
   display: flex;
 }
 
