@@ -1,4 +1,29 @@
-﻿/* --- MODAIS ('se-') --- */
+﻿#image-size-modal .se-modal-content {
+  max-width: 1100px; /* Aumenta consideravelmente a largura para melhor visualização */
+}
+
+#image-size-modal .se-modal-body {
+  max-height: 85vh; /* mais alto para ver melhor a imagem */
+}
+
+#image-size-modal .image-preview-container {
+  overflow-x: hidden;
+  padding: 8px 8px 12px 8px; /* espaço mais compacto para a imagem */
+}
+
+/* A imagem pode ocupar mais altura no modal grande mantendo proporção */
+#image-size-modal .modal-image-preview {
+  display: inline-block;
+  height: auto; /* mantém proporção */
+  max-width: 100%; /* evita barra lateral; adapta à largura do container */
+}
+
+/* Centraliza a legenda acima/abaixo do slider conforme posição atual no HTML */
+#image-size-modal .size-options-container h4 {
+  text-align: center;
+  margin: 0 0 6px 0;
+}
+/* --- MODAIS ('se-') --- */
 
 .editor-modal {
   position: fixed;
@@ -1862,6 +1887,12 @@ a.open-link-btn:hover {
   margin: 0 auto;
 }
 
+/* Remove o limite de 500px dentro do modal de redimensionamento para permitir crescer além disso */
+#image-size-modal .image-size-modal-content {
+  max-width: none;
+  width: 100%;
+}
+
 .image-preview-container {
   text-align: center;
   background-color: var(--background-secondary);
@@ -1869,11 +1900,20 @@ a.open-link-btn:hover {
   border-radius: var(--border-radius-md);
   padding: 16px;
   margin-bottom: 16px;
+  overflow-x: auto; /* Permite visualizar imagens maiores horizontalmente */
 }
 
 .image-preview {
   max-width: 100%;
   max-height: 200px;
+  border-radius: var(--border-radius-sm);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Garante que a classe usada no JS limite o tamanho da imagem no modal */
+.modal-image-preview {
+  max-width: none; /* Permite crescer além do container, com scroll */
+  height: auto;
   border-radius: var(--border-radius-sm);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
@@ -1942,34 +1982,99 @@ a.open-link-btn:hover {
   border-color: var(--primary-color);
 }
 
-/* Classe para centralizar as opções de tamanho da imagem no modal */
-.image-options {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+/* --- ESTILOS PARA O MODAL DE REDIMENSIONAMENTO DE IMAGEM (COM SLIDER) --- */
 
 /* Estilos para as opções de tamanho compactas e modernas */
-.image-size-option {
-  display: flex;
-  align-items: center;
-  padding: 12px;
+/* Container do slider */
+.slider-container {
+  position: relative;
+  padding: 15px 0 25px 0;
+  margin-top: 10px;
+  text-align: center; /* centraliza o h4 acima e elementos internos inline */
+}
+
+/* Reduz a largura do slider no modal de imagem e o centraliza */
+#image-size-modal .slider-container {
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Centraliza a legenda sob o slider */
+#image-size-modal .slider-caption {
+  text-align: center;
+  margin: 6px 0 0 0;
+}
+
+/* Valor atual do slider */
+#slider-value-display {
+  font-weight: bold;
+  color: var(--primary-color);
+  background-color: var(--background-hover);
+  padding: 2px 6px;
+  border-radius: var(--border-radius-sm);
+  font-size: 14px;
+  margin-left: 5px;
+}
+
+/* Barra deslizante */
+#image-size-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  background: var(--background-secondary);
+  border-radius: 5px;
+  outline: none;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+}
+
+/* Estilo do título e descrição dentro dos botões */
+/* Thumb - WebKit */
+#image-size-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--primary-color);
+  border-radius: 50%;
+  border: 3px solid var(--background-main);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+}
+
+/* Thumb - Firefox */
+#image-size-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--primary-color);
+  border-radius: 50%;
+  border: 3px solid var(--background-main);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+}
+
+/* labels removidos por decisão de UX */
+
+/* Caso inputs antigos apareçam por cache */
+.custom-size-inputs { display: none !important; }
+
+/* Pré-visualização do upload no primeiro modal */
+.upload-preview-container {
+  background-color: var(--background-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
-  background-color: var(--background-main);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
+  padding: 12px;
 }
 
-.image-size-option:hover {
-  background-color: var(--background-hover);
-  border-color: var(--primary-color);
-}
-
-.image-size-option.selected {
-  background-color: color-mix(in srgb, var(--primary-color) 10%, var(--background-main));
-  border-color: var(--primary-color);
+.upload-preview-image {
+  display: block;
+  max-width: 100%;
+  max-height: 240px;
+  margin: 8px auto 0 auto;
+  border-radius: var(--border-radius-sm);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .image-size-option input[type="radio"] {

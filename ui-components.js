@@ -401,118 +401,76 @@ function openImageSizeModal(textArea, imageDataUrl) {
   const title = 'Redimensionar Imagem'
   const content = `
     <div class="image-size-modal-content">
-      <div class="image-preview-container">
-        <h4>Imagem:</h4>
-        <img src="${imageDataUrl}" alt="Pré-visualização da imagem" class="modal-image-preview" id="image-preview">
-      </div>
-      
       <div class="size-options-container">
-        <h4>Escolha o tamanho:</h4>
-        <!-- Aplica a classe image-options para centralizar as opções de tamanho -->
-        <div class="image-options">
-          <div class="image-size-option" data-value="small">
-            <h5>Pequena</h5>
-            <p>400px</p>
-            <input type="radio" name="image-size" value="small" data-size="400" style="display: none;">
-          </div>
-          <div class="image-size-option active" data-value="medium">
-            <h5>Média</h5>
-            <p>600px</p>
-            <input type="radio" name="image-size" value="medium" data-size="600" checked style="display: none;">
-          </div>
-          <div class="image-size-option" data-value="large">
-            <h5>Grande</h5>
-            <p>800px</p>
-            <input type="radio" name="image-size" value="large" data-size="800" style="display: none;">
-          </div>
-          <div class="image-size-option" data-value="custom">
-            <h5>Personalizado</h5>
-            <p>Custom</p>
-            <input type="radio" name="image-size" value="custom" style="display: none;">
+        <h4>Escolha o tamanho: <span id="slider-value-display">600px</span></h4>
+        <div class="slider-container">
+          <input type="range" id="image-size-slider" min="200" max="1000" value="600" step="10">
           </div>
         </div>
         
-        <div class="custom-size-inputs" id="custom-size-inputs" style="display: none;">
-          <div class="form-group">
-            <label for="custom-width">Largura (px):</label>
-            <input type="number" id="custom-width" min="50" max="2000" value="400">
-          </div>
-          <div class="form-group">
-            <label for="custom-height">Altura (px):</label>
-            <input type="number" id="custom-height" min="50" max="2000" value="auto">
-            <small>Deixe vazio ou 0 para manter proporção</small>
-          </div>
-        </div>
+      <div class="image-preview-container">
+        <img src="${imageDataUrl}" alt="Pré-visualização da imagem" class="modal-image-preview" id="image-preview">
       </div>
     </div>
   `
 
   const modal = createModal(title, content, (modalContent, closeModal) => {
-    // Captura o tamanho selecionado pelo usuário
-    const selectedSize = modalContent.querySelector(
-      'input[name="image-size"]:checked'
-    ).value
+    // Captura o valor do slider
+    const selectedWidth = modalContent.querySelector('#image-size-slider')?.value
     let imageHtml = ''
 
-    if (selectedSize === 'small') {
-      imageHtml = `<img src="${imageDataUrl}" alt="Imagem colada" width="400" height="auto">`
-    } else if (selectedSize === 'medium') {
+    if (selectedWidth) {
+      imageHtml = `<img src="${imageDataUrl}" alt="Imagem colada" width="${selectedWidth}" height="auto">`
+    } else {
+      // Fallback
       imageHtml = `<img src="${imageDataUrl}" alt="Imagem colada" width="600" height="auto">`
-    } else if (selectedSize === 'large') {
-      imageHtml = `<img src="${imageDataUrl}" alt="Imagem colada" width="800" height="auto">`
-    } else if (selectedSize === 'custom') {
-      const customWidth = modalContent.querySelector('#custom-width').value
-      const customHeight = modalContent.querySelector('#custom-height').value
-
-      if (customHeight && customHeight > 0) {
-        imageHtml = `<img src="${imageDataUrl}" alt="Imagem colada" width="${customWidth}" height="${customHeight}">`
-      } else {
-        imageHtml = `<img src="${imageDataUrl}" alt="Imagem colada" width="${customWidth}" height="auto">`
-      }
     }
 
     // Insere a imagem no editor
     insertAtCursor(textArea, imageHtml)
     closeModal()
-  })
+  }, false, 'image-size-modal')
 
-  // Adiciona listeners para mostrar/ocultar inputs personalizados e gerenciar seleção visual
-  const customInputs = modal.querySelector('#custom-size-inputs')
-  const sizeOptions = modal.querySelectorAll('input[name="image-size"]')
-  const sizeOptionDivs = modal.querySelectorAll('.image-size-option')
+  // Altera o texto do botão de "Salvar" para "Inserir"
+  const saveBtn = modal.querySelector('#modal-save-btn')
+  if (saveBtn) saveBtn.textContent = 'Inserir'
 
-  // Adiciona lógica de clique para as novas opções de tamanho
-  sizeOptionDivs.forEach(optionDiv => {
-    optionDiv.addEventListener('click', () => {
-      // Remove a classe active de todas as opções
-      sizeOptionDivs.forEach(div => div.classList.remove('active'))
-
-      // Adiciona a classe active à opção clicada
-      optionDiv.classList.add('active')
-
-      // Marca o radio button correspondente
-      const radioInput = optionDiv.querySelector('input[type="radio"]')
-      radioInput.checked = true
-
-      // Mostra/oculta inputs personalizados
-      if (radioInput.value === 'custom') {
-        customInputs.style.display = 'block'
+  // Atualiza exibição do valor ao mover o slider
+  const slider = modal.querySelector('#image-size-slider')
+  const valueDisplay = modal.querySelector('#slider-value-display')
+  const previewImg = modal.querySelector('#image-preview')
+  if (slider && valueDisplay) {
+    slider.addEventListener('input', () => {
+      valueDisplay.textContent = `${slider.value}px`
+      if (previewImg) {
+        // Ajusta por porcentagem da largura do container para evitar overflow horizontal
+        const container = previewImg.parentElement
+        const containerWidth = container ? container.clientWidth : null
+        if (containerWidth) {
+          const desired = Number(slider.value)
+          const pct = Math.min(100, (desired / containerWidth) * 100)
+          previewImg.style.width = pct + '%'
       } else {
-        customInputs.style.display = 'none'
+          previewImg.style.width = `${slider.value}px`
+        }
+        previewImg.style.height = 'auto' // mantém proporção
       }
     })
-  })
 
-  // Mantém compatibilidade com os listeners originais
-  sizeOptions.forEach(option => {
-    option.addEventListener('change', () => {
-      if (option.value === 'custom') {
-        customInputs.style.display = 'block'
+    // Define o estado inicial do preview conforme valor inicial do slider
+    if (previewImg) {
+      const container = previewImg.parentElement
+      const containerWidth = container ? container.clientWidth : null
+      if (containerWidth) {
+        const desired = Number(slider.value)
+        const pct = Math.min(100, (desired / containerWidth) * 100)
+        previewImg.style.width = pct + '%'
       } else {
-        customInputs.style.display = 'none'
+        previewImg.style.width = `${slider.value}px`
       }
-    })
-  })
+      previewImg.style.height = 'auto'
+    }
+  }
 
   document.body.appendChild(modal)
 }
