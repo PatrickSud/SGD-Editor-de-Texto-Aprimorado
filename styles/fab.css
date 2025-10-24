@@ -277,6 +277,48 @@
   border: 2px solid var(--background-main);
 }
 
+/* --- BOTÃO "IR AO TOPO/BAIXO" --- */
+#floating-scroll-top-btn {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  width: 40px;
+  height: 40px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1050;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+#floating-scroll-top-btn.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+#floating-scroll-top-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+}
+
+#floating-scroll-top-btn svg {
+  stroke: currentColor;
+  transition: all 0.2s ease-in-out;
+}
+
 /* --- BOTÃO LIMPAR FORMULÁRIO (MIGRADO DO EDITOR.CSS) --- */
 .clear-form-btn {
   position: absolute;

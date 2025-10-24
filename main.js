@@ -2112,7 +2112,7 @@ function adjustGoToTopButtonPosition(fabPosition) {
   if (!goToTopButton) return
 
   // Se o FAB estiver em qualquer canto direito, move o botão 'Ir ao Topo' para a esquerda.
-  if (fabPosition.includes('bottom-right')) {
+  if (fabPosition.includes('right')) {
     goToTopButton.style.left = '25px'
     goToTopButton.style.right = 'auto'
   } else {
