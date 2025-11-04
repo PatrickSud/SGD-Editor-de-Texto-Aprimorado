@@ -1852,20 +1852,24 @@ async function initializeExtension() {
 
 /**
  * Monitora quando o campo de descrição para anexar SSC aparece e preenche automaticamente.
+ * TEMPORÁRIO: Alterado para preencher cadSsForm:pesquisas para testes.
  */
 function observeForSscAttachmentField() {
-  const fillSscField = (field) => {
+  const fillSscField = async (field) => {
     // Só preenche se o campo estiver vazio e não tiver sido preenchido automaticamente antes
     if (field && !field.dataset.autoFilled && field.value.trim() === '') {
-      const defaultText = `Bom dia,
+      const defaultText = `[saudacao],
  
-Verificamos que já há um atendimento de mesmo assunto registrado:<input name type="button" onClick="window.open('https://suporte.dominioatendimento.com:82/sgsc/faces/ssc.html?ssc=XXXXXX')" value="XXXXXX">
+Verificamos que já há um atendimento de mesmo assunto registrado: <a href="https://suporte.dominioatendimento.com/sgsc/faces/ssc.html?ssc=XXXXXX" style="color: rgb(255, 128, 0); font-weight: bold;">Solicitação XXXXXX</a>
  
 Por gentileza, seguir acompanhando no atendimento mencionado acima.
  
 Obrigado.`
 
-      field.value = defaultText
+      // Processa as variáveis do texto (substitui [saudacao] pela saudação apropriada)
+      const processedText = await resolveVariablesInText(defaultText)
+      
+      field.value = processedText
       field.dataset.autoFilled = 'true'
       
       // Dispara evento de input para garantir que o sistema detecte a mudança
@@ -1874,9 +1878,10 @@ Obrigado.`
   }
 
   const observer = new MutationObserver((mutations, obs) => {
-    const sscDescricaoField = document.getElementById('sscAnexarSscForm:descricao')
+    // TEMPORÁRIO: Alterado para testes - campo cadSsForm:pesquisas
+    const sscDescricaoField = document.getElementById('cadSsForm:pesquisas')
     if (sscDescricaoField) {
-      fillSscField(sscDescricaoField)
+      fillSscField(sscDescricaoField).catch(console.error)
     }
   })
 
@@ -1889,9 +1894,10 @@ Obrigado.`
   }
 
   // Também verifica imediatamente caso o campo já exista
-  const sscDescricaoField = document.getElementById('sscAnexarSscForm:descricao')
+  // TEMPORÁRIO: Alterado para testes - campo cadSsForm:pesquisas
+  const sscDescricaoField = document.getElementById('cadSsForm:pesquisas')
   if (sscDescricaoField) {
-    fillSscField(sscDescricaoField)
+    fillSscField(sscDescricaoField).catch(console.error)
   }
 }
 
