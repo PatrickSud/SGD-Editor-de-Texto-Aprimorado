@@ -1852,7 +1852,6 @@ async function initializeExtension() {
 
 /**
  * Monitora quando o campo de descrição para anexar SSC aparece e preenche automaticamente.
- * TEMPORÁRIO: Alterado para preencher cadSsForm:pesquisas para testes.
  */
 function observeForSscAttachmentField() {
   const fillSscField = async (field) => {
@@ -1872,14 +1871,52 @@ Obrigado.`
       field.value = processedText
       field.dataset.autoFilled = 'true'
       
+      // Cria e insere o aviso acima do campo
+      createSscFieldWarning(field)
+      
       // Dispara evento de input para garantir que o sistema detecte a mudança
       field.dispatchEvent(new Event('input', { bubbles: true }))
     }
   }
+  
+  /**
+   * Cria e insere um aviso acima do campo de texto quando ele é preenchido automaticamente.
+   * @param {HTMLTextAreaElement} field - O campo textarea que foi preenchido.
+   */
+  const createSscFieldWarning = (field) => {
+    // Verifica se o aviso já existe para evitar duplicatas
+    const existingWarning = field.parentNode?.querySelector('.ssc-field-warning')
+    if (existingWarning) return
+    
+    // Cria o elemento de aviso
+    const warning = document.createElement('div')
+    warning.className = 'ssc-field-warning'
+    warning.innerHTML = `
+      <div style="background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; padding: 10px; margin-bottom: 10px; color: #856404; font-size: 13px;">
+        <strong>⚠️ Atenção:</strong>
+        <ul style="margin: 8px 0 0 20px; padding: 0;">
+          <li>Substitua <strong>XXXXXX</strong> na URL pelo número informado no link da Solicitação.</li>
+          <li>Na Solicitação, informe o <strong>Número da SSC</strong>.</li>
+        </ul>
+      </div>
+    `
+    
+    // Insere o aviso antes do campo (ou antes do label se existir)
+    const parent = field.parentNode
+    if (parent) {
+      // Tenta encontrar o label do campo para inserir o aviso depois dele
+      const label = parent.querySelector(`label[for="${field.id}"]`)
+      if (label) {
+        label.parentNode.insertBefore(warning, label.nextSibling)
+      } else {
+        // Se não encontrar o label, insere antes do campo
+        parent.insertBefore(warning, field)
+      }
+    }
+  }
 
   const observer = new MutationObserver((mutations, obs) => {
-    // TEMPORÁRIO: Alterado para testes - campo cadSsForm:pesquisas
-    const sscDescricaoField = document.getElementById('cadSsForm:pesquisas')
+    const sscDescricaoField = document.getElementById('sscAnexarSscForm:descricao')
     if (sscDescricaoField) {
       fillSscField(sscDescricaoField).catch(console.error)
     }
@@ -1894,8 +1931,7 @@ Obrigado.`
   }
 
   // Também verifica imediatamente caso o campo já exista
-  // TEMPORÁRIO: Alterado para testes - campo cadSsForm:pesquisas
-  const sscDescricaoField = document.getElementById('cadSsForm:pesquisas')
+  const sscDescricaoField = document.getElementById('sscAnexarSscForm:descricao')
   if (sscDescricaoField) {
     fillSscField(sscDescricaoField).catch(console.error)
   }
