@@ -149,7 +149,8 @@ async function addGreetingAndClosing(content, useTemporary = true) {
 function setupSituationListener(textArea) {
   const situationSelects = [
     document.getElementById('cadSscForm:situacaoTramite'),
-    document.getElementById('sscForm:situacaoTramite')
+    document.getElementById('sscForm:situacaoTramite'),
+    document.getElementById('ssForm:situacaoTramite')
   ]
 
   situationSelects.forEach(select => {
@@ -172,6 +173,22 @@ function setupSituationListener(textArea) {
             textArea.value = newText
             textArea.dispatchEvent(new Event('input', { bubbles: true }))
           }
+
+          // Reforço: após o site terminar possíveis atualizações tardias, reaplica se necessário
+          setTimeout(async () => {
+            // Garante que a situação ainda é 'Respondido ao Cliente'
+            if (select.value !== '3') return
+            const latestText = textArea.value
+            const latestParts = extractContentParts(latestText)
+            // Se por acaso removido, reinsere saudação/encerramento
+            if (!latestParts.greeting && !latestParts.closing) {
+              const reapplied = await addGreetingAndClosing(latestParts.content, true)
+              if (reapplied !== latestText) {
+                textArea.value = reapplied
+                textArea.dispatchEvent(new Event('input', { bubbles: true }))
+              }
+            }
+          }, 500)
         } else {
           // Remover saudação e encerramento (manter apenas conteúdo)
           const parts = extractContentParts(currentText)
@@ -190,7 +207,7 @@ function setupSituationListener(textArea) {
             }
           }
         }
-      }, 300) // Aguarda 300ms para garantir que a função do SGD termine
+      }, 600) // Aguarda mais para garantir que a função do SGD termine
     })
   })
 }
@@ -287,10 +304,7 @@ const {
   })
   masterContainer.appendChild(clearButton) // Adicionado ao contêiner mestre
 
-  // Adiciona o aviso de configuração do SGSC apenas na instância principal
-  if (instanceId === 'main') {
-    createAndAppendSgscWarning(masterContainer)
-  }
+  // Aviso de configuração do SGSC descontinuado
 
   if (includePreview) {
     const previewContainer = createPreviewContainer(textArea, instanceId)
@@ -705,18 +719,35 @@ async function performAutoFill(textArea) {
     return
   }
 
-  // Verifica todos os selects de situação
-  const situationSelects = [
+  // Função auxiliar para obter os selects de situação
+  const getSituationSelects = () => [
     document.getElementById('cadSscForm:situacaoTramite'),
     document.getElementById('sscForm:situacaoTramite'),
     document.getElementById('ssForm:situacaoTramite')
   ]
 
-  // Verifica se algum select está com o valor "1" (Em análise)
-  for (const select of situationSelects) {
-    if (select && select.value === '1') {
-      return // Não preenche automaticamente quando está "Em análise"
+  // Checagem imediata do estado "Em análise"
+  let situationSelects = getSituationSelects()
+  if (situationSelects.some(s => s && s.value === '2')) {
+    // Se já estiver em "Em análise" ao carregar, garante remoção de saudação/encerramento
+    const parts = extractContentParts(textArea.value)
+    if (parts.greeting || parts.closing) {
+      textArea.value = parts.content
+      textArea.dispatchEvent(new Event('input', { bubbles: true }))
     }
+    return
+  }
+
+  // Aguarda o site aplicar a situação/descrição (carregamento dinâmico), então revalida
+  await new Promise(resolve => setTimeout(resolve, 400))
+  situationSelects = getSituationSelects()
+  if (situationSelects.some(s => s && s.value === '2')) {
+    const parts = extractContentParts(textArea.value)
+    if (parts.greeting || parts.closing) {
+      textArea.value = parts.content
+      textArea.dispatchEvent(new Event('input', { bubbles: true }))
+    }
+    return
   }
 
   // Verifica se o select ssForm:situacaoTramite existe e tem as opções específicas
