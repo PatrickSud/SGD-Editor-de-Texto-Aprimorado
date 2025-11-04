@@ -2645,6 +2645,7 @@ async function renderButtonVisibilitySettings(modal) {
     notes: '✍️ Anotações',
     fab: '🔘 Acesso Rápido (FAB)',
     goToTop: '🔼 Ir ao Topo',
+    searchAnswerButton: '🔍 Pesquisar Resposta',
     separator2: 'Divisor 1',
     separator3: 'Divisor 2',
     separator4: 'Divisor 3',

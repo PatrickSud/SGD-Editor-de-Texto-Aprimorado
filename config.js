@@ -40,6 +40,7 @@ const DEFAULT_SETTINGS = {
     notes: true,
     fab: true,
     goToTop: true,
+    searchAnswerButton: true,
     separator1: true,
     separator2: true,
     separator3: true,

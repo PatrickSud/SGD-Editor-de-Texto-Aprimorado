@@ -245,6 +245,41 @@ function observeForTextArea() {
  */
 async function initializeEditorInstance(textArea, instanceId, options = {}) {
   if (!textArea || textArea.dataset.enhanced) return
+  
+  // --- INÍCIO: Injeção do Botão "Pesquisar Resposta" ---
+  if (instanceId === 'main') {
+    const originalSearchButton = document.querySelector('input[value="Pesquisar Resposta"]')
+    if (originalSearchButton) {
+      let labelSpan = document.querySelector(`[id$="${textArea.id.split(':').pop()}Label"]`)
+      // Fallback para páginas onde o ID do textarea não corresponde ao padrão do label
+      if (!labelSpan) {
+        labelSpan = document.querySelector('label[id$="descricaoTramiteLabel"]')
+      }
+      if (labelSpan) {
+        const labelCell = labelSpan.closest('td')
+        if (labelCell) {
+          // Evita duplicar se já existir um botão clonado na mesma célula
+          if (!labelCell.querySelector('.cloned-search-button')) {
+            const clonedSearchButton = document.createElement('button')
+            clonedSearchButton.type = 'button'
+            clonedSearchButton.textContent = '🔍'
+            clonedSearchButton.className = 'cloned-search-button'
+            clonedSearchButton.title = 'Pesquisar Resposta'
+            clonedSearchButton.addEventListener('click', e => {
+              e.preventDefault()
+              const btn = document.querySelector('input[value="Pesquisar Resposta"]')
+              if (btn && typeof btn.click === 'function') {
+                btn.click()
+              }
+            })
+            labelCell.appendChild(document.createElement('br'))
+            labelCell.appendChild(clonedSearchButton)
+          }
+        }
+      }
+    }
+  }
+  // --- FIM: Injeção do Botão ---
   textArea.dataset.enhanced = instanceId
 
 const {
@@ -2390,6 +2425,12 @@ async function applyGlobalVisibilitySettings() {
     // A visibilidade do botão também depende do scroll, então usamos uma classe
     goToTopButton.style.display = visibility.goToTop === false ? 'none' : ''
   }
+
+  // Novo: visibilidade do botão "Pesquisar Resposta" clonado
+  const clonedSearchButtons = document.querySelectorAll('.cloned-search-button')
+  clonedSearchButtons.forEach(btn => {
+    btn.style.display = visibility.searchAnswerButton === false ? 'none' : ''
+  })
 }
 
 /**
