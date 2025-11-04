@@ -1847,6 +1847,52 @@ async function initializeExtension() {
   createAndInjectBellIcon()
   await updateNotificationStatus()
   createSpeechCommandHint()
+  observeForSscAttachmentField()
+}
+
+/**
+ * Monitora quando o campo de descrição para anexar SSC aparece e preenche automaticamente.
+ */
+function observeForSscAttachmentField() {
+  const fillSscField = (field) => {
+    // Só preenche se o campo estiver vazio e não tiver sido preenchido automaticamente antes
+    if (field && !field.dataset.autoFilled && field.value.trim() === '') {
+      const defaultText = `Bom dia,
+ 
+Verificamos que já há um atendimento de mesmo assunto registrado:<input name type="button" onClick="window.open('https://suporte.dominioatendimento.com:82/sgsc/faces/ssc.html?ssc=XXXXXX')" value="XXXXXX">
+ 
+Por gentileza, seguir acompanhando no atendimento mencionado acima.
+ 
+Obrigado.`
+
+      field.value = defaultText
+      field.dataset.autoFilled = 'true'
+      
+      // Dispara evento de input para garantir que o sistema detecte a mudança
+      field.dispatchEvent(new Event('input', { bubbles: true }))
+    }
+  }
+
+  const observer = new MutationObserver((mutations, obs) => {
+    const sscDescricaoField = document.getElementById('sscAnexarSscForm:descricao')
+    if (sscDescricaoField) {
+      fillSscField(sscDescricaoField)
+    }
+  })
+
+  // Observa mudanças no DOM
+  if (document.body) {
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    })
+  }
+
+  // Também verifica imediatamente caso o campo já exista
+  const sscDescricaoField = document.getElementById('sscAnexarSscForm:descricao')
+  if (sscDescricaoField) {
+    fillSscField(sscDescricaoField)
+  }
 }
 
 /**

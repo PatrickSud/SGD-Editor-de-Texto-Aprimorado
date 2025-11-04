@@ -186,7 +186,6 @@ const PICKER_EMOJIS = [
   { char: '😭', code: '&#128557;' },
   { char: '😱', code: '&#128561;' },
   { char: '😠', code: '&#128544;' },
-  { char: '😡', code: '&#128545;' },
   { char: '😢', code: '&#128546;' },
   { char: '👋', code: '&#128075;' },
   { char: '👏', code: '&#128079;' },
@@ -215,7 +214,8 @@ const PICKER_EMOJIS = [
   { char: '🔥', code: '&#128293;' },
   { char: '🧡', code: '&#129505;' },
   { char: '📌', code: '&#128204;' },
-  { char: '🌟', code: '&#127775;' }
+  { char: '🌟', code: '&#127775;' },
+  { char: '⌛', code: '&#9203;' }
 ]
 
 const PROTECTED_SHORTCUTS = [

@@ -995,11 +995,22 @@ function createColorPicker(pickerElement, onColorSelect) {
 function createEmojiPicker(pickerElement, onEmojiSelect) {
   pickerElement.innerHTML = PICKER_EMOJIS.map(emoji => {
     const safeEmojiCode = emoji.code.replace('&', '&amp;')
+    
+    // Define o estilo base, trocando <nobr> por 'white-space: nowrap;'
+    let style = "font-size:19px; white-space:nowrap;" 
+
+    // Se for o emoji de aviso, adiciona as fontes de emoji para forçar a cor
+    if (emoji.code === '&#9888;') {
+      // CORREÇÃO: Usar aspas duplas escapadas (&quot;) para a lista de fontes
+      style += " font-family: &quot;Segoe UI Emoji&quot;, &quot;Apple Color Emoji&quot;, &quot;Noto Color Emoji&quot;, sans-serif;"
+    }
+
+    // Usa a tag <span>, que é segura, e o atributo style com '
     return `<button 
                     type="button" 
                     class="emoji-swatch" 
                     title="${emoji.char}" 
-                    data-code="<nobr style='font-size:19px;'>${safeEmojiCode}</nobr>"
+                    data-code="<span style='${style}'>${safeEmojiCode}</span>"
                 >${emoji.char}</button>`
   }).join('')
 
