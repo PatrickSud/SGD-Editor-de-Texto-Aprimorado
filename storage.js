@@ -33,6 +33,7 @@ async function getStoredData() {
       data = await runDataMigration(data);
     }
 
+
     // Verifica corrupção final.
     if (
       !data ||
@@ -214,6 +215,7 @@ async function runDataMigration(data) {
   return newData
 }
 
+
 // --- CONFIGURAÇÕES GERAIS (Consolidado) ---
 
 /**
@@ -383,6 +385,26 @@ function applyCurrentTheme(element) {
 }
 
 // --- GERENCIAMENTO DO PAINEL DE VISUALIZAÇÃO (Atualizado para usar Settings) ---
+
+/**
+ * Carrega a orientação salva do painel de visualização.
+ * @returns {Promise<'horizontal'|'vertical'>} Retorna a orientação.
+ */
+async function getPreviewOrientationState() {
+    const settings = await getSettings()
+    return settings.previewOrientation || 'horizontal'
+}
+
+/**
+ * Salva a orientação do painel de visualização.
+ * @param {'horizontal'|'vertical'} orientation - A orientação a ser salva.
+ */
+async function savePreviewOrientationState(orientation) {
+    const settings = await getSettings()
+    settings.previewOrientation = orientation
+    await saveSettings(settings)
+}
+
 
 /**
  * Carrega o estado de visibilidade do painel de visualização.
@@ -945,7 +967,7 @@ async function getGreetingsAndClosings() {
           id: `grt-${Date.now() + 1}`,
           title: 'Contato e Acesso',
           content:
-            "[saudacao], [usuario]! Tudo ???bem? Espero que sim!<nobr style='font-size:20px;'>&#128521;</nobr> \n \nConforme contato telefônico e conexão remota a máquina ",
+            "[saudacao], [usuario]! Tudo bem? Espero que sim!<nobr style='font-size:20px;'>&#128521;</nobr> \n \nConforme contato telefônico e conexão remota a máquina ",
           shortcut: ''
         },
         {
@@ -1028,7 +1050,23 @@ Seguimos à disposição.
  */
 async function saveGreetingsAndClosings(data) {
   try {
-    await chrome.storage.sync.set({ [GREETINGS_CLOSINGS_KEY]: data })
+    // Garante que a propriedade 'order' exista para compatibilidade com drag-drop
+    if (data.greetings) {
+      data.greetings.forEach((item, index) => {
+        if (item.order === undefined) {
+          item.order = index;
+        }
+      });
+    }
+    if (data.closings) {
+      data.closings.forEach((item, index) => {
+        if (item.order === undefined) {
+          item.order = index;
+        }
+      });
+    }
+
+    await chrome.storage.sync.set({ [GREETINGS_CLOSINGS_KEY]: data });
   } catch (error) {
     console.error(
       'Editor SGD: Erro ao salvar saudações e encerramentos.',
@@ -1037,3 +1075,104 @@ async function saveGreetingsAndClosings(data) {
     showNotification('Falha ao salvar as configurações.', 'error')
   }
 }
+
+// --- GERENCIAMENTO DE ATENDIMENTOS SEGUIDOS ---
+
+/**
+ * Recupera todos os atendimentos seguidos.
+ * @returns {Promise<object>} Objeto onde as chaves são os IDs dos atendimentos.
+ */
+async function getFollowedAttendances() {
+  try {
+    const result = await chrome.storage.sync.get(FOLLOWED_ATTENDANCES_KEY);
+    return result[FOLLOWED_ATTENDANCES_KEY] || {};
+  } catch (error) {
+    console.error('Editor SGD: Erro ao carregar atendimentos seguidos.', error);
+    return {};
+  }
+}
+
+/**
+ * Salva o objeto completo de atendimentos seguidos.
+ * @param {object} attendances - O objeto de dados completo a ser salvo.
+ */
+async function saveFollowedAttendances(attendances) {
+  try {
+    await chrome.storage.sync.set({ [FOLLOWED_ATTENDANCES_KEY]: attendances });
+  } catch (error) {
+    console.error('Editor SGD: Erro ao salvar atendimentos seguidos.', error);
+    throw error;
+  }
+}
+
+/**
+ * Adiciona ou atualiza um atendimento seguido.
+ * @param {object} attendanceData - Dados do atendimento (id, subject, url, lastContentHash).
+ */
+async function saveFollowedAttendance(attendanceData) {
+  if (!attendanceData.id || !attendanceData.url || !attendanceData.lastContentHash) {
+    throw new Error('ID, URL e Hash de conteúdo são obrigatórios para seguir um atendimento.');
+  }
+  try {
+    const attendances = await getFollowedAttendances();
+    const now = Date.now();
+    const existing = attendances[attendanceData.id];
+
+    attendances[attendanceData.id] = {
+      id: attendanceData.id,
+      subject: attendanceData.subject || (existing ? existing.subject : 'Assunto não capturado'),
+      url: attendanceData.url,
+      status: attendanceData.status || 'monitoring', // 'monitoring', 'updated', 'concluded'
+      lastContentHash: attendanceData.lastContentHash,
+      lastCheckedAt: now,
+      addedAt: existing ? existing.addedAt : now,
+      updatedAt: attendanceData.status === 'updated' ? now : (existing ? existing.updatedAt : null),
+    };
+    await saveFollowedAttendances(attendances);
+
+    // Notifica o service worker sobre a mudança para atualizar alarmes/badges se necessário
+    chrome.runtime.sendMessage({ action: 'FOLLOW_STATUS_CHANGED' }).catch(err => console.warn("Erro ao notificar SW sobre mudança de follow:", err));
+
+    return attendances[attendanceData.id];
+  } catch (error) {
+    console.error('Editor SGD: Erro ao salvar atendimento seguido.', error);
+    throw error;
+  }
+}
+
+ /**
+  * Remove um atendimento da lista de seguidos.
+  * @param {string} attendanceId - O ID do atendimento a ser removido.
+  */
+ async function removeFollowedAttendance(attendanceId) {
+     try {
+         const attendances = await getFollowedAttendances();
+         if (attendances[attendanceId]) {
+             delete attendances[attendanceId];
+             await saveFollowedAttendances(attendances);
+             // Notifica o service worker
+             chrome.runtime.sendMessage({ action: 'FOLLOW_STATUS_CHANGED' }).catch(err => console.warn("Erro ao notificar SW sobre remoção de follow:", err));
+         }
+
+/**
+ * Marca o status de um atendimento seguido e salva.
+ * @param {string} attendanceId
+ * @param {'monitoring'|'updated'|'concluded'} status
+ */
+async function markAttendanceStatus(attendanceId, status) {
+  const attendances = await getFollowedAttendances()
+  if (!attendances[attendanceId]) return
+  attendances[attendanceId].status = status
+  if (status === 'updated') {
+    attendances[attendanceId].updatedAt = Date.now()
+  }
+  await saveFollowedAttendances(attendances)
+  try {
+    await chrome.runtime.sendMessage({ action: 'FOLLOW_STATUS_CHANGED' })
+  } catch {}
+}
+     } catch (error) {
+         console.error(`Editor SGD: Erro ao remover atendimento seguido ${attendanceId}.`, error);
+         throw error;
+     }
+ }

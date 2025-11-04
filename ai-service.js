@@ -4,7 +4,7 @@
  */
 
 const GEMINI_API_ENDPOINT =
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent'
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent'
 
 /**
  * Configuração padrão para as chamadas de API
@@ -46,6 +46,13 @@ async function callGeminiAPI(apiKey, contents, systemInstruction = null) {
       const errorData = await response.json()
       const errorMessage =
         errorData.error?.message || `HTTP error! status: ${response.status}`
+
+      // Verifica se o modelo está sobrecarregado
+      if (errorMessage.toLowerCase().includes('overloaded')) {
+        throw new Error(
+          'O modelo de IA está sobrecarregado no momento. Por favor, tente novamente em alguns instantes.'
+        )
+      }
 
       // Verifica se o erro é de cota excedida e traduz a mensagem
       if (errorMessage.toLowerCase().includes('quota')) {

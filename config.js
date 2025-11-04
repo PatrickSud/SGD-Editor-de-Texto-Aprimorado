@@ -50,10 +50,12 @@ const DEFAULT_SETTINGS = {
   uiSettings: {
     iconSize: 1.0,
     uiFontSize: 14,
-    editorFontSize: 14
+    editorFontSize: 14,
+    buttonLabelType: 'symbol' // 'symbol' ou 'text'
   },
   preferences: {
-    enableWindowsNotifications: true
+    enableWindowsNotifications: true,
+    dropdownBehavior: 'hover' // 'hover' ou 'click'
   }
 }
 

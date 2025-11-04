@@ -1,0 +1,835 @@
+/* Variáveis de tema e cores */
+
+/* Cores de ação e estilos globais */
+:root {
+  --action-blue: #2563eb;
+  --action-blue-hover: #1d4ed8;
+  --action-lightblue: #b886fe;
+  --action-lightblue-hover: #8864bb;
+  --action-green: #16a34a;
+  --action-green-hover: #15803d;
+  --action-red: #dc2626;
+  --action-red-hover: #b91c1c;
+  --action-orange: #f97316;
+  --action-orange-hover: #ea580c;
+  --action-yellow: #f59e0b;
+  --action-yellow-hover: #d97706;
+  --border-radius-md: 8px;
+  --border-radius-sm: 6px;
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0px 8px 16px 0px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0px 12px 24px 0px rgba(0, 0, 0, 0.1);
+  --transition-fast: 0.2s ease;
+
+  /* --- NOVAS VARIÁVEIS DE TAMANHO --- */
+  --ui-icon-scale: 1; /* Fator de escala para ícones */
+  --ui-font-size: 14px; /* Tamanho da fonte para a UI (botões, labels) */
+  --editor-font-size: 14px; /* Tamanho da fonte para o textarea */
+}
+
+/* Fonte padrão da extensão */
+.editor-container,
+.editor-modal,
+.editor-preview-container,
+#shortcut-popup {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    sans-serif;
+  font-size: var(--ui-font-size); /* MODIFICADO */
+  line-height: 1.5;
+}
+
+/* Escopos de tema (Usando :where() para baixa especificidade) */
+:where(
+    .editor-container,
+    .editor-modal,
+    .editor-preview-container,
+    #shortcut-popup,
+    #notes-side-panel,
+    textarea[data-enhanced]
+  ) {
+  --primary-color: rgba(99, 102, 241, 0.8);
+  --primary-color-hover: rgba(79, 70, 229, 0.85);
+  --border-color: rgba(229, 231, 235, 0.4);
+  --background-main: rgba(255, 255, 255, 0.5);
+  --background-secondary: rgba(232, 233, 233, 0.45);
+  --background-hover: rgba(243, 244, 246, 0.45);
+  --text-color-main: #1f2937;
+  --text-color-muted: #6b7280;
+  --background-glass: rgba(255, 255, 255, 0.75);
+}
+
+/* --- TEMA PADRÃO (Glassmorphism) --- */
+.padrao-mode {
+  --primary-color: rgba(99, 102, 241, 0.8);
+  --primary-color-hover: rgba(79, 70, 229, 0.85);
+  --border-color: rgba(229, 231, 235, 0.4);
+  --background-main: rgba(255, 255, 255, 0.5);
+  --background-secondary: rgba(232, 233, 233, 0.45);
+  --background-hover: rgba(243, 244, 246, 0.45);
+  --text-color-main: #1f2937;
+  --text-color-muted: #6b7280;
+  --background-glass: rgba(255, 255, 255, 0.75);
+}
+
+/* --- TEMA SERENIDADE --- */
+.serenidade-mode {
+  --primary-color: #6f71ef;
+  --primary-color-hover: #5a53e7;
+  --border-color: #e5e7eb;
+  --background-main: #f5f3ff;
+  --background-secondary: #ede9fe;
+  --background-hover: #e0e7ff;
+  --text-color-main: #1f2937;
+  --text-color-muted: #6b7280;
+  --background-glass: rgba(211, 224, 252, 0.75);
+}
+
+/* --- TEMA LUMEN --- */
+.lumen-mode {
+  --primary-color: #0ea5e9;
+  --primary-color-hover: #0369a1;
+  --border-color: #d8e5f3;
+  --background-main: #cde9f4;
+  --background-secondary: #e1eef7;
+  --background-hover: #eef9ff;
+  --text-color-main: #0f172a;
+  --text-color-muted: #475569;
+  --background-glass: rgba(207, 240, 251, 0.85);
+}
+
+/* --- TEMA ESCURO --- */
+.dark-mode {
+  --primary-color: #246ada;
+  --primary-color-hover: #4b9afa;
+  --border-color: #222e42;
+  --background-main: #111827;
+  --background-secondary: #1f2937;
+  --background-hover: #374151;
+  --text-color-main: #f9fafb;
+  --text-color-muted: #9ca3af;
+  --background-glass: rgba(17, 24, 39, 0.75);
+}
+
+/* --- TEMA FLORESTA --- */
+.forest-mode {
+  --primary-color: #0f9564;
+  --primary-color-hover: #0d6c46;
+  --border-color: #1a3b2d;
+  --background-main: #0d2b1f;
+  --background-secondary: #1a3b2d;
+  --background-hover: #2a4c3d;
+  --text-color-main: #ebf8f0;
+  --text-color-muted: #c0d7ca;
+  --background-glass: rgba(13, 43, 31, 0.75);
+}
+
+/* --- TEMA ROSA PINK (Versão Clara) --- */
+.pink-mode {
+  --primary-color: #da4789;
+  --primary-color-hover: #c23872;
+  --border-color: #fbcfe8;
+  --background-main: #f9b2d7;
+  --background-secondary: #f7d6e8;
+  --background-hover: #fcdff1;
+  --text-color-main: #790b37;
+  --text-color-muted: #8e3061;
+  --background-glass: rgba(254, 192, 224, 0.75);
+}
+
+/* --- TEMA DARK GRAFITE --- */
+.dark-graphite-mode {
+  --primary-color: #3b82f6;
+  --primary-color-hover: #333333;
+  --border-color: #2a2a2a;
+  --background-main: #121212;
+  --background-secondary: #1f1f1f;
+  --background-hover: #2e2e2e;
+  --text-color-main: #f5f5f5;
+  --text-color-muted: #bfbfbf;
+  --background-glass: rgba(18, 18, 18, 0.75);
+}
+
+/* --- TEMA TOKYO NIGHT --- */
+
+.tokyo-night-mode {
+  --primary-color: #f97140;
+  --primary-color-hover: #de4a14;
+  --border-color: #202335;
+  --background-main: #15121e;
+  --background-secondary: #1f1b2d;
+  --background-hover: #272d3f;
+  --text-color-main: #edeaf2;
+  --text-color-muted: #b7aeca;
+  --background-glass: rgba(21, 18, 30, 0.75);
+}
+
+/* Correção para visibilidade do ícone de calendário/relógio em temas escuros (Webkit/Blink) */
+.dark-mode input[type='datetime-local']::-webkit-calendar-picker-indicator,
+.dark-graphite-mode
+  input[type='datetime-local']::-webkit-calendar-picker-indicator,
+.forest-mode input[type='datetime-local']::-webkit-calendar-picker-indicator {
+  /* Adicionado */
+  filter: invert(1);
+}
+
+/* --- SOMBRAS INTERNAS MODERNAS E ROBUSTAS --- */
+
+/* Botões da toolbar - Sombras internas sutis para temas claros */
+.editor-toolbar button,
+.dropdown button,
+.action-btn {
+  box-shadow: inset 0 -1px 2px rgba(0, 0, 0, 0.08),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Textarea e Preview - Sombras internas para temas claros */
+textarea[data-enhanced],
+.editor-preview-container {
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.1), 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Melhoria das sombras internas para temas escuros */
+.editor-container.dark-mode .editor-toolbar button,
+.editor-container.dark-mode .dropdown button,
+.editor-container.dark-mode .action-btn,
+.editor-container.dark-graphite-mode .editor-toolbar button,
+.editor-container.dark-graphite-mode .dropdown button,
+.editor-container.dark-graphite-mode .action-btn,
+.editor-container.forest-mode .editor-toolbar button,
+.editor-container.forest-mode .dropdown button,
+.editor-container.forest-mode .action-btn,
+.editor-container.tokyo-night-mode .editor-toolbar button,
+.editor-container.tokyo-night-mode .dropdown button,
+.editor-container.tokyo-night-mode .action-btn {
+  box-shadow: inset 0 -1px 2px rgba(255, 255, 255, 0.1),
+    inset 0 1px 1px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+.editor-master-container.dark-mode textarea[data-enhanced],
+.editor-master-container.dark-graphite-mode textarea[data-enhanced],
+.editor-master-container.forest-mode textarea[data-enhanced],
+.editor-master-container.tokyo-night-mode textarea[data-enhanced] {
+  box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.1),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
+.editor-master-container.dark-mode .editor-preview-container,
+.editor-master-container.dark-graphite-mode .editor-preview-container,
+.editor-master-container.forest-mode .editor-preview-container,
+.editor-master-container.tokyo-night-mode .editor-preview-container,
+.editor-preview-container.dark-mode,
+.editor-preview-container.dark-graphite-mode,
+.editor-preview-container.forest-mode,
+.editor-preview-container.tokyo-night-mode {
+  box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.1),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* --- EFEITO DE VIDRO FOSCO (Glassmorphism) --- */
+/* Aplicado a todos os componentes flutuantes em todos os temas */
+.se-modal-content,
+#shortcut-popup,
+.dropdown-content,
+.picker,
+#notes-side-panel {
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  background-color: var(--background-glass);
+
+  /* Textura de ruído sutil para o efeito "fosco" */
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.07"/%3E%3C/svg%3E');
+
+  /* Sombra de texto para destacar o conteúdo interno */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* --- CHECKBOX - ESTILO BASE GLOBAL DA EXTENSÃO --- */
+/* Aplica a todos os checkboxes dentro dos containers da extensão */
+:where(
+  .editor-container,
+  .editor-modal,
+  .editor-preview-container,
+  .se-modal-content,
+  .dropdown-content,
+  #shortcut-popup,
+  #notes-side-panel,
+  #quick-inserter-panel,
+  .editor-master-container,
+  #fired-reminders-panel,
+  .reminder-settings-form,
+  .button-visibility-grid
+) input[type='checkbox'] {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border-color);
+  background-color: var(--background-secondary);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+:where(
+  .editor-container,
+  .editor-modal,
+  .editor-preview-container,
+  .se-modal-content,
+  .dropdown-content,
+  #shortcut-popup,
+  #notes-side-panel,
+  #quick-inserter-panel,
+  .editor-master-container,
+  #fired-reminders-panel,
+  .reminder-settings-form,
+  .button-visibility-grid
+) input[type='checkbox']:hover {
+  border-color: var(--primary-color);
+}
+
+:where(
+  .editor-container,
+  .editor-modal,
+  .editor-preview-container,
+  .se-modal-content,
+  .dropdown-content,
+  #shortcut-popup,
+  #notes-side-panel,
+  #quick-inserter-panel,
+  .editor-master-container,
+  #fired-reminders-panel,
+  .reminder-settings-form,
+  .button-visibility-grid
+) input[type='checkbox']:checked {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+:where(
+  .editor-container,
+  .editor-modal,
+  .editor-preview-container,
+  .se-modal-content,
+  .dropdown-content,
+  #shortcut-popup,
+  #notes-side-panel,
+  #quick-inserter-panel,
+  .editor-master-container,
+  #fired-reminders-panel,
+  .reminder-settings-form,
+  .button-visibility-grid
+) input[type='checkbox']:checked::after {
+  content: '✔';
+  position: absolute;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* --- CHECKBOX - PADRÃO ROBUSTO VIA LABEL (compatível e unificado) --- */
+/* Esconde o checkbox nativo e usa o label como superfície de renderização */
+:where(
+  .editor-container,
+  .editor-modal,
+  .editor-preview-container,
+  .se-modal-content,
+  .dropdown-content,
+  #shortcut-popup,
+  #notes-side-panel,
+  #quick-inserter-panel,
+  .editor-master-container,
+  #fired-reminders-panel,
+  .reminder-settings-form,
+  .button-visibility-grid
+) input[type='checkbox'] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+:where(
+  .editor-container,
+  .editor-modal,
+  .editor-preview-container,
+  .se-modal-content,
+  .dropdown-content,
+  #shortcut-popup,
+  #notes-side-panel,
+  #quick-inserter-panel,
+  .editor-master-container,
+  #fired-reminders-panel,
+  .reminder-settings-form,
+  .button-visibility-grid
+) input[type='checkbox'] + label {
+  position: relative;
+  padding-left: 26px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+:where(
+  .editor-container,
+  .editor-modal,
+  .editor-preview-container,
+  .se-modal-content,
+  .dropdown-content,
+  #shortcut-popup,
+  #notes-side-panel,
+  #quick-inserter-panel,
+  .editor-master-container,
+  #fired-reminders-panel,
+  .reminder-settings-form,
+  .button-visibility-grid
+) input[type='checkbox'] + label::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border-color);
+  background-color: var(--background-secondary);
+  border-radius: var(--border-radius-sm);
+  box-sizing: border-box;
+}
+
+:where(
+  .editor-container,
+  .editor-modal,
+  .editor-preview-container,
+  .se-modal-content,
+  .dropdown-content,
+  #shortcut-popup,
+  #notes-side-panel,
+  #quick-inserter-panel,
+  .editor-master-container,
+  #fired-reminders-panel,
+  .reminder-settings-form,
+  .button-visibility-grid
+) input[type='checkbox']:hover + label::before {
+  border-color: var(--primary-color);
+}
+
+:where(
+  .editor-container,
+  .editor-modal,
+  .editor-preview-container,
+  .se-modal-content,
+  .dropdown-content,
+  #shortcut-popup,
+  #notes-side-panel,
+  #quick-inserter-panel,
+  .editor-master-container,
+  #fired-reminders-panel,
+  .reminder-settings-form,
+  .button-visibility-grid
+) input[type='checkbox']:focus-visible + label::before {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 35%, transparent);
+}
+
+:where(
+  .editor-container,
+  .editor-modal,
+  .editor-preview-container,
+  .se-modal-content,
+  .dropdown-content,
+  #shortcut-popup,
+  #notes-side-panel,
+  #quick-inserter-panel,
+  .editor-master-container,
+  #fired-reminders-panel,
+  .reminder-settings-form,
+  .button-visibility-grid
+) input[type='checkbox']:checked + label::before {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+:where(
+  .editor-container,
+  .editor-modal,
+  .editor-preview-container,
+  .se-modal-content,
+  .dropdown-content,
+  #shortcut-popup,
+  #notes-side-panel,
+  #quick-inserter-panel,
+  .editor-master-container,
+  #fired-reminders-panel,
+  .reminder-settings-form,
+  .button-visibility-grid
+) input[type='checkbox']:checked + label::after {
+  content: '✔';
+  position: absolute;
+  left: 9px; /* metade de 18px */
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* --- AJUSTES DE TEMA ESPECÍFICOS PARA A PALETA DE COMANDOS --- */
+/* ----------------------------------- */
+
+/* Cor de texto geral para temas escuros */
+#quick-inserter-panel.tokyo-night-mode,
+#quick-inserter-panel.forest-mode,
+#quick-inserter-panel.dark-mode,
+#quick-inserter-panel.dark-graphite-mode {
+  color: #e0e0e0; /* Branco suave para texto principal */
+}
+
+/* Títulos no preview dos temas escuros */
+#quick-inserter-panel.tokyo-night-mode .qi-preview-area h5,
+#quick-inserter-panel.forest-mode .qi-preview-area h5,
+#quick-inserter-panel.dark-mode .qi-preview-area h5,
+#quick-inserter-panel.dark-graphite-mode .qi-preview-area h5 {
+  color: #ffffff;
+}
+
+/* Input de busca nos temas escuros */
+#quick-inserter-panel.tokyo-night-mode #qi-search-input,
+#quick-inserter-panel.forest-mode #qi-search-input,
+#quick-inserter-panel.dark-mode #qi-search-input,
+#quick-inserter-panel.dark-graphite-mode #qi-search-input {
+  background-color: #2c2c2c;
+  color: #e0e0e0;
+  border-color: #444;
+}
+
+/* Placeholder do input nos temas escuros */
+#quick-inserter-panel.tokyo-night-mode #qi-search-input::placeholder,
+#quick-inserter-panel.forest-mode #qi-search-input::placeholder,
+#quick-inserter-panel.dark-mode #qi-search-input::placeholder,
+#quick-inserter-panel.dark-graphite-mode #qi-search-input::placeholder {
+  color: #888;
+}
+
+/* Área de preview e textos secundários nos temas escuros */
+#quick-inserter-panel.tokyo-night-mode .qi-preview-area,
+#quick-inserter-panel.forest-mode .qi-preview-area,
+#quick-inserter-panel.dark-mode .qi-preview-area,
+#quick-inserter-panel.dark-graphite-mode .qi-preview-area {
+  color: #a0a0a0; /* Cinza claro para textos secundários */
+}
+
+/*
+  Correção para o Tema Alvorada (light):
+  Agora com uma classe dedicada, garantimos um fundo sólido sem afetar outros temas.
+*/
+#quick-inserter-panel.light-mode {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background-color: var(--background-main) !important;
+}
+
+/* Override para a lista de mensagens em temas escuros */
+#quick-inserter-panel.tokyo-night-mode .qi-messages-list,
+#quick-inserter-panel.forest-mode .qi-messages-list,
+#quick-inserter-panel.dark-mode .qi-messages-list,
+#quick-inserter-panel.dark-graphite-mode .qi-messages-list {
+  background-color: var(
+    --background-main
+  ); /* Usar o fundo principal mais escuro */
+}
+
+/* --- SCROLLBARS CUSTOMIZADOS --- */
+.quick-steps-list::-webkit-scrollbar,
+.export-list::-webkit-scrollbar,
+.category-list::-webkit-scrollbar,
+.gc-list::-webkit-scrollbar,
+.se-modal-body::-webkit-scrollbar,
+.editor-preview-container::-webkit-scrollbar,
+#shortcut-items-container::-webkit-scrollbar {
+  width: 8px;
+}
+.quick-steps-list::-webkit-scrollbar-track,
+.export-list::-webkit-scrollbar-track,
+.category-list::-webkit-scrollbar-track,
+.gc-list::-webkit-scrollbar-track,
+.se-modal-body::-webkit-scrollbar-track,
+.editor-preview-container::-webkit-scrollbar-track,
+#shortcut-items-container::-webkit-scrollbar-track {
+  background: var(--background-hover);
+  border-radius: 10px;
+}
+.quick-steps-list::-webkit-scrollbar-thumb,
+.export-list::-webkit-scrollbar-thumb,
+.category-list::-webkit-scrollbar-thumb,
+.gc-list::-webkit-scrollbar-thumb,
+.se-modal-body::-webkit-scrollbar-thumb,
+.editor-preview-container::-webkit-scrollbar-thumb,
+#shortcut-items-container::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 10px;
+}
+.quick-steps-list::-webkit-scrollbar-thumb:hover,
+.export-list::-webkit-scrollbar-thumb:hover,
+.category-list::-webkit-scrollbar-thumb:hover,
+.gc-list::-webkit-scrollbar-thumb:hover,
+.se-modal-body::-webkit-scrollbar-thumb:hover,
+.editor-preview-container::-webkit-scrollbar-thumb:hover,
+#shortcut-items-container::-webkit-scrollbar-thumb:hover {
+  background: var(--text-color-muted);
+}
+
+/* --- DRAG & DROP --- */
+.draggable-mirror {
+  background-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 10px 15px;
+  font-size: 14px;
+  transition: opacity 0.2s ease-in-out;
+  opacity: 0.95;
+  z-index: 10001; /* Garante que fique acima de outros elementos */
+}
+
+/* --- BOTÕES APRIMORADOS --- */
+.enhanced-btn {
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--primary-color-hover)
+  );
+  color: white;
+  border: 1px solid var(--primary-color);
+  font-weight: 600;
+  border-radius: var(--border-radius-sm);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.3px;
+}
+
+.enhanced-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.enhanced-btn:hover {
+  background: linear-gradient(
+    135deg,
+    var(--primary-color-hover),
+    var(--primary-color)
+  );
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: var(--primary-color-hover);
+}
+
+.enhanced-btn:hover::before {
+  left: 100%;
+}
+
+.enhanced-btn:active {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.enhanced-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.3);
+}
+
+/* Efeito de brilho adicional no hover */
+.enhanced-btn:hover {
+  background-size: 200% 200%;
+  animation: gradient-shift 2s ease infinite;
+}
+
+/* Botão Salvar Alterações com fundo verde */
+.enhanced-btn[data-action='save-changes'],
+button[id='modal-save-btn'].enhanced-btn {
+  background: linear-gradient(135deg, #28a745, #20c997) !important;
+  border-color: #28a745 !important;
+}
+
+.enhanced-btn[data-action='save-changes']:hover,
+button[id='modal-save-btn'].enhanced-btn:hover {
+  background: linear-gradient(135deg, #20c997, #28a745) !important;
+  border-color: #20c997 !important;
+}
+
+/* Botão Fechar com fundo cinza */
+button[id='modal-cancel-btn'].enhanced-btn {
+  background: linear-gradient(135deg, #6c757d, #5a6268) !important;
+  border-color: #6c757d !important;
+}
+
+button[id='modal-cancel-btn'].enhanced-btn:hover {
+  background: linear-gradient(135deg, #5a6268, #6c757d) !important;
+  border-color: #5a6268 !important;
+}
+
+/* Garantir que o botão Fechar mantenha cor branca */
+button[id='modal-cancel-btn'].enhanced-btn {
+  color: white !important;
+}
+
+button[id='modal-cancel-btn'].enhanced-btn:hover {
+  color: white !important;
+}
+
+/* Botões de Adicionar com fundo azul claro */
+.add-message-btn.enhanced-btn,
+.add-item-btn.enhanced-btn,
+.add-new-item-btn,
+#add-category-btn.enhanced-btn,
+#quick-steps-add-new-btn.enhanced-btn,
+#qi-add-category-btn.enhanced-btn,
+#qi-add-new-btn.enhanced-btn {
+  background: linear-gradient(135deg, #17a2b8, #138496) !important;
+  border-color: #17a2b8 !important;
+  color: white !important;
+}
+
+.add-message-btn.enhanced-btn:hover,
+.add-item-btn.enhanced-btn:hover,
+.add-new-item-btn:hover,
+#add-category-btn.enhanced-btn:hover,
+#quick-steps-add-new-btn.enhanced-btn:hover,
+#qi-add-category-btn.enhanced-btn:hover,
+#qi-add-new-btn.enhanced-btn:hover {
+  background: linear-gradient(135deg, #138496, #17a2b8) !important;
+  border-color: #138496 !important;
+  color: white !important;
+}
+
+/* Adicionar efeito de brilho aos botões de adicionar */
+.add-new-item-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.add-new-item-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: left 0.6s ease;
+  pointer-events: none;
+}
+
+.add-new-item-btn:hover::before {
+  left: 100%;
+}
+
+/* --- CLASSE PARA EFEITO DE BRILHO APENAS --- */
+.shine-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.shine-effect::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: left 0.6s ease;
+  pointer-events: none;
+}
+
+.shine-effect:hover::before {
+  left: 100%;
+}
+
+/* --- SLIDERS E INTERFACE (MIGRADOS DO EDITOR.CSS) --- */
+.slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.slider-group label {
+  font-size: 13px;
+  color: var(--text-color-muted);
+  margin: 0;
+}
+
+/* Customização dos Sliders (input[type="range"]) */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  background: var(--background-secondary);
+  border-radius: 5px;
+  outline: none;
+  border: 1px solid var(--border-color);
+  padding: 0;
+  margin: 0;
+  transition: opacity 0.2s ease;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--primary-color);
+  cursor: pointer;
+  border-radius: 50%;
+  border: 3px solid var(--background-main);
+  box-shadow: var(--shadow-md);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--primary-color);
+  cursor: pointer;
+  border-radius: 50%;
+  border: 3px solid var(--background-main);
+  box-shadow: var(--shadow-md);
+}
+
+input[type='range']:hover::-webkit-slider-thumb {
+  transform: scale(1.1);
+}
+
+input[type='range']:active::-webkit-slider-thumb {
+  background: var(--primary-color-hover);
+}

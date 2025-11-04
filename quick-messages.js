@@ -937,6 +937,15 @@ async function openManagementModal() {
                       uiSettings.editorFontSize
                     }">
                 </div>
+                
+                <div class="form-group" style="margin-top: 15px;">
+                    <label for="button-label-type-select">Rótulos dos Botões (Negrito/Itálico/Sublinhado):</label>
+                    <select id="button-label-type-select">
+                        <option value="symbol" ${uiSettings.buttonLabelType === 'symbol' ? 'selected' : ''}>Símbolo (B, I, U)</option>
+                        <option value="text" ${uiSettings.buttonLabelType === 'text' ? 'selected' : ''}>Texto (Negrito, Itálico, Sublinhado)</option>
+                    </select>
+                </div>
+                
                 <button type="button" id="restore-ui-defaults-btn" class="action-btn restore-defaults-btn">Restaurar Padrões de Aparência</button>
             </div>
         </div>
@@ -952,6 +961,18 @@ async function openManagementModal() {
                 <div class="form-checkbox-group">
                     <input type="checkbox" id="enable-windows-notifications" ${preferences.enableWindowsNotifications ? 'checked' : ''}>
                     <label for="enable-windows-notifications">Habilitar notificações do Windows para lembretes</label>
+                </div>
+                <hr style="margin: 15px 0;">
+                <h5>Comportamento dos Menus Flutuantes</h5>
+                <div class="radio-inline-group">
+                    <div class="form-radio-group">
+                        <input type="radio" id="dropdown-hover" name="dropdownBehavior" value="hover" ${preferences.dropdownBehavior === 'hover' ? 'checked' : ''}>
+                        <label for="dropdown-hover">Abrir ao passar o mouse</label>
+                    </div>
+                    <div class="form-radio-group">
+                        <input type="radio" id="dropdown-click" name="dropdownBehavior" value="click" ${preferences.dropdownBehavior === 'click' ? 'checked' : ''}>
+                        <label for="dropdown-click">Abrir ao clicar</label>
+                    </div>
                 </div>
             </div>
         </div>
@@ -972,13 +993,15 @@ async function openManagementModal() {
   const iconSizeSlider = modal.querySelector('#icon-size-slider')
   const uiFontSizeSlider = modal.querySelector('#ui-font-size-slider')
   const editorFontSizeSlider = modal.querySelector('#editor-font-size-slider')
+  const buttonLabelTypeSelect = modal.querySelector('#button-label-type-select')
   const buttonCheckboxes = modal.querySelectorAll('input[data-button-key]')
 
   const updateUiSettings = async () => {
     const newSettings = {
       iconSize: parseFloat(iconSizeSlider.value),
       uiFontSize: parseInt(uiFontSizeSlider.value, 10),
-      editorFontSize: parseInt(editorFontSizeSlider.value, 10)
+      editorFontSize: parseInt(editorFontSizeSlider.value, 10),
+      buttonLabelType: buttonLabelTypeSelect.value
     }
 
     // Atualiza os labels em tempo real
@@ -997,17 +1020,23 @@ async function openManagementModal() {
     // Aplica e salva as configurações
     applyUiSettings(currentSettings)
     await saveSettings(currentSettings)
+    
+    // Se o tipo de rótulo mudou, atualiza a toolbar
+    if (newSettings.buttonLabelType !== uiSettings.buttonLabelType) {
+      await updateAllToolbarButtonLabels()
+    }
   }
 
   iconSizeSlider.addEventListener('input', updateUiSettings)
   uiFontSizeSlider.addEventListener('input', updateUiSettings)
   editorFontSizeSlider.addEventListener('input', updateUiSettings)
+  buttonLabelTypeSelect.addEventListener('change', updateUiSettings)
 
   // Apenas uma pequena modificação no listener do botão de restaurar para ser mais específico
   const restoreBtn = modal.querySelector('#restore-ui-defaults-btn')
   restoreBtn.addEventListener('click', () => {
     showConfirmDialog(
-      'Tem certeza que deseja restaurar as configurações de aparência (tamanhos de fonte e ícones) para o padrão?',
+      'Tem certeza que deseja restaurar as configurações de aparência (tamanhos de fonte, ícones e rótulos) para o padrão?',
       async () => {
         const defaultUiSettings = DEFAULT_SETTINGS.uiSettings
         const currentSettings = await getSettings()
@@ -1017,6 +1046,8 @@ async function openManagementModal() {
         currentSettings.uiSettings.uiFontSize = defaultUiSettings.uiFontSize
         currentSettings.uiSettings.editorFontSize =
           defaultUiSettings.editorFontSize
+        currentSettings.uiSettings.buttonLabelType =
+          defaultUiSettings.buttonLabelType
 
         await saveSettings(currentSettings)
 
@@ -1024,11 +1055,13 @@ async function openManagementModal() {
         iconSizeSlider.value = defaultUiSettings.iconSize
         uiFontSizeSlider.value = defaultUiSettings.uiFontSize
         editorFontSizeSlider.value = defaultUiSettings.editorFontSize
+        buttonLabelTypeSelect.value = defaultUiSettings.buttonLabelType
         ;[iconSizeSlider, uiFontSizeSlider, editorFontSizeSlider].forEach(
           slider => slider.dispatchEvent(new Event('input', { bubbles: true }))
         )
 
         applyUiSettings(currentSettings)
+        await updateAllToolbarButtonLabels()
 
         showNotification('Configurações de aparência restauradas.', 'success')
       }
@@ -2677,15 +2710,25 @@ async function savePreferencesSettings(modal) {
     if (!container) return true;
 
     const settings = await getSettings();
-    const newPreferences = { ...settings.preferences };
+    const newPreferences = { ...(settings.preferences || DEFAULT_SETTINGS.preferences) };
 
     const windowsNotificationsCheckbox = container.querySelector('#enable-windows-notifications');
     if (windowsNotificationsCheckbox) {
         newPreferences.enableWindowsNotifications = windowsNotificationsCheckbox.checked;
     }
 
+    // NOVO: Ler comportamento do dropdown
+    const selectedBehavior = container.querySelector('input[name="dropdownBehavior"]:checked');
+    if (selectedBehavior) {
+        newPreferences.dropdownBehavior = selectedBehavior.value;
+    }
+
     try {
         await saveSettings({ preferences: newPreferences });
+        // Aplicar imediatamente
+        if (typeof applyDropdownBehaviorSetting === 'function') {
+            await applyDropdownBehaviorSetting();
+        }
         return true;
     } catch (error) {
         showNotification('Erro ao salvar as preferências.', 'error');

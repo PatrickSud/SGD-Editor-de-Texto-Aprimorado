@@ -47,6 +47,154 @@ function createHistoryManager(initialState) {
 
 let lastKnownTextAreaValue = ''
 
+// Variável para armazenar temporariamente saudações e encerramentos removidos
+let temporaryGreetingClosing = {
+  greeting: '',
+  closing: ''
+}
+
+let draggedGcItem = null; // Variável global para rastrear o item arrastado
+
+/**
+ * Extrai apenas o conteúdo interno do texto, removendo saudação e encerramento.
+ * @param {string} fullText - O texto completo do textarea.
+ * @returns {object} Objeto contendo {greeting, content, closing}
+ */
+function extractContentParts(fullText) {
+  let greeting = ''
+  let content = fullText
+  let closing = ''
+
+  const greetingIndex = fullText.indexOf(GREETING_SEPARATOR)
+  const closingIndex = fullText.lastIndexOf(CLOSING_SEPARATOR)
+
+  // Se há separador de saudação
+  if (greetingIndex !== -1) {
+    greeting = fullText.substring(0, greetingIndex)
+    // Se também há separador de encerramento
+    if (closingIndex !== -1 && closingIndex > greetingIndex) {
+      content = fullText.substring(greetingIndex + GREETING_SEPARATOR.length, closingIndex)
+      closing = fullText.substring(closingIndex + CLOSING_SEPARATOR.length)
+    } else {
+      // Só tem saudação
+      content = fullText.substring(greetingIndex + GREETING_SEPARATOR.length)
+    }
+  } else if (closingIndex !== -1) {
+    // Só tem encerramento (sem saudação)
+    content = fullText.substring(0, closingIndex)
+    closing = fullText.substring(closingIndex + CLOSING_SEPARATOR.length)
+  }
+
+  return {
+    greeting: greeting.trim(),
+    content: content.trim(),
+    closing: closing.trim()
+  }
+}
+
+/**
+ * Adiciona saudação e encerramento ao conteúdo, usando textos salvos ou padrões.
+ * @param {string} content - O conteúdo interno atual.
+ * @param {boolean} useTemporary - Se deve tentar usar textos temporários salvos.
+ * @returns {Promise<string>} O texto completo com saudação e encerramento.
+ */
+async function addGreetingAndClosing(content, useTemporary = true) {
+  let greeting = ''
+  let closing = ''
+
+  // Tenta usar textos temporários salvos
+  if (useTemporary && (temporaryGreetingClosing.greeting || temporaryGreetingClosing.closing)) {
+    greeting = temporaryGreetingClosing.greeting
+    closing = temporaryGreetingClosing.closing
+    
+    // Limpa o cache temporário após uso
+    temporaryGreetingClosing = { greeting: '', closing: '' }
+  } else {
+    // Busca os padrões configurados
+    const data = await getGreetingsAndClosings()
+    
+    if (data.defaultGreetingId) {
+      const defaultGreeting = data.greetings.find(g => g.id === data.defaultGreetingId)
+      if (defaultGreeting) {
+        greeting = await resolveVariablesInText(defaultGreeting.content)
+      }
+    }
+    
+    if (data.defaultClosingId) {
+      const defaultClosing = data.closings.find(c => c.id === data.defaultClosingId)
+      if (defaultClosing) {
+        closing = await resolveVariablesInText(defaultClosing.content)
+      }
+    }
+  }
+
+  // Monta o texto final
+  let finalText = content
+
+  if (greeting) {
+    finalText = greeting + GREETING_SEPARATOR + (content ? '\n' : '') + finalText
+  }
+
+  if (closing) {
+    finalText = finalText + (content ? '\n' : '') + CLOSING_SEPARATOR + closing
+  }
+
+  return finalText
+}
+
+/**
+ * Configura o listener para os selects de situação do trâmite.
+ * @param {HTMLTextAreaElement} textArea - O textarea do editor principal.
+ */
+function setupSituationListener(textArea) {
+  const situationSelects = [
+    document.getElementById('cadSscForm:situacaoTramite'),
+    document.getElementById('sscForm:situacaoTramite')
+  ]
+
+  situationSelects.forEach(select => {
+    if (!select) return
+
+    select.addEventListener('change', async () => {
+      const selectedValue = select.value
+
+      // Aguarda a função nativa do SGD executar primeiro (carregaDescricaoTramiteSaudacaoBySituacaoTipoResposta)
+      setTimeout(async () => {
+        const currentText = textArea.value
+
+        // Valor 3 = "Respondido ao Cliente"
+        if (selectedValue === '3') {
+          // Adicionar saudação e encerramento
+          const parts = extractContentParts(currentText)
+          const newText = await addGreetingAndClosing(parts.content, true)
+          
+          if (newText !== currentText) {
+            textArea.value = newText
+            textArea.dispatchEvent(new Event('input', { bubbles: true }))
+          }
+        } else {
+          // Remover saudação e encerramento (manter apenas conteúdo)
+          const parts = extractContentParts(currentText)
+          
+          // Salva temporariamente se houver saudação ou encerramento
+          if (parts.greeting || parts.closing) {
+            temporaryGreetingClosing = {
+              greeting: parts.greeting,
+              closing: parts.closing
+            }
+            
+            // Atualiza o textarea apenas com o conteúdo interno
+            if (parts.content !== currentText) {
+              textArea.value = parts.content
+              textArea.dispatchEvent(new Event('input', { bubbles: true }))
+            }
+          }
+        }
+      }, 300) // Aguarda 300ms para garantir que a função do SGD termine
+    })
+  })
+}
+
 /**
  * Observa mudanças no DOM para lidar com carregamento dinâmico (AJAX) do SGD.
  */
@@ -82,7 +230,7 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
   if (!textArea || textArea.dataset.enhanced) return
   textArea.dataset.enhanced = instanceId
 
-  const {
+const {
     includePreview,
     includeQuickSteps,
     includeThemeToggle,
@@ -114,7 +262,11 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
   if (textArea.parentNode) {
     textArea.parentNode.insertBefore(masterContainer, textArea)
     masterContainer.appendChild(editorContainer)
-    masterContainer.appendChild(textArea)
+    // Cria um wrapper para o textarea e o preview para o layout vertical
+    const contentWrapper = document.createElement('div')
+    contentWrapper.className = 'editor-content-wrapper'
+    contentWrapper.appendChild(textArea)
+    masterContainer.appendChild(contentWrapper)
   } else {
     console.error(
       'Editor SGD: Não foi possível encontrar o elemento pai do textarea.'
@@ -165,6 +317,12 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
 
     if (instanceId === 'main') {
       const pinButton = document.getElementById(`preview-pin-btn-${instanceId}`)
+      const layoutButton = document.getElementById(
+        `preview-layout-btn-${instanceId}`
+      )
+      const masterContainer = textArea.closest('.editor-master-container')
+
+      // Lógica do Pin
       const setPinState = isResizable => {
         previewContainer.classList.toggle('resizable', isResizable)
         pinButton.classList.toggle('unpinned', isResizable)
@@ -180,6 +338,39 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
         const newState = !currentStateIsResizable
         setPinState(newState)
         await savePreviewResizableState(newState)
+      })
+
+      // Lógica do Layout
+      const setLayoutState = orientation => {
+        masterContainer.classList.toggle(
+          'vertical-layout',
+          orientation === 'vertical'
+        )
+        layoutButton.innerHTML = orientation === 'vertical' ? '↔️' : '↕️'
+        layoutButton.title =
+          orientation === 'vertical'
+            ? 'Alternar para visualização horizontal'
+            : 'Alternar para visualização vertical'
+      }
+
+      const initialOrientation = await getPreviewOrientationState()
+      setLayoutState(initialOrientation)
+      if (initialOrientation === 'vertical') {
+        autoGrowTextArea(textArea)
+      }
+
+      layoutButton.addEventListener('click', async () => {
+        const isVertical = masterContainer.classList.contains('vertical-layout')
+        const newOrientation = isVertical ? 'horizontal' : 'vertical'
+        setLayoutState(newOrientation)
+        await savePreviewOrientationState(newOrientation)
+
+        // Ajusta a altura ao mudar o layout
+        if (newOrientation === 'vertical') {
+          autoGrowTextArea(textArea)
+        } else {
+          textArea.style.height = '' // Reseta para o padrão
+        }
       })
     }
     updatePreview(textArea)
@@ -206,10 +397,16 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
     loadQuickMessages(editorContainer)
   }
 
+  // Aplica comportamento de dropdowns conforme preferência
+  if (typeof applyDropdownBehaviorSetting === 'function') {
+    applyDropdownBehaviorSetting()
+  }
+
   if (instanceId === 'main') {
     addSgdActionButtons(masterContainer)
     setupSolutionObserver(textArea)
     setupUserSelectionListener(textArea)
+    setupSituationListener(textArea)
     performAutoFill(textArea)
   }
 }
@@ -246,6 +443,8 @@ async function createEditorToolbarHtml(
   const settings = await getSettings() // Carrega as configurações
   const buttonsVisibility =
     settings.toolbarButtons || DEFAULT_SETTINGS.toolbarButtons
+  const uiSettings = settings.uiSettings || DEFAULT_SETTINGS.uiSettings
+  const buttonLabelType = uiSettings.buttonLabelType || 'symbol'
 
   // Debug: Log das configurações carregadas
   console.log(
@@ -269,15 +468,20 @@ async function createEditorToolbarHtml(
     ? 'Reconhecimento de voz não suportado no Opera'
     : 'Reconhecimento de voz não suportado neste navegador'
 
-  // --- LÓGICA DE VISIBILIDADE APLICADA ---
+  // --- LÓGICA DE VISIBILIDADE E RÓTULOS APLICADA ---
+
+  // Define os rótulos dos botões baseado na configuração
+  const boldLabel = buttonLabelType === 'text' ? '<b>Negrito</b>' : '<b>B</b>'
+  const italicLabel = buttonLabelType === 'text' ? '<i>Itálico</i>' : '<i>I</i>'
+  const underlineLabel = buttonLabelType === 'text' ? '<u>Sublinhado</u>' : '<u>U</u>'
 
   // Botões de formatação sempre visíveis
   const formattingButtons = `
     ${shouldShowMicButton ? `<button type="button" data-action="speech-to-text" class="shine-effect" title="${micButtonTitle}" ${micButtonDisabled}>🎤</button>
     <div class="toolbar-separator" data-id="mic-separator"></div>` : ''}
-    <button type="button" data-action="bold" class="shine-effect" title="Negrito (Ctrl+B)"><b>B</b></button>
-    <button type="button" data-action="italic" class="shine-effect" title="Itálico (Ctrl+I)"><i>I</i></button>
-    <button type="button" data-action="underline" class="shine-effect" title="Sublinhado (Ctrl+U)"><u>U</u></button>
+    <button type="button" data-action="bold" class="shine-effect" title="Negrito (Ctrl+B)">${boldLabel}</button>
+    <button type="button" data-action="italic" class="shine-effect" title="Itálico (Ctrl+I)">${italicLabel}</button>
+    <button type="button" data-action="underline" class="shine-effect" title="Sublinhado (Ctrl+U)">${underlineLabel}</button>
     ${
       buttonsVisibility.separator2
         ? '<div class="toolbar-separator" data-id="separator2"></div>'
@@ -501,6 +705,37 @@ async function performAutoFill(textArea) {
     return
   }
 
+  // Verifica todos os selects de situação
+  const situationSelects = [
+    document.getElementById('cadSscForm:situacaoTramite'),
+    document.getElementById('sscForm:situacaoTramite'),
+    document.getElementById('ssForm:situacaoTramite')
+  ]
+
+  // Verifica se algum select está com o valor "1" (Em análise)
+  for (const select of situationSelects) {
+    if (select && select.value === '1') {
+      return // Não preenche automaticamente quando está "Em análise"
+    }
+  }
+
+  // Verifica se o select ssForm:situacaoTramite existe e tem as opções específicas
+  const ssFormSelect = document.getElementById('ssForm:situacaoTramite')
+  if (ssFormSelect) {
+    // Verifica se existem as opções com value "4" ou "5"
+    const hasRespondidoOption = Array.from(ssFormSelect.options).some(
+      option => option.value === '4'
+    )
+    const hasConcluidoOption = Array.from(ssFormSelect.options).some(
+      option => option.value === '5'
+    )
+    
+    // Se ambas as opções existirem, não preenche automaticamente
+    if (hasRespondidoOption && hasConcluidoOption) {
+      return
+    }
+  }
+
   const data = await getGreetingsAndClosings()
 
   if (!data.defaultGreetingId && !data.defaultClosingId) {
@@ -556,7 +791,7 @@ async function performAutoFill(textArea) {
 }
 
 /**
- * Carrega as opções de saudação e encerramento, incluindo os botões de "Adicionar Novo".
+ * Carrega as opções de saudação e encerramento, incluindo os botões de "Adicionar Novo" e habilita drag-and-drop.
  * @param {HTMLElement} editorContainer - O contêiner da barra de ferramentas.
  */
 async function loadQuickChangeOptions(editorContainer) {
@@ -566,15 +801,20 @@ async function loadQuickChangeOptions(editorContainer) {
   const data = await getGreetingsAndClosings()
   let html = ''
 
-  // Função auxiliar para criar a lista de itens
+  // Função auxiliar para criar a lista de itens arrastáveis
   const createItemsHtml = (items, type) => {
     const defaultId =
       type === 'greetings' ? data.defaultGreetingId : data.defaultClosingId
-    let itemsHtml = items
+    
+    // Ordena os itens pela propriedade 'order' antes de gerar o HTML
+    const sortedItems = items.sort((a, b) => (a.order || 0) - (b.order || 0))
+
+    let itemsHtml = sortedItems
       .map(item => {
         const isActive = item.id === defaultId
         return `
-        <div class="quick-change-item" data-id="${item.id}" data-type="${type}">
+        <div class="quick-change-item gc-item" draggable="true" data-id="${item.id}" data-type="${type}" data-order="${item.order || 0}">
+          <span class="drag-handle" title="Arraste para reordenar">⠿</span>
           <button type="button" class="set-default-btn ${
             isActive ? 'active' : ''
           }" title="${
@@ -596,25 +836,180 @@ async function loadQuickChangeOptions(editorContainer) {
     return itemsHtml
   }
 
+  // Renderiza Saudações
+  html += '<div class="gc-list" data-list-type="greetings">'; // Wrapper para drop
+  html += '<h5>Saudações</h5>'
   if (data.greetings && data.greetings.length > 0) {
-    html += '<h5>Saudações</h5>'
     html += createItemsHtml(data.greetings, 'greetings')
   } else {
     // Se não houver saudações, mostra apenas o botão de adicionar
     html += '<h5>Saudações</h5>'
     html += `<button type="button" class="add-new-item-btn" data-type="greetings">+ Adicionar Saudação</button>`
   }
+  html += '</div>'
 
+  // Renderiza Encerramentos
+  html += '<div class="gc-list" data-list-type="closings">'; // Wrapper para drop
+  html += '<h5>Encerramentos</h5>'
   if (data.closings && data.closings.length > 0) {
-    html += '<h5>Encerramentos</h5>'
     html += createItemsHtml(data.closings, 'closings')
   } else {
     // Se não houver encerramentos, mostra apenas o botão de adicionar
     html += '<h5>Encerramentos</h5>'
     html += `<button type="button" class="add-new-item-btn" data-type="closings">+ Adicionar Encerramento</button>`
   }
+  html += '</div>'
 
   container.innerHTML = html
+
+  // ADICIONADO: Adiciona listeners de drag-and-drop aos itens e listas
+  container.querySelectorAll('.quick-change-item[draggable="true"]').forEach(item => {
+     item.addEventListener('dragstart', handleGcDragStart)
+     item.addEventListener('dragend', handleGcDragEnd)
+  })
+  container.querySelectorAll('.gc-list').forEach(list => {
+     list.addEventListener('dragover', handleGcDragOver)
+     list.addEventListener('dragleave', handleGcDragLeave)
+     list.addEventListener('drop', handleGcDrop)
+  })
+}
+
+function handleGcDragStart(e) {
+  draggedGcItem = e.target.closest('.quick-change-item')
+  if (draggedGcItem) {
+    e.dataTransfer.setData('text/plain', draggedGcItem.dataset.id)
+    e.dataTransfer.effectAllowed = 'move'
+    // Adiciona classe com delay para visualização correta
+    requestAnimationFrame(() => {
+      draggedGcItem.classList.add('is-dragging')
+    })
+  }
+}
+
+function handleGcDragEnd(e) {
+  if (draggedGcItem) {
+    draggedGcItem.classList.remove('is-dragging');
+  }
+  draggedGcItem = null;
+  // Limpa indicadores visuais de drop
+  document.querySelectorAll('.gc-item.drag-over-top, .gc-item.drag-over-bottom')
+    .forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'));
+  // Limpa o feedback de todas as listas
+  document.querySelectorAll('.gc-list.drag-over')
+    .forEach(el => el.classList.remove('drag-over'));
+}
+
+function handleGcDragOver(e) {
+  e.preventDefault(); // Necessário para permitir o drop
+  if (!draggedGcItem) return;
+
+  const targetList = e.currentTarget.closest('.gc-list');
+  const targetItem = e.target.closest('.quick-change-item');
+
+  // Verifica se o arraste é válido (mesmo tipo de item: saudação com saudação)
+  const draggedType = draggedGcItem.dataset.type;
+  const targetListType = targetList.dataset.listType;
+  
+  if (draggedType !== targetListType) {
+     e.dataTransfer.dropEffect = 'none'; // Indica drop inválido
+     targetList.classList.remove('drag-over'); // Garante que o feedback seja removido
+     return; 
+  } else {
+     e.dataTransfer.dropEffect = 'move'; // Indica drop válido
+     targetList.classList.add('drag-over'); // Adiciona feedback visual à lista
+  }
+
+
+  // Limpa indicadores anteriores
+  targetList.querySelectorAll('.gc-item.drag-over-top, .gc-item.drag-over-bottom')
+    .forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'));
+
+  if (targetItem && targetItem !== draggedGcItem) {
+    const rect = targetItem.getBoundingClientRect()
+    const isBottomHalf = (e.clientY - rect.top) / rect.height > 0.5
+    targetItem.classList.add(isBottomHalf ? 'drag-over-bottom' : 'drag-over-top')
+  }
+}
+
+function handleGcDragLeave(e) {
+     // Remove indicadores se sair da área do item ou da lista
+     const targetItem = e.target.closest('.quick-change-item')
+     if (targetItem) {
+         targetItem.classList.remove('drag-over-top', 'drag-over-bottom')
+     }
+     // Verifica se saiu da lista inteira
+     const list = e.currentTarget.closest('.gc-list')
+     if (list && !list.contains(e.relatedTarget)) {
+         list.classList.remove('drag-over') // Remove o feedback da lista
+         list.querySelectorAll('.gc-item.drag-over-top, .gc-item.drag-over-bottom')
+             .forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'))
+     }
+}
+
+async function handleGcDrop(e) {
+  e.preventDefault()
+  if (!draggedGcItem) return
+
+  const currentDraggedItem = draggedGcItem // Guarda referência antes de limpar
+  const targetList = e.currentTarget.closest('.gc-list')
+  const targetItem = document.elementFromPoint(e.clientX, e.clientY)?.closest('.quick-change-item')
+
+  // Verifica se o drop é válido (mesmo tipo)
+  const draggedType = currentDraggedItem.dataset.type
+  const targetListType = targetList.dataset.listType
+  if (draggedType !== targetListType) {
+     handleGcDragEnd(e) // Limpa o estado
+     return
+  }
+
+  handleGcDragEnd(e) // Limpa o estado visual do drag
+
+  // Pega todos os itens da lista alvo (no DOM) para determinar a nova ordem
+  const itemsInList = Array.from(targetList.querySelectorAll('.quick-change-item'))
+  let targetIndex = -1
+
+  if (targetItem && targetItem !== currentDraggedItem) {
+    const rect = targetItem.getBoundingClientRect()
+    const isBottomHalf = (e.clientY - rect.top) / rect.height > 0.5
+    const currentTargetIndex = itemsInList.findIndex(item => item === targetItem)
+    targetIndex = isBottomHalf ? currentTargetIndex + 1 : currentTargetIndex
+  } else {
+    // Se soltar no espaço vazio da lista (ou sobre ele mesmo), vai para o final
+    targetIndex = itemsInList.length
+  }
+
+  // Recalcula a ordem
+  const data = await getGreetingsAndClosings()
+  const listKey = draggedType // 'greetings' ou 'closings'
+
+  // Filtra a lista correta e remove o item arrastado temporariamente
+  let updatedList = data[listKey].filter(item => item.id !== currentDraggedItem.dataset.id)
+  
+  // Encontra o objeto do item que foi arrastado
+  const draggedObject = data[listKey].find(item => item.id === currentDraggedItem.dataset.id)
+  
+  if(draggedObject){
+     // Insere o objeto arrastado na nova posição calculada
+     updatedList.splice(targetIndex, 0, draggedObject)
+  }
+
+
+  // Reatribui a propriedade 'order' sequencialmente
+  updatedList.forEach((item, index) => {
+    item.order = index
+  })
+
+  // Atualiza a lista no objeto de dados principal
+  data[listKey] = updatedList
+
+  // Salva os dados atualizados
+  await saveGreetingsAndClosings(data)
+
+  // Recarrega o menu para refletir a nova ordem
+  const editorContainer = targetList.closest('.editor-container')
+  if (editorContainer) {
+    loadQuickChangeOptions(editorContainer)
+  }
 }
 
 /**
@@ -711,6 +1106,12 @@ function setupEditorInstanceListeners(
         debounceTimeout = setTimeout(() => {
           history.add(textArea.value)
         }, 400) // Aguarda 400ms de inatividade para salvar
+      }
+
+      // Ajusta a altura do textarea no modo vertical
+      const masterContainer = textArea.closest('.editor-master-container')
+      if (masterContainer && masterContainer.classList.contains('vertical-layout')) {
+        autoGrowTextArea(textArea)
       }
     })
 
@@ -937,7 +1338,7 @@ function setupEditorInstanceListeners(
         applyFormatting(textArea, 'u')
         break
       case 'speech-to-text':
-        SpeechService.toggleRecognition(textArea)
+        await SpeechService.toggleRecognition(textArea)
         break
       case 'ai-correct':
         startAILoading()
@@ -1126,6 +1527,20 @@ function updateFormattingButtonsState(textArea, editorContainer) {
 }
 
 /**
+ * Ajusta a altura de um textarea para corresponder ao seu conteúdo.
+ * @param {HTMLTextAreaElement} textArea - O elemento textarea.
+ */
+function autoGrowTextArea(textArea) {
+  textArea.style.height = 'auto';
+  const maxHeight = 350; // O mesmo valor definido no CSS
+  if (textArea.scrollHeight <= maxHeight) {
+    textArea.style.height = textArea.scrollHeight + 'px';
+  } else {
+    textArea.style.height = maxHeight + 'px';
+  }
+}
+
+/**
  * Alterna a visibilidade do painel de visualização e salva o estado.
  * @param {HTMLTextAreaElement} textArea - O textarea associado.
  */
@@ -1226,6 +1641,89 @@ function addSgdActionButtons(masterContainer) {
   }
 }
 
+// --- CONTROLE DE COMPORTAMENTO DOS DROPDOWNS (hover/click) ---
+let dropdownClickHandlers = []
+let documentClickCloser = null
+
+async function applyDropdownBehaviorSetting() {
+  const settings = await getSettings()
+  const behavior = settings.preferences?.dropdownBehavior || 'hover'
+  const body = document.body
+
+  if (behavior === 'click') {
+    body.classList.add('dropdown-click-mode')
+    body.classList.remove('dropdown-hover-mode')
+    setupClickDropdowns()
+    removeHoverDropdowns()
+  } else {
+    body.classList.add('dropdown-hover-mode')
+    body.classList.remove('dropdown-click-mode')
+    setupHoverDropdowns()
+    removeClickDropdowns()
+  }
+}
+
+function setupHoverDropdowns() {
+  // Sem necessidade de listeners específicos; CSS controla no modo hover
+}
+
+function removeHoverDropdowns() {
+  // Sem listeners para remover no modo hover
+}
+
+function setupClickDropdowns() {
+  // Evita múltiplas instalações
+  if (dropdownClickHandlers.length > 0) return
+
+  // Fecha todos os dropdowns abertos
+  const closeAll = () => {
+    document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'))
+  }
+
+  // Instala o fechador global (clique fora)
+  documentClickCloser = e => {
+    if (!e.target.closest('.dropdown')) {
+      closeAll()
+    }
+  }
+  document.addEventListener('click', documentClickCloser, true)
+
+  // Adiciona listeners de clique aos gatilhos
+  const triggers = document.querySelectorAll('.editor-container .dropdown > button')
+  triggers.forEach(btn => {
+    const handler = e => {
+      e.preventDefault()
+      e.stopPropagation()
+      const dropdown = btn.closest('.dropdown')
+      if (!dropdown) return
+      // Fecha outros
+      document.querySelectorAll('.dropdown.open').forEach(d => {
+        if (d !== dropdown) d.classList.remove('open')
+      })
+      // Alterna atual
+      dropdown.classList.toggle('open')
+    }
+    btn.addEventListener('click', handler)
+    dropdownClickHandlers.push({ btn, handler })
+  })
+
+  // Observação: não interrompemos a propagação dentro do conteúdo para permitir
+  // que os cliques cheguem ao listener delegado da toolbar
+}
+
+function removeClickDropdowns() {
+  dropdownClickHandlers.forEach(({ btn, handler }) => {
+    btn.removeEventListener('click', handler)
+  })
+  dropdownClickHandlers = []
+  if (documentClickCloser) {
+    document.removeEventListener('click', documentClickCloser, true)
+    documentClickCloser = null
+  }
+  // Garante que nenhum permaneça aberto
+  document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'))
+}
+
 /**
  * Verifica se existem lembretes pendentes que ainda não foram notificados
  * nesta sessão do navegador e exibe o toast para eles.
@@ -1236,6 +1734,10 @@ async function initializeExtension() {
   applyUiSettings(settings)
 
   await loadSavedTheme()
+  // Aplica comportamento de dropdowns conforme preferência global
+  if (typeof applyDropdownBehaviorSetting === 'function') {
+    await applyDropdownBehaviorSetting()
+  }
   SpeechService.initialize() // Inicializa o serviço de reconhecimento de voz
   observeForTextArea()
   document.addEventListener('keydown', handleShortcutListener)
@@ -1702,7 +2204,7 @@ function adjustGoToTopButtonPosition(fabPosition) {
   if (!goToTopButton) return
 
   // Se o FAB estiver em qualquer canto direito, move o botão 'Ir ao Topo' para a esquerda.
-  if (fabPosition.includes('bottom-right')) {
+  if (fabPosition.includes('right')) {
     goToTopButton.style.left = '25px'
     goToTopButton.style.right = 'auto'
   } else {
@@ -1857,6 +2359,30 @@ async function applyGlobalVisibilitySettings() {
     // A visibilidade do botão também depende do scroll, então usamos uma classe
     goToTopButton.style.display = visibility.goToTop === false ? 'none' : ''
   }
+}
+
+/**
+ * Atualiza os rótulos dos botões de formatação em todas as toolbars abertas.
+ */
+async function updateAllToolbarButtonLabels() {
+  const settings = await getSettings()
+  const buttonLabelType = settings.uiSettings?.buttonLabelType || 'symbol'
+  
+  // Define os rótulos baseado na configuração
+  const boldLabel = buttonLabelType === 'text' ? '<b>Negrito</b>' : '<b>B</b>'
+  const italicLabel = buttonLabelType === 'text' ? '<i>Itálico</i>' : '<i>I</i>'
+  const underlineLabel = buttonLabelType === 'text' ? '<u>Sublinhado</u>' : '<u>U</u>'
+  
+  // Atualiza todas as toolbars abertas
+  document.querySelectorAll('.editor-container').forEach(container => {
+    const boldBtn = container.querySelector('[data-action="bold"]')
+    const italicBtn = container.querySelector('[data-action="italic"]')
+    const underlineBtn = container.querySelector('[data-action="underline"]')
+    
+    if (boldBtn) boldBtn.innerHTML = boldLabel
+    if (italicBtn) italicBtn.innerHTML = italicLabel
+    if (underlineBtn) underlineBtn.innerHTML = underlineLabel
+  })
 }
 
 function applyAllVisibilitySettings() {

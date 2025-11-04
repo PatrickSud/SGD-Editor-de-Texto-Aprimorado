@@ -247,6 +247,9 @@ function createPreviewContainer(textArea, instanceId) {
     <button type="button" id="preview-pin-btn-${instanceId}" class="preview-pin-btn" title="Fixar/Liberar tamanho do painel">
         📌
     </button>
+    <button type="button" id="preview-layout-btn-${instanceId}" class="preview-layout-btn" title="Alternar para visualização vertical">
+        ↔️
+    </button>
     <div class="preview-scroll-wrapper">
         <div id="preview-content-${instanceId}" class="preview-content"></div>
     </div>

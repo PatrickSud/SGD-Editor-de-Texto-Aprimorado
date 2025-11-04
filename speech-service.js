@@ -227,13 +227,100 @@ const SpeechService = (() => {
   }
 
   /**
+   * Verifica e solicita permissão para usar o microfone.
+   */
+  async function requestMicrophonePermission() {
+    try {
+      // Verifica se getUserMedia está disponível
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('API de mídia não suportada')
+      }
+      
+      // Solicita acesso ao microfone através da API getUserMedia
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      // Para o stream imediatamente, só precisamos da permissão
+      stream.getTracks().forEach(track => track.stop())
+      return true
+    } catch (error) {
+      console.error('Erro ao solicitar permissão do microfone:', error)
+      console.log('Tipo do erro:', error.name)
+      console.log('Mensagem do erro:', error.message)
+      
+      // Verifica se é erro de política de permissões (verificação prioritária)
+      // O erro de política aparece como "Permission denied" mas com violação de política no console
+      if (error.name === 'NotAllowedError' && error.message === 'Permission denied') {
+        console.log('Erro de política detectado (Permission denied), lançando POLICY_VIOLATION')
+        throw new Error('POLICY_VIOLATION')
+      }
+      
+      // Verifica outras variações de erro de política
+      if ((error.message && error.message.includes('Permissions policy')) ||
+          (error.message && error.message.includes('permissions policy')) ||
+          (error.message && error.message.includes('policy'))) {
+        console.log('Erro de política detectado (mensagem), lançando POLICY_VIOLATION')
+        throw new Error('POLICY_VIOLATION')
+      }
+      
+      // Para outros erros, também lança exceção para ser tratada no catch externo
+      throw error
+    }
+  }
+
+  /**
    * Inicia a sessão de reconhecimento de voz.
    */
-  function start(textArea) {
+  async function start(textArea) {
     if (isListening) return
     if (!recognition) {
       console.error(
         'Editor SGD: Serviço de reconhecimento de voz não inicializado.'
+      )
+      return
+    }
+
+    // Solicita permissão do microfone antes de iniciar
+    try {
+      await requestMicrophonePermission()
+    } catch (error) {
+      console.error('Erro ao verificar permissão do microfone:', error)
+      
+      // Tratamento específico para violação de política de permissões (verificação prioritária)
+      if (error.message === 'POLICY_VIOLATION') {
+        showNotification(
+          'Esta página tem restrições de segurança que impedem o uso do microfone. O reconhecimento de voz não está disponível aqui. Tente usar em outra página do SGD.',
+          'error',
+          20000, // 20 segundos para fechamento automático
+          null, // onClick callback
+          true // Mostra botão dispensar
+        )
+        return
+      }
+      
+      // Tratamento para permissão negada pelo usuário
+      if (error.name === 'NotAllowedError') {
+        showNotification(
+          'Permissão do microfone foi negada. Por favor, permita o acesso ao microfone nas configurações do navegador e tente novamente.',
+          'error',
+          6000
+        )
+        return
+      }
+      
+      // Tratamento para microfone não encontrado
+      if (error.name === 'NotFoundError') {
+        showNotification(
+          'Nenhum microfone foi encontrado. Verifique se há um microfone conectado.',
+          'error',
+          4000
+        )
+        return
+      }
+      
+      // Outros erros
+      showNotification(
+        'Erro ao acessar o microfone. Verifique se o navegador suporta reconhecimento de voz e se há um microfone conectado.',
+        'error',
+        5000
       )
       return
     }
@@ -263,6 +350,27 @@ const SpeechService = (() => {
       console.error('Editor SGD: Erro ao iniciar o reconhecimento de voz.', e)
       isListening = false
       updateMicButtonState(false)
+      
+      // Tratamento específico para diferentes tipos de erro
+      if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
+        showNotification(
+          'Permissão do microfone foi negada. Por favor, permita o acesso ao microfone nas configurações do navegador e tente novamente.',
+          'error',
+          6000
+        )
+      } else if (e.name === 'NotFoundError') {
+        showNotification(
+          'Nenhum microfone foi encontrado. Verifique se há um microfone conectado.',
+          'error',
+          4000
+        )
+      } else {
+        showNotification(
+          'Erro ao acessar o microfone. Verifique as configurações do navegador.',
+          'error',
+          4000
+        )
+      }
     }
   }
 
@@ -366,11 +474,11 @@ const SpeechService = (() => {
   /**
    * Função pública para alternar (iniciar/parar) o reconhecimento de voz.
    */
-  function toggleRecognition(textArea) {
+  async function toggleRecognition(textArea) {
     if (isListening) {
       stop()
     } else {
-      start(textArea)
+      await start(textArea)
     }
   }
 
