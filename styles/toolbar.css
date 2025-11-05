@@ -970,8 +970,12 @@ button[data-action='speech-to-text']:disabled:hover {
 }
 
 /* Oculta o último divisor (após cor de destaque) na barra fixa */
-.fixed-toolbar [data-id="separator5"] {
-  display: none;
+.fixed-toolbar [data-id="separator5"],
+.fixed-toolbar.position-left [data-id="separator5"],
+.fixed-toolbar.position-right [data-id="separator5"],
+.fixed-toolbar.position-top [data-id="separator5"],
+.fixed-toolbar.position-bottom [data-id="separator5"] {
+  display: none !important;
 }
 
 /* --- DESTAQUE NO TEXTAREA BÁSICO ATIVO --- */

@@ -1757,6 +1757,66 @@ function removeClickDropdowns() {
  * nesta sessão do navegador e exibe o toast para eles.
  */
 
+/**
+ * Configura os atalhos de teclado para um textarea do Editor Básico.
+ * @param {HTMLTextAreaElement} textArea - O textarea que receberá os atalhos.
+ */
+function setupBasicEditorKeyboardShortcuts(textArea) {
+  const handleKeydown = e => {
+    // Não processa se houver popup de atalhos aberto
+    if (document.getElementById('shortcut-popup')) return
+    
+    const ctrl = e.ctrlKey
+    const alt = e.altKey
+    const shift = e.shiftKey
+    const key = e.key.toLowerCase()
+    
+    // Atalhos básicos de formatação
+    if (ctrl && !alt && !shift) {
+      switch (key) {
+        case 'b':
+          e.preventDefault()
+          applyFormatting(textArea, 'strong')
+          return
+        case 'i':
+          e.preventDefault()
+          applyFormatting(textArea, 'em')
+          return
+        case 'u':
+          e.preventDefault()
+          applyFormatting(textArea, 'u')
+          return
+        case 'm':
+          e.preventDefault()
+          insertBullet(textArea)
+          return
+      }
+    }
+    
+    // Atalhos com Ctrl+Alt
+    if (ctrl && alt && !shift) {
+      switch (key) {
+        case 'h':
+          e.preventDefault()
+          openLinkModal(textArea)
+          return
+      }
+    }
+    
+    // Atalho para inserir nome de usuário (Alt+Shift+U)
+    if (!ctrl && alt && shift && e.key === 'U') {
+      e.preventDefault()
+      insertUserName(textArea)
+      return
+    }
+  }
+  
+  textArea.addEventListener('keydown', handleKeydown)
+  
+  // Listener para colar imagens
+  textArea.addEventListener('paste', e => handleImagePaste(e, textArea))
+}
+
 async function initializeExtension() {
   const settings = await getSettings()
   applyUiSettings(settings)
@@ -1838,6 +1898,12 @@ async function initializeExtension() {
 
     // Adiciona destaque
     e.target.classList.add('basic-editor-focused')
+    
+    // Adiciona listeners de atalhos se ainda não existir
+    if (!e.target._basicEditorShortcutsAdded) {
+      e.target._basicEditorShortcutsAdded = true
+      setupBasicEditorKeyboardShortcuts(e.target)
+    }
   })
 
   // 3. Listener global para 'focusout' (esconde a barra)
