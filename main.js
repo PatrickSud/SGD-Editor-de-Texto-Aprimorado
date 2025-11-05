@@ -55,6 +55,11 @@ let temporaryGreetingClosing = {
 
 let draggedGcItem = null; // Variável global para rastrear o item arrastado
 
+// --- NOVAS VARIÁVEIS GLOBAIS PARA EDITOR BÁSICO ---
+let activeBasicEditor = null
+let hideToolbarTimeout = null
+let sharedToolbarInitialized = false
+
 /**
  * Extrai apenas o conteúdo interno do texto, removendo saudação e encerramento.
  * @param {string} fullText - O texto completo do textarea.
@@ -299,17 +304,16 @@ const {
   const editorContainer = document.createElement('div')
   editorContainer.id = `editor-container-${instanceId}`
   editorContainer.classList.add('editor-container')
-  editorContainer.innerHTML = await createEditorToolbarHtml(
-    instanceId,
+  editorContainer.innerHTML = await createEditorToolbarHtml(instanceId, {
+    includePreview,
     includeQuickSteps,
     includeThemeToggle,
-    includePreview,
     includeNotes,
     includeReminders,
     includeManageSteps,
     includeUsername,
     includeQuickStepsDropdown
-  )
+  })
 
   if (textArea.parentNode) {
     textArea.parentNode.insertBefore(masterContainer, textArea)
@@ -470,42 +474,36 @@ function isOperaBrowser() {
 
 /**
  * Cria o HTML da toolbar do editor.
+ * (Função ATUALIZADA para aceitar 'options' e corrigir o erro de digitação)
  * @param {string} instanceId - ID da instância.
- * @param {boolean} includeQuickSteps - Se deve incluir o botão de Trâmites Rápidos.
- * @param {boolean} includeThemeToggle - Se deve incluir o botão de Tema.
- * @param {boolean} includePreview - Se deve incluir o botão de Alternar Visualização.
- * @param {boolean} includeNotes - Se deve incluir o botão de Anotações.
- * @param {boolean} includeReminders - Se deve incluir os botões de Lembretes.
- * @returns {Promise<string>} O HTML da toolbar. (Retorno agora é uma Promise)
+ * @param {object} options - Objeto contendo flags booleanas para inclusão de botões.
+ * @returns {Promise<string>} O HTML da toolbar.
  */
-async function createEditorToolbarHtml(
-  instanceId,
-  includeQuickSteps,
-  includeThemeToggle,
-  includePreview,
-  includeNotes,
-  includeReminders,
-  includeManageSteps = true,
-  includeUsername = true,
-  includeQuickStepsDropdown = true
-) {
-  const settings = await getSettings() // Carrega as configurações
-  const buttonsVisibility =
-    settings.toolbarButtons || DEFAULT_SETTINGS.toolbarButtons
+async function createEditorToolbarHtml(instanceId, options = {}) {
+  const {
+    includePreview = false,
+    includeQuickSteps = false,
+    includeThemeToggle = false,
+    includeNotes = false,
+    includeReminders = false,
+    includeManageSteps = true,
+    includeUsername = true,
+    includeQuickStepsDropdown = true,
+    includeAI = true,
+    includeEmoji = true,
+    includeQuickChange = true,
+    includeFormatting = true,
+    includeLists = true,
+    includeLink = true,
+    includeImage = true,
+    includeColors = true
+  } = options
+
+  const settings = await getSettings()
+  const buttonsVisibility = settings.toolbarButtons || DEFAULT_SETTINGS.toolbarButtons
   const uiSettings = settings.uiSettings || DEFAULT_SETTINGS.uiSettings
   const buttonLabelType = uiSettings.buttonLabelType || 'symbol'
 
-  // Debug: Log das configurações carregadas
-  console.log(
-    'Editor SGD: Debug configurações - settings.toolbarButtons:',
-    settings.toolbarButtons
-  )
-  console.log(
-    'Editor SGD: Debug configurações - buttonsVisibility.username:',
-    buttonsVisibility.username
-  )
-
-  // ADICIONAR ESTA VERIFICAÇÃO NO INÍCIO DA FUNÇÃO
   const isSpeechRecognitionSupported =
     window.SpeechRecognition || window.webkitSpeechRecognition
   const isOpera = isOperaBrowser()
@@ -517,28 +515,27 @@ async function createEditorToolbarHtml(
     ? 'Reconhecimento de voz não suportado no Opera'
     : 'Reconhecimento de voz não suportado neste navegador'
 
-  // --- LÓGICA DE VISIBILIDADE E RÓTULOS APLICADA ---
-
-  // Define os rótulos dos botões baseado na configuração
   const boldLabel = buttonLabelType === 'text' ? '<b>Negrito</b>' : '<b>B</b>'
   const italicLabel = buttonLabelType === 'text' ? '<i>Itálico</i>' : '<i>I</i>'
   const underlineLabel = buttonLabelType === 'text' ? '<u>Sublinhado</u>' : '<u>U</u>'
 
-  // Botões de formatação sempre visíveis
-  const formattingButtons = `
-    ${shouldShowMicButton ? `<button type="button" data-action="speech-to-text" class="shine-effect" title="${micButtonTitle}" ${micButtonDisabled}>🎤</button>
-    <div class="toolbar-separator" data-id="mic-separator"></div>` : ''}
-    <button type="button" data-action="bold" class="shine-effect" title="Negrito (Ctrl+B)">${boldLabel}</button>
-    <button type="button" data-action="italic" class="shine-effect" title="Itálico (Ctrl+I)">${italicLabel}</button>
-    <button type="button" data-action="underline" class="shine-effect" title="Sublinhado (Ctrl+U)">${underlineLabel}</button>
-    ${
-      buttonsVisibility.separator2
-        ? '<div class="toolbar-separator" data-id="separator2"></div>'
-        : ''
-    }
-  `
+  const micButton = (shouldShowMicButton && buttonsVisibility.speechToText !== false)
+    ? `<button type="button" data-action="speech-to-text" class="shine-effect" title="${micButtonTitle}" ${micButtonDisabled}>🎤</button>
+       <div class="toolbar-separator" data-id="mic-separator"></div>`
+    : ''
 
-  const listButtons = `
+  const formattingButtons = includeFormatting
+    ? `
+      ${micButton}
+      <button type="button" data-action="bold" class="shine-effect" title="Negrito (Ctrl+B)">${boldLabel}</button>
+      <button type="button" data-action="italic" class="shine-effect" title="Itálico (Ctrl+I)">${italicLabel}</button>
+      <button type="button" data-action="underline" class="shine-effect" title="Sublinhado (Ctrl+U)">${underlineLabel}</button>
+      ${buttonsVisibility.separator2 ? '<div class="toolbar-separator" data-id="separator2"></div>' : ''}
+    `
+    : ''
+
+  const listButtons = includeLists && buttonsVisibility.lists !== false
+    ? `
       <div class="dropdown">
         <button type="button" data-action="list" class="shine-effect" title="Listas (Numeração Dinâmica)">☰</button>
         <div class="dropdown-content">
@@ -547,59 +544,32 @@ async function createEditorToolbarHtml(
           <button type="button" data-action="lettered">A. Letra</button>
         </div>
       </div>
-      <button type="button" data-action="bullet" class="shine-effect" title="Adicionar Marcador (Ctrl+M)">&bull;</button>
-      ${
-        buttonsVisibility.separator3
-          ? '<div class="toolbar-separator" data-id="separator3"></div>'
-          : ''
-      }
+      ${buttonsVisibility.bullet !== false ? `<button type="button" data-action="bullet" class="shine-effect" title="Adicionar Marcador (Ctrl+M)">&bull;</button>` : ''}
+      ${buttonsVisibility.separator3 ? '<div class="toolbar-separator" data-id="separator3"></div>' : ''}
     `
+    : ''
 
   const canInsertUsername = isUserNameInsertionAvailable()
-
-  // Debug: Log das condições de visibilidade do botão username
-  console.log(
-    'Editor SGD: Debug botão username - buttonsVisibility.username:',
-    buttonsVisibility.username,
-    'canInsertUsername:',
-    canInsertUsername,
-    'includeUsername:',
-    includeUsername
-  )
-
-  const insertButtons = `
-      <button type="button" data-action="link" class="shine-effect" title="Inserir Hiperlink (Ctrl+Alt+H)">🔗</button>
-      ${
-        buttonsVisibility.insertImage
-          ? '<button type="button" data-action="insert-image" class="shine-effect" title="Inserir Imagem (Ctrl+V)">📸</button>'
-          : ''
-      }
-      ${
-        buttonsVisibility.username !== false &&
-        canInsertUsername &&
-        includeUsername
-          ? '<button type="button" data-action="username" class="shine-effect" title="Inserir Nome do Usuário (Alt+Shift+U)">🏷️</button>'
-          : ''
-      }
-      ${
-        buttonsVisibility.separator4
-          ? '<div class="toolbar-separator" data-id="separator4"></div>'
-          : ''
-      }
+  const insertButtons = (includeLink && buttonsVisibility.link !== false) || (includeImage && buttonsVisibility.insertImage !== false) || (includeUsername && buttonsVisibility.username !== false && canInsertUsername)
+    ? `
+      ${includeLink && buttonsVisibility.link !== false ? `<button type="button" data-action="link" class="shine-effect" title="Inserir Hiperlink (Ctrl+Alt+H)">🔗</button>` : ''}
+      ${includeImage && buttonsVisibility.insertImage !== false ? `<button type="button" data-action="insert-image" class="shine-effect" title="Inserir Imagem (Ctrl+V)">📸</button>` : ''}
+      ${includeUsername && buttonsVisibility.username !== false && canInsertUsername ? `<button type="button" data-action="username" class="shine-effect" title="Inserir Nome do Usuário (Alt+Shift+U)">🏷️</button>` : ''}
+      ${buttonsVisibility.separator4 ? '<div class="toolbar-separator" data-id="separator4"></div>' : ''}
     `
+    : ''
 
-  const colorButtons = `
-      <button type="button" data-action="emoji" class="shine-effect" title="Emojis (Código HTML)">😀</button>
-      <button type="button" data-action="color" class="shine-effect" title="Cor do Texto">🎨</button>
-      <button type="button" data-action="highlight" class="shine-effect" title="Cor de Destaque">🖌️</button>
-      ${
-        buttonsVisibility.separator5
-          ? '<div class="toolbar-separator" data-id="separator5"></div>'
-          : ''
-      }
+  const colorButtons = includeColors && (buttonsVisibility.color !== false || buttonsVisibility.highlight !== false || (includeEmoji && buttonsVisibility.emoji !== false))
+    ? `
+      ${includeEmoji && buttonsVisibility.emoji !== false ? `<button type="button" data-action="emoji" class="shine-effect" title="Emojis (Código HTML)">😀</button>` : ''}
+      ${includeColors && buttonsVisibility.color !== false ? `<button type="button" data-action="color" class="shine-effect" title="Cor do Texto">🎨</button>` : ''}
+      ${includeColors && buttonsVisibility.highlight !== false ? `<button type="button" data-action="highlight" class="shine-effect" title="Cor de Destaque">🖌️</button>` : ''}
+      ${instanceId === 'shared-basic' ? `<button type="button" data-action="move-toolbar" class="move-toolbar-btn" title="Mover Barra de Ferramentas">⇅</button>` : ''}
+      ${buttonsVisibility.separator5 ? '<div class="toolbar-separator" data-id="separator5"></div>' : ''}
     `
+    : ''
 
-  const quickChangeButton = buttonsVisibility.quickChange
+  const quickChangeButton = includeQuickChange && buttonsVisibility.quickChange
     ? `
     <div class="dropdown">
       <button type="button" data-action="quick-change" class="shine-effect" title="Trocar Saudação/Encerramento">🔄</button>
@@ -611,14 +581,14 @@ async function createEditorToolbarHtml(
     : ''
 
   const quickStepsHtml =
-    includeQuickSteps && includeQuickStepsDropdown
+    includeQuickSteps && includeQuickStepsDropdown && buttonsVisibility.quickSteps
       ? `<div class="dropdown">
         <button type="button" data-action="quick-steps" class="shine-effect" title="Trâmites Rápidos">⚡</button>
         <div class="dropdown-content quick-steps-dropdown"></div>
       </div>`
       : ''
 
-  const remindersHtml = includeReminders
+  const remindersHtml = includeReminders && buttonsVisibility.reminders
     ? `
       <div class="dropdown">
         <button type="button" class="shine-effect" title="Lembretes">⏰</button>
@@ -630,7 +600,7 @@ async function createEditorToolbarHtml(
     `
     : ''
 
-  const notesButtonHtml = includeNotes
+  const notesButtonHtml = includeNotes && buttonsVisibility.notes
     ? `<button type="button" data-action="toggle-notes" class="shine-effect" title="Anotações">✍️</button>`
     : ''
 
@@ -654,13 +624,12 @@ async function createEditorToolbarHtml(
   }
 
   const togglePreviewHtml = includePreview
-    ? `<button type="button" data-action="toggle-preview" class="shine-effect" title="Ocultar Visualização (Ctrl+Alt+V)">📝</button>`
+    ? `<button type="button" data-action="toggle-preview" class="shine-effect" title="Mostrar Visualização (Ctrl+Alt+V)">👁️</button>`
     : ''
 
-  let aiButtonsHtml = ''
   const devMode = await isDevModeEnabled()
-
-  if (devMode) {
+  let aiButtonsHtml = ''
+  if (includeAI && devMode) {
     aiButtonsHtml = `
       <div class="dropdown">
         <button type="button" title="Recursos de IA (Gemini)" class="ai-master-button enhanced-btn">✨</button>
@@ -668,20 +637,20 @@ async function createEditorToolbarHtml(
           <button type="button" data-action="ai-correct">🪄 Melhorar Texto</button>
           <button type="button" data-action="ai-generate">💡 Gerar por Tópicos</button>
           <button type="button" data-action="ai-complete-draft">🚀 Completar Rascunho</button>
-          ${
-            instanceId === 'main'
-              ? '<button type="button" data-action="ai-summarize">📄 Resumir Solicitação</button>'
-              : ''
-          }
+          ${instanceId === 'main' ? '<button type="button" data-action="ai-summarize">📄 Resumir Solicitação</button>' : ''}
         </div>
       </div>
-      ${
-        buttonsVisibility.separator1
-          ? '<div class="toolbar-separator" data-id="separator1"></div>'
-          : ''
-      }
+      ${buttonsVisibility.separator1 ? '<div class="toolbar-separator" data-id="separator1"></div>' : ''}
     `
   }
+
+  const manageStepsButton = includeManageSteps
+    ? '<button type="button" data-action="manage-steps" class="shine-effect" title="Configurações">⚙️</button>'
+    : ''
+
+  const separator6 = (includeNotes || includeReminders || includeQuickSteps) && buttonsVisibility.separator6
+    ? '<div class="toolbar-separator" data-id="separator6"></div>'
+    : ''
 
   return `
     <div class="editor-toolbar">
@@ -691,24 +660,17 @@ async function createEditorToolbarHtml(
       ${insertButtons}
       ${colorButtons}
       
-      ${
-        includeManageSteps
-          ? '<button type="button" data-action="manage-steps" class="shine-effect" title="Configurações">⚙️</button>'
-          : ''
-      }
+      ${manageStepsButton}
       ${quickChangeButton}
       
       ${quickStepsHtml}
       ${remindersHtml}
       ${notesButtonHtml}
-      ${
-        buttonsVisibility.separator6
-          ? '<div class="toolbar-separator" data-id="separator6"></div>'
-          : ''
-      }
+      ${separator6}
       ${togglePreviewHtml}
       ${themeToggleHtml}
     </div>
+    
     <div id="emoji-picker-${instanceId}" class="picker"></div>
     <div id="color-picker-${instanceId}" class="picker"></div>
     <div id="highlight-picker-${instanceId}" class="picker"></div>
@@ -1755,7 +1717,7 @@ function setupClickDropdowns() {
   document.addEventListener('click', documentClickCloser, true)
 
   // Adiciona listeners de clique aos gatilhos
-  const triggers = document.querySelectorAll('.editor-container .dropdown > button')
+  const triggers = document.querySelectorAll('.editor-container .dropdown > button, .fixed-toolbar .dropdown > button')
   triggers.forEach(btn => {
     const handler = e => {
       e.preventDefault()
@@ -1847,7 +1809,272 @@ async function initializeExtension() {
   createAndInjectBellIcon()
   await updateNotificationStatus()
   createSpeechCommandHint()
+
+  // --- NOVA LÓGICA DO EDITOR BÁSICO GLOBAL ---
+  // 1. Inicializa a barra de ferramentas básica (ela começa oculta)
+  await initializeFixedBasicToolbar()
+
+  // 2. Listener global para 'focusin' (pega o foco em textareas)
+  document.addEventListener('focusin', e => {
+    if (e.target.tagName !== 'TEXTAREA') return
+
+    // Ignora o textarea que já tem o editor COMPLETO
+    if (e.target.closest('.editor-master-container')) {
+      // Se estamos focando no editor principal, escondemos o básico
+      const toolbar = document.getElementById('fixed-basic-toolbar')
+      if (toolbar) toolbar.classList.remove('visible')
+      activeBasicEditor = null
+      return
+    }
+
+    // É um textarea básico!
+    clearTimeout(hideToolbarTimeout)
+    activeBasicEditor = e.target
+
+    const toolbar = document.getElementById('fixed-basic-toolbar')
+    if (toolbar) {
+      toolbar.classList.add('visible')
+    }
+
+    // Adiciona destaque
+    e.target.classList.add('basic-editor-focused')
+  })
+
+  // 3. Listener global para 'focusout' (esconde a barra)
+  document.addEventListener('focusout', e => {
+    if (e.target.tagName !== 'TEXTAREA') return
+
+    // Remove o destaque
+    e.target.classList.remove('basic-editor-focused')
+
+    // Esconde a barra após um pequeno delay (permite cliques na própria barra)
+    hideToolbarTimeout = setTimeout(() => {
+      const toolbar = document.getElementById('fixed-basic-toolbar')
+      // Só esconde se o mouse não estiver sobre a barra
+      if (toolbar && !toolbar.matches(':hover')) {
+        toolbar.classList.remove('visible')
+        activeBasicEditor = null
+      }
+    }, 200)
+  })
+  // --- FIM DA NOVA LÓGICA ---
+
   observeForSscAttachmentField()
+}
+
+/**
+ * NOVO: Alterna a posição da barra de ferramentas fixa entre left, top, right, bottom.
+ */
+async function cycleToolbarPosition(toolbarElement) {
+  const positions = ['left', 'top', 'right', 'bottom']
+  let currentPosition = 'left'
+  
+  // Encontra a posição atual
+  for (const pos of positions) {
+    if (toolbarElement.classList.contains(`position-${pos}`)) {
+      currentPosition = pos
+      break
+    }
+  }
+  
+  // Calcula a próxima posição
+  const currentIndex = positions.indexOf(currentPosition)
+  const nextPosition = positions[(currentIndex + 1) % positions.length]
+  
+  // Remove todas as classes de posição
+  positions.forEach(pos => toolbarElement.classList.remove(`position-${pos}`))
+  
+  // Adiciona a nova classe de posição
+  toolbarElement.classList.add(`position-${nextPosition}`)
+  
+  // Salva a preferência no storage
+  const settings = await getSettings()
+  if (!settings.uiSettings) settings.uiSettings = {}
+  settings.uiSettings.toolbarPosition = nextPosition
+  await saveSettings(settings)
+}
+
+/**
+ * NOVO: Cria a barra de ferramentas básica fixa (Singleton)
+ * e a injeta no <body>.
+ */
+async function initializeFixedBasicToolbar() {
+  if (document.getElementById('fixed-basic-toolbar') || sharedToolbarInitialized) return
+  sharedToolbarInitialized = true
+
+  const sharedToolbar = document.createElement('div')
+  sharedToolbar.id = 'fixed-basic-toolbar'
+  // Começa oculta
+  sharedToolbar.className = 'fixed-toolbar'
+  
+  // Carrega a posição salva
+  const settings = await getSettings()
+  const savedPosition = settings.uiSettings?.toolbarPosition || 'left'
+  sharedToolbar.classList.add(`position-${savedPosition}`)
+
+  // Gera o HTML da barra de ferramentas com as opções básicas
+  sharedToolbar.innerHTML = await createEditorToolbarHtml('shared-basic', {
+    includePreview: false,
+    includeFormatting: true,
+    includeLists: true,
+    includeLink: true,
+    includeImage: true,
+    includeColors: true,
+    includeEmoji: true,
+    includeQuickChange: false,
+    includeManageSteps: false,
+    includeUsername: false,
+    includeAI: false,
+    includeQuickSteps: false,
+    includeReminders: false,
+    includeNotes: false,
+    includeThemeToggle: false
+  })
+
+  document.body.appendChild(sharedToolbar)
+  applyCurrentTheme(sharedToolbar)
+  setupSharedToolbarListeners(sharedToolbar)
+  // Aplica visibilidade das preferências também na barra fixa
+  updateToolbarButtonVisibility(sharedToolbar)
+}
+
+/**
+ * NOVO: Configura os listeners para a barra de ferramentas compartilhada.
+ */
+function setupSharedToolbarListeners(toolbarElement) {
+  // Impede que o textarea perca o foco ao clicar na barra de ferramentas
+  toolbarElement.addEventListener('mousedown', e => {
+    clearTimeout(hideToolbarTimeout)
+    if (activeBasicEditor) {
+      e.preventDefault()
+    }
+  })
+
+  // Dropdowns do editor básico: abrir/fechar via clique, independente do modo global
+  toolbarElement.addEventListener('click', e => {
+    const trigger = e.target.closest('.dropdown > button')
+    if (!trigger || !toolbarElement.contains(trigger)) return
+    e.preventDefault()
+    e.stopPropagation()
+    const dropdown = trigger.closest('.dropdown')
+    const willOpen = !dropdown.classList.contains('open')
+    toolbarElement.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'))
+    if (willOpen) dropdown.classList.add('open')
+  })
+  
+  // Bloqueia comportamento de hover nos dropdowns da barra fixa
+  toolbarElement.querySelectorAll('.dropdown').forEach(dropdown => {
+    const button = dropdown.querySelector(':scope > button')
+    const content = dropdown.querySelector('.dropdown-content')
+    if (!button || !content) return
+    
+    // Impede que eventos de mouse afetem a abertura/fechamento
+    const preventHover = e => {
+      e.stopPropagation()
+    }
+    button.addEventListener('mouseenter', preventHover)
+    button.addEventListener('mouseleave', preventHover)
+    content.addEventListener('mouseenter', preventHover)
+    content.addEventListener('mouseleave', preventHover)
+  })
+  
+  // Fecha ao clicar fora da barra
+  if (!toolbarElement._outsideClickHandler) {
+    toolbarElement._outsideClickHandler = ev => {
+      if (!toolbarElement.contains(ev.target)) {
+        toolbarElement.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'))
+      }
+    }
+    document.addEventListener('click', toolbarElement._outsideClickHandler, true)
+  }
+
+  // Listener de clique: executa as ações
+  toolbarElement.addEventListener('click', e => {
+    const button = e.target.closest('button[data-action]')
+    if (!button) return
+
+    // Ação de mover toolbar não precisa de editor ativo
+    if (button.dataset.action === 'move-toolbar') {
+      cycleToolbarPosition(toolbarElement)
+      return
+    }
+
+    if (!activeBasicEditor) {
+      showNotification('Clique em um campo de texto para editá-lo.', 'info')
+      return
+    }
+
+    switch (button.dataset.action) {
+      case 'bold':
+        applyFormatting(activeBasicEditor, 'strong')
+        break
+      case 'italic':
+        applyFormatting(activeBasicEditor, 'em')
+        break
+      case 'underline':
+        applyFormatting(activeBasicEditor, 'u')
+        break
+      case 'numbered':
+        insertListItem(activeBasicEditor, `<b>${getNextMainNumber(activeBasicEditor)}. </b>`)
+        break
+      case 'sub-numbered': {
+        const { main, sub } = getNextSubNumber(activeBasicEditor)
+        insertListItem(activeBasicEditor, `<b>${main}.${sub}. </b>`)
+        break
+      }
+      case 'lettered':
+        insertListItem(activeBasicEditor, `<b>${getNextLetter(activeBasicEditor)}. </b>`)
+        break
+      case 'bullet':
+        insertBullet(activeBasicEditor)
+        break
+      case 'link':
+        openLinkModal(activeBasicEditor)
+        break
+      case 'insert-image':
+        openImageUploadModal(activeBasicEditor)
+        break
+      // 'color', 'highlight', 'emoji', 'list' tratadas pelos próprios pickers/dropdowns
+    }
+
+    if (!['color', 'highlight', 'emoji', 'list'].includes(button.dataset.action)) {
+      activeBasicEditor.focus()
+    }
+  })
+
+  // Pickers de cor
+  createColorPicker(
+    document.getElementById('color-picker-shared-basic'),
+    color => {
+      if (activeBasicEditor) {
+        applyFormatting(activeBasicEditor, 'span', { style: `color:${color}` })
+        activeBasicEditor.focus()
+      }
+    }
+  )
+  setupPickerHover(toolbarElement, 'color', 'color-picker-shared-basic')
+
+  createColorPicker(
+    document.getElementById('highlight-picker-shared-basic'),
+    color => {
+      if (activeBasicEditor) {
+        applyFormatting(activeBasicEditor, 'span', { style: `background-color:${color}` })
+        activeBasicEditor.focus()
+      }
+    }
+  )
+  setupPickerHover(toolbarElement, 'highlight', 'highlight-picker-shared-basic')
+
+  createEmojiPicker(
+    document.getElementById('emoji-picker-shared-basic'),
+    emojiHtml => {
+      if (activeBasicEditor) {
+        insertAtCursor(activeBasicEditor, emojiHtml)
+        activeBasicEditor.focus()
+      }
+    }
+  )
+  setupPickerHover(toolbarElement, 'emoji', 'emoji-picker-shared-basic')
 }
 
 /**
@@ -2547,7 +2774,7 @@ async function updateAllToolbarButtonLabels() {
 
 function applyAllVisibilitySettings() {
   // Atualiza todas as barras de ferramentas
-  document.querySelectorAll('.editor-container').forEach(container => {
+  document.querySelectorAll('.editor-container, .fixed-toolbar').forEach(container => {
     updateToolbarButtonVisibility(container)
   })
   // Atualiza os elementos globais

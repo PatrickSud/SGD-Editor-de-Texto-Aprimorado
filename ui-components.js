@@ -915,8 +915,41 @@ function setupPickerHover(editorContainer, actionName, pickerId) {
   const positionPicker = () => {
     const buttonRect = button.getBoundingClientRect()
     const containerRect = editorContainer.getBoundingClientRect()
-    picker.style.top = `${buttonRect.bottom - containerRect.top + 5}px`
-    picker.style.left = `${buttonRect.left - containerRect.left}px`
+
+    if (editorContainer.classList.contains('fixed-toolbar')) {
+      // Ajusta conforme a posição da barra fixa
+      if (editorContainer.classList.contains('position-left')) {
+        // Abre à direita
+        picker.style.top = `${buttonRect.top - containerRect.top}px`
+        picker.style.left = `${containerRect.width + 2}px`
+        picker.style.right = 'auto'
+        picker.style.bottom = 'auto'
+      } else if (editorContainer.classList.contains('position-right')) {
+        // Abre à esquerda
+        picker.style.top = `${buttonRect.top - containerRect.top}px`
+        picker.style.right = `${containerRect.width + 2}px`
+        picker.style.left = 'auto'
+        picker.style.bottom = 'auto'
+      } else if (editorContainer.classList.contains('position-top')) {
+        // Abre abaixo
+        picker.style.top = `${containerRect.height + 2}px`
+        picker.style.left = `${buttonRect.left - containerRect.left}px`
+        picker.style.right = 'auto'
+        picker.style.bottom = 'auto'
+      } else if (editorContainer.classList.contains('position-bottom')) {
+        // Abre acima
+        picker.style.bottom = `${containerRect.height + 2}px`
+        picker.style.left = `${buttonRect.left - containerRect.left}px`
+        picker.style.top = 'auto'
+        picker.style.right = 'auto'
+      }
+    } else {
+      // Comportamento padrão: abaixo do botão, dentro do container
+      picker.style.top = `${buttonRect.bottom - containerRect.top + 1}px`
+      picker.style.left = `${buttonRect.left - containerRect.left}px`
+      picker.style.right = 'auto'
+      picker.style.bottom = 'auto'
+    }
 
     const pickerRect = picker.getBoundingClientRect()
     const viewportWidth = window.innerWidth
@@ -943,8 +976,8 @@ function setupPickerHover(editorContainer, actionName, pickerId) {
     }, 300)
   }
 
-  // Se o modo click estiver ativo, usa clique para abrir/fechar
-  if (document.body.classList.contains('dropdown-click-mode')) {
+  // No editor básico (fixed-toolbar), sempre usa clique para abrir/fechar
+  if (document.body.classList.contains('dropdown-click-mode') || editorContainer.classList.contains('fixed-toolbar')) {
     const clickHandler = e => {
       e.preventDefault()
       e.stopPropagation()
