@@ -464,10 +464,11 @@ function handleCategoryDragEnd(e) {
 
 /**
  * Abre o modal para adicionar ou editar uma mensagem rápida.
- * @param {object | null} data - Os dados da mensagem para edição, ou null para adicionar nova.
+ * @param {object | null} data - Os dados da mensagem para edição, ou um objeto com categoryId para pré-selecionar, ou null para adicionar nova.
  */
 async function openMessageModal(data = null) {
-  const isEditing = data !== null
+  // Verifica se é edição real (tem mais campos além de categoryId) ou apenas pré-seleção
+  const isEditing = data !== null && (data.title || data.message || data.id)
   const storedData = await getStoredData()
 
   // Segurança: Escapar nomes de categorias para as opções do select.
@@ -475,7 +476,7 @@ async function openMessageModal(data = null) {
     .map(
       c =>
         `<option value="${c.id}" ${
-          isEditing && data && c.id === data.categoryId ? 'selected' : ''
+          data && c.id === data.categoryId ? 'selected' : ''
         }>${escapeHTML(c.name)}</option>`
     )
     .join('')
@@ -1580,10 +1581,9 @@ function openShortcutModal(category, itemElement) {
             const shortcutSpan = document.createElement('span')
             shortcutSpan.className = 'qi-category-shortcut'
             shortcutSpan.textContent = escapeHTML(finalShortcut)
-            categoryName.parentNode.insertBefore(
-              shortcutSpan,
-              itemElement.querySelector('.qi-shortcut-btn')
-            )
+            // Insere o atalho após o nome da categoria, antes das ações
+            const actionsDiv = itemElement.querySelector('.qi-category-actions')
+            categoryName.parentNode.insertBefore(shortcutSpan, actionsDiv)
           }
         }
       }
@@ -2537,7 +2537,9 @@ async function openQuickInserterPanel() {
 
   // Botão Adicionar Novo
   document.getElementById('qi-add-new-btn').addEventListener('click', () => {
-    openMessageModal() // Abre o modal para adicionar um novo trâmite
+    // Passa a categoria ativa para pré-selecionar no modal (simula dados de edição)
+    const activeCategoryData = activeCategory !== 'all' ? { categoryId: activeCategory } : null
+    openMessageModal(activeCategoryData) // Abre o modal para adicionar um novo trâmite
   })
 
   // Listener para o botão de adicionar nova categoria
