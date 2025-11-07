@@ -2334,14 +2334,26 @@ function setupSolutionObserver(textArea) {
  * @param {HTMLTextAreaElement} textArea - O elemento textarea do editor principal.
  */
 function setupUserSelectionListener(textArea) {
-  const userSelect = document.getElementById('cadSscForm:usuario')
+  const userSelect = document.getElementById(typeof USER_NAME_SELECT_ID !== 'undefined' ? USER_NAME_SELECT_ID : 'cadSscForm:usuario')
   if (!userSelect) return
 
-  userSelect.addEventListener('change', () => {
-    // Pega o primeiro nome do usuário recém-selecionado.
+  const typedInput = document.getElementById(typeof USER_NAME_INPUT_ID !== 'undefined' ? USER_NAME_INPUT_ID : 'cadSscForm:nome')
+
+  const computeFirstName = () => {
+    if (userSelect.value === '-3') {
+      const typedValue = typedInput ? typedInput.value.trim() : ''
+      if (typedValue) {
+        return typedValue.split(' ')[0]
+      }
+      return 'Usuário'
+    }
     const selectedOption = userSelect.options[userSelect.selectedIndex]
-    const fullName = selectedOption.textContent.trim()
-    const newUserName = fullName.split(' ')[0] || 'Usuário'
+    const fullName = selectedOption ? selectedOption.textContent.trim() : ''
+    return (fullName.split(' ')[0] || 'Usuário')
+  }
+
+  const updateUserVariableSpans = () => {
+    const newUserName = computeFirstName()
     const capitalizedUserName =
       newUserName.charAt(0).toUpperCase() + newUserName.slice(1).toLowerCase()
 
@@ -2359,7 +2371,24 @@ function setupUserSelectionListener(textArea) {
         textArea.dispatchEvent(new Event('input', { bubbles: true }))
       }
     }
+  }
+
+  userSelect.addEventListener('change', () => {
+    updateUserVariableSpans()
   })
+
+  if (typedInput) {
+    typedInput.addEventListener('input', () => {
+      if (userSelect.value === '-3') {
+        updateUserVariableSpans()
+      }
+    })
+  }
+
+  // Atualiza imediatamente se já estiver em "Não cadastrado"
+  if (userSelect.value === '-3') {
+    updateUserVariableSpans()
+  }
 }
 
 /**

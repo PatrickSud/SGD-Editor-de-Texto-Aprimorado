@@ -101,6 +101,7 @@ const TRAMITES_TABLE_SELECTORS = [
  */
 const USER_NAME_SELECT_ID = 'cadSscForm:usuario'
 const USER_NAME_LOGGED_ID = 'td:usuario_nome'
+const USER_NAME_INPUT_ID = 'cadSscForm:nome'
 
 const THEMES = [
   'padrao',
