@@ -2051,12 +2051,14 @@ function createSpeechCommandHint() {
  * @param {object} notes - O objeto com as notas da versão de RELEASE_NOTES.
  */
 function showWhatsNewModal(notes) {
-  const featuresHtml = notes.features.map(feature => `<li>${feature}</li>`).join('');
+  const featuresHtml = notes.features
+    .map(feature => `<li style="margin-bottom: 8px;">${feature}</li>`)
+    .join('')
 
   const contentHtml = `
     <div class="whats-new-content">
       <p>Confira as principais novidades do <strong>SGD - Editor de Texto Aprimorado</strong>:</p>
-      <ul>${featuresHtml}</ul>
+      <ul style="margin-top: 8px;">${featuresHtml}</ul>
       <p>Esperamos que você goste das melhorias!</p>
     </div>
   `;

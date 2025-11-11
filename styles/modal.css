@@ -2773,4 +2773,11 @@ a.open-link-btn:hover {
   text-decoration: underline;
 }
 
+/* --- WHATS NEW (Notas da Versão) --- */
+.whats-new-content li > b:first-child {
+  color: var(--primary-color);
+}
+
+
+
 
