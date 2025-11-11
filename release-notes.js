@@ -1,6 +1,6 @@
 const RELEASE_NOTES = {
-  '2.9.5': {
-    title: "✨ Novidades da Versão 2.9.5",
+  '2.9.6': {
+    title: "✨ Novidades da Versão 2.9.6",
     features: [
       "<b>✨ O que há de novo?</b> <br>Agora você verá esta janela sempre que a extensão for atualizada com novidades.",
       "<b>Editor Básico:</b> Nova barra de ferramentas simplificada implementada no SGD, com suporte a atalhos de teclado para melhor usabilidade em qualquer área de texto.",
