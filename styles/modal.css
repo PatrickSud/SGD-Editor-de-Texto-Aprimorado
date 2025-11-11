@@ -473,6 +473,7 @@ a.open-link-btn:hover {
 }
 .se-modal-actions button[data-action='share-extension'] {
   color: #fff !important;
+  margin-right: auto; /* Move o botão Compartilhar para a esquerda */
 }
 .se-modal-actions button[data-action='share-extension']:hover,
 .se-modal-actions button[data-action='share-extension']:focus {
@@ -2313,7 +2314,6 @@ a.open-link-btn:hover {
     transform: scale(0.95);
   }
 }
-
 #reminders-list {
   display: flex;
   flex-direction: column;
@@ -2750,4 +2750,27 @@ a.open-link-btn:hover {
 .nested-section .collapsible-content {
   padding: 10px 0 5px 5px; /* Ajusta o preenchimento interno */
 }
+
+/* --- RODAPÉ DA VERSÃO NO MODAL DE CONFIGURAÇÕES --- */
+.modal-footer-version {
+  text-align: right;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border-color);
+  background-color: var(--background-main);
+  border-bottom-left-radius: var(--border-radius-md);
+  border-bottom-right-radius: var(--border-radius-md);
+}
+
+#extension-version-button {
+  font-size: 12px;
+  color: var(--text-color-muted);
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+#extension-version-button:hover {
+  color: var(--primary-color);
+  text-decoration: underline;
+}
+
 

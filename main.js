@@ -2985,3 +2985,65 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
   }
 })
+
+/**
+ * Função principal para inicializar todas as funcionalidades do editor.
+ */
+async function initializeEnhancedEditor() {
+  await loadSavedTheme()
+  const settings = await getSettings()
+  applyUiSettings(settings)
+
+  if (settings.preferences.dropdownBehavior === 'click') {
+    document.body.classList.add('dropdown-click-mode')
+  }
+
+  const observer = new MutationObserver(mutations => {
+    for (const mutation of mutations) {
+      if (mutation.addedNodes.length) {
+        findAndEnhanceTextareas()
+      }
+    }
+  })
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  })
+
+  findAndEnhanceTextareas()
+  await initializeNotesPanel()
+
+  // Verifica se o painel de atendimentos seguidos deve ser criado
+  initializeFollowedAttendancesPanel();
+
+  checkVersionAndShowWhatsNew();
+}
+
+// --- CONTROLE DE NOVIDADES DA VERSÃO ---
+
+/**
+ * Compara a versão atual com a última vista e exibe o modal de novidades se necessário.
+ */
+async function checkVersionAndShowWhatsNew() {
+  try {
+    const currentVersion = chrome.runtime.getManifest().version;
+    const lastSeenVersion = await getLastSeenVersion();
+
+    if (currentVersion !== lastSeenVersion) {
+      // Verifica se há notas de versão para a versão atual
+      if (RELEASE_NOTES && RELEASE_NOTES[currentVersion]) {
+        showWhatsNewModal(RELEASE_NOTES[currentVersion]);
+        await setLastSeenVersion(currentVersion);
+      }
+    }
+  } catch (error) {
+    console.error('Editor SGD: Erro ao verificar a versão para novidades.', error);
+  }
+}
+
+// --- INICIALIZAÇÃO SEGURA ---
+
+// Inicia a observação para encontrar o textarea principal quando o DOM estiver pronto.
+observeForTextArea()
+checkVersionAndShowWhatsNew()

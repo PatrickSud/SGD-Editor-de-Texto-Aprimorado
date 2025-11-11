@@ -101,17 +101,20 @@ function createReminderCardHtml(reminder, type) {
  * @param {string} title - Título do modal.
  * @param {string} contentHtml - Conteúdo HTML do corpo do modal.
  * @param {function(HTMLElement, Function): void | null} onSave - Callback executado ao salvar. Null se não houver botão de salvar.
- * @param {boolean} isManagementModal - Se é o modal de gerenciamento (muda os botões).
- * @param {string | null} modalId - ID opcional para o modal.
+ * @param {object} options - Opções para configurar o modal.
+ * @param {boolean} [options.isManagementModal=false] - Se é o modal de gerenciamento (muda os botões).
+ * @param {string|null} [options.modalId=null] - ID opcional para o modal.
+ * @param {boolean} [options.showShareButton=true] - Se deve mostrar o botão de compartilhar (apenas em management modal).
  * @returns {HTMLDivElement} O elemento modal criado.
  */
 function createModal(
   title,
   contentHtml,
   onSave,
-  isManagementModal = false,
-  modalId = null
+  options = {}
 ) {
+  const { isManagementModal = false, modalId = null, showShareButton = true } = options;
+
   const modal = document.createElement('div')
   modal.className = 'editor-modal'
 
@@ -123,8 +126,11 @@ function createModal(
 
   let buttonsHtml = ''
   if (isManagementModal) {
+    const shareBtnHtml = showShareButton
+      ? `<button type="button" data-action="share-extension" class="action-btn enhanced-btn">🔗 Compartilhar</button>`
+      : ''
     buttonsHtml =
-      `<button type="button" data-action="share-extension" class="action-btn enhanced-btn">🔗 Compartilhar</button>` +
+      shareBtnHtml +
       (onSave
         ? `<button type="button" id="modal-save-btn" class="action-btn enhanced-btn">Salvar Alterações</button>`
         : '') +
@@ -295,7 +301,7 @@ function showInfoModal(title, contentHtml) {
     title,
     contentHtml,
     null, // Sem botão de salvar
-    true // Usa o layout com botão "Fechar"
+    { isManagementModal: true, showShareButton: false }
   )
   document.body.appendChild(infoModal)
 }
@@ -387,7 +393,7 @@ function openImageUploadModal(textArea) {
       }
       reader.readAsDataURL(file)
     }
-  })
+  }, { modalId: 'image-size-modal'})
 
   document.body.appendChild(modal)
 }
@@ -429,7 +435,7 @@ function openImageSizeModal(textArea, imageDataUrl) {
     // Insere a imagem no editor
     insertAtCursor(textArea, imageHtml)
     closeModal()
-  }, false, 'image-size-modal')
+  }, { modalId: 'image-size-modal'})
 
   // Altera o texto do botão de "Salvar" para "Inserir"
   const saveBtn = modal.querySelector('#modal-save-btn')
@@ -715,8 +721,10 @@ async function openRemindersManagementModal() {
         </div>
         `,
     null,
-    false,
-    'reminders-management-modal'
+    {
+      isManagementModal: false,
+      modalId: 'reminders-management-modal'
+    }
   )
 
   const actionsContainer = modal.querySelector('.se-modal-actions')
@@ -1953,7 +1961,7 @@ function openSnoozeModal(reminder, onComplete) {
     'Adiar Lembrete',
     `<p>Adiar "${escapeHTML(reminder.title)}" para:</p>`,
     null,
-    true
+    { isManagementModal: true }
   )
 
   const actionsContainer = modal.querySelector('.se-modal-actions')
@@ -2036,4 +2044,33 @@ function createSpeechCommandHint() {
   `
   document.body.appendChild(hintContainer)
   return hintContainer
+}
+
+/**
+ * Exibe um modal com as novidades da versão.
+ * @param {object} notes - O objeto com as notas da versão de RELEASE_NOTES.
+ */
+function showWhatsNewModal(notes) {
+  const featuresHtml = notes.features.map(feature => `<li>${feature}</li>`).join('');
+
+  const contentHtml = `
+    <div class="whats-new-content">
+      <p>Confira as principais novidades do <strong>SGD - Editor de Texto Aprimorado</strong>:</p>
+      <ul>${featuresHtml}</ul>
+      <p>Esperamos que você goste das melhorias!</p>
+    </div>
+  `;
+
+  const modal = createModal(
+    notes.title,
+    contentHtml,
+    null, // Sem botão de salvar
+    {
+      isManagementModal: true,
+      modalId: 'whats-new-modal',
+      showShareButton: false
+    }
+  );
+
+  document.body.appendChild(modal);
 }

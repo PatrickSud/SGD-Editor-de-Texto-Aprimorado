@@ -53,6 +53,16 @@ async function loadQuickMessages(editorContainer) {
         ${shortcutDisplay}
       </h5>`
 
+    // Habilita renomear categoria por duplo clique (edição inline)
+    const nameEl = categoryContainer.querySelector('.category-name')
+    nameEl.addEventListener('dblclick', e => {
+      e.stopPropagation()
+      startInlineCategoryRename(nameEl, category.id, {
+        context: 'dropdown',
+        containerEl: categoryContainer
+      })
+    })
+
     // Filtra e ordena as mensagens pela propriedade 'order'.
     const messagesInCategory = data.messages
       .filter(m => m.categoryId === category.id)
@@ -74,7 +84,13 @@ async function loadQuickMessages(editorContainer) {
     categoryContainer
       .querySelector('.category-title')
       .addEventListener('click', e => {
-        e.currentTarget.parentElement.classList.toggle('collapsed')
+        const parent = e.currentTarget.parentElement
+        // Evita colapsar/expandir enquanto estiver editando o nome
+        if (parent.classList.contains('editing')) {
+          e.stopPropagation()
+          return
+        }
+        parent.classList.toggle('collapsed')
       })
 
     listContainer.appendChild(categoryContainer)
@@ -829,9 +845,7 @@ async function openManagementModal() {
     `
   }
 
-  const modal = createModal(
-    'Configurações',
-    `
+  const modalContentHtml = `
         <!-- 
         SEÇÕES INATIVADAS - Sugerido para remoção em próximas versões
         Motivo: Funcionalidades duplicadas com o Painel de Trâmites
@@ -979,13 +993,18 @@ async function openManagementModal() {
         </div>
         
         ${aiSettingsHtml}
-    `,
+    `
+
+  const modal = createModal(
+    'Configurações',
+    modalContentHtml,
     onSave,
-    true,
-    'management-modal'
+    { isManagementModal: true, modalId: 'management-modal' } // Passa o ID aqui
   )
 
   document.body.appendChild(modal)
+
+  // --- RENDERIZA AS SEÇÕES ---
 
   // Renderiza os checkboxes de visibilidade dos botões
   await renderButtonVisibilitySettings(modal)
@@ -1260,6 +1279,25 @@ async function openManagementModal() {
   //     }
   //     openQuickInserterPanel() // Abre o painel de inserção rápida
   //   })
+
+  // --- ADICIONA O RODAPÉ COM A VERSÃO ---
+  const versionFooter = document.createElement('div');
+  versionFooter.className = 'modal-footer-version';
+  const versionSpan = document.createElement('span');
+  versionSpan.id = 'extension-version-button';
+  versionSpan.title = 'Clique para ver as novidades da versão';
+  const currentVersion = chrome.runtime.getManifest().version;
+  versionSpan.textContent = `SGD Editor Aprimorado v${currentVersion}`;
+  versionFooter.appendChild(versionSpan);
+  modal.querySelector('.se-modal-content').appendChild(versionFooter);
+
+  versionSpan.addEventListener('click', () => {
+    if (typeof RELEASE_NOTES !== 'undefined' && RELEASE_NOTES[currentVersion]) {
+      showWhatsNewModal(RELEASE_NOTES[currentVersion]);
+    } else {
+      showNotification('Nenhuma nota de versão encontrada para a versão atual.', 'info');
+    }
+  });
 }
 
 /**
@@ -2452,6 +2490,13 @@ async function openQuickInserterPanel() {
           )
         })
 
+      // Habilita renomear categoria por duplo clique (edição inline)
+      const qiNameEl = categoryItem.querySelector('.qi-category-name')
+      qiNameEl.addEventListener('dblclick', e => {
+        e.stopPropagation()
+        startInlineCategoryRename(qiNameEl, cat.id, { context: 'panel' })
+      })
+
       categoriesList.appendChild(categoryItem)
     })
   }
@@ -3022,6 +3067,111 @@ async function openGreetingClosingModal(item, type, onComplete) {
       includeQuickStepsDropdown: false
     })
   }
+}
+
+/**
+ * Inicia a edição inline do nome de uma categoria (dropdown ou painel).
+ * Substitui o span pelo input, salva com Enter/blur e cancela com Escape.
+ * @param {HTMLElement} nameElement - O elemento que contém o nome (span).
+ * @param {string} categoryId - ID da categoria.
+ * @param {{context?: 'dropdown'|'panel', containerEl?: HTMLElement}} options
+ */
+function startInlineCategoryRename(nameElement, categoryId, options = {}) {
+  const context = options.context || 'dropdown'
+  const containerEl =
+    options.containerEl ||
+    nameElement.closest('.category-container') ||
+    nameElement.closest('.qi-category-item')
+
+  // Evita múltiplas ativações simultâneas
+  if (containerEl && containerEl.classList.contains('editing')) return
+  if (containerEl) containerEl.classList.add('editing')
+
+  const originalText = nameElement.textContent || ''
+  const input = document.createElement('input')
+  input.type = 'text'
+  input.value = originalText
+  input.className = 'inline-rename-input'
+  // Ajuste visual básico para caber no espaço do nome
+  try {
+    const width = Math.max(120, nameElement.offsetWidth || 0)
+    input.style.minWidth = '120px'
+    input.style.width = `${width}px`
+  } catch {}
+
+  // Substitui o elemento pelo input
+  nameElement.replaceWith(input)
+  input.focus()
+  input.select()
+
+  let finished = false
+  const cleanup = (newName, didSave) => {
+    if (finished) return
+    finished = true
+
+    const span = document.createElement('span')
+    span.className = nameElement.className || 'category-name'
+    span.textContent = newName != null ? newName : originalText
+    input.replaceWith(span)
+
+    // Restaura listeners de duplo clique
+    span.addEventListener('dblclick', e => {
+      e.stopPropagation()
+      startInlineCategoryRename(span, categoryId, { context, containerEl })
+    })
+
+    if (containerEl) containerEl.classList.remove('editing')
+  }
+
+  const doSave = async () => {
+    if (finished) return
+    const proposed = input.value.trim()
+    // Se não mudou, apenas fecha sem tocar no storage
+    if (proposed === (originalText || '').trim()) {
+      cleanup(originalText, false)
+      return
+    }
+    try {
+      await updateCategoryName(categoryId, proposed)
+      cleanup(proposed, true)
+      // Atualiza tooltip/title se existir (no painel)
+      const span = input.previousSibling // não existe mais; usar query após cleanup
+    } catch (error) {
+      const message =
+        (error && error.message) ||
+        'Falha ao renomear a categoria. Tente novamente.'
+      showNotification(message, 'error')
+      // Mantém foco para correção
+      input.focus()
+      input.select()
+    } finally {
+      // Recarrega outros dropdowns/painéis para refletir mudança
+      try {
+        reloadAllQuickMessagesInstances()
+      } catch {}
+    }
+  }
+
+  const onKeyDown = e => {
+    e.stopPropagation()
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      doSave()
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      cleanup(originalText, false)
+    }
+  }
+
+  input.addEventListener('keydown', onKeyDown, true)
+  input.addEventListener(
+    'blur',
+    () => {
+      // Salva ao perder foco
+      doSave()
+    },
+    { once: true }
+  )
 }
 
 /**
