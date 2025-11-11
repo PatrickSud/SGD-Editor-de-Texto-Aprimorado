@@ -1670,8 +1670,9 @@ function addSgdActionButtons(masterContainer) {
 }
 
 // --- CONTROLE DE COMPORTAMENTO DOS DROPDOWNS (hover/click) ---
-let dropdownClickHandlers = []
+let dropdownClickHandlers = [] // mantido por compatibilidade, não usamos mais handlers por botão
 let documentClickCloser = null
+let documentDropdownToggleDelegated = null
 
 async function applyDropdownBehaviorSetting() {
   const settings = await getSettings()
@@ -1701,7 +1702,7 @@ function removeHoverDropdowns() {
 
 function setupClickDropdowns() {
   // Evita múltiplas instalações
-  if (dropdownClickHandlers.length > 0) return
+  if (documentDropdownToggleDelegated) return
 
   // Fecha todos os dropdowns abertos
   const closeAll = () => {
@@ -1716,34 +1717,44 @@ function setupClickDropdowns() {
   }
   document.addEventListener('click', documentClickCloser, true)
 
-  // Adiciona listeners de clique aos gatilhos
-  const triggers = document.querySelectorAll('.editor-container .dropdown > button, .fixed-toolbar .dropdown > button')
-  triggers.forEach(btn => {
-    const handler = e => {
-      e.preventDefault()
-      e.stopPropagation()
-      const dropdown = btn.closest('.dropdown')
-      if (!dropdown) return
-      // Fecha outros
-      document.querySelectorAll('.dropdown.open').forEach(d => {
-        if (d !== dropdown) d.classList.remove('open')
-      })
-      // Alterna atual
-      dropdown.classList.toggle('open')
-    }
-    btn.addEventListener('click', handler)
-    dropdownClickHandlers.push({ btn, handler })
-  })
+  // Delegação: funciona para dropdowns na toolbar, barra fixa e modais
+  documentDropdownToggleDelegated = e => {
+    const trigger = e.target.closest('.dropdown > button')
+    if (!trigger) return
+    // Garante que seja um dropdown nosso (toolbar, barra fixa ou modal de nossa extensão)
+    if (!trigger.closest('.editor-container, .fixed-toolbar, .se-modal-content')) return
+    e.preventDefault()
+    e.stopPropagation()
+    const dropdown = trigger.closest('.dropdown')
+    if (!dropdown) return
+    // Fecha outros
+    document.querySelectorAll('.dropdown.open').forEach(d => {
+      if (d !== dropdown) d.classList.remove('open')
+    })
+    // Alterna atual
+    dropdown.classList.toggle('open')
+  }
+  document.addEventListener('click', documentDropdownToggleDelegated, true)
 
   // Observação: não interrompemos a propagação dentro do conteúdo para permitir
   // que os cliques cheguem ao listener delegado da toolbar
 }
 
 function removeClickDropdowns() {
-  dropdownClickHandlers.forEach(({ btn, handler }) => {
-    btn.removeEventListener('click', handler)
-  })
-  dropdownClickHandlers = []
+  // Remove delegação
+  if (documentDropdownToggleDelegated) {
+    document.removeEventListener('click', documentDropdownToggleDelegated, true)
+    documentDropdownToggleDelegated = null
+  }
+  // Remove handlers antigos caso existam
+  if (dropdownClickHandlers.length) {
+    dropdownClickHandlers.forEach(({ btn, handler }) => {
+      try {
+        btn.removeEventListener('click', handler)
+      } catch {}
+    })
+    dropdownClickHandlers = []
+  }
   if (documentClickCloser) {
     document.removeEventListener('click', documentClickCloser, true)
     documentClickCloser = null
