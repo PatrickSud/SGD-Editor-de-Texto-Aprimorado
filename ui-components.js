@@ -2059,7 +2059,8 @@ function showWhatsNewModal(notes) {
     <div class="whats-new-content">
       <p>Confira as principais novidades do <strong>SGD - Editor de Texto Aprimorado</strong>:</p>
       <ul style="margin-top: 8px;">${featuresHtml}</ul>
-      <p>Esperamos que você goste das melhorias!</p>
+      <p>Espero que goste das melhorias! Para reportar bugs ou sugerir melhorias, entre em contato comigo no Teams.</p>
+      <p>- Patrick Godoy</p>
     </div>
   `;
 
