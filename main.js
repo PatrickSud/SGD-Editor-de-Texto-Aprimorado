@@ -2063,6 +2063,7 @@ async function initializeExtension() {
   // --- FIM DA NOVA LÓGICA ---
 
   observeForSscAttachmentField()
+  observeForSolutionResponseRadio()
   await checkVersionAndShowWhatsNew()
 }
 
@@ -2393,6 +2394,28 @@ Obrigado.`
   if (sscDescricaoField) {
     fillSscField(sscDescricaoField).catch(console.error)
   }
+}
+
+function observeForSolutionResponseRadio() {
+  const apply = () => {
+    const targets = [
+      'cadSscForm:tipoRespostaCliente',
+      'sscForm:tipoRespostaCliente'
+    ]
+    targets.forEach(name => {
+      const radio = document.querySelector(
+        `input[type="radio"][name="${name}"][value="2"]`
+      )
+      if (radio && !radio.checked && !radio.disabled) {
+        radio.click()
+      }
+    })
+  }
+  const observer = new MutationObserver(() => apply())
+  if (document.body) {
+    observer.observe(document.body, { childList: true, subtree: true })
+  }
+  apply()
 }
 
 /**
