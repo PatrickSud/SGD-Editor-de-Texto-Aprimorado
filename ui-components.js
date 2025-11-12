@@ -2055,14 +2055,50 @@ function showWhatsNewModal(notes) {
     .map(feature => `<li style="margin-bottom: 8px;">${feature}</li>`)
     .join('')
 
+  const currentVersion = chrome.runtime.getManifest().version
+  const noteworthyVersion = currentVersion.split('.').slice(0, 3).join('.')
+  const majorKeys = Object.keys(typeof RELEASE_NOTES !== 'undefined' ? RELEASE_NOTES : {})
+    .filter(v => v !== noteworthyVersion)
+    .sort((a, b) => {
+      const pa = a.split('.').map(n => parseInt(n, 10))
+      const pb = b.split('.').map(n => parseInt(n, 10))
+      for (let i = 0; i < 3; i++) {
+        const d = pb[i] - pa[i]
+        if (d !== 0) return d
+      }
+      return 0
+    })
+  const previousHtml = majorKeys
+    .map(v => {
+      const rn = RELEASE_NOTES[v]
+      const fHtml = (rn.features || [])
+        .map(f => `<li style="margin-bottom: 8px;">${f}</li>`)
+        .join('')
+      let minorHtml = ''
+      if (typeof MINOR_RELEASE_NOTES !== 'undefined' && MINOR_RELEASE_NOTES[v]) {
+        const mf = MINOR_RELEASE_NOTES[v].reduce((acc, item) => acc.concat(item.features || []), [])
+        if (mf.length > 0) {
+          minorHtml = `<ul style="margin-top: 8px;">${mf
+            .map(f => `<li style="margin-bottom: 8px;">${f}</li>`)
+            .join('')}</ul>`
+        }
+      }
+      return `<div class="previous-version"><h4>${rn.title}</h4><ul style="margin-top: 8px;">${fHtml}</ul>${minorHtml}</div>`
+    })
+    .join('')
+
   const contentHtml = `
     <div class="whats-new-content">
       <p>Confira as principais novidades do <strong>SGD - Editor de Texto Aprimorado</strong>:</p>
       <ul style="margin-top: 8px;">${featuresHtml}</ul>
       <p>Espero que goste das melhorias! Para reportar bugs ou sugerir melhorias, entre em contato comigo no Teams.</p>
       <p>- Patrick Godoy</p>
+      <div style="margin-top: 12px; text-align: center;">
+        <a href="#" id="latest-updates-link" class="action-btn" style="display:inline-block;">Últimas Atualizações</a>
+        <div id="latest-updates-container" style="display:none; margin-top: 10px; text-align: left;">${previousHtml || '<p>Sem atualizações anteriores.</p>'}</div>
+      </div>
     </div>
-  `;
+  `
 
   const modal = createModal(
     notes.title,
@@ -2076,4 +2112,14 @@ function showWhatsNewModal(notes) {
   );
 
   document.body.appendChild(modal);
+  const link = modal.querySelector('#latest-updates-link')
+  const container = modal.querySelector('#latest-updates-container')
+  if (link && container) {
+    link.addEventListener('click', e => {
+      e.preventDefault()
+      const isHidden = container.style.display === 'none'
+      container.style.display = isHidden ? 'block' : 'none'
+      link.textContent = isHidden ? 'Ocultar Atualizações' : 'Últimas Atualizações'
+    })
+  }
 }

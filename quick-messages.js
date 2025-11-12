@@ -1291,9 +1291,13 @@ async function openManagementModal() {
   versionFooter.appendChild(versionSpan);
   modal.querySelector('.se-modal-content').appendChild(versionFooter);
 
+  // Normaliza a versão para MAJOR.MINOR.PATCH (ex.: usa "2.9.6" para "2.9.6.1")
+  const _versionParts = currentVersion.split('.');
+  const noteworthyVersion = _versionParts.slice(0, 3).join('.');
+
   versionSpan.addEventListener('click', () => {
-    if (typeof RELEASE_NOTES !== 'undefined' && RELEASE_NOTES[currentVersion]) {
-      showWhatsNewModal(RELEASE_NOTES[currentVersion]);
+    if (typeof RELEASE_NOTES !== 'undefined' && RELEASE_NOTES[noteworthyVersion]) {
+      showWhatsNewModal(RELEASE_NOTES[noteworthyVersion]);
     } else {
       showNotification('Nenhuma nota de versão encontrada para a versão atual.', 'info');
     }

@@ -14,6 +14,7 @@ const MAX_RESPONSE_SAMPLES = 30
 const FAB_POSITION_KEY = 'fabPositionData'
 const GREETINGS_CLOSINGS_KEY = 'greetingsAndClosingsData'
 const LAST_SEEN_VERSION_KEY = 'lastSeenVersion'
+const PENDING_MINOR_NOTES_KEY = 'pendingMinorNotes'
 
 /**
  * Separadores exclusivos para delimitar saudação e encerramento no texto.

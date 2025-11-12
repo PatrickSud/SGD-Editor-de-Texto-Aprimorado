@@ -53,7 +53,7 @@ let temporaryGreetingClosing = {
   closing: ''
 }
 
-let draggedGcItem = null; // Variável global para rastrear o item arrastado
+let draggedGcItem = null // Variável global para rastrear o item arrastado
 
 // --- NOVAS VARIÁVEIS GLOBAIS PARA EDITOR BÁSICO ---
 let activeBasicEditor = null
@@ -78,7 +78,10 @@ function extractContentParts(fullText) {
     greeting = fullText.substring(0, greetingIndex)
     // Se também há separador de encerramento
     if (closingIndex !== -1 && closingIndex > greetingIndex) {
-      content = fullText.substring(greetingIndex + GREETING_SEPARATOR.length, closingIndex)
+      content = fullText.substring(
+        greetingIndex + GREETING_SEPARATOR.length,
+        closingIndex
+      )
       closing = fullText.substring(closingIndex + CLOSING_SEPARATOR.length)
     } else {
       // Só tem saudação
@@ -108,25 +111,32 @@ async function addGreetingAndClosing(content, useTemporary = true) {
   let closing = ''
 
   // Tenta usar textos temporários salvos
-  if (useTemporary && (temporaryGreetingClosing.greeting || temporaryGreetingClosing.closing)) {
+  if (
+    useTemporary &&
+    (temporaryGreetingClosing.greeting || temporaryGreetingClosing.closing)
+  ) {
     greeting = temporaryGreetingClosing.greeting
     closing = temporaryGreetingClosing.closing
-    
+
     // Limpa o cache temporário após uso
     temporaryGreetingClosing = { greeting: '', closing: '' }
   } else {
     // Busca os padrões configurados
     const data = await getGreetingsAndClosings()
-    
+
     if (data.defaultGreetingId) {
-      const defaultGreeting = data.greetings.find(g => g.id === data.defaultGreetingId)
+      const defaultGreeting = data.greetings.find(
+        g => g.id === data.defaultGreetingId
+      )
       if (defaultGreeting) {
         greeting = await resolveVariablesInText(defaultGreeting.content)
       }
     }
-    
+
     if (data.defaultClosingId) {
-      const defaultClosing = data.closings.find(c => c.id === data.defaultClosingId)
+      const defaultClosing = data.closings.find(
+        c => c.id === data.defaultClosingId
+      )
       if (defaultClosing) {
         closing = await resolveVariablesInText(defaultClosing.content)
       }
@@ -137,7 +147,8 @@ async function addGreetingAndClosing(content, useTemporary = true) {
   let finalText = content
 
   if (greeting) {
-    finalText = greeting + GREETING_SEPARATOR + (content ? '\n' : '') + finalText
+    finalText =
+      greeting + GREETING_SEPARATOR + (content ? '\n' : '') + finalText
   }
 
   if (closing) {
@@ -173,7 +184,7 @@ function setupSituationListener(textArea) {
           // Adicionar saudação e encerramento
           const parts = extractContentParts(currentText)
           const newText = await addGreetingAndClosing(parts.content, true)
-          
+
           if (newText !== currentText) {
             textArea.value = newText
             textArea.dispatchEvent(new Event('input', { bubbles: true }))
@@ -187,7 +198,10 @@ function setupSituationListener(textArea) {
             const latestParts = extractContentParts(latestText)
             // Se por acaso removido, reinsere saudação/encerramento
             if (!latestParts.greeting && !latestParts.closing) {
-              const reapplied = await addGreetingAndClosing(latestParts.content, true)
+              const reapplied = await addGreetingAndClosing(
+                latestParts.content,
+                true
+              )
               if (reapplied !== latestText) {
                 textArea.value = reapplied
                 textArea.dispatchEvent(new Event('input', { bubbles: true }))
@@ -197,14 +211,14 @@ function setupSituationListener(textArea) {
         } else {
           // Remover saudação e encerramento (manter apenas conteúdo)
           const parts = extractContentParts(currentText)
-          
+
           // Salva temporariamente se houver saudação ou encerramento
           if (parts.greeting || parts.closing) {
             temporaryGreetingClosing = {
               greeting: parts.greeting,
               closing: parts.closing
             }
-            
+
             // Atualiza o textarea apenas com o conteúdo interno
             if (parts.content !== currentText) {
               textArea.value = parts.content
@@ -250,12 +264,16 @@ function observeForTextArea() {
  */
 async function initializeEditorInstance(textArea, instanceId, options = {}) {
   if (!textArea || textArea.dataset.enhanced) return
-  
+
   // --- INÍCIO: Injeção do Botão "Pesquisar Resposta" ---
   if (instanceId === 'main') {
-    const originalSearchButton = document.querySelector('input[value="Pesquisar Resposta"]')
+    const originalSearchButton = document.querySelector(
+      'input[value="Pesquisar Resposta"]'
+    )
     if (originalSearchButton) {
-      let labelSpan = document.querySelector(`[id$="${textArea.id.split(':').pop()}Label"]`)
+      let labelSpan = document.querySelector(
+        `[id$="${textArea.id.split(':').pop()}Label"]`
+      )
       // Fallback para páginas onde o ID do textarea não corresponde ao padrão do label
       if (!labelSpan) {
         labelSpan = document.querySelector('label[id$="descricaoTramiteLabel"]')
@@ -272,7 +290,9 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
             clonedSearchButton.title = 'Pesquisar Resposta'
             clonedSearchButton.addEventListener('click', e => {
               e.preventDefault()
-              const btn = document.querySelector('input[value="Pesquisar Resposta"]')
+              const btn = document.querySelector(
+                'input[value="Pesquisar Resposta"]'
+              )
               if (btn && typeof btn.click === 'function') {
                 btn.click()
               }
@@ -287,7 +307,7 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
   // --- FIM: Injeção do Botão ---
   textArea.dataset.enhanced = instanceId
 
-const {
+  const {
     includePreview,
     includeQuickSteps,
     includeThemeToggle,
@@ -500,7 +520,8 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
   } = options
 
   const settings = await getSettings()
-  const buttonsVisibility = settings.toolbarButtons || DEFAULT_SETTINGS.toolbarButtons
+  const buttonsVisibility =
+    settings.toolbarButtons || DEFAULT_SETTINGS.toolbarButtons
   const uiSettings = settings.uiSettings || DEFAULT_SETTINGS.uiSettings
   const buttonLabelType = uiSettings.buttonLabelType || 'symbol'
 
@@ -517,12 +538,14 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
 
   const boldLabel = buttonLabelType === 'text' ? '<b>Negrito</b>' : '<b>B</b>'
   const italicLabel = buttonLabelType === 'text' ? '<i>Itálico</i>' : '<i>I</i>'
-  const underlineLabel = buttonLabelType === 'text' ? '<u>Sublinhado</u>' : '<u>U</u>'
+  const underlineLabel =
+    buttonLabelType === 'text' ? '<u>Sublinhado</u>' : '<u>U</u>'
 
-  const micButton = (shouldShowMicButton && buttonsVisibility.speechToText !== false)
-    ? `<button type="button" data-action="speech-to-text" class="shine-effect" title="${micButtonTitle}" ${micButtonDisabled}>🎤</button>
+  const micButton =
+    shouldShowMicButton && buttonsVisibility.speechToText !== false
+      ? `<button type="button" data-action="speech-to-text" class="shine-effect" title="${micButtonTitle}" ${micButtonDisabled}>🎤</button>
        <div class="toolbar-separator" data-id="mic-separator"></div>`
-    : ''
+      : ''
 
   const formattingButtons = includeFormatting
     ? `
@@ -530,12 +553,17 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
       <button type="button" data-action="bold" class="shine-effect" title="Negrito (Ctrl+B)">${boldLabel}</button>
       <button type="button" data-action="italic" class="shine-effect" title="Itálico (Ctrl+I)">${italicLabel}</button>
       <button type="button" data-action="underline" class="shine-effect" title="Sublinhado (Ctrl+U)">${underlineLabel}</button>
-      ${buttonsVisibility.separator2 ? '<div class="toolbar-separator" data-id="separator2"></div>' : ''}
+      ${
+        buttonsVisibility.separator2
+          ? '<div class="toolbar-separator" data-id="separator2"></div>'
+          : ''
+      }
     `
     : ''
 
-  const listButtons = includeLists && buttonsVisibility.lists !== false
-    ? `
+  const listButtons =
+    includeLists && buttonsVisibility.lists !== false
+      ? `
       <div class="dropdown">
         <button type="button" data-action="list" class="shine-effect" title="Listas (Numeração Dinâmica)">☰</button>
         <div class="dropdown-content">
@@ -544,33 +572,89 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
           <button type="button" data-action="lettered">A. Letra</button>
         </div>
       </div>
-      ${buttonsVisibility.bullet !== false ? `<button type="button" data-action="bullet" class="shine-effect" title="Adicionar Marcador (Ctrl+M)">&bull;</button>` : ''}
-      ${buttonsVisibility.separator3 ? '<div class="toolbar-separator" data-id="separator3"></div>' : ''}
+      ${
+        buttonsVisibility.bullet !== false
+          ? `<button type="button" data-action="bullet" class="shine-effect" title="Adicionar Marcador (Ctrl+M)">&bull;</button>`
+          : ''
+      }
+      ${
+        buttonsVisibility.separator3
+          ? '<div class="toolbar-separator" data-id="separator3"></div>'
+          : ''
+      }
     `
-    : ''
+      : ''
 
   const canInsertUsername = isUserNameInsertionAvailable()
-  const insertButtons = (includeLink && buttonsVisibility.link !== false) || (includeImage && buttonsVisibility.insertImage !== false) || (includeUsername && buttonsVisibility.username !== false && canInsertUsername)
-    ? `
-      ${includeLink && buttonsVisibility.link !== false ? `<button type="button" data-action="link" class="shine-effect" title="Inserir Hiperlink (Ctrl+Alt+H)">🔗</button>` : ''}
-      ${includeImage && buttonsVisibility.insertImage !== false ? `<button type="button" data-action="insert-image" class="shine-effect" title="Inserir Imagem (Ctrl+V)">📸</button>` : ''}
-      ${includeUsername && buttonsVisibility.username !== false && canInsertUsername ? `<button type="button" data-action="username" class="shine-effect" title="Inserir Nome do Usuário (Alt+Shift+U)">🏷️</button>` : ''}
-      ${buttonsVisibility.separator4 ? '<div class="toolbar-separator" data-id="separator4"></div>' : ''}
+  const insertButtons =
+    (includeLink && buttonsVisibility.link !== false) ||
+    (includeImage && buttonsVisibility.insertImage !== false) ||
+    (includeUsername &&
+      buttonsVisibility.username !== false &&
+      canInsertUsername)
+      ? `
+      ${
+        includeLink && buttonsVisibility.link !== false
+          ? `<button type="button" data-action="link" class="shine-effect" title="Inserir Hiperlink (Ctrl+Alt+H)">🔗</button>`
+          : ''
+      }
+      ${
+        includeImage && buttonsVisibility.insertImage !== false
+          ? `<button type="button" data-action="insert-image" class="shine-effect" title="Inserir Imagem (Ctrl+V)">📸</button>`
+          : ''
+      }
+      ${
+        includeUsername &&
+        buttonsVisibility.username !== false &&
+        canInsertUsername
+          ? `<button type="button" data-action="username" class="shine-effect" title="Inserir Nome do Usuário (Alt+Shift+U)">🏷️</button>`
+          : ''
+      }
+      ${
+        buttonsVisibility.separator4
+          ? '<div class="toolbar-separator" data-id="separator4"></div>'
+          : ''
+      }
     `
-    : ''
+      : ''
 
-  const colorButtons = includeColors && (buttonsVisibility.color !== false || buttonsVisibility.highlight !== false || (includeEmoji && buttonsVisibility.emoji !== false))
-    ? `
-      ${includeEmoji && buttonsVisibility.emoji !== false ? `<button type="button" data-action="emoji" class="shine-effect" title="Emojis (Código HTML)">😀</button>` : ''}
-      ${includeColors && buttonsVisibility.color !== false ? `<button type="button" data-action="color" class="shine-effect" title="Cor do Texto">🎨</button>` : ''}
-      ${includeColors && buttonsVisibility.highlight !== false ? `<button type="button" data-action="highlight" class="shine-effect" title="Cor de Destaque">🖌️</button>` : ''}
-      ${instanceId === 'shared-basic' ? `<button type="button" data-action="move-toolbar" class="move-toolbar-btn" title="Mover Barra de Ferramentas">⇅</button>` : ''}
-      ${buttonsVisibility.separator5 ? '<div class="toolbar-separator" data-id="separator5"></div>' : ''}
+  const colorButtons =
+    includeColors &&
+    (buttonsVisibility.color !== false ||
+      buttonsVisibility.highlight !== false ||
+      (includeEmoji && buttonsVisibility.emoji !== false))
+      ? `
+      ${
+        includeEmoji && buttonsVisibility.emoji !== false
+          ? `<button type="button" data-action="emoji" class="shine-effect" title="Emojis (Código HTML)">😀</button>`
+          : ''
+      }
+      ${
+        includeColors && buttonsVisibility.color !== false
+          ? `<button type="button" data-action="color" class="shine-effect" title="Cor do Texto">🎨</button>`
+          : ''
+      }
+      ${
+        includeColors && buttonsVisibility.highlight !== false
+          ? `<button type="button" data-action="highlight" class="shine-effect" title="Cor de Destaque">🖌️</button>`
+          : ''
+      }
+      ${
+        instanceId === 'shared-basic'
+          ? `<button type="button" data-action="move-toolbar" class="move-toolbar-btn" title="Mover Barra de Ferramentas">⇅</button>`
+          : ''
+      }
+      ${
+        buttonsVisibility.separator5
+          ? '<div class="toolbar-separator" data-id="separator5"></div>'
+          : ''
+      }
     `
-    : ''
+      : ''
 
-  const quickChangeButton = includeQuickChange && buttonsVisibility.quickChange
-    ? `
+  const quickChangeButton =
+    includeQuickChange && buttonsVisibility.quickChange
+      ? `
     <div class="dropdown">
       <button type="button" data-action="quick-change" class="shine-effect" title="Trocar Saudação/Encerramento">🔄</button>
       <div class="dropdown-content quick-change-container">
@@ -578,18 +662,21 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
       </div>
     </div>
   `
-    : ''
+      : ''
 
   const quickStepsHtml =
-    includeQuickSteps && includeQuickStepsDropdown && buttonsVisibility.quickSteps
+    includeQuickSteps &&
+    includeQuickStepsDropdown &&
+    buttonsVisibility.quickSteps
       ? `<div class="dropdown">
         <button type="button" data-action="quick-steps" class="shine-effect" title="Trâmites Rápidos">⚡</button>
         <div class="dropdown-content quick-steps-dropdown"></div>
       </div>`
       : ''
 
-  const remindersHtml = includeReminders && buttonsVisibility.reminders
-    ? `
+  const remindersHtml =
+    includeReminders && buttonsVisibility.reminders
+      ? `
       <div class="dropdown">
         <button type="button" class="shine-effect" title="Lembretes">⏰</button>
         <div class="dropdown-content">
@@ -598,11 +685,12 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
         </div>
       </div>
     `
-    : ''
+      : ''
 
-  const notesButtonHtml = includeNotes && buttonsVisibility.notes
-    ? `<button type="button" data-action="toggle-notes" class="shine-effect" title="Anotações">✍️</button>`
-    : ''
+  const notesButtonHtml =
+    includeNotes && buttonsVisibility.notes
+      ? `<button type="button" data-action="toggle-notes" class="shine-effect" title="Anotações">✍️</button>`
+      : ''
 
   let themeToggleHtml = ''
   if (includeThemeToggle) {
@@ -637,10 +725,18 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
           <button type="button" data-action="ai-correct">🪄 Melhorar Texto</button>
           <button type="button" data-action="ai-generate">💡 Gerar por Tópicos</button>
           <button type="button" data-action="ai-complete-draft">🚀 Completar Rascunho</button>
-          ${instanceId === 'main' ? '<button type="button" data-action="ai-summarize">📄 Resumir Solicitação</button>' : ''}
+          ${
+            instanceId === 'main'
+              ? '<button type="button" data-action="ai-summarize">📄 Resumir Solicitação</button>'
+              : ''
+          }
         </div>
       </div>
-      ${buttonsVisibility.separator1 ? '<div class="toolbar-separator" data-id="separator1"></div>' : ''}
+      ${
+        buttonsVisibility.separator1
+          ? '<div class="toolbar-separator" data-id="separator1"></div>'
+          : ''
+      }
     `
   }
 
@@ -648,9 +744,11 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
     ? '<button type="button" data-action="manage-steps" class="shine-effect" title="Configurações">⚙️</button>'
     : ''
 
-  const separator6 = (includeNotes || includeReminders || includeQuickSteps) && buttonsVisibility.separator6
-    ? '<div class="toolbar-separator" data-id="separator6"></div>'
-    : ''
+  const separator6 =
+    (includeNotes || includeReminders || includeQuickSteps) &&
+    buttonsVisibility.separator6
+      ? '<div class="toolbar-separator" data-id="separator6"></div>'
+      : ''
 
   return `
     <div class="editor-toolbar">
@@ -757,7 +855,7 @@ async function performAutoFill(textArea) {
     const hasConcluidoOption = Array.from(ssFormSelect.options).some(
       option => option.value === '5'
     )
-    
+
     // Se ambas as opções existirem, não preenche automaticamente
     if (hasRespondidoOption && hasConcluidoOption) {
       return
@@ -833,7 +931,7 @@ async function loadQuickChangeOptions(editorContainer) {
   const createItemsHtml = (items, type) => {
     const defaultId =
       type === 'greetings' ? data.defaultGreetingId : data.defaultClosingId
-    
+
     // Ordena os itens pela propriedade 'order' antes de gerar o HTML
     const sortedItems = items.sort((a, b) => (a.order || 0) - (b.order || 0))
 
@@ -841,7 +939,9 @@ async function loadQuickChangeOptions(editorContainer) {
       .map(item => {
         const isActive = item.id === defaultId
         return `
-        <div class="quick-change-item gc-item" draggable="true" data-id="${item.id}" data-type="${type}" data-order="${item.order || 0}">
+        <div class="quick-change-item gc-item" draggable="true" data-id="${
+          item.id
+        }" data-type="${type}" data-order="${item.order || 0}">
           <span class="drag-handle" title="Arraste para reordenar">⠿</span>
           <button type="button" class="set-default-btn ${
             isActive ? 'active' : ''
@@ -865,7 +965,7 @@ async function loadQuickChangeOptions(editorContainer) {
   }
 
   // Renderiza Saudações
-  html += '<div class="gc-list" data-list-type="greetings">'; // Wrapper para drop
+  html += '<div class="gc-list" data-list-type="greetings">' // Wrapper para drop
   html += '<h5>Saudações</h5>'
   if (data.greetings && data.greetings.length > 0) {
     html += createItemsHtml(data.greetings, 'greetings')
@@ -877,7 +977,7 @@ async function loadQuickChangeOptions(editorContainer) {
   html += '</div>'
 
   // Renderiza Encerramentos
-  html += '<div class="gc-list" data-list-type="closings">'; // Wrapper para drop
+  html += '<div class="gc-list" data-list-type="closings">' // Wrapper para drop
   html += '<h5>Encerramentos</h5>'
   if (data.closings && data.closings.length > 0) {
     html += createItemsHtml(data.closings, 'closings')
@@ -891,14 +991,16 @@ async function loadQuickChangeOptions(editorContainer) {
   container.innerHTML = html
 
   // ADICIONADO: Adiciona listeners de drag-and-drop aos itens e listas
-  container.querySelectorAll('.quick-change-item[draggable="true"]').forEach(item => {
-     item.addEventListener('dragstart', handleGcDragStart)
-     item.addEventListener('dragend', handleGcDragEnd)
-  })
+  container
+    .querySelectorAll('.quick-change-item[draggable="true"]')
+    .forEach(item => {
+      item.addEventListener('dragstart', handleGcDragStart)
+      item.addEventListener('dragend', handleGcDragEnd)
+    })
   container.querySelectorAll('.gc-list').forEach(list => {
-     list.addEventListener('dragover', handleGcDragOver)
-     list.addEventListener('dragleave', handleGcDragLeave)
-     list.addEventListener('drop', handleGcDrop)
+    list.addEventListener('dragover', handleGcDragOver)
+    list.addEventListener('dragleave', handleGcDragLeave)
+    list.addEventListener('drop', handleGcDrop)
   })
 }
 
@@ -916,62 +1018,67 @@ function handleGcDragStart(e) {
 
 function handleGcDragEnd(e) {
   if (draggedGcItem) {
-    draggedGcItem.classList.remove('is-dragging');
+    draggedGcItem.classList.remove('is-dragging')
   }
-  draggedGcItem = null;
+  draggedGcItem = null
   // Limpa indicadores visuais de drop
-  document.querySelectorAll('.gc-item.drag-over-top, .gc-item.drag-over-bottom')
-    .forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'));
+  document
+    .querySelectorAll('.gc-item.drag-over-top, .gc-item.drag-over-bottom')
+    .forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'))
   // Limpa o feedback de todas as listas
-  document.querySelectorAll('.gc-list.drag-over')
-    .forEach(el => el.classList.remove('drag-over'));
+  document
+    .querySelectorAll('.gc-list.drag-over')
+    .forEach(el => el.classList.remove('drag-over'))
 }
 
 function handleGcDragOver(e) {
-  e.preventDefault(); // Necessário para permitir o drop
-  if (!draggedGcItem) return;
+  e.preventDefault() // Necessário para permitir o drop
+  if (!draggedGcItem) return
 
-  const targetList = e.currentTarget.closest('.gc-list');
-  const targetItem = e.target.closest('.quick-change-item');
+  const targetList = e.currentTarget.closest('.gc-list')
+  const targetItem = e.target.closest('.quick-change-item')
 
   // Verifica se o arraste é válido (mesmo tipo de item: saudação com saudação)
-  const draggedType = draggedGcItem.dataset.type;
-  const targetListType = targetList.dataset.listType;
-  
+  const draggedType = draggedGcItem.dataset.type
+  const targetListType = targetList.dataset.listType
+
   if (draggedType !== targetListType) {
-     e.dataTransfer.dropEffect = 'none'; // Indica drop inválido
-     targetList.classList.remove('drag-over'); // Garante que o feedback seja removido
-     return; 
+    e.dataTransfer.dropEffect = 'none' // Indica drop inválido
+    targetList.classList.remove('drag-over') // Garante que o feedback seja removido
+    return
   } else {
-     e.dataTransfer.dropEffect = 'move'; // Indica drop válido
-     targetList.classList.add('drag-over'); // Adiciona feedback visual à lista
+    e.dataTransfer.dropEffect = 'move' // Indica drop válido
+    targetList.classList.add('drag-over') // Adiciona feedback visual à lista
   }
 
-
   // Limpa indicadores anteriores
-  targetList.querySelectorAll('.gc-item.drag-over-top, .gc-item.drag-over-bottom')
-    .forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'));
+  targetList
+    .querySelectorAll('.gc-item.drag-over-top, .gc-item.drag-over-bottom')
+    .forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'))
 
   if (targetItem && targetItem !== draggedGcItem) {
     const rect = targetItem.getBoundingClientRect()
     const isBottomHalf = (e.clientY - rect.top) / rect.height > 0.5
-    targetItem.classList.add(isBottomHalf ? 'drag-over-bottom' : 'drag-over-top')
+    targetItem.classList.add(
+      isBottomHalf ? 'drag-over-bottom' : 'drag-over-top'
+    )
   }
 }
 
 function handleGcDragLeave(e) {
-     // Remove indicadores se sair da área do item ou da lista
-     const targetItem = e.target.closest('.quick-change-item')
-     if (targetItem) {
-         targetItem.classList.remove('drag-over-top', 'drag-over-bottom')
-     }
-     // Verifica se saiu da lista inteira
-     const list = e.currentTarget.closest('.gc-list')
-     if (list && !list.contains(e.relatedTarget)) {
-         list.classList.remove('drag-over') // Remove o feedback da lista
-         list.querySelectorAll('.gc-item.drag-over-top, .gc-item.drag-over-bottom')
-             .forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'))
-     }
+  // Remove indicadores se sair da área do item ou da lista
+  const targetItem = e.target.closest('.quick-change-item')
+  if (targetItem) {
+    targetItem.classList.remove('drag-over-top', 'drag-over-bottom')
+  }
+  // Verifica se saiu da lista inteira
+  const list = e.currentTarget.closest('.gc-list')
+  if (list && !list.contains(e.relatedTarget)) {
+    list.classList.remove('drag-over') // Remove o feedback da lista
+    list
+      .querySelectorAll('.gc-item.drag-over-top, .gc-item.drag-over-bottom')
+      .forEach(el => el.classList.remove('drag-over-top', 'drag-over-bottom'))
+  }
 }
 
 async function handleGcDrop(e) {
@@ -980,26 +1087,32 @@ async function handleGcDrop(e) {
 
   const currentDraggedItem = draggedGcItem // Guarda referência antes de limpar
   const targetList = e.currentTarget.closest('.gc-list')
-  const targetItem = document.elementFromPoint(e.clientX, e.clientY)?.closest('.quick-change-item')
+  const targetItem = document
+    .elementFromPoint(e.clientX, e.clientY)
+    ?.closest('.quick-change-item')
 
   // Verifica se o drop é válido (mesmo tipo)
   const draggedType = currentDraggedItem.dataset.type
   const targetListType = targetList.dataset.listType
   if (draggedType !== targetListType) {
-     handleGcDragEnd(e) // Limpa o estado
-     return
+    handleGcDragEnd(e) // Limpa o estado
+    return
   }
 
   handleGcDragEnd(e) // Limpa o estado visual do drag
 
   // Pega todos os itens da lista alvo (no DOM) para determinar a nova ordem
-  const itemsInList = Array.from(targetList.querySelectorAll('.quick-change-item'))
+  const itemsInList = Array.from(
+    targetList.querySelectorAll('.quick-change-item')
+  )
   let targetIndex = -1
 
   if (targetItem && targetItem !== currentDraggedItem) {
     const rect = targetItem.getBoundingClientRect()
     const isBottomHalf = (e.clientY - rect.top) / rect.height > 0.5
-    const currentTargetIndex = itemsInList.findIndex(item => item === targetItem)
+    const currentTargetIndex = itemsInList.findIndex(
+      item => item === targetItem
+    )
     targetIndex = isBottomHalf ? currentTargetIndex + 1 : currentTargetIndex
   } else {
     // Se soltar no espaço vazio da lista (ou sobre ele mesmo), vai para o final
@@ -1011,16 +1124,19 @@ async function handleGcDrop(e) {
   const listKey = draggedType // 'greetings' ou 'closings'
 
   // Filtra a lista correta e remove o item arrastado temporariamente
-  let updatedList = data[listKey].filter(item => item.id !== currentDraggedItem.dataset.id)
-  
-  // Encontra o objeto do item que foi arrastado
-  const draggedObject = data[listKey].find(item => item.id === currentDraggedItem.dataset.id)
-  
-  if(draggedObject){
-     // Insere o objeto arrastado na nova posição calculada
-     updatedList.splice(targetIndex, 0, draggedObject)
-  }
+  let updatedList = data[listKey].filter(
+    item => item.id !== currentDraggedItem.dataset.id
+  )
 
+  // Encontra o objeto do item que foi arrastado
+  const draggedObject = data[listKey].find(
+    item => item.id === currentDraggedItem.dataset.id
+  )
+
+  if (draggedObject) {
+    // Insere o objeto arrastado na nova posição calculada
+    updatedList.splice(targetIndex, 0, draggedObject)
+  }
 
   // Reatribui a propriedade 'order' sequencialmente
   updatedList.forEach((item, index) => {
@@ -1138,7 +1254,10 @@ function setupEditorInstanceListeners(
 
       // Ajusta a altura do textarea no modo vertical
       const masterContainer = textArea.closest('.editor-master-container')
-      if (masterContainer && masterContainer.classList.contains('vertical-layout')) {
+      if (
+        masterContainer &&
+        masterContainer.classList.contains('vertical-layout')
+      ) {
         autoGrowTextArea(textArea)
       }
     })
@@ -1559,12 +1678,12 @@ function updateFormattingButtonsState(textArea, editorContainer) {
  * @param {HTMLTextAreaElement} textArea - O elemento textarea.
  */
 function autoGrowTextArea(textArea) {
-  textArea.style.height = 'auto';
-  const maxHeight = 350; // O mesmo valor definido no CSS
+  textArea.style.height = 'auto'
+  const maxHeight = 350 // O mesmo valor definido no CSS
   if (textArea.scrollHeight <= maxHeight) {
-    textArea.style.height = textArea.scrollHeight + 'px';
+    textArea.style.height = textArea.scrollHeight + 'px'
   } else {
-    textArea.style.height = maxHeight + 'px';
+    textArea.style.height = maxHeight + 'px'
   }
 }
 
@@ -1635,7 +1754,7 @@ function addSgdActionButtons(masterContainer) {
         clonedButton.textContent = 'Visualizar'
       } else if (id === 'sscForm:btnSalvarContinuar') {
         clonedButton.textContent = 'Continuar'
-      } else if (id === 'cadSscForm:inserir') { 
+      } else if (id === 'cadSscForm:inserir') {
         clonedButton.textContent = 'Continuar'
       } else {
         clonedButton.textContent =
@@ -1706,7 +1825,9 @@ function setupClickDropdowns() {
 
   // Fecha todos os dropdowns abertos
   const closeAll = () => {
-    document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'))
+    document
+      .querySelectorAll('.dropdown.open')
+      .forEach(d => d.classList.remove('open'))
   }
 
   // Instala o fechador global (clique fora)
@@ -1722,7 +1843,10 @@ function setupClickDropdowns() {
     const trigger = e.target.closest('.dropdown > button')
     if (!trigger) return
     // Garante que seja um dropdown nosso (toolbar, barra fixa ou modal de nossa extensão)
-    if (!trigger.closest('.editor-container, .fixed-toolbar, .se-modal-content')) return
+    if (
+      !trigger.closest('.editor-container, .fixed-toolbar, .se-modal-content')
+    )
+      return
     e.preventDefault()
     e.stopPropagation()
     const dropdown = trigger.closest('.dropdown')
@@ -1760,7 +1884,9 @@ function removeClickDropdowns() {
     documentClickCloser = null
   }
   // Garante que nenhum permaneça aberto
-  document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'))
+  document
+    .querySelectorAll('.dropdown.open')
+    .forEach(d => d.classList.remove('open'))
 }
 
 /**
@@ -1776,12 +1902,12 @@ function setupBasicEditorKeyboardShortcuts(textArea) {
   const handleKeydown = e => {
     // Não processa se houver popup de atalhos aberto
     if (document.getElementById('shortcut-popup')) return
-    
+
     const ctrl = e.ctrlKey
     const alt = e.altKey
     const shift = e.shiftKey
     const key = e.key.toLowerCase()
-    
+
     // Atalhos básicos de formatação
     if (ctrl && !alt && !shift) {
       switch (key) {
@@ -1803,7 +1929,7 @@ function setupBasicEditorKeyboardShortcuts(textArea) {
           return
       }
     }
-    
+
     // Atalhos com Ctrl+Alt
     if (ctrl && alt && !shift) {
       switch (key) {
@@ -1813,7 +1939,7 @@ function setupBasicEditorKeyboardShortcuts(textArea) {
           return
       }
     }
-    
+
     // Atalho para inserir nome de usuário (Alt+Shift+U)
     if (!ctrl && alt && shift && e.key === 'U') {
       e.preventDefault()
@@ -1821,9 +1947,9 @@ function setupBasicEditorKeyboardShortcuts(textArea) {
       return
     }
   }
-  
+
   textArea.addEventListener('keydown', handleKeydown)
-  
+
   // Listener para colar imagens
   textArea.addEventListener('paste', e => handleImagePaste(e, textArea))
 }
@@ -1909,7 +2035,7 @@ async function initializeExtension() {
 
     // Adiciona destaque
     e.target.classList.add('basic-editor-focused')
-    
+
     // Adiciona listeners de atalhos se ainda não existir
     if (!e.target._basicEditorShortcutsAdded) {
       e.target._basicEditorShortcutsAdded = true
@@ -1937,6 +2063,7 @@ async function initializeExtension() {
   // --- FIM DA NOVA LÓGICA ---
 
   observeForSscAttachmentField()
+  await checkVersionAndShowWhatsNew()
 }
 
 /**
@@ -1945,7 +2072,7 @@ async function initializeExtension() {
 async function cycleToolbarPosition(toolbarElement) {
   const positions = ['left', 'top', 'right', 'bottom']
   let currentPosition = 'left'
-  
+
   // Encontra a posição atual
   for (const pos of positions) {
     if (toolbarElement.classList.contains(`position-${pos}`)) {
@@ -1953,17 +2080,17 @@ async function cycleToolbarPosition(toolbarElement) {
       break
     }
   }
-  
+
   // Calcula a próxima posição
   const currentIndex = positions.indexOf(currentPosition)
   const nextPosition = positions[(currentIndex + 1) % positions.length]
-  
+
   // Remove todas as classes de posição
   positions.forEach(pos => toolbarElement.classList.remove(`position-${pos}`))
-  
+
   // Adiciona a nova classe de posição
   toolbarElement.classList.add(`position-${nextPosition}`)
-  
+
   // Salva a preferência no storage
   const settings = await getSettings()
   if (!settings.uiSettings) settings.uiSettings = {}
@@ -1976,14 +2103,18 @@ async function cycleToolbarPosition(toolbarElement) {
  * e a injeta no <body>.
  */
 async function initializeFixedBasicToolbar() {
-  if (document.getElementById('fixed-basic-toolbar') || sharedToolbarInitialized) return
+  if (
+    document.getElementById('fixed-basic-toolbar') ||
+    sharedToolbarInitialized
+  )
+    return
   sharedToolbarInitialized = true
 
   const sharedToolbar = document.createElement('div')
   sharedToolbar.id = 'fixed-basic-toolbar'
   // Começa oculta
   sharedToolbar.className = 'fixed-toolbar'
-  
+
   // Carrega a posição salva
   const settings = await getSettings()
   const savedPosition = settings.uiSettings?.toolbarPosition || 'left'
@@ -2035,16 +2166,18 @@ function setupSharedToolbarListeners(toolbarElement) {
     e.stopPropagation()
     const dropdown = trigger.closest('.dropdown')
     const willOpen = !dropdown.classList.contains('open')
-    toolbarElement.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'))
+    toolbarElement
+      .querySelectorAll('.dropdown.open')
+      .forEach(d => d.classList.remove('open'))
     if (willOpen) dropdown.classList.add('open')
   })
-  
+
   // Bloqueia comportamento de hover nos dropdowns da barra fixa
   toolbarElement.querySelectorAll('.dropdown').forEach(dropdown => {
     const button = dropdown.querySelector(':scope > button')
     const content = dropdown.querySelector('.dropdown-content')
     if (!button || !content) return
-    
+
     // Impede que eventos de mouse afetem a abertura/fechamento
     const preventHover = e => {
       e.stopPropagation()
@@ -2054,15 +2187,21 @@ function setupSharedToolbarListeners(toolbarElement) {
     content.addEventListener('mouseenter', preventHover)
     content.addEventListener('mouseleave', preventHover)
   })
-  
+
   // Fecha ao clicar fora da barra
   if (!toolbarElement._outsideClickHandler) {
     toolbarElement._outsideClickHandler = ev => {
       if (!toolbarElement.contains(ev.target)) {
-        toolbarElement.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'))
+        toolbarElement
+          .querySelectorAll('.dropdown.open')
+          .forEach(d => d.classList.remove('open'))
       }
     }
-    document.addEventListener('click', toolbarElement._outsideClickHandler, true)
+    document.addEventListener(
+      'click',
+      toolbarElement._outsideClickHandler,
+      true
+    )
   }
 
   // Listener de clique: executa as ações
@@ -2092,7 +2231,10 @@ function setupSharedToolbarListeners(toolbarElement) {
         applyFormatting(activeBasicEditor, 'u')
         break
       case 'numbered':
-        insertListItem(activeBasicEditor, `<b>${getNextMainNumber(activeBasicEditor)}. </b>`)
+        insertListItem(
+          activeBasicEditor,
+          `<b>${getNextMainNumber(activeBasicEditor)}. </b>`
+        )
         break
       case 'sub-numbered': {
         const { main, sub } = getNextSubNumber(activeBasicEditor)
@@ -2100,7 +2242,10 @@ function setupSharedToolbarListeners(toolbarElement) {
         break
       }
       case 'lettered':
-        insertListItem(activeBasicEditor, `<b>${getNextLetter(activeBasicEditor)}. </b>`)
+        insertListItem(
+          activeBasicEditor,
+          `<b>${getNextLetter(activeBasicEditor)}. </b>`
+        )
         break
       case 'bullet':
         insertBullet(activeBasicEditor)
@@ -2114,7 +2259,9 @@ function setupSharedToolbarListeners(toolbarElement) {
       // 'color', 'highlight', 'emoji', 'list' tratadas pelos próprios pickers/dropdowns
     }
 
-    if (!['color', 'highlight', 'emoji', 'list'].includes(button.dataset.action)) {
+    if (
+      !['color', 'highlight', 'emoji', 'list'].includes(button.dataset.action)
+    ) {
       activeBasicEditor.focus()
     }
   })
@@ -2135,7 +2282,9 @@ function setupSharedToolbarListeners(toolbarElement) {
     document.getElementById('highlight-picker-shared-basic'),
     color => {
       if (activeBasicEditor) {
-        applyFormatting(activeBasicEditor, 'span', { style: `background-color:${color}` })
+        applyFormatting(activeBasicEditor, 'span', {
+          style: `background-color:${color}`
+        })
         activeBasicEditor.focus()
       }
     }
@@ -2158,7 +2307,7 @@ function setupSharedToolbarListeners(toolbarElement) {
  * Monitora quando o campo de descrição para anexar SSC aparece e preenche automaticamente.
  */
 function observeForSscAttachmentField() {
-  const fillSscField = async (field) => {
+  const fillSscField = async field => {
     // Só preenche se o campo estiver vazio e não tiver sido preenchido automaticamente antes
     if (field && !field.dataset.autoFilled && field.value.trim() === '') {
       const defaultText = `[saudacao],
@@ -2171,27 +2320,28 @@ Obrigado.`
 
       // Processa as variáveis do texto (substitui [saudacao] pela saudação apropriada)
       const processedText = await resolveVariablesInText(defaultText)
-      
+
       field.value = processedText
       field.dataset.autoFilled = 'true'
-      
+
       // Cria e insere o aviso acima do campo
       createSscFieldWarning(field)
-      
+
       // Dispara evento de input para garantir que o sistema detecte a mudança
       field.dispatchEvent(new Event('input', { bubbles: true }))
     }
   }
-  
+
   /**
    * Cria e insere um aviso acima do campo de texto quando ele é preenchido automaticamente.
    * @param {HTMLTextAreaElement} field - O campo textarea que foi preenchido.
    */
-  const createSscFieldWarning = (field) => {
+  const createSscFieldWarning = field => {
     // Verifica se o aviso já existe para evitar duplicatas
-    const existingWarning = field.parentNode?.querySelector('.ssc-field-warning')
+    const existingWarning =
+      field.parentNode?.querySelector('.ssc-field-warning')
     if (existingWarning) return
-    
+
     // Cria o elemento de aviso
     const warning = document.createElement('div')
     warning.className = 'ssc-field-warning'
@@ -2204,7 +2354,7 @@ Obrigado.`
         </ul>
       </div>
     `
-    
+
     // Insere o aviso antes do campo (ou antes do label se existir)
     const parent = field.parentNode
     if (parent) {
@@ -2220,7 +2370,9 @@ Obrigado.`
   }
 
   const observer = new MutationObserver((mutations, obs) => {
-    const sscDescricaoField = document.getElementById('sscAnexarSscForm:descricao')
+    const sscDescricaoField = document.getElementById(
+      'sscAnexarSscForm:descricao'
+    )
     if (sscDescricaoField) {
       fillSscField(sscDescricaoField).catch(console.error)
     }
@@ -2235,7 +2387,9 @@ Obrigado.`
   }
 
   // Também verifica imediatamente caso o campo já exista
-  const sscDescricaoField = document.getElementById('sscAnexarSscForm:descricao')
+  const sscDescricaoField = document.getElementById(
+    'sscAnexarSscForm:descricao'
+  )
   if (sscDescricaoField) {
     fillSscField(sscDescricaoField).catch(console.error)
   }
@@ -2345,10 +2499,18 @@ function setupSolutionObserver(textArea) {
  * @param {HTMLTextAreaElement} textArea - O elemento textarea do editor principal.
  */
 function setupUserSelectionListener(textArea) {
-  const userSelect = document.getElementById(typeof USER_NAME_SELECT_ID !== 'undefined' ? USER_NAME_SELECT_ID : 'cadSscForm:usuario')
+  const userSelect = document.getElementById(
+    typeof USER_NAME_SELECT_ID !== 'undefined'
+      ? USER_NAME_SELECT_ID
+      : 'cadSscForm:usuario'
+  )
   if (!userSelect) return
 
-  const typedInput = document.getElementById(typeof USER_NAME_INPUT_ID !== 'undefined' ? USER_NAME_INPUT_ID : 'cadSscForm:nome')
+  const typedInput = document.getElementById(
+    typeof USER_NAME_INPUT_ID !== 'undefined'
+      ? USER_NAME_INPUT_ID
+      : 'cadSscForm:nome'
+  )
 
   const computeFirstName = () => {
     if (userSelect.value === '-3') {
@@ -2360,7 +2522,7 @@ function setupUserSelectionListener(textArea) {
     }
     const selectedOption = userSelect.options[userSelect.selectedIndex]
     const fullName = selectedOption ? selectedOption.textContent.trim() : ''
-    return (fullName.split(' ')[0] || 'Usuário')
+    return fullName.split(' ')[0] || 'Usuário'
   }
 
   const updateUserVariableSpans = () => {
@@ -2824,7 +2986,8 @@ async function updateToolbarButtonVisibility(editorContainer) {
         )
         if (micSeparator) {
           // No Opera, sempre oculta o separador do microfone
-          const shouldHide = buttonsVisibility[key] === false || isOperaBrowser()
+          const shouldHide =
+            buttonsVisibility[key] === false || isOperaBrowser()
           micSeparator.style.display = shouldHide ? 'none' : ''
         }
       }
@@ -2860,18 +3023,19 @@ async function applyGlobalVisibilitySettings() {
 async function updateAllToolbarButtonLabels() {
   const settings = await getSettings()
   const buttonLabelType = settings.uiSettings?.buttonLabelType || 'symbol'
-  
+
   // Define os rótulos baseado na configuração
   const boldLabel = buttonLabelType === 'text' ? '<b>Negrito</b>' : '<b>B</b>'
   const italicLabel = buttonLabelType === 'text' ? '<i>Itálico</i>' : '<i>I</i>'
-  const underlineLabel = buttonLabelType === 'text' ? '<u>Sublinhado</u>' : '<u>U</u>'
-  
+  const underlineLabel =
+    buttonLabelType === 'text' ? '<u>Sublinhado</u>' : '<u>U</u>'
+
   // Atualiza todas as toolbars abertas
   document.querySelectorAll('.editor-container').forEach(container => {
     const boldBtn = container.querySelector('[data-action="bold"]')
     const italicBtn = container.querySelector('[data-action="italic"]')
     const underlineBtn = container.querySelector('[data-action="underline"]')
-    
+
     if (boldBtn) boldBtn.innerHTML = boldLabel
     if (italicBtn) italicBtn.innerHTML = italicLabel
     if (underlineBtn) underlineBtn.innerHTML = underlineLabel
@@ -2880,9 +3044,11 @@ async function updateAllToolbarButtonLabels() {
 
 function applyAllVisibilitySettings() {
   // Atualiza todas as barras de ferramentas
-  document.querySelectorAll('.editor-container, .fixed-toolbar').forEach(container => {
-    updateToolbarButtonVisibility(container)
-  })
+  document
+    .querySelectorAll('.editor-container, .fixed-toolbar')
+    .forEach(container => {
+      updateToolbarButtonVisibility(container)
+    })
   // Atualiza os elementos globais
   applyGlobalVisibilitySettings()
 }
@@ -3026,9 +3192,9 @@ async function initializeEnhancedEditor() {
   await initializeNotesPanel()
 
   // Verifica se o painel de atendimentos seguidos deve ser criado
-  initializeFollowedAttendancesPanel();
+  initializeFollowedAttendancesPanel()
 
-  checkVersionAndShowWhatsNew();
+  checkVersionAndShowWhatsNew()
 }
 
 // --- CONTROLE DE NOVIDADES DA VERSÃO ---
@@ -3038,18 +3204,35 @@ async function initializeEnhancedEditor() {
  */
 async function checkVersionAndShowWhatsNew() {
   try {
-    const currentVersion = chrome.runtime.getManifest().version;
-    const lastSeenVersion = await getLastSeenVersion();
+    const currentVersion = chrome.runtime.getManifest().version // Ex: "2.9.6.1" ou "2.9.7"
+    const lastSeenVersion = await getLastSeenVersion()
 
-    if (currentVersion !== lastSeenVersion) {
-      // Verifica se há notas de versão para a versão atual
-      if (RELEASE_NOTES && RELEASE_NOTES[currentVersion]) {
-        showWhatsNewModal(RELEASE_NOTES[currentVersion]);
-        await setLastSeenVersion(currentVersion);
+    const versionParts = currentVersion.split('.')
+    const noteworthyVersion = versionParts.slice(0, 3).join('.') // Ex: "2.9.6" ou "2.9.7"
+
+    // Compara a versão "notável" com a última versão "notável" vista
+    if (noteworthyVersion !== lastSeenVersion) {
+      // (Ex: vai procurar por '2.9.6' no RELEASE_NOTES, mesmo se a versão for '2.9.6.1')
+      if (RELEASE_NOTES && RELEASE_NOTES[noteworthyVersion]) {
+        let notesToShow = RELEASE_NOTES[noteworthyVersion];
+        if (typeof MINOR_RELEASE_NOTES !== 'undefined' && MINOR_RELEASE_NOTES[lastSeenVersion]) {
+          const minorList = MINOR_RELEASE_NOTES[lastSeenVersion];
+          const minorFeatures = minorList.reduce((acc, item) => acc.concat(item.features || []), []);
+          notesToShow = {
+            ...notesToShow,
+            features: [...notesToShow.features, ...minorFeatures]
+          };
+        }
+        showWhatsNewModal(notesToShow)
+        // Salva a versão "notável" como a última vista para evitar reexibir em subversões
+        await setLastSeenVersion(noteworthyVersion)
       }
     }
   } catch (error) {
-    console.error('Editor SGD: Erro ao verificar a versão para novidades.', error);
+    console.error(
+      'Editor SGD: Erro ao verificar a versão para novidades.',
+      error
+    )
   }
 }
 
@@ -3057,4 +3240,3 @@ async function checkVersionAndShowWhatsNew() {
 
 // Inicia a observação para encontrar o textarea principal quando o DOM estiver pronto.
 observeForTextArea()
-checkVersionAndShowWhatsNew()

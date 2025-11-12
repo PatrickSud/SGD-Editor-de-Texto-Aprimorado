@@ -19,3 +19,14 @@ const RELEASE_NOTES = {
     ]
   }
 };
+
+const MINOR_RELEASE_NOTES = {
+  '2.9.6': [
+    {
+      version: '2.9.6.1',
+      features: [
+        "<b>Melhoria:</b> Marcar a opção de resposta automaticamente."
+      ]
+    }
+  ]
+};

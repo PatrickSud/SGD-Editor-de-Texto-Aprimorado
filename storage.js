@@ -1238,3 +1238,45 @@ async function setLastSeenVersion(version) {
     console.error('Editor SGD: Erro ao salvar a última versão vista.', error);
   }
 }
+
+
+/**
+ * Obtém notas pendentes de versões menores.
+ * @returns {Promise<string[]>} Lista de notas acumuladas.
+ */
+async function getPendingMinorNotes() {
+  try {
+    const result = await chrome.storage.local.get(PENDING_MINOR_NOTES_KEY);
+    const notes = result[PENDING_MINOR_NOTES_KEY];
+    return Array.isArray(notes) ? notes : [];
+  } catch (error) {
+    console.error('Editor SGD: Erro ao obter notas pendentes de versões menores.', error);
+    return [];
+  }
+}
+
+/**
+ * Adiciona uma nota pendente de versão menor para ser exibida na próxima versão cheia.
+ * @param {string} note - Texto/HTML da nota.
+ */
+async function addPendingMinorNote(note) {
+  try {
+    const existing = await getPendingMinorNotes();
+    const sanitized = typeof note === 'string' ? note : String(note);
+    existing.push(sanitized);
+    await chrome.storage.local.set({ [PENDING_MINOR_NOTES_KEY]: existing });
+  } catch (error) {
+    console.error('Editor SGD: Erro ao adicionar nota pendente de versão menor.', error);
+  }
+}
+
+/**
+ * Limpa todas as notas pendentes de versões menores.
+ */
+async function clearPendingMinorNotes() {
+  try {
+    await chrome.storage.local.remove(PENDING_MINOR_NOTES_KEY);
+  } catch (error) {
+    console.error('Editor SGD: Erro ao limpar notas pendentes de versões menores.', error);
+  }
+}
