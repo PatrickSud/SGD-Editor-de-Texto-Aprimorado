@@ -48,17 +48,29 @@ async function _getUserNameLogic() {
     return null
   }
 
-  const userSelectElement = document.getElementById('cadSscForm:usuario')
+  const userSelectElement =
+    document.getElementById(typeof USER_NAME_SELECT_ID !== 'undefined' ? USER_NAME_SELECT_ID : 'cadSscForm:usuario')
   let firstName = ''
 
-  if (userSelectElement && userSelectElement.value > 0) {
-    const selectedOption =
-      userSelectElement.options[userSelectElement.selectedIndex]
-    firstName = getFirstName(selectedOption)
+  if (userSelectElement) {
+    // Caso "Não cadastrado" (-3): usa o nome digitado no input correspondente
+    if (userSelectElement.value === '-3') {
+      const typedInput =
+        document.getElementById(typeof USER_NAME_INPUT_ID !== 'undefined' ? USER_NAME_INPUT_ID : 'cadSscForm:nome')
+      const typedValue = typedInput ? typedInput.value.trim() : ''
+      if (typedValue) {
+        firstName = typedValue.split(' ')[0]
+      }
+    } else if (parseInt(userSelectElement.value, 10) > 0) {
+      const selectedOption =
+        userSelectElement.options[userSelectElement.selectedIndex]
+      firstName = getFirstName(selectedOption)
+    }
   }
 
   if (!firstName) {
-    const userNameElement = document.getElementById('td:usuario_nome')
+    const userNameElement =
+      document.getElementById(typeof USER_NAME_LOGGED_ID !== 'undefined' ? USER_NAME_LOGGED_ID : 'td:usuario_nome')
     firstName = getFirstName(userNameElement)
   }
 

@@ -13,6 +13,7 @@ const USER_RESPONSE_SAMPLES_KEY = 'userResponseSamples'
 const MAX_RESPONSE_SAMPLES = 30
 const FAB_POSITION_KEY = 'fabPositionData'
 const GREETINGS_CLOSINGS_KEY = 'greetingsAndClosingsData'
+const LAST_SEEN_VERSION_KEY = 'lastSeenVersion'
 
 /**
  * Separadores exclusivos para delimitar saudação e encerramento no texto.
@@ -40,6 +41,7 @@ const DEFAULT_SETTINGS = {
     notes: true,
     fab: true,
     goToTop: true,
+    searchAnswerButton: true,
     separator1: true,
     separator2: true,
     separator3: true,
@@ -100,6 +102,7 @@ const TRAMITES_TABLE_SELECTORS = [
  */
 const USER_NAME_SELECT_ID = 'cadSscForm:usuario'
 const USER_NAME_LOGGED_ID = 'td:usuario_nome'
+const USER_NAME_INPUT_ID = 'cadSscForm:nome'
 
 const THEMES = [
   'padrao',
@@ -185,7 +188,6 @@ const PICKER_EMOJIS = [
   { char: '😭', code: '&#128557;' },
   { char: '😱', code: '&#128561;' },
   { char: '😠', code: '&#128544;' },
-  { char: '😡', code: '&#128545;' },
   { char: '😢', code: '&#128546;' },
   { char: '👋', code: '&#128075;' },
   { char: '👏', code: '&#128079;' },
@@ -214,7 +216,8 @@ const PICKER_EMOJIS = [
   { char: '🔥', code: '&#128293;' },
   { char: '🧡', code: '&#129505;' },
   { char: '📌', code: '&#128204;' },
-  { char: '🌟', code: '&#127775;' }
+  { char: '🌟', code: '&#127775;' },
+  { char: '⌛', code: '&#9203;' }
 ]
 
 const PROTECTED_SHORTCUTS = [

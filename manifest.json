@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SGD - Editor de Texto Aprimorado",
-  "version": "2.9.2",
+  "version": "2.9.6",
   "description": "Adiciona um editor de texto avançado ao site https://sgd.dominiosistemas.com.br/",
   "permissions": [
     "storage",
@@ -30,6 +30,7 @@
         "editor-core.js",
         "features.js",
         "quick-messages.js",
+        "release-notes.js",
         "main.js"
       ],
       "css": [

@@ -55,6 +55,11 @@ let temporaryGreetingClosing = {
 
 let draggedGcItem = null; // Variável global para rastrear o item arrastado
 
+// --- NOVAS VARIÁVEIS GLOBAIS PARA EDITOR BÁSICO ---
+let activeBasicEditor = null
+let hideToolbarTimeout = null
+let sharedToolbarInitialized = false
+
 /**
  * Extrai apenas o conteúdo interno do texto, removendo saudação e encerramento.
  * @param {string} fullText - O texto completo do textarea.
@@ -149,7 +154,8 @@ async function addGreetingAndClosing(content, useTemporary = true) {
 function setupSituationListener(textArea) {
   const situationSelects = [
     document.getElementById('cadSscForm:situacaoTramite'),
-    document.getElementById('sscForm:situacaoTramite')
+    document.getElementById('sscForm:situacaoTramite'),
+    document.getElementById('ssForm:situacaoTramite')
   ]
 
   situationSelects.forEach(select => {
@@ -172,6 +178,22 @@ function setupSituationListener(textArea) {
             textArea.value = newText
             textArea.dispatchEvent(new Event('input', { bubbles: true }))
           }
+
+          // Reforço: após o site terminar possíveis atualizações tardias, reaplica se necessário
+          setTimeout(async () => {
+            // Garante que a situação ainda é 'Respondido ao Cliente'
+            if (select.value !== '3') return
+            const latestText = textArea.value
+            const latestParts = extractContentParts(latestText)
+            // Se por acaso removido, reinsere saudação/encerramento
+            if (!latestParts.greeting && !latestParts.closing) {
+              const reapplied = await addGreetingAndClosing(latestParts.content, true)
+              if (reapplied !== latestText) {
+                textArea.value = reapplied
+                textArea.dispatchEvent(new Event('input', { bubbles: true }))
+              }
+            }
+          }, 500)
         } else {
           // Remover saudação e encerramento (manter apenas conteúdo)
           const parts = extractContentParts(currentText)
@@ -190,7 +212,7 @@ function setupSituationListener(textArea) {
             }
           }
         }
-      }, 300) // Aguarda 300ms para garantir que a função do SGD termine
+      }, 600) // Aguarda mais para garantir que a função do SGD termine
     })
   })
 }
@@ -228,6 +250,41 @@ function observeForTextArea() {
  */
 async function initializeEditorInstance(textArea, instanceId, options = {}) {
   if (!textArea || textArea.dataset.enhanced) return
+  
+  // --- INÍCIO: Injeção do Botão "Pesquisar Resposta" ---
+  if (instanceId === 'main') {
+    const originalSearchButton = document.querySelector('input[value="Pesquisar Resposta"]')
+    if (originalSearchButton) {
+      let labelSpan = document.querySelector(`[id$="${textArea.id.split(':').pop()}Label"]`)
+      // Fallback para páginas onde o ID do textarea não corresponde ao padrão do label
+      if (!labelSpan) {
+        labelSpan = document.querySelector('label[id$="descricaoTramiteLabel"]')
+      }
+      if (labelSpan) {
+        const labelCell = labelSpan.closest('td')
+        if (labelCell) {
+          // Evita duplicar se já existir um botão clonado na mesma célula
+          if (!labelCell.querySelector('.cloned-search-button')) {
+            const clonedSearchButton = document.createElement('button')
+            clonedSearchButton.type = 'button'
+            clonedSearchButton.textContent = '🔍'
+            clonedSearchButton.className = 'cloned-search-button'
+            clonedSearchButton.title = 'Pesquisar Resposta'
+            clonedSearchButton.addEventListener('click', e => {
+              e.preventDefault()
+              const btn = document.querySelector('input[value="Pesquisar Resposta"]')
+              if (btn && typeof btn.click === 'function') {
+                btn.click()
+              }
+            })
+            labelCell.appendChild(document.createElement('br'))
+            labelCell.appendChild(clonedSearchButton)
+          }
+        }
+      }
+    }
+  }
+  // --- FIM: Injeção do Botão ---
   textArea.dataset.enhanced = instanceId
 
 const {
@@ -247,17 +304,16 @@ const {
   const editorContainer = document.createElement('div')
   editorContainer.id = `editor-container-${instanceId}`
   editorContainer.classList.add('editor-container')
-  editorContainer.innerHTML = await createEditorToolbarHtml(
-    instanceId,
+  editorContainer.innerHTML = await createEditorToolbarHtml(instanceId, {
+    includePreview,
     includeQuickSteps,
     includeThemeToggle,
-    includePreview,
     includeNotes,
     includeReminders,
     includeManageSteps,
     includeUsername,
     includeQuickStepsDropdown
-  )
+  })
 
   if (textArea.parentNode) {
     textArea.parentNode.insertBefore(masterContainer, textArea)
@@ -287,10 +343,7 @@ const {
   })
   masterContainer.appendChild(clearButton) // Adicionado ao contêiner mestre
 
-  // Adiciona o aviso de configuração do SGSC apenas na instância principal
-  if (instanceId === 'main') {
-    createAndAppendSgscWarning(masterContainer)
-  }
+  // Aviso de configuração do SGSC descontinuado
 
   if (includePreview) {
     const previewContainer = createPreviewContainer(textArea, instanceId)
@@ -421,42 +474,36 @@ function isOperaBrowser() {
 
 /**
  * Cria o HTML da toolbar do editor.
+ * (Função ATUALIZADA para aceitar 'options' e corrigir o erro de digitação)
  * @param {string} instanceId - ID da instância.
- * @param {boolean} includeQuickSteps - Se deve incluir o botão de Trâmites Rápidos.
- * @param {boolean} includeThemeToggle - Se deve incluir o botão de Tema.
- * @param {boolean} includePreview - Se deve incluir o botão de Alternar Visualização.
- * @param {boolean} includeNotes - Se deve incluir o botão de Anotações.
- * @param {boolean} includeReminders - Se deve incluir os botões de Lembretes.
- * @returns {Promise<string>} O HTML da toolbar. (Retorno agora é uma Promise)
+ * @param {object} options - Objeto contendo flags booleanas para inclusão de botões.
+ * @returns {Promise<string>} O HTML da toolbar.
  */
-async function createEditorToolbarHtml(
-  instanceId,
-  includeQuickSteps,
-  includeThemeToggle,
-  includePreview,
-  includeNotes,
-  includeReminders,
-  includeManageSteps = true,
-  includeUsername = true,
-  includeQuickStepsDropdown = true
-) {
-  const settings = await getSettings() // Carrega as configurações
-  const buttonsVisibility =
-    settings.toolbarButtons || DEFAULT_SETTINGS.toolbarButtons
+async function createEditorToolbarHtml(instanceId, options = {}) {
+  const {
+    includePreview = false,
+    includeQuickSteps = false,
+    includeThemeToggle = false,
+    includeNotes = false,
+    includeReminders = false,
+    includeManageSteps = true,
+    includeUsername = true,
+    includeQuickStepsDropdown = true,
+    includeAI = true,
+    includeEmoji = true,
+    includeQuickChange = true,
+    includeFormatting = true,
+    includeLists = true,
+    includeLink = true,
+    includeImage = true,
+    includeColors = true
+  } = options
+
+  const settings = await getSettings()
+  const buttonsVisibility = settings.toolbarButtons || DEFAULT_SETTINGS.toolbarButtons
   const uiSettings = settings.uiSettings || DEFAULT_SETTINGS.uiSettings
   const buttonLabelType = uiSettings.buttonLabelType || 'symbol'
 
-  // Debug: Log das configurações carregadas
-  console.log(
-    'Editor SGD: Debug configurações - settings.toolbarButtons:',
-    settings.toolbarButtons
-  )
-  console.log(
-    'Editor SGD: Debug configurações - buttonsVisibility.username:',
-    buttonsVisibility.username
-  )
-
-  // ADICIONAR ESTA VERIFICAÇÃO NO INÍCIO DA FUNÇÃO
   const isSpeechRecognitionSupported =
     window.SpeechRecognition || window.webkitSpeechRecognition
   const isOpera = isOperaBrowser()
@@ -468,28 +515,27 @@ async function createEditorToolbarHtml(
     ? 'Reconhecimento de voz não suportado no Opera'
     : 'Reconhecimento de voz não suportado neste navegador'
 
-  // --- LÓGICA DE VISIBILIDADE E RÓTULOS APLICADA ---
-
-  // Define os rótulos dos botões baseado na configuração
   const boldLabel = buttonLabelType === 'text' ? '<b>Negrito</b>' : '<b>B</b>'
   const italicLabel = buttonLabelType === 'text' ? '<i>Itálico</i>' : '<i>I</i>'
   const underlineLabel = buttonLabelType === 'text' ? '<u>Sublinhado</u>' : '<u>U</u>'
 
-  // Botões de formatação sempre visíveis
-  const formattingButtons = `
-    ${shouldShowMicButton ? `<button type="button" data-action="speech-to-text" class="shine-effect" title="${micButtonTitle}" ${micButtonDisabled}>🎤</button>
-    <div class="toolbar-separator" data-id="mic-separator"></div>` : ''}
-    <button type="button" data-action="bold" class="shine-effect" title="Negrito (Ctrl+B)">${boldLabel}</button>
-    <button type="button" data-action="italic" class="shine-effect" title="Itálico (Ctrl+I)">${italicLabel}</button>
-    <button type="button" data-action="underline" class="shine-effect" title="Sublinhado (Ctrl+U)">${underlineLabel}</button>
-    ${
-      buttonsVisibility.separator2
-        ? '<div class="toolbar-separator" data-id="separator2"></div>'
-        : ''
-    }
-  `
+  const micButton = (shouldShowMicButton && buttonsVisibility.speechToText !== false)
+    ? `<button type="button" data-action="speech-to-text" class="shine-effect" title="${micButtonTitle}" ${micButtonDisabled}>🎤</button>
+       <div class="toolbar-separator" data-id="mic-separator"></div>`
+    : ''
 
-  const listButtons = `
+  const formattingButtons = includeFormatting
+    ? `
+      ${micButton}
+      <button type="button" data-action="bold" class="shine-effect" title="Negrito (Ctrl+B)">${boldLabel}</button>
+      <button type="button" data-action="italic" class="shine-effect" title="Itálico (Ctrl+I)">${italicLabel}</button>
+      <button type="button" data-action="underline" class="shine-effect" title="Sublinhado (Ctrl+U)">${underlineLabel}</button>
+      ${buttonsVisibility.separator2 ? '<div class="toolbar-separator" data-id="separator2"></div>' : ''}
+    `
+    : ''
+
+  const listButtons = includeLists && buttonsVisibility.lists !== false
+    ? `
       <div class="dropdown">
         <button type="button" data-action="list" class="shine-effect" title="Listas (Numeração Dinâmica)">☰</button>
         <div class="dropdown-content">
@@ -498,59 +544,32 @@ async function createEditorToolbarHtml(
           <button type="button" data-action="lettered">A. Letra</button>
         </div>
       </div>
-      <button type="button" data-action="bullet" class="shine-effect" title="Adicionar Marcador (Ctrl+M)">&bull;</button>
-      ${
-        buttonsVisibility.separator3
-          ? '<div class="toolbar-separator" data-id="separator3"></div>'
-          : ''
-      }
+      ${buttonsVisibility.bullet !== false ? `<button type="button" data-action="bullet" class="shine-effect" title="Adicionar Marcador (Ctrl+M)">&bull;</button>` : ''}
+      ${buttonsVisibility.separator3 ? '<div class="toolbar-separator" data-id="separator3"></div>' : ''}
     `
+    : ''
 
   const canInsertUsername = isUserNameInsertionAvailable()
-
-  // Debug: Log das condições de visibilidade do botão username
-  console.log(
-    'Editor SGD: Debug botão username - buttonsVisibility.username:',
-    buttonsVisibility.username,
-    'canInsertUsername:',
-    canInsertUsername,
-    'includeUsername:',
-    includeUsername
-  )
-
-  const insertButtons = `
-      <button type="button" data-action="link" class="shine-effect" title="Inserir Hiperlink (Ctrl+Alt+H)">🔗</button>
-      ${
-        buttonsVisibility.insertImage
-          ? '<button type="button" data-action="insert-image" class="shine-effect" title="Inserir Imagem (Ctrl+V)">📸</button>'
-          : ''
-      }
-      ${
-        buttonsVisibility.username !== false &&
-        canInsertUsername &&
-        includeUsername
-          ? '<button type="button" data-action="username" class="shine-effect" title="Inserir Nome do Usuário (Alt+Shift+U)">🏷️</button>'
-          : ''
-      }
-      ${
-        buttonsVisibility.separator4
-          ? '<div class="toolbar-separator" data-id="separator4"></div>'
-          : ''
-      }
+  const insertButtons = (includeLink && buttonsVisibility.link !== false) || (includeImage && buttonsVisibility.insertImage !== false) || (includeUsername && buttonsVisibility.username !== false && canInsertUsername)
+    ? `
+      ${includeLink && buttonsVisibility.link !== false ? `<button type="button" data-action="link" class="shine-effect" title="Inserir Hiperlink (Ctrl+Alt+H)">🔗</button>` : ''}
+      ${includeImage && buttonsVisibility.insertImage !== false ? `<button type="button" data-action="insert-image" class="shine-effect" title="Inserir Imagem (Ctrl+V)">📸</button>` : ''}
+      ${includeUsername && buttonsVisibility.username !== false && canInsertUsername ? `<button type="button" data-action="username" class="shine-effect" title="Inserir Nome do Usuário (Alt+Shift+U)">🏷️</button>` : ''}
+      ${buttonsVisibility.separator4 ? '<div class="toolbar-separator" data-id="separator4"></div>' : ''}
     `
+    : ''
 
-  const colorButtons = `
-      <button type="button" data-action="emoji" class="shine-effect" title="Emojis (Código HTML)">😀</button>
-      <button type="button" data-action="color" class="shine-effect" title="Cor do Texto">🎨</button>
-      <button type="button" data-action="highlight" class="shine-effect" title="Cor de Destaque">🖌️</button>
-      ${
-        buttonsVisibility.separator5
-          ? '<div class="toolbar-separator" data-id="separator5"></div>'
-          : ''
-      }
+  const colorButtons = includeColors && (buttonsVisibility.color !== false || buttonsVisibility.highlight !== false || (includeEmoji && buttonsVisibility.emoji !== false))
+    ? `
+      ${includeEmoji && buttonsVisibility.emoji !== false ? `<button type="button" data-action="emoji" class="shine-effect" title="Emojis (Código HTML)">😀</button>` : ''}
+      ${includeColors && buttonsVisibility.color !== false ? `<button type="button" data-action="color" class="shine-effect" title="Cor do Texto">🎨</button>` : ''}
+      ${includeColors && buttonsVisibility.highlight !== false ? `<button type="button" data-action="highlight" class="shine-effect" title="Cor de Destaque">🖌️</button>` : ''}
+      ${instanceId === 'shared-basic' ? `<button type="button" data-action="move-toolbar" class="move-toolbar-btn" title="Mover Barra de Ferramentas">⇅</button>` : ''}
+      ${buttonsVisibility.separator5 ? '<div class="toolbar-separator" data-id="separator5"></div>' : ''}
     `
+    : ''
 
-  const quickChangeButton = buttonsVisibility.quickChange
+  const quickChangeButton = includeQuickChange && buttonsVisibility.quickChange
     ? `
     <div class="dropdown">
       <button type="button" data-action="quick-change" class="shine-effect" title="Trocar Saudação/Encerramento">🔄</button>
@@ -562,14 +581,14 @@ async function createEditorToolbarHtml(
     : ''
 
   const quickStepsHtml =
-    includeQuickSteps && includeQuickStepsDropdown
+    includeQuickSteps && includeQuickStepsDropdown && buttonsVisibility.quickSteps
       ? `<div class="dropdown">
         <button type="button" data-action="quick-steps" class="shine-effect" title="Trâmites Rápidos">⚡</button>
         <div class="dropdown-content quick-steps-dropdown"></div>
       </div>`
       : ''
 
-  const remindersHtml = includeReminders
+  const remindersHtml = includeReminders && buttonsVisibility.reminders
     ? `
       <div class="dropdown">
         <button type="button" class="shine-effect" title="Lembretes">⏰</button>
@@ -581,7 +600,7 @@ async function createEditorToolbarHtml(
     `
     : ''
 
-  const notesButtonHtml = includeNotes
+  const notesButtonHtml = includeNotes && buttonsVisibility.notes
     ? `<button type="button" data-action="toggle-notes" class="shine-effect" title="Anotações">✍️</button>`
     : ''
 
@@ -605,13 +624,12 @@ async function createEditorToolbarHtml(
   }
 
   const togglePreviewHtml = includePreview
-    ? `<button type="button" data-action="toggle-preview" class="shine-effect" title="Ocultar Visualização (Ctrl+Alt+V)">📝</button>`
+    ? `<button type="button" data-action="toggle-preview" class="shine-effect" title="Mostrar Visualização (Ctrl+Alt+V)">👁️</button>`
     : ''
 
-  let aiButtonsHtml = ''
   const devMode = await isDevModeEnabled()
-
-  if (devMode) {
+  let aiButtonsHtml = ''
+  if (includeAI && devMode) {
     aiButtonsHtml = `
       <div class="dropdown">
         <button type="button" title="Recursos de IA (Gemini)" class="ai-master-button enhanced-btn">✨</button>
@@ -619,20 +637,20 @@ async function createEditorToolbarHtml(
           <button type="button" data-action="ai-correct">🪄 Melhorar Texto</button>
           <button type="button" data-action="ai-generate">💡 Gerar por Tópicos</button>
           <button type="button" data-action="ai-complete-draft">🚀 Completar Rascunho</button>
-          ${
-            instanceId === 'main'
-              ? '<button type="button" data-action="ai-summarize">📄 Resumir Solicitação</button>'
-              : ''
-          }
+          ${instanceId === 'main' ? '<button type="button" data-action="ai-summarize">📄 Resumir Solicitação</button>' : ''}
         </div>
       </div>
-      ${
-        buttonsVisibility.separator1
-          ? '<div class="toolbar-separator" data-id="separator1"></div>'
-          : ''
-      }
+      ${buttonsVisibility.separator1 ? '<div class="toolbar-separator" data-id="separator1"></div>' : ''}
     `
   }
+
+  const manageStepsButton = includeManageSteps
+    ? '<button type="button" data-action="manage-steps" class="shine-effect" title="Configurações">⚙️</button>'
+    : ''
+
+  const separator6 = (includeNotes || includeReminders || includeQuickSteps) && buttonsVisibility.separator6
+    ? '<div class="toolbar-separator" data-id="separator6"></div>'
+    : ''
 
   return `
     <div class="editor-toolbar">
@@ -642,24 +660,17 @@ async function createEditorToolbarHtml(
       ${insertButtons}
       ${colorButtons}
       
-      ${
-        includeManageSteps
-          ? '<button type="button" data-action="manage-steps" class="shine-effect" title="Configurações">⚙️</button>'
-          : ''
-      }
+      ${manageStepsButton}
       ${quickChangeButton}
       
       ${quickStepsHtml}
       ${remindersHtml}
       ${notesButtonHtml}
-      ${
-        buttonsVisibility.separator6
-          ? '<div class="toolbar-separator" data-id="separator6"></div>'
-          : ''
-      }
+      ${separator6}
       ${togglePreviewHtml}
       ${themeToggleHtml}
     </div>
+    
     <div id="emoji-picker-${instanceId}" class="picker"></div>
     <div id="color-picker-${instanceId}" class="picker"></div>
     <div id="highlight-picker-${instanceId}" class="picker"></div>
@@ -705,18 +716,35 @@ async function performAutoFill(textArea) {
     return
   }
 
-  // Verifica todos os selects de situação
-  const situationSelects = [
+  // Função auxiliar para obter os selects de situação
+  const getSituationSelects = () => [
     document.getElementById('cadSscForm:situacaoTramite'),
     document.getElementById('sscForm:situacaoTramite'),
     document.getElementById('ssForm:situacaoTramite')
   ]
 
-  // Verifica se algum select está com o valor "1" (Em análise)
-  for (const select of situationSelects) {
-    if (select && select.value === '1') {
-      return // Não preenche automaticamente quando está "Em análise"
+  // Checagem imediata do estado "Em análise"
+  let situationSelects = getSituationSelects()
+  if (situationSelects.some(s => s && s.value === '2')) {
+    // Se já estiver em "Em análise" ao carregar, garante remoção de saudação/encerramento
+    const parts = extractContentParts(textArea.value)
+    if (parts.greeting || parts.closing) {
+      textArea.value = parts.content
+      textArea.dispatchEvent(new Event('input', { bubbles: true }))
     }
+    return
+  }
+
+  // Aguarda o site aplicar a situação/descrição (carregamento dinâmico), então revalida
+  await new Promise(resolve => setTimeout(resolve, 400))
+  situationSelects = getSituationSelects()
+  if (situationSelects.some(s => s && s.value === '2')) {
+    const parts = extractContentParts(textArea.value)
+    if (parts.greeting || parts.closing) {
+      textArea.value = parts.content
+      textArea.dispatchEvent(new Event('input', { bubbles: true }))
+    }
+    return
   }
 
   // Verifica se o select ssForm:situacaoTramite existe e tem as opções específicas
@@ -1642,8 +1670,9 @@ function addSgdActionButtons(masterContainer) {
 }
 
 // --- CONTROLE DE COMPORTAMENTO DOS DROPDOWNS (hover/click) ---
-let dropdownClickHandlers = []
+let dropdownClickHandlers = [] // mantido por compatibilidade, não usamos mais handlers por botão
 let documentClickCloser = null
+let documentDropdownToggleDelegated = null
 
 async function applyDropdownBehaviorSetting() {
   const settings = await getSettings()
@@ -1673,7 +1702,7 @@ function removeHoverDropdowns() {
 
 function setupClickDropdowns() {
   // Evita múltiplas instalações
-  if (dropdownClickHandlers.length > 0) return
+  if (documentDropdownToggleDelegated) return
 
   // Fecha todos os dropdowns abertos
   const closeAll = () => {
@@ -1688,34 +1717,44 @@ function setupClickDropdowns() {
   }
   document.addEventListener('click', documentClickCloser, true)
 
-  // Adiciona listeners de clique aos gatilhos
-  const triggers = document.querySelectorAll('.editor-container .dropdown > button')
-  triggers.forEach(btn => {
-    const handler = e => {
-      e.preventDefault()
-      e.stopPropagation()
-      const dropdown = btn.closest('.dropdown')
-      if (!dropdown) return
-      // Fecha outros
-      document.querySelectorAll('.dropdown.open').forEach(d => {
-        if (d !== dropdown) d.classList.remove('open')
-      })
-      // Alterna atual
-      dropdown.classList.toggle('open')
-    }
-    btn.addEventListener('click', handler)
-    dropdownClickHandlers.push({ btn, handler })
-  })
+  // Delegação: funciona para dropdowns na toolbar, barra fixa e modais
+  documentDropdownToggleDelegated = e => {
+    const trigger = e.target.closest('.dropdown > button')
+    if (!trigger) return
+    // Garante que seja um dropdown nosso (toolbar, barra fixa ou modal de nossa extensão)
+    if (!trigger.closest('.editor-container, .fixed-toolbar, .se-modal-content')) return
+    e.preventDefault()
+    e.stopPropagation()
+    const dropdown = trigger.closest('.dropdown')
+    if (!dropdown) return
+    // Fecha outros
+    document.querySelectorAll('.dropdown.open').forEach(d => {
+      if (d !== dropdown) d.classList.remove('open')
+    })
+    // Alterna atual
+    dropdown.classList.toggle('open')
+  }
+  document.addEventListener('click', documentDropdownToggleDelegated, true)
 
   // Observação: não interrompemos a propagação dentro do conteúdo para permitir
   // que os cliques cheguem ao listener delegado da toolbar
 }
 
 function removeClickDropdowns() {
-  dropdownClickHandlers.forEach(({ btn, handler }) => {
-    btn.removeEventListener('click', handler)
-  })
-  dropdownClickHandlers = []
+  // Remove delegação
+  if (documentDropdownToggleDelegated) {
+    document.removeEventListener('click', documentDropdownToggleDelegated, true)
+    documentDropdownToggleDelegated = null
+  }
+  // Remove handlers antigos caso existam
+  if (dropdownClickHandlers.length) {
+    dropdownClickHandlers.forEach(({ btn, handler }) => {
+      try {
+        btn.removeEventListener('click', handler)
+      } catch {}
+    })
+    dropdownClickHandlers = []
+  }
   if (documentClickCloser) {
     document.removeEventListener('click', documentClickCloser, true)
     documentClickCloser = null
@@ -1728,6 +1767,66 @@ function removeClickDropdowns() {
  * Verifica se existem lembretes pendentes que ainda não foram notificados
  * nesta sessão do navegador e exibe o toast para eles.
  */
+
+/**
+ * Configura os atalhos de teclado para um textarea do Editor Básico.
+ * @param {HTMLTextAreaElement} textArea - O textarea que receberá os atalhos.
+ */
+function setupBasicEditorKeyboardShortcuts(textArea) {
+  const handleKeydown = e => {
+    // Não processa se houver popup de atalhos aberto
+    if (document.getElementById('shortcut-popup')) return
+    
+    const ctrl = e.ctrlKey
+    const alt = e.altKey
+    const shift = e.shiftKey
+    const key = e.key.toLowerCase()
+    
+    // Atalhos básicos de formatação
+    if (ctrl && !alt && !shift) {
+      switch (key) {
+        case 'b':
+          e.preventDefault()
+          applyFormatting(textArea, 'strong')
+          return
+        case 'i':
+          e.preventDefault()
+          applyFormatting(textArea, 'em')
+          return
+        case 'u':
+          e.preventDefault()
+          applyFormatting(textArea, 'u')
+          return
+        case 'm':
+          e.preventDefault()
+          insertBullet(textArea)
+          return
+      }
+    }
+    
+    // Atalhos com Ctrl+Alt
+    if (ctrl && alt && !shift) {
+      switch (key) {
+        case 'h':
+          e.preventDefault()
+          openLinkModal(textArea)
+          return
+      }
+    }
+    
+    // Atalho para inserir nome de usuário (Alt+Shift+U)
+    if (!ctrl && alt && shift && e.key === 'U') {
+      e.preventDefault()
+      insertUserName(textArea)
+      return
+    }
+  }
+  
+  textArea.addEventListener('keydown', handleKeydown)
+  
+  // Listener para colar imagens
+  textArea.addEventListener('paste', e => handleImagePaste(e, textArea))
+}
 
 async function initializeExtension() {
   const settings = await getSettings()
@@ -1781,6 +1880,365 @@ async function initializeExtension() {
   createAndInjectBellIcon()
   await updateNotificationStatus()
   createSpeechCommandHint()
+
+  // --- NOVA LÓGICA DO EDITOR BÁSICO GLOBAL ---
+  // 1. Inicializa a barra de ferramentas básica (ela começa oculta)
+  await initializeFixedBasicToolbar()
+
+  // 2. Listener global para 'focusin' (pega o foco em textareas)
+  document.addEventListener('focusin', e => {
+    if (e.target.tagName !== 'TEXTAREA') return
+
+    // Ignora o textarea que já tem o editor COMPLETO
+    if (e.target.closest('.editor-master-container')) {
+      // Se estamos focando no editor principal, escondemos o básico
+      const toolbar = document.getElementById('fixed-basic-toolbar')
+      if (toolbar) toolbar.classList.remove('visible')
+      activeBasicEditor = null
+      return
+    }
+
+    // É um textarea básico!
+    clearTimeout(hideToolbarTimeout)
+    activeBasicEditor = e.target
+
+    const toolbar = document.getElementById('fixed-basic-toolbar')
+    if (toolbar) {
+      toolbar.classList.add('visible')
+    }
+
+    // Adiciona destaque
+    e.target.classList.add('basic-editor-focused')
+    
+    // Adiciona listeners de atalhos se ainda não existir
+    if (!e.target._basicEditorShortcutsAdded) {
+      e.target._basicEditorShortcutsAdded = true
+      setupBasicEditorKeyboardShortcuts(e.target)
+    }
+  })
+
+  // 3. Listener global para 'focusout' (esconde a barra)
+  document.addEventListener('focusout', e => {
+    if (e.target.tagName !== 'TEXTAREA') return
+
+    // Remove o destaque
+    e.target.classList.remove('basic-editor-focused')
+
+    // Esconde a barra após um pequeno delay (permite cliques na própria barra)
+    hideToolbarTimeout = setTimeout(() => {
+      const toolbar = document.getElementById('fixed-basic-toolbar')
+      // Só esconde se o mouse não estiver sobre a barra
+      if (toolbar && !toolbar.matches(':hover')) {
+        toolbar.classList.remove('visible')
+        activeBasicEditor = null
+      }
+    }, 200)
+  })
+  // --- FIM DA NOVA LÓGICA ---
+
+  observeForSscAttachmentField()
+}
+
+/**
+ * NOVO: Alterna a posição da barra de ferramentas fixa entre left, top, right, bottom.
+ */
+async function cycleToolbarPosition(toolbarElement) {
+  const positions = ['left', 'top', 'right', 'bottom']
+  let currentPosition = 'left'
+  
+  // Encontra a posição atual
+  for (const pos of positions) {
+    if (toolbarElement.classList.contains(`position-${pos}`)) {
+      currentPosition = pos
+      break
+    }
+  }
+  
+  // Calcula a próxima posição
+  const currentIndex = positions.indexOf(currentPosition)
+  const nextPosition = positions[(currentIndex + 1) % positions.length]
+  
+  // Remove todas as classes de posição
+  positions.forEach(pos => toolbarElement.classList.remove(`position-${pos}`))
+  
+  // Adiciona a nova classe de posição
+  toolbarElement.classList.add(`position-${nextPosition}`)
+  
+  // Salva a preferência no storage
+  const settings = await getSettings()
+  if (!settings.uiSettings) settings.uiSettings = {}
+  settings.uiSettings.toolbarPosition = nextPosition
+  await saveSettings(settings)
+}
+
+/**
+ * NOVO: Cria a barra de ferramentas básica fixa (Singleton)
+ * e a injeta no <body>.
+ */
+async function initializeFixedBasicToolbar() {
+  if (document.getElementById('fixed-basic-toolbar') || sharedToolbarInitialized) return
+  sharedToolbarInitialized = true
+
+  const sharedToolbar = document.createElement('div')
+  sharedToolbar.id = 'fixed-basic-toolbar'
+  // Começa oculta
+  sharedToolbar.className = 'fixed-toolbar'
+  
+  // Carrega a posição salva
+  const settings = await getSettings()
+  const savedPosition = settings.uiSettings?.toolbarPosition || 'left'
+  sharedToolbar.classList.add(`position-${savedPosition}`)
+
+  // Gera o HTML da barra de ferramentas com as opções básicas
+  sharedToolbar.innerHTML = await createEditorToolbarHtml('shared-basic', {
+    includePreview: false,
+    includeFormatting: true,
+    includeLists: true,
+    includeLink: true,
+    includeImage: true,
+    includeColors: true,
+    includeEmoji: true,
+    includeQuickChange: false,
+    includeManageSteps: false,
+    includeUsername: false,
+    includeAI: false,
+    includeQuickSteps: false,
+    includeReminders: false,
+    includeNotes: false,
+    includeThemeToggle: false
+  })
+
+  document.body.appendChild(sharedToolbar)
+  applyCurrentTheme(sharedToolbar)
+  setupSharedToolbarListeners(sharedToolbar)
+  // Aplica visibilidade das preferências também na barra fixa
+  updateToolbarButtonVisibility(sharedToolbar)
+}
+
+/**
+ * NOVO: Configura os listeners para a barra de ferramentas compartilhada.
+ */
+function setupSharedToolbarListeners(toolbarElement) {
+  // Impede que o textarea perca o foco ao clicar na barra de ferramentas
+  toolbarElement.addEventListener('mousedown', e => {
+    clearTimeout(hideToolbarTimeout)
+    if (activeBasicEditor) {
+      e.preventDefault()
+    }
+  })
+
+  // Dropdowns do editor básico: abrir/fechar via clique, independente do modo global
+  toolbarElement.addEventListener('click', e => {
+    const trigger = e.target.closest('.dropdown > button')
+    if (!trigger || !toolbarElement.contains(trigger)) return
+    e.preventDefault()
+    e.stopPropagation()
+    const dropdown = trigger.closest('.dropdown')
+    const willOpen = !dropdown.classList.contains('open')
+    toolbarElement.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'))
+    if (willOpen) dropdown.classList.add('open')
+  })
+  
+  // Bloqueia comportamento de hover nos dropdowns da barra fixa
+  toolbarElement.querySelectorAll('.dropdown').forEach(dropdown => {
+    const button = dropdown.querySelector(':scope > button')
+    const content = dropdown.querySelector('.dropdown-content')
+    if (!button || !content) return
+    
+    // Impede que eventos de mouse afetem a abertura/fechamento
+    const preventHover = e => {
+      e.stopPropagation()
+    }
+    button.addEventListener('mouseenter', preventHover)
+    button.addEventListener('mouseleave', preventHover)
+    content.addEventListener('mouseenter', preventHover)
+    content.addEventListener('mouseleave', preventHover)
+  })
+  
+  // Fecha ao clicar fora da barra
+  if (!toolbarElement._outsideClickHandler) {
+    toolbarElement._outsideClickHandler = ev => {
+      if (!toolbarElement.contains(ev.target)) {
+        toolbarElement.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'))
+      }
+    }
+    document.addEventListener('click', toolbarElement._outsideClickHandler, true)
+  }
+
+  // Listener de clique: executa as ações
+  toolbarElement.addEventListener('click', e => {
+    const button = e.target.closest('button[data-action]')
+    if (!button) return
+
+    // Ação de mover toolbar não precisa de editor ativo
+    if (button.dataset.action === 'move-toolbar') {
+      cycleToolbarPosition(toolbarElement)
+      return
+    }
+
+    if (!activeBasicEditor) {
+      showNotification('Clique em um campo de texto para editá-lo.', 'info')
+      return
+    }
+
+    switch (button.dataset.action) {
+      case 'bold':
+        applyFormatting(activeBasicEditor, 'strong')
+        break
+      case 'italic':
+        applyFormatting(activeBasicEditor, 'em')
+        break
+      case 'underline':
+        applyFormatting(activeBasicEditor, 'u')
+        break
+      case 'numbered':
+        insertListItem(activeBasicEditor, `<b>${getNextMainNumber(activeBasicEditor)}. </b>`)
+        break
+      case 'sub-numbered': {
+        const { main, sub } = getNextSubNumber(activeBasicEditor)
+        insertListItem(activeBasicEditor, `<b>${main}.${sub}. </b>`)
+        break
+      }
+      case 'lettered':
+        insertListItem(activeBasicEditor, `<b>${getNextLetter(activeBasicEditor)}. </b>`)
+        break
+      case 'bullet':
+        insertBullet(activeBasicEditor)
+        break
+      case 'link':
+        openLinkModal(activeBasicEditor)
+        break
+      case 'insert-image':
+        openImageUploadModal(activeBasicEditor)
+        break
+      // 'color', 'highlight', 'emoji', 'list' tratadas pelos próprios pickers/dropdowns
+    }
+
+    if (!['color', 'highlight', 'emoji', 'list'].includes(button.dataset.action)) {
+      activeBasicEditor.focus()
+    }
+  })
+
+  // Pickers de cor
+  createColorPicker(
+    document.getElementById('color-picker-shared-basic'),
+    color => {
+      if (activeBasicEditor) {
+        applyFormatting(activeBasicEditor, 'span', { style: `color:${color}` })
+        activeBasicEditor.focus()
+      }
+    }
+  )
+  setupPickerHover(toolbarElement, 'color', 'color-picker-shared-basic')
+
+  createColorPicker(
+    document.getElementById('highlight-picker-shared-basic'),
+    color => {
+      if (activeBasicEditor) {
+        applyFormatting(activeBasicEditor, 'span', { style: `background-color:${color}` })
+        activeBasicEditor.focus()
+      }
+    }
+  )
+  setupPickerHover(toolbarElement, 'highlight', 'highlight-picker-shared-basic')
+
+  createEmojiPicker(
+    document.getElementById('emoji-picker-shared-basic'),
+    emojiHtml => {
+      if (activeBasicEditor) {
+        insertAtCursor(activeBasicEditor, emojiHtml)
+        activeBasicEditor.focus()
+      }
+    }
+  )
+  setupPickerHover(toolbarElement, 'emoji', 'emoji-picker-shared-basic')
+}
+
+/**
+ * Monitora quando o campo de descrição para anexar SSC aparece e preenche automaticamente.
+ */
+function observeForSscAttachmentField() {
+  const fillSscField = async (field) => {
+    // Só preenche se o campo estiver vazio e não tiver sido preenchido automaticamente antes
+    if (field && !field.dataset.autoFilled && field.value.trim() === '') {
+      const defaultText = `[saudacao],
+ 
+Verificamos que já há um atendimento de mesmo assunto registrado: <a href="https://suporte.dominioatendimento.com/sgsc/faces/ssc.html?ssc=XXXXXX" style="color: rgb(255, 128, 0); font-weight: bold;">Solicitação XXXXXX</a>
+ 
+Por gentileza, seguir acompanhando no atendimento mencionado acima.
+ 
+Obrigado.`
+
+      // Processa as variáveis do texto (substitui [saudacao] pela saudação apropriada)
+      const processedText = await resolveVariablesInText(defaultText)
+      
+      field.value = processedText
+      field.dataset.autoFilled = 'true'
+      
+      // Cria e insere o aviso acima do campo
+      createSscFieldWarning(field)
+      
+      // Dispara evento de input para garantir que o sistema detecte a mudança
+      field.dispatchEvent(new Event('input', { bubbles: true }))
+    }
+  }
+  
+  /**
+   * Cria e insere um aviso acima do campo de texto quando ele é preenchido automaticamente.
+   * @param {HTMLTextAreaElement} field - O campo textarea que foi preenchido.
+   */
+  const createSscFieldWarning = (field) => {
+    // Verifica se o aviso já existe para evitar duplicatas
+    const existingWarning = field.parentNode?.querySelector('.ssc-field-warning')
+    if (existingWarning) return
+    
+    // Cria o elemento de aviso
+    const warning = document.createElement('div')
+    warning.className = 'ssc-field-warning'
+    warning.innerHTML = `
+      <div style="background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; padding: 10px; margin-bottom: 10px; color: #856404; font-size: 13px;">
+        <strong>⚠️ Atenção:</strong>
+        <ul style="margin: 8px 0 0 20px; padding: 0;">
+          <li>Substitua <strong>XXXXXX</strong> na URL pelo número informado no link da Solicitação.</li>
+          <li>Na Solicitação, informe o <strong>Número da SSC</strong>.</li>
+        </ul>
+      </div>
+    `
+    
+    // Insere o aviso antes do campo (ou antes do label se existir)
+    const parent = field.parentNode
+    if (parent) {
+      // Tenta encontrar o label do campo para inserir o aviso depois dele
+      const label = parent.querySelector(`label[for="${field.id}"]`)
+      if (label) {
+        label.parentNode.insertBefore(warning, label.nextSibling)
+      } else {
+        // Se não encontrar o label, insere antes do campo
+        parent.insertBefore(warning, field)
+      }
+    }
+  }
+
+  const observer = new MutationObserver((mutations, obs) => {
+    const sscDescricaoField = document.getElementById('sscAnexarSscForm:descricao')
+    if (sscDescricaoField) {
+      fillSscField(sscDescricaoField).catch(console.error)
+    }
+  })
+
+  // Observa mudanças no DOM
+  if (document.body) {
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    })
+  }
+
+  // Também verifica imediatamente caso o campo já exista
+  const sscDescricaoField = document.getElementById('sscAnexarSscForm:descricao')
+  if (sscDescricaoField) {
+    fillSscField(sscDescricaoField).catch(console.error)
+  }
 }
 
 /**
@@ -1887,14 +2345,26 @@ function setupSolutionObserver(textArea) {
  * @param {HTMLTextAreaElement} textArea - O elemento textarea do editor principal.
  */
 function setupUserSelectionListener(textArea) {
-  const userSelect = document.getElementById('cadSscForm:usuario')
+  const userSelect = document.getElementById(typeof USER_NAME_SELECT_ID !== 'undefined' ? USER_NAME_SELECT_ID : 'cadSscForm:usuario')
   if (!userSelect) return
 
-  userSelect.addEventListener('change', () => {
-    // Pega o primeiro nome do usuário recém-selecionado.
+  const typedInput = document.getElementById(typeof USER_NAME_INPUT_ID !== 'undefined' ? USER_NAME_INPUT_ID : 'cadSscForm:nome')
+
+  const computeFirstName = () => {
+    if (userSelect.value === '-3') {
+      const typedValue = typedInput ? typedInput.value.trim() : ''
+      if (typedValue) {
+        return typedValue.split(' ')[0]
+      }
+      return 'Usuário'
+    }
     const selectedOption = userSelect.options[userSelect.selectedIndex]
-    const fullName = selectedOption.textContent.trim()
-    const newUserName = fullName.split(' ')[0] || 'Usuário'
+    const fullName = selectedOption ? selectedOption.textContent.trim() : ''
+    return (fullName.split(' ')[0] || 'Usuário')
+  }
+
+  const updateUserVariableSpans = () => {
+    const newUserName = computeFirstName()
     const capitalizedUserName =
       newUserName.charAt(0).toUpperCase() + newUserName.slice(1).toLowerCase()
 
@@ -1912,7 +2382,24 @@ function setupUserSelectionListener(textArea) {
         textArea.dispatchEvent(new Event('input', { bubbles: true }))
       }
     }
+  }
+
+  userSelect.addEventListener('change', () => {
+    updateUserVariableSpans()
   })
+
+  if (typedInput) {
+    typedInput.addEventListener('input', () => {
+      if (userSelect.value === '-3') {
+        updateUserVariableSpans()
+      }
+    })
+  }
+
+  // Atualiza imediatamente se já estiver em "Não cadastrado"
+  if (userSelect.value === '-3') {
+    updateUserVariableSpans()
+  }
 }
 
 /**
@@ -2359,6 +2846,12 @@ async function applyGlobalVisibilitySettings() {
     // A visibilidade do botão também depende do scroll, então usamos uma classe
     goToTopButton.style.display = visibility.goToTop === false ? 'none' : ''
   }
+
+  // Novo: visibilidade do botão "Pesquisar Resposta" clonado
+  const clonedSearchButtons = document.querySelectorAll('.cloned-search-button')
+  clonedSearchButtons.forEach(btn => {
+    btn.style.display = visibility.searchAnswerButton === false ? 'none' : ''
+  })
 }
 
 /**
@@ -2387,7 +2880,7 @@ async function updateAllToolbarButtonLabels() {
 
 function applyAllVisibilitySettings() {
   // Atualiza todas as barras de ferramentas
-  document.querySelectorAll('.editor-container').forEach(container => {
+  document.querySelectorAll('.editor-container, .fixed-toolbar').forEach(container => {
     updateToolbarButtonVisibility(container)
   })
   // Atualiza os elementos globais
@@ -2503,3 +2996,65 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
   }
 })
+
+/**
+ * Função principal para inicializar todas as funcionalidades do editor.
+ */
+async function initializeEnhancedEditor() {
+  await loadSavedTheme()
+  const settings = await getSettings()
+  applyUiSettings(settings)
+
+  if (settings.preferences.dropdownBehavior === 'click') {
+    document.body.classList.add('dropdown-click-mode')
+  }
+
+  const observer = new MutationObserver(mutations => {
+    for (const mutation of mutations) {
+      if (mutation.addedNodes.length) {
+        findAndEnhanceTextareas()
+      }
+    }
+  })
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  })
+
+  findAndEnhanceTextareas()
+  await initializeNotesPanel()
+
+  // Verifica se o painel de atendimentos seguidos deve ser criado
+  initializeFollowedAttendancesPanel();
+
+  checkVersionAndShowWhatsNew();
+}
+
+// --- CONTROLE DE NOVIDADES DA VERSÃO ---
+
+/**
+ * Compara a versão atual com a última vista e exibe o modal de novidades se necessário.
+ */
+async function checkVersionAndShowWhatsNew() {
+  try {
+    const currentVersion = chrome.runtime.getManifest().version;
+    const lastSeenVersion = await getLastSeenVersion();
+
+    if (currentVersion !== lastSeenVersion) {
+      // Verifica se há notas de versão para a versão atual
+      if (RELEASE_NOTES && RELEASE_NOTES[currentVersion]) {
+        showWhatsNewModal(RELEASE_NOTES[currentVersion]);
+        await setLastSeenVersion(currentVersion);
+      }
+    }
+  } catch (error) {
+    console.error('Editor SGD: Erro ao verificar a versão para novidades.', error);
+  }
+}
+
+// --- INICIALIZAÇÃO SEGURA ---
+
+// Inicia a observação para encontrar o textarea principal quando o DOM estiver pronto.
+observeForTextArea()
+checkVersionAndShowWhatsNew()

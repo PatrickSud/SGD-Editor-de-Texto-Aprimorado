@@ -704,3 +704,284 @@ button[data-action='speech-to-text']:disabled:hover {
   color: var(--text-color);
   border-color: var(--action-green);
 }
+
+/* --- INÍCIO: Botão "Pesquisar Resposta" Clonado --- */
+
+/* Estiliza o botão clonado que injetamos */
+.cloned-search-button {
+  /* compacto, apenas ícone */
+  width: auto;
+  margin-top: 8px;
+  margin-right: 4px;
+  padding: 8px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px; /* igual ao clear-form-btn */
+  line-height: 1;
+  border: none;
+  border-radius: 5px; /* igual ao clear-form-btn */
+  color: white !important;
+  background-color: rgba(0, 0, 0, 0.1) !important; /* igual ao clear-form-btn */
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cloned-search-button:hover {
+  background-color: rgba(0, 0, 0, 0.3) !important; /* igual ao clear-form-btn:hover */
+}
+
+/* --- BARRA DE FERRAMENTAS FIXA (BÁSICA) --- */
+.fixed-toolbar {
+  position: fixed;
+  z-index: 1998; /* Abaixo dos modais (2000) e painel de notas (1999) */
+  
+  /* Começa oculta */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+  
+  width: auto; /* Largura automática baseada nos botões */
+  padding: 6px;
+  
+  /* Layout vertical para os botões */
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  /* Estilo Glassmorphism (reutiliza o estilo do painel de notas) */
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  background-color: var(--background-glass);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+}
+
+/* Posição esquerda (padrão) */
+.fixed-toolbar.position-left {
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%) translateX(-20px);
+}
+
+.fixed-toolbar.position-left.visible {
+  transform: translateY(-50%) translateX(0);
+}
+
+/* Posição direita */
+.fixed-toolbar.position-right {
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%) translateX(20px);
+}
+
+.fixed-toolbar.position-right.visible {
+  transform: translateY(-50%) translateX(0);
+}
+
+/* Posição superior */
+.fixed-toolbar.position-top {
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  flex-direction: row;
+}
+
+.fixed-toolbar.position-top.visible {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Posição inferior */
+.fixed-toolbar.position-bottom {
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  flex-direction: row;
+}
+
+.fixed-toolbar.position-bottom.visible {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Garante que regras globais de .editor-container não alarguem a barra fixa */
+.fixed-toolbar.editor-container {
+  width: auto !important;
+  max-width: none !important;
+  margin: 0 !important;
+}
+
+.fixed-toolbar.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Ajusta a barra de ferramentas interna dentro do contêiner fixo */
+.fixed-toolbar .editor-toolbar {
+  flex-direction: column; /* Botões empilhados verticalmente */
+  border-bottom: none;
+  padding-bottom: 0;
+  gap: 6px;
+  align-items: flex-start; /* Evita centralizar no eixo cruzado */
+}
+
+/* Quando a barra está no topo ou embaixo, ajusta a toolbar interna */
+.fixed-toolbar.position-top .editor-toolbar,
+.fixed-toolbar.position-bottom .editor-toolbar {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: nowrap;
+  height: 32px; /* Altura fixa igual aos botões */
+}
+
+/* Garante que todos os filhos diretos da toolbar horizontal estejam alinhados */
+.fixed-toolbar.position-top .editor-toolbar > *,
+.fixed-toolbar.position-bottom .editor-toolbar > * {
+  align-self: center;
+  display: flex;
+  align-items: center;
+}
+
+/* Separadores na barra fixa vertical (esquerda/direita) */
+.fixed-toolbar.position-left .toolbar-separator,
+.fixed-toolbar.position-right .toolbar-separator {
+  width: 100%;
+  height: 1.5px;
+  margin: 6px 0; /* Espaçamento vertical */
+  align-self: stretch; /* ocupa toda a largura */
+}
+
+/* Separadores na barra fixa horizontal (topo/baixo) */
+.fixed-toolbar.position-top .toolbar-separator,
+.fixed-toolbar.position-bottom .toolbar-separator {
+  width: 1.5px;
+  height: 18px;
+  margin: 0 5px; /* Espaçamento horizontal */
+}
+
+/* Uniformiza o tamanho dos botões na barra fixa */
+.fixed-toolbar .editor-toolbar > button,
+.fixed-toolbar .editor-toolbar > .dropdown > button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* Garante alinhamento perfeito nas posições horizontal */
+.fixed-toolbar.position-top .editor-toolbar > button,
+.fixed-toolbar.position-top .editor-toolbar > .dropdown > button,
+.fixed-toolbar.position-bottom .editor-toolbar > button,
+.fixed-toolbar.position-bottom .editor-toolbar > .dropdown > button {
+  vertical-align: middle;
+}
+
+.fixed-toolbar.position-top .editor-toolbar > .dropdown,
+.fixed-toolbar.position-bottom .editor-toolbar > .dropdown {
+  align-items: center;
+}
+
+/* Reduz levemente o tamanho do conteúdo do botão na barra fixa */
+.fixed-toolbar .editor-toolbar > button,
+.fixed-toolbar .editor-toolbar > .dropdown > button {
+  font-size: 13px;
+}
+
+/* Remove a escala global nesta barra para evitar tamanhos desiguais */
+.fixed-toolbar .editor-toolbar > button,
+.fixed-toolbar .editor-toolbar > .dropdown > button {
+  transform: none;
+}
+.fixed-toolbar .editor-toolbar > button:hover,
+.fixed-toolbar .editor-toolbar > .dropdown > button:hover {
+  transform: translateY(-1px); /* mantém apenas o leve deslocamento */
+}
+
+/* Botão de mover toolbar */
+.move-toolbar-btn {
+  background-color: var(--primary-color) !important;
+  color: white !important;
+  font-size: 14px !important;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+}
+
+.move-toolbar-btn:hover {
+  background-color: var(--primary-color-hover) !important;
+  transform: translateY(-1px) rotate(15deg) !important;
+}
+
+/* Ajusta os dropdowns para abrir conforme a posição da barra */
+.fixed-toolbar.position-left .dropdown,
+.fixed-toolbar.position-right .dropdown {
+  width: 100%;
+}
+
+.fixed-toolbar.position-top .dropdown,
+.fixed-toolbar.position-bottom .dropdown {
+  width: auto;
+  display: inline-flex;
+}
+
+/* Dropdowns na posição esquerda: abrem à direita */
+.fixed-toolbar.position-left .dropdown-content {
+  left: 100%;
+  top: 0;
+  margin-left: 6px;
+  min-width: 160px;
+}
+
+/* Dropdowns na posição direita: abrem à esquerda */
+.fixed-toolbar.position-right .dropdown-content {
+  right: 100%;
+  top: 0;
+  margin-right: 6px;
+  min-width: 160px;
+}
+
+/* Dropdowns na posição superior: abrem abaixo */
+.fixed-toolbar.position-top .dropdown-content {
+  left: 0;
+  top: 100%;
+  margin-top: 6px;
+  min-width: 160px;
+}
+
+/* Dropdowns na posição inferior: abrem acima */
+.fixed-toolbar.position-bottom .dropdown-content {
+  left: 0;
+  bottom: 100%;
+  margin-bottom: 6px;
+  min-width: 160px;
+}
+
+/* No editor básico, menus não abrem no hover; apenas quando .open for aplicado via JS */
+.fixed-toolbar .dropdown > .dropdown-content {
+  display: none !important;
+}
+.fixed-toolbar .dropdown.open > .dropdown-content {
+  display: flex !important;
+}
+
+/* Oculta o último divisor (após cor de destaque) na barra fixa */
+.fixed-toolbar [data-id="separator5"],
+.fixed-toolbar.position-left [data-id="separator5"],
+.fixed-toolbar.position-right [data-id="separator5"],
+.fixed-toolbar.position-top [data-id="separator5"],
+.fixed-toolbar.position-bottom [data-id="separator5"] {
+  display: none !important;
+}
+
+/* --- DESTAQUE NO TEXTAREA BÁSICO ATIVO --- */
+/* (Remove a classe .basic-editor-target para ser mais global) */
+textarea.basic-editor-focused {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 25%, transparent) !important;
+  outline: none;
+}

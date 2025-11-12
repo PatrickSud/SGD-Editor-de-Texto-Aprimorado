@@ -282,10 +282,21 @@ function insertUserName(textArea) {
   const userSelectElement = document.getElementById(USER_NAME_SELECT_ID)
   let firstName = ''
 
-  if (userSelectElement && userSelectElement.value > 0) {
-    const selectedOption =
-      userSelectElement.options[userSelectElement.selectedIndex]
-    firstName = getFirstName(selectedOption)
+  if (userSelectElement) {
+    if (userSelectElement.value === '-3') {
+      // "Não cadastrado" → usa o nome digitado no input
+      const typedInput = document.getElementById(
+        typeof USER_NAME_INPUT_ID !== 'undefined' ? USER_NAME_INPUT_ID : 'cadSscForm:nome'
+      )
+      const typedValue = typedInput ? typedInput.value.trim() : ''
+      if (typedValue) {
+        firstName = typedValue.split(' ')[0]
+      }
+    } else if (parseInt(userSelectElement.value, 10) > 0) {
+      const selectedOption =
+        userSelectElement.options[userSelectElement.selectedIndex]
+      firstName = getFirstName(selectedOption)
+    }
   }
 
   if (!firstName) {
@@ -577,13 +588,21 @@ async function handleShortcutListener(e) {
 
   const activeElement = document.activeElement
   const textArea = getTargetTextArea()
+  
+  // Verifica se há um editor básico ativo (variável global do main.js)
+  const basicEditor = typeof activeBasicEditor !== 'undefined' ? activeBasicEditor : null
 
-  if (!textArea) return
-
-  // Verifica se o foco está no textarea principal OU no editor WYSIWYG principal.
+  // Verifica se o foco está no textarea principal OU no editor básico OU no editor WYSIWYG principal.
   let isActive = false
-  if (activeElement === textArea) {
+  let targetTextArea = null
+  
+  if (textArea && activeElement === textArea) {
     isActive = true
+    targetTextArea = textArea
+  } else if (basicEditor && activeElement === basicEditor) {
+    // Editor básico está ativo
+    isActive = true
+    targetTextArea = basicEditor
   } else {
     // Nota: O suporte a WYSIWYG foi removido nas versões anteriores, mas mantemos a checagem para compatibilidade futura se for reintroduzido.
     const mainWysiwygContent = document.querySelector(
@@ -591,11 +610,12 @@ async function handleShortcutListener(e) {
     )
     if (activeElement === mainWysiwygContent) {
       isActive = true
+      targetTextArea = textArea
     }
   }
 
-  // Só dispara se o foco estiver no editor principal.
-  if (!isActive) return
+  // Só dispara se o foco estiver no editor principal ou básico.
+  if (!isActive || !targetTextArea) return
 
   const mainKey = e.key.toLowerCase()
 
@@ -641,7 +661,7 @@ async function handleShortcutListener(e) {
     const resolvedContent = await resolveVariablesInText(
       directInsertItem.content
     )
-    insertAtCursor(textArea, resolvedContent, { prefixNewLine: true })
+    insertAtCursor(targetTextArea, resolvedContent, { prefixNewLine: true })
     return // Atalho processado, encerra a função.
   }
 
@@ -657,7 +677,7 @@ async function handleShortcutListener(e) {
       .filter(m => m.categoryId === category.id)
       .sort((a, b) => a.order - b.order)
 
-    showShortcutPopup(textArea, messages)
+    showShortcutPopup(targetTextArea, messages)
     return // Atalho processado, encerra a função.
   }
 }
@@ -672,14 +692,17 @@ function showShortcutPopup(textArea, messages) {
   document.getElementById('shortcut-popup')?.remove()
   if (messages.length === 0) return
 
-  // O popup de atalho é sempre relativo ao editor principal.
+  // Verifica se é o editor principal ou o editor básico
   const editorContainer = document.getElementById('editor-container-main')
-  if (!editorContainer) return
+  const isBasicEditor = !textArea.closest('.editor-master-container')
+  
+  // Se for editor básico e não houver container principal, adiciona ao body
+  const targetContainer = isBasicEditor && !editorContainer ? document.body : (editorContainer || document.body)
 
   const popup = document.createElement('div')
   popup.id = 'shortcut-popup'
   applyCurrentTheme(popup)
-  editorContainer.appendChild(popup)
+  targetContainer.appendChild(popup)
 
   // Estrutura do popup
   popup.innerHTML = `
@@ -756,7 +779,7 @@ function showShortcutPopup(textArea, messages) {
       insertAtCursor(textArea, resolvedContent)
     }
 
-    if (editorContainer.contains(popup)) {
+    if (targetContainer.contains(popup) || isBasicEditor) {
       popup.remove()
     }
   }
@@ -792,7 +815,7 @@ function showShortcutPopup(textArea, messages) {
           await selectItem(activeIndex)
           break
         case 'Escape':
-          if (editorContainer.contains(popup)) {
+          if (targetContainer.contains(popup) || isBasicEditor) {
             popup.remove()
           }
           break
@@ -820,19 +843,30 @@ function showShortcutPopup(textArea, messages) {
 
   updateFilter('')
 
-  const toolbar = editorContainer.querySelector('.editor-toolbar')
-  if (toolbar) {
-    popup.style.top = `${toolbar.offsetHeight + 8}px`
-    popup.style.left = `50%`
-    popup.style.transform = 'translateX(-50%)'
+  // Posicionamento do popup
+  if (isBasicEditor) {
+    // Para editor básico: centraliza na tela
+    popup.style.position = 'fixed'
+    popup.style.top = '50%'
+    popup.style.left = '50%'
+    popup.style.transform = 'translate(-50%, -50%)'
+    popup.style.zIndex = '10000'
   } else {
-    popup.style.top = '10px'
-    popup.style.left = '10px'
+    // Para editor principal: abaixo da toolbar
+    const toolbar = targetContainer.querySelector('.editor-toolbar')
+    if (toolbar) {
+      popup.style.top = `${toolbar.offsetHeight + 8}px`
+      popup.style.left = `50%`
+      popup.style.transform = 'translateX(-50%)'
+    } else {
+      popup.style.top = '10px'
+      popup.style.left = '10px'
+    }
   }
 
   const clickOutsideHandler = e => {
     if (!popup.contains(e.target)) {
-      if (editorContainer.contains(popup)) {
+      if (targetContainer.contains(popup) || isBasicEditor) {
         popup.remove()
       }
     }

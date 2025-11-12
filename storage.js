@@ -891,6 +891,40 @@ async function updateCategoryShortcut(categoryId, newShortcut) {
 }
 
 /**
+ * Atualiza o nome de uma categoria com validação (obrigatório e não duplicado).
+ * @param {string} categoryId - O ID da categoria a ser atualizada.
+ * @param {string} newName - O novo nome a ser definido.
+ */
+async function updateCategoryName(categoryId, newName) {
+  try {
+    const trimmed = (newName || '').trim()
+    if (!trimmed) {
+      throw new Error('O nome da categoria não pode estar vazio.')
+    }
+
+    const data = await getStoredData()
+    const category = data.categories.find(c => c.id === categoryId)
+    if (!category) {
+      throw new Error('Categoria não encontrada para atualizar o nome.')
+    }
+
+    const lower = trimmed.toLowerCase()
+    const isDuplicate = data.categories.some(
+      c => c.id !== categoryId && (c.name || '').trim().toLowerCase() === lower
+    )
+    if (isDuplicate) {
+      throw new Error(`Nome de categoria duplicado: "${trimmed}"`)
+    }
+
+    category.name = trimmed
+    await saveStoredData(data)
+  } catch (error) {
+    console.error('Editor SGD: Erro ao atualizar nome da categoria.', error)
+    // Propaga o erro para a UI poder notificar o usuário.
+    throw error
+  }
+}
+/**
  * Verifica se o modo de desenvolvedor está ativo.
  * @returns {Promise<boolean>} Retorna true se o modo dev estiver ativado.
  */
@@ -1176,3 +1210,31 @@ async function markAttendanceStatus(attendanceId, status) {
          throw error;
      }
  }
+
+// --- CONTROLE DE VERSÃO VISTA ---
+
+/**
+ * Recupera a última versão da extensão que o usuário viu as novidades.
+ * @returns {Promise<string|null>} A versão ou null se nunca foi vista.
+ */
+async function getLastSeenVersion() {
+  try {
+    const result = await chrome.storage.local.get(LAST_SEEN_VERSION_KEY);
+    return result[LAST_SEEN_VERSION_KEY] || null;
+  } catch (error) {
+    console.error('Editor SGD: Erro ao obter a última versão vista.', error);
+    return null;
+  }
+}
+
+/**
+ * Salva a versão atual da extensão como a última vista pelo usuário.
+ * @param {string} version - A versão a ser salva.
+ */
+async function setLastSeenVersion(version) {
+  try {
+    await chrome.storage.local.set({ [LAST_SEEN_VERSION_KEY]: version });
+  } catch (error) {
+    console.error('Editor SGD: Erro ao salvar a última versão vista.', error);
+  }
+}
