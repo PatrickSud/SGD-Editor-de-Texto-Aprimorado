@@ -2064,6 +2064,7 @@ async function initializeExtension() {
 
   observeForSscAttachmentField()
   observeForSolutionResponseRadio()
+  observeForClassificationDefault()
   await checkVersionAndShowWhatsNew()
 }
 
@@ -2416,6 +2417,59 @@ function observeForSolutionResponseRadio() {
     observer.observe(document.body, { childList: true, subtree: true })
   }
   apply()
+}
+
+function observeForClassificationDefault() {
+  const applyFor = async select => {
+    if (!select) return
+    const options = Array.from(select.options)
+    let seenTodas = false
+    options.forEach(opt => {
+      const isTodas = opt.value === '0' && opt.textContent.trim().toUpperCase() === 'TODAS'
+      if (isTodas) {
+        if (seenTodas) opt.remove()
+        seenTodas = true
+      }
+    })
+    const settings = await getSettings()
+    if (!settings.uiSettings) settings.uiSettings = {}
+    let preferredValue = settings.uiSettings.classificationDefaultValue
+    if (!preferredValue) {
+      const tecnicaOpt = Array.from(select.options).find(o => o.textContent.trim().toUpperCase() === 'TÉCNICA')
+      if (tecnicaOpt) {
+        preferredValue = tecnicaOpt.value
+        settings.uiSettings.classificationDefaultValue = preferredValue
+        await saveSettings(settings)
+      }
+    }
+    if (!preferredValue) {
+      const firstValid = Array.from(select.options).find(o => o.value !== '0')
+      if (firstValid) preferredValue = firstValid.value
+    }
+    const current = select.options[select.selectedIndex]?.value
+    if (preferredValue && current !== preferredValue) {
+      select.value = preferredValue
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    }
+    if (!select._classificationDefaultAttached) {
+      select._classificationDefaultAttached = true
+      select.addEventListener('change', async () => {
+        const s = await getSettings()
+        if (!s.uiSettings) s.uiSettings = {}
+        s.uiSettings.classificationDefaultValue = select.value
+        await saveSettings(s)
+      })
+    }
+  }
+  const handle = () => {
+    const el = document.getElementById('cadSscForm:classificacao')
+    if (el) applyFor(el)
+  }
+  const observer = new MutationObserver(() => handle())
+  if (document.body) {
+    observer.observe(document.body, { childList: true, subtree: true })
+  }
+  handle()
 }
 
 /**

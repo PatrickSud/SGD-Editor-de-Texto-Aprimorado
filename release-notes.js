@@ -25,7 +25,8 @@ const MINOR_RELEASE_NOTES = {
     {
       version: '2.9.6.1',
       features: [
-        '<b>Melhoria ao gravar trâmites:</b> Habilitar automaticamente a opção "<b>Solução</b>" ao cadastrar ou responder atendimento.'
+        '<b>Melhoria ao gravar trâmites:</b> Habilitar automaticamente a opção "<b>Solução</b>" ao cadastrar ou responder atendimento.',
+        '<b>Melhoria na classificação:</b> Manter a classificação padrão e remover duplicatas de "Todas" durante o cadastro.'
       ]
     },
     {
