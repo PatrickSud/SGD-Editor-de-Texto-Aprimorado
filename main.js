@@ -2398,24 +2398,29 @@ Obrigado.`
 }
 
 function observeForSolutionResponseRadio() {
+  const choice = (window.__sgdUserRadioChoice ||= {})
   const apply = () => {
-    const targets = [
-      'cadSscForm:tipoRespostaCliente',
-      'sscForm:tipoRespostaCliente'
-    ]
-    targets.forEach(name => {
-      const radio = document.querySelector(
-        `input[type="radio"][name="${name}"][value="2"]`
-      )
-      if (radio && !radio.checked && !radio.disabled) {
-        radio.click()
-      }
+    const names = ['cadSscForm:tipoRespostaCliente', 'sscForm:tipoRespostaCliente']
+    names.forEach(name => {
+      const group = document.querySelectorAll(`input[type="radio"][name="${name}"]`)
+      if (!group || group.length === 0) return
+      group.forEach(r => {
+        if (!r._sgdBound) {
+          r._sgdBound = true
+          r.addEventListener('change', () => {
+            choice[name] = r.value
+          })
+        }
+      })
+      if (choice[name]) return
+      const anyChecked = Array.from(group).some(r => r.checked)
+      if (anyChecked) return
+      const sol = document.querySelector(`input[type="radio"][name="${name}"][value="2"]`)
+      if (sol && !sol.checked && !sol.disabled) sol.click()
     })
   }
   const observer = new MutationObserver(() => apply())
-  if (document.body) {
-    observer.observe(document.body, { childList: true, subtree: true })
-  }
+  if (document.body) observer.observe(document.body, { childList: true, subtree: true })
   apply()
 }
 
