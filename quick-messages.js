@@ -1419,9 +1419,9 @@ async function renderExportList(modal) {
 
       const safeCatId = escapeHTML(category.id)
       categoryContainer.innerHTML = `
-                <div class="export-category-header">
-                    <input type="checkbox" class="export-category-checkbox" data-category-id="${safeCatId}" id="export-cat-${safeCatId}">
-                    <label for="export-cat-${safeCatId}">${escapeHTML(
+                <div class="export-category-header" style="margin-bottom: 5px; display: flex; align-items: center;">
+                    <input type="checkbox" class="export-category-checkbox" data-category-id="${safeCatId}" id="export-cat-${safeCatId}" style="margin-right: 8px;">
+                    <label for="export-cat-${safeCatId}" style="cursor: pointer; width: 100%; font-weight: bold;">${escapeHTML(
         category.name
       )}</label>
                 </div>`
@@ -1960,7 +1960,7 @@ async function openImportSelectionModal(importedData, onCompleteCallback) {
           )}">
           <label for="import-cat-${escapeHTML(
             importedCategory.id
-          )}">${escapeHTML(importedCategory.name)}</label>
+          )}" style="font-weight: bold;">${escapeHTML(importedCategory.name)}</label>
           <div class="import-category-destination">
             <span>→</span>
             <select class="destination-select">${destinationOptions}</select>
