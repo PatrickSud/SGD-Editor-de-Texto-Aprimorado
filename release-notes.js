@@ -1,4 +1,12 @@
 const RELEASE_NOTES = {
+  '2.9.7': {
+    title: '✨ Novidades da Versão 2.9.7',
+    features: [
+      '<b>Reorganização de 🔃 Importar/Exportar:</b> A funcionalidade de Importar/Exportar foi movida das Configurações para o <b>Painel de Trâmites</b>, facilitando o acesso.',
+      '<b>Nova Interface de Importação:</b> O modal de importação/exportação foi redesenhado para uma melhor experiência, com visualização clara dos itens.',
+      '<b>Melhorias de Estabilidade:</b> Ajustes internos para garantir maior fluidez e correção de pequenos bugs.'
+    ]
+  },
   '2.9.6': {
     title: '✨ Novidades da Versão 2.9.6',
     features: [
@@ -26,15 +34,9 @@ const MINOR_RELEASE_NOTES = {
       version: '2.9.6.1',
       features: [
         '<b>Melhoria ao gravar trâmites:</b> Habilitar automaticamente a opção "<b>Solução</b>" ao cadastrar ou responder atendimento.',
-        '<b>Melhoria na classificação:</b> Manter a classificação padrão e remover duplicatas de "Todas" durante o cadastro.'
-      ]
-    },
-    {
-      version: '2.9.6.2',
-      features: [
-        '<b>Reorganização de Importar/Exportar:</b> A funcionalidade de Importar/Exportar foi movida das Configurações para o <b>Painel de Trâmites</b>, facilitando o acesso.',
-        '<b>Nova Interface de Importação:</b> O modal de importação/exportação foi redesenhado para uma melhor experiência.'
+        '<b>Melhoria na classificação:</b> Manter a classificação padrão (ultima selecionada) e remover duplicatas de "Todas" durante o cadastro.'
       ]
     }
+
   ]
 }
