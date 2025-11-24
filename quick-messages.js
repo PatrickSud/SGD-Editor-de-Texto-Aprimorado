@@ -887,6 +887,7 @@ async function openManagementModal() {
         </div>
         -->
         
+        <!--
         <hr>
         <div class="management-section collapsible-section">
             <h4 class="collapsible-header">
@@ -907,6 +908,7 @@ async function openManagementModal() {
                 </div>
             </div>
         </div>
+        -->
         
         <hr>
         <div class="management-section collapsible-section">
@@ -1237,24 +1239,25 @@ async function openManagementModal() {
   //     }
   //   })
 
-  modal.querySelector('#import-btn').addEventListener('click', e => {
-    e.preventDefault()
-    const fileInput = modal.querySelector('#import-file-input')
-    if (fileInput.files.length > 0) {
-      importQuickMessages(fileInput.files[0], () => {
-        renderCategoryManagementList(modal)
-        renderExportList(modal)
-      })
-    } else {
-      showNotification('Por favor, selecione um arquivo.', 'info')
-    }
-  })
+  // Seção de Importar/Exportar movida para o Painel de Trâmites
+  // modal.querySelector('#import-btn').addEventListener('click', e => {
+  //   e.preventDefault()
+  //   const fileInput = modal.querySelector('#import-file-input')
+  //   if (fileInput.files.length > 0) {
+  //     importQuickMessages(fileInput.files[0], () => {
+  //       renderCategoryManagementList(modal)
+  //       renderExportList(modal)
+  //     })
+  //   } else {
+  //     showNotification('Por favor, selecione um arquivo.', 'info')
+  //   }
+  // })
 
-  await renderExportList(modal)
-  modal.querySelector('#export-btn').addEventListener('click', e => {
-    e.preventDefault()
-    exportQuickMessages(modal)
-  })
+  // await renderExportList(modal)
+  // modal.querySelector('#export-btn').addEventListener('click', e => {
+  //   e.preventDefault()
+  //   exportQuickMessages(modal)
+  // })
 
   // Seções inativadas - funcionalidades duplicadas com Painel de Trâmites
   // Renderiza a lista de trâmites na nova seção
@@ -2190,7 +2193,8 @@ async function openQuickInserterPanel() {
           <input type="text" id="qi-search-input" placeholder="Buscar trâmite...">
         </div>
         <div class="qi-categories-list"></div>
-        <div class="qi-actions">
+        <div class="qi-actions" style="display: flex; flex-direction: column; gap: 10px;">
+          <button type="button" id="qi-import-export-btn" class="action-btn enhanced-btn" title="Importar ou Exportar Trâmites" style="color: white;">🔃 Importar / Exportar</button>
           <button type="button" id="qi-add-category-btn" class="action-btn enhanced-btn" title="Adicionar Nova Categoria">📁 Nova Categoria</button>
         </div>
       </div>
@@ -2598,6 +2602,15 @@ async function openQuickInserterPanel() {
       e.preventDefault()
       e.stopPropagation()
       openAddCategoryModal()
+    })
+
+  // Listener para o botão de Importar/Exportar
+  document
+    .getElementById('qi-import-export-btn')
+    .addEventListener('click', e => {
+      e.preventDefault()
+      e.stopPropagation()
+      openImportExportModal()
     })
 
   // Busca
@@ -3259,4 +3272,75 @@ function openGreetingClosingShortcutModal(item, type, onComplete) {
   if (cancelBtn) cancelBtn.onclick = closeModalAndRemoveListener
 
   document.body.appendChild(modal)
+}
+
+/**
+ * Abre o modal de Importar/Exportar Trâmites.
+ */
+async function openImportExportModal() {
+  const modalContentHtml = `
+        <div class="management-section">
+            <h4 style="margin-top: 0; text-align: center;">📥 Importar</h4>
+            <p style="text-align: center;">Selecione um arquivo .json para importar.</p>
+            <div class="form-group" style="display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 15px; width: 100%;">
+                <input type="file" id="import-file-input" accept=".json" style="display: none;">
+                <label for="import-file-input" class="action-btn enhanced-btn" style="cursor: pointer; margin: 0; color: white; order: 1;">📁 Escolher Arquivo</label>
+                <span id="file-name-display" style="font-size: 0.9em; color: var(--text-color-muted); order: 2;">Nenhum arquivo selecionado</span>
+            </div>
+        </div>
+        
+        <hr style="margin: 20px 0;">
+        
+        <div class="management-section">
+            <h4 style="margin-top: 0; text-align: center;">📤 Exportar</h4>
+            <p style="text-align: center;">Selecione os trâmites que deseja exportar.</p>
+            <div id="export-list" class="export-list" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border-color); padding: 10px; border-radius: 4px;"></div>
+            <div class="import-export-actions" style="margin-top: 10px; display: flex; justify-content: center;">
+                <button type="button" id="export-btn" class="action-btn enhanced-btn" style="color: white;">Exportar Selecionados</button>
+            </div>
+        </div>
+    `
+
+  const modal = createModal(
+    'Importar / Exportar Trâmites',
+    modalContentHtml,
+    null // Sem botão de salvar principal, ações são individuais
+  )
+
+  // Remove o botão "Salvar" padrão, pois as ações são imediatas
+  const saveBtn = modal.querySelector('#modal-save-btn')
+  if (saveBtn) saveBtn.remove()
+
+  document.body.appendChild(modal)
+
+  // --- LÓGICA DE IMPORTAÇÃO ---
+  const fileInput = modal.querySelector('#import-file-input')
+  const fileNameDisplay = modal.querySelector('#file-name-display')
+
+  fileInput.addEventListener('change', e => {
+    if (e.target.files.length > 0) {
+      fileNameDisplay.textContent = e.target.files[0].name
+
+      // Inicia a importação automaticamente após selecionar o arquivo
+      importQuickMessages(e.target.files[0], async () => {
+        // Após importar, atualiza a lista de exportação para incluir os novos itens
+        await renderExportList(modal)
+        // Atualiza o painel de trâmites
+        await refreshQuickInserterPanel()
+
+        // Limpa o input para permitir selecionar o mesmo arquivo novamente se necessário
+        fileInput.value = ''
+        fileNameDisplay.textContent = 'Nenhum arquivo selecionado'
+      })
+    } else {
+      fileNameDisplay.textContent = 'Nenhum arquivo selecionado'
+    }
+  })
+
+  // --- LÓGICA DE EXPORTAÇÃO ---
+  await renderExportList(modal)
+  modal.querySelector('#export-btn').addEventListener('click', e => {
+    e.preventDefault()
+    exportQuickMessages(modal)
+  })
 }

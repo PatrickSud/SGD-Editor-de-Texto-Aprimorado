@@ -31,7 +31,10 @@ const MINOR_RELEASE_NOTES = {
     },
     {
       version: '2.9.6.2',
-      features: []
+      features: [
+        '<b>Reorganização de Importar/Exportar:</b> A funcionalidade de Importar/Exportar foi movida das Configurações para o <b>Painel de Trâmites</b>, facilitando o acesso.',
+        '<b>Nova Interface de Importação:</b> O modal de importação/exportação foi redesenhado para uma melhor experiência.'
+      ]
     }
   ]
 }
