@@ -10,29 +10,34 @@
 async function getStoredData() {
   try {
     // 1. Tenta ler do novo local de armazenamento (local)
-    let localResult = await chrome.storage.local.get(STORAGE_KEY);
-    let data = localResult[STORAGE_KEY];
+    let localResult = await chrome.storage.local.get(STORAGE_KEY)
+    let data = localResult[STORAGE_KEY]
 
     // 2. Se não encontrou dados no local, verifica o local antigo (sync)
     if (!data) {
-      const syncResult = await chrome.storage.sync.get(STORAGE_KEY);
-      const syncData = syncResult[STORAGE_KEY];
+      const syncResult = await chrome.storage.sync.get(STORAGE_KEY)
+      const syncData = syncResult[STORAGE_KEY]
 
       // 3. Se encontrou dados no sync, migra para o local
       if (syncData) {
-        console.log('Editor SGD: Migrando dados do storage.sync para storage.local.');
-        await chrome.storage.local.set({ [STORAGE_KEY]: syncData }); // Salva no local
-        await chrome.storage.sync.remove(STORAGE_KEY); // Limpa o local antigo
-        data = syncData; // Usa os dados migrados para continuar
-        showNotification('Dados da extensão atualizados para a nova versão!', 'info', 4000);
+        console.log(
+          'Editor SGD: Migrando dados do storage.sync para storage.local.'
+        )
+        await chrome.storage.local.set({ [STORAGE_KEY]: syncData }) // Salva no local
+        await chrome.storage.sync.remove(STORAGE_KEY) // Limpa o local antigo
+        data = syncData // Usa os dados migrados para continuar
+        showNotification(
+          'Dados da extensão atualizados para a nova versão!',
+          'info',
+          4000
+        )
       }
     }
 
     // A partir daqui, o código original de migração de versão continua
     if (!data || data.version !== DATA_VERSION || Array.isArray(data)) {
-      data = await runDataMigration(data);
+      data = await runDataMigration(data)
     }
-
 
     // Verifica corrupção final.
     if (
@@ -40,13 +45,13 @@ async function getStoredData() {
       !Array.isArray(data.categories) ||
       !Array.isArray(data.messages)
     ) {
-      return initializeDefaultData(true);
+      return initializeDefaultData(true)
     }
 
-    return data;
+    return data
   } catch (error) {
-    console.error('Editor SGD: Erro ao carregar dados.', error);
-    return initializeDefaultData(false);
+    console.error('Editor SGD: Erro ao carregar dados.', error)
+    return initializeDefaultData(false)
   }
 }
 
@@ -55,12 +60,12 @@ async function getStoredData() {
  */
 async function saveStoredData(data) {
   try {
-    data.version = DATA_VERSION;
+    data.version = DATA_VERSION
     // Agora sempre salva no local, que tem mais espaço.
-    await chrome.storage.local.set({ [STORAGE_KEY]: data });
+    await chrome.storage.local.set({ [STORAGE_KEY]: data })
   } catch (error) {
-    console.error('Editor SGD: Erro ao salvar dados.', error);
-    showNotification('Falha ao salvar alterações.', 'error');
+    console.error('Editor SGD: Erro ao salvar dados.', error)
+    showNotification('Falha ao salvar alterações.', 'error')
   }
 }
 
@@ -214,7 +219,6 @@ async function runDataMigration(data) {
 
   return newData
 }
-
 
 // --- CONFIGURAÇÕES GERAIS (Consolidado) ---
 
@@ -391,8 +395,8 @@ function applyCurrentTheme(element) {
  * @returns {Promise<'horizontal'|'vertical'>} Retorna a orientação.
  */
 async function getPreviewOrientationState() {
-    const settings = await getSettings()
-    return settings.previewOrientation || 'horizontal'
+  const settings = await getSettings()
+  return settings.previewOrientation || 'horizontal'
 }
 
 /**
@@ -400,11 +404,10 @@ async function getPreviewOrientationState() {
  * @param {'horizontal'|'vertical'} orientation - A orientação a ser salva.
  */
 async function savePreviewOrientationState(orientation) {
-    const settings = await getSettings()
-    settings.previewOrientation = orientation
-    await saveSettings(settings)
+  const settings = await getSettings()
+  settings.previewOrientation = orientation
+  await saveSettings(settings)
 }
-
 
 /**
  * Carrega o estado de visibilidade do painel de visualização.
@@ -1047,6 +1050,20 @@ Seguimos à disposição.
           title: 'Feliz em ajudar',
           content: `Fico feliz em ajudar! Se não houver mais nenhuma dúvida, peço a gentileza de avaliar meu atendimento marcando a situação como <strong><span style="color:#fa6400">'Atendimento Concluído'</span></strong>. \nSua opinião é muito importante para nós!\n\n[finalizacao]! <nobr style='font-size:18px;'>&#10024;</nobr>`,
           shortcut: ''
+        },
+        {
+          id: `cls-${Date.now() + 7}`,
+          title: 'Acesso Remoto',
+          content: `<b>Você sabia?! Nosso suporte via acesso remoto pode ser ainda mais ágil! </b><nobr style='font-size:20px;'>&#9757;</nobr></b><nobr style='font-size:20px;'>&#129299;</nobr> 
+ 
+ Pesquise pela ferramenta “<b>Acesso Remoto - Domínio Sistemas</b>”, instalada em sua máquina: <img src="https://www.dropbox.com/scl/fi/495canzpdjs211hh6la45/acesso.gif?rlkey=5khplj8wi64db0xyv2rsrql5a&st=y923wzze&raw=1"  width="200" height="32" border="0" alt="iniciar"> ou clique na imagem abaixo para baixar e instalar! 
+ 
+ <a href="https://download.dominiosistemas.com.br/Suporte/AcessoRemoto/LogMeInRescueCallingCard.msi" target="_blank"> 
+ 
+ <img src="https://www.dropbox.com/scl/fi/byeq2k2diaqq9wqv2sk3r/acesso_icon.png?rlkey=qky0l9byalcwojsi04xpq7o88&st=ybvth8cw&raw=1"  width="250" height="118" border="0" alt="acesso_remoto"></a> 
+ 
+ [finalizacao]! <nobr style='font-size:18px;'>&#10024;</nobr>`,
+          shortcut: ''
         }
       ]
 
@@ -1088,19 +1105,19 @@ async function saveGreetingsAndClosings(data) {
     if (data.greetings) {
       data.greetings.forEach((item, index) => {
         if (item.order === undefined) {
-          item.order = index;
+          item.order = index
         }
-      });
+      })
     }
     if (data.closings) {
       data.closings.forEach((item, index) => {
         if (item.order === undefined) {
-          item.order = index;
+          item.order = index
         }
-      });
+      })
     }
 
-    await chrome.storage.sync.set({ [GREETINGS_CLOSINGS_KEY]: data });
+    await chrome.storage.sync.set({ [GREETINGS_CLOSINGS_KEY]: data })
   } catch (error) {
     console.error(
       'Editor SGD: Erro ao salvar saudações e encerramentos.',
@@ -1118,11 +1135,11 @@ async function saveGreetingsAndClosings(data) {
  */
 async function getFollowedAttendances() {
   try {
-    const result = await chrome.storage.sync.get(FOLLOWED_ATTENDANCES_KEY);
-    return result[FOLLOWED_ATTENDANCES_KEY] || {};
+    const result = await chrome.storage.sync.get(FOLLOWED_ATTENDANCES_KEY)
+    return result[FOLLOWED_ATTENDANCES_KEY] || {}
   } catch (error) {
-    console.error('Editor SGD: Erro ao carregar atendimentos seguidos.', error);
-    return {};
+    console.error('Editor SGD: Erro ao carregar atendimentos seguidos.', error)
+    return {}
   }
 }
 
@@ -1132,10 +1149,10 @@ async function getFollowedAttendances() {
  */
 async function saveFollowedAttendances(attendances) {
   try {
-    await chrome.storage.sync.set({ [FOLLOWED_ATTENDANCES_KEY]: attendances });
+    await chrome.storage.sync.set({ [FOLLOWED_ATTENDANCES_KEY]: attendances })
   } catch (error) {
-    console.error('Editor SGD: Erro ao salvar atendimentos seguidos.', error);
-    throw error;
+    console.error('Editor SGD: Erro ao salvar atendimentos seguidos.', error)
+    throw error
   }
 }
 
@@ -1144,72 +1161,96 @@ async function saveFollowedAttendances(attendances) {
  * @param {object} attendanceData - Dados do atendimento (id, subject, url, lastContentHash).
  */
 async function saveFollowedAttendance(attendanceData) {
-  if (!attendanceData.id || !attendanceData.url || !attendanceData.lastContentHash) {
-    throw new Error('ID, URL e Hash de conteúdo são obrigatórios para seguir um atendimento.');
+  if (
+    !attendanceData.id ||
+    !attendanceData.url ||
+    !attendanceData.lastContentHash
+  ) {
+    throw new Error(
+      'ID, URL e Hash de conteúdo são obrigatórios para seguir um atendimento.'
+    )
   }
   try {
-    const attendances = await getFollowedAttendances();
-    const now = Date.now();
-    const existing = attendances[attendanceData.id];
+    const attendances = await getFollowedAttendances()
+    const now = Date.now()
+    const existing = attendances[attendanceData.id]
 
     attendances[attendanceData.id] = {
       id: attendanceData.id,
-      subject: attendanceData.subject || (existing ? existing.subject : 'Assunto não capturado'),
+      subject:
+        attendanceData.subject ||
+        (existing ? existing.subject : 'Assunto não capturado'),
       url: attendanceData.url,
       status: attendanceData.status || 'monitoring', // 'monitoring', 'updated', 'concluded'
       lastContentHash: attendanceData.lastContentHash,
       lastCheckedAt: now,
       addedAt: existing ? existing.addedAt : now,
-      updatedAt: attendanceData.status === 'updated' ? now : (existing ? existing.updatedAt : null),
-    };
-    await saveFollowedAttendances(attendances);
+      updatedAt:
+        attendanceData.status === 'updated'
+          ? now
+          : existing
+          ? existing.updatedAt
+          : null
+    }
+    await saveFollowedAttendances(attendances)
 
     // Notifica o service worker sobre a mudança para atualizar alarmes/badges se necessário
-    chrome.runtime.sendMessage({ action: 'FOLLOW_STATUS_CHANGED' }).catch(err => console.warn("Erro ao notificar SW sobre mudança de follow:", err));
+    chrome.runtime
+      .sendMessage({ action: 'FOLLOW_STATUS_CHANGED' })
+      .catch(err =>
+        console.warn('Erro ao notificar SW sobre mudança de follow:', err)
+      )
 
-    return attendances[attendanceData.id];
+    return attendances[attendanceData.id]
   } catch (error) {
-    console.error('Editor SGD: Erro ao salvar atendimento seguido.', error);
-    throw error;
+    console.error('Editor SGD: Erro ao salvar atendimento seguido.', error)
+    throw error
   }
 }
-
- /**
-  * Remove um atendimento da lista de seguidos.
-  * @param {string} attendanceId - O ID do atendimento a ser removido.
-  */
- async function removeFollowedAttendance(attendanceId) {
-     try {
-         const attendances = await getFollowedAttendances();
-         if (attendances[attendanceId]) {
-             delete attendances[attendanceId];
-             await saveFollowedAttendances(attendances);
-             // Notifica o service worker
-             chrome.runtime.sendMessage({ action: 'FOLLOW_STATUS_CHANGED' }).catch(err => console.warn("Erro ao notificar SW sobre remoção de follow:", err));
-         }
 
 /**
- * Marca o status de um atendimento seguido e salva.
- * @param {string} attendanceId
- * @param {'monitoring'|'updated'|'concluded'} status
+ * Remove um atendimento da lista de seguidos.
+ * @param {string} attendanceId - O ID do atendimento a ser removido.
  */
-async function markAttendanceStatus(attendanceId, status) {
-  const attendances = await getFollowedAttendances()
-  if (!attendances[attendanceId]) return
-  attendances[attendanceId].status = status
-  if (status === 'updated') {
-    attendances[attendanceId].updatedAt = Date.now()
-  }
-  await saveFollowedAttendances(attendances)
+async function removeFollowedAttendance(attendanceId) {
   try {
-    await chrome.runtime.sendMessage({ action: 'FOLLOW_STATUS_CHANGED' })
-  } catch {}
+    const attendances = await getFollowedAttendances()
+    if (attendances[attendanceId]) {
+      delete attendances[attendanceId]
+      await saveFollowedAttendances(attendances)
+      // Notifica o service worker
+      chrome.runtime
+        .sendMessage({ action: 'FOLLOW_STATUS_CHANGED' })
+        .catch(err =>
+          console.warn('Erro ao notificar SW sobre remoção de follow:', err)
+        )
+    }
+
+    /**
+     * Marca o status de um atendimento seguido e salva.
+     * @param {string} attendanceId
+     * @param {'monitoring'|'updated'|'concluded'} status
+     */
+    async function markAttendanceStatus(attendanceId, status) {
+      const attendances = await getFollowedAttendances()
+      if (!attendances[attendanceId]) return
+      attendances[attendanceId].status = status
+      if (status === 'updated') {
+        attendances[attendanceId].updatedAt = Date.now()
+      }
+      await saveFollowedAttendances(attendances)
+      try {
+        await chrome.runtime.sendMessage({ action: 'FOLLOW_STATUS_CHANGED' })
+      } catch {}
+    }
+  } catch (error) {
+    console.error(
+      `Editor SGD: Erro ao remover atendimento seguido ${attendanceId}.`,
+      error
+    )
+    throw error
+  }
 }
-     } catch (error) {
-         console.error(`Editor SGD: Erro ao remover atendimento seguido ${attendanceId}.`, error);
-         throw error;
-     }
- }
 
 // --- CONTROLE DE VERSÃO VISTA ---
 
@@ -1219,11 +1260,11 @@ async function markAttendanceStatus(attendanceId, status) {
  */
 async function getLastSeenVersion() {
   try {
-    const result = await chrome.storage.local.get(LAST_SEEN_VERSION_KEY);
-    return result[LAST_SEEN_VERSION_KEY] || null;
+    const result = await chrome.storage.local.get(LAST_SEEN_VERSION_KEY)
+    return result[LAST_SEEN_VERSION_KEY] || null
   } catch (error) {
-    console.error('Editor SGD: Erro ao obter a última versão vista.', error);
-    return null;
+    console.error('Editor SGD: Erro ao obter a última versão vista.', error)
+    return null
   }
 }
 
@@ -1233,12 +1274,11 @@ async function getLastSeenVersion() {
  */
 async function setLastSeenVersion(version) {
   try {
-    await chrome.storage.local.set({ [LAST_SEEN_VERSION_KEY]: version });
+    await chrome.storage.local.set({ [LAST_SEEN_VERSION_KEY]: version })
   } catch (error) {
-    console.error('Editor SGD: Erro ao salvar a última versão vista.', error);
+    console.error('Editor SGD: Erro ao salvar a última versão vista.', error)
   }
 }
-
 
 /**
  * Obtém notas pendentes de versões menores.
@@ -1246,12 +1286,15 @@ async function setLastSeenVersion(version) {
  */
 async function getPendingMinorNotes() {
   try {
-    const result = await chrome.storage.local.get(PENDING_MINOR_NOTES_KEY);
-    const notes = result[PENDING_MINOR_NOTES_KEY];
-    return Array.isArray(notes) ? notes : [];
+    const result = await chrome.storage.local.get(PENDING_MINOR_NOTES_KEY)
+    const notes = result[PENDING_MINOR_NOTES_KEY]
+    return Array.isArray(notes) ? notes : []
   } catch (error) {
-    console.error('Editor SGD: Erro ao obter notas pendentes de versões menores.', error);
-    return [];
+    console.error(
+      'Editor SGD: Erro ao obter notas pendentes de versões menores.',
+      error
+    )
+    return []
   }
 }
 
@@ -1261,12 +1304,15 @@ async function getPendingMinorNotes() {
  */
 async function addPendingMinorNote(note) {
   try {
-    const existing = await getPendingMinorNotes();
-    const sanitized = typeof note === 'string' ? note : String(note);
-    existing.push(sanitized);
-    await chrome.storage.local.set({ [PENDING_MINOR_NOTES_KEY]: existing });
+    const existing = await getPendingMinorNotes()
+    const sanitized = typeof note === 'string' ? note : String(note)
+    existing.push(sanitized)
+    await chrome.storage.local.set({ [PENDING_MINOR_NOTES_KEY]: existing })
   } catch (error) {
-    console.error('Editor SGD: Erro ao adicionar nota pendente de versão menor.', error);
+    console.error(
+      'Editor SGD: Erro ao adicionar nota pendente de versão menor.',
+      error
+    )
   }
 }
 
@@ -1275,8 +1321,11 @@ async function addPendingMinorNote(note) {
  */
 async function clearPendingMinorNotes() {
   try {
-    await chrome.storage.local.remove(PENDING_MINOR_NOTES_KEY);
+    await chrome.storage.local.remove(PENDING_MINOR_NOTES_KEY)
   } catch (error) {
-    console.error('Editor SGD: Erro ao limpar notas pendentes de versões menores.', error);
+    console.error(
+      'Editor SGD: Erro ao limpar notas pendentes de versões menores.',
+      error
+    )
   }
 }
