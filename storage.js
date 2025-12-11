@@ -1064,6 +1064,12 @@ Seguimos à disposição.
  
  [finalizacao]! <nobr style='font-size:18px;'>&#10024;</nobr>`,
           shortcut: ''
+        },
+        {
+          id: `cls-${Date.now() + 3}`,
+          title: 'Acesso Remoto',
+          content: `<b>Você sabia?! Nosso suporte via acesso remoto pode ser ainda mais ágil! <nobr style='font-size:20px;'>&#9757;</nobr></b><nobr style='font-size:20px;'>&#129299;</nobr> \n\nPesquise pela ferramenta “<b>Acesso Remoto - Domínio Sistemas</b>”, instalada em sua máquina: <img src="https://www.dropbox.com/scl/fi/495canzpdjs211hh6la45/acesso.gif?rlkey=5khplj8wi64db0xyv2rsrql5a&st=y923wzze&raw=1"  width="200" height="32" border="0" alt="iniciar"> \n\nou clique na imagem abaixo para baixar e instalar! \n\n<a href="https://download.dominiosistemas.com.br/Suporte/AcessoRemoto/LogMeInRescueCallingCard.msi" target="_blank"> \n\n<img src="https://www.dropbox.com/scl/fi/byeq2k2diaqq9wqv2sk3r/acesso_icon.png?rlkey=qky0l9byalcwojsi04xpq7o88&st=ybvth8cw&raw=1"  width="250" height="118" border="0" alt="acesso_remoto"></a> \n\n[finalizacao]! <nobr style='font-size:18px;'>&#10024;</nobr>`,
+          shortcut: ''
         }
       ]
 

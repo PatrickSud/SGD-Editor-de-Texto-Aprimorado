@@ -1,4 +1,10 @@
 const RELEASE_NOTES = {
+  '2.9.8': {
+    title: '✨ Novidades da Versão 2.9.8',
+    features: [
+      '<b>Novo Encerramento Padrão:</b> Adicionado o encerramento "Acesso Remoto", disponível para todos os usuários, facilitando o suporte técnico.'
+    ]
+  },
   '2.9.7': {
     title: '✨ Novidades da Versão 2.9.7',
     features: [
@@ -37,6 +43,5 @@ const MINOR_RELEASE_NOTES = {
         '<b>Melhoria na classificação:</b> Manter a classificação padrão (ultima selecionada) e remover duplicatas de "Todas" durante o cadastro.'
       ]
     }
-
   ]
 }

@@ -4,6 +4,7 @@
  */
 
 const REMINDERS_STORAGE_KEY = 'remindersData'
+const GREETINGS_CLOSINGS_KEY = 'greetingsClosingsData'
 const USAGE_TRACKING_KEY = 'usageTrackingData'
 const SUGGESTED_TRAMITES_KEY = 'suggestedTramites'
 const STORAGE_KEY = 'quickMessagesData'
@@ -71,7 +72,7 @@ async function saveReminders(reminders) {
  * @param {object} reminder - O objeto do lembrete.
  */
 function showChromeNotification(reminder) {
-  const notificationId = `chrome-notification-${reminder.id}-${Date.now()}`;
+  const notificationId = `chrome-notification-${reminder.id}-${Date.now()}`
 
   chrome.notifications.create(notificationId, {
     type: 'basic',
@@ -79,11 +80,9 @@ function showChromeNotification(reminder) {
     title: `Lembrete: ${reminder.title}`,
     message: reminder.description || 'Você tem um novo lembrete.',
     priority: 2,
-    buttons: [
-      { title: 'Dispensar' }
-    ],
+    buttons: [{ title: 'Dispensar' }],
     requireInteraction: true // Mantém a notificação visível até a interação do usuário
-  });
+  })
 }
 
 /**
@@ -146,9 +145,39 @@ function setupInitialAlarms() {
   // Alarmes de análise de uso removidos
 }
 
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener(async details => {
   console.log('Service Worker: Extensão instalada/atualizada.')
   setupInitialAlarms()
+
+  if (details.reason === 'update') {
+    try {
+      const data = await getStorageData(GREETINGS_CLOSINGS_KEY, 'sync')
+      if (data && data.closings) {
+        const hasAcessoRemoto = data.closings.some(
+          c => c.title === 'Acesso Remoto'
+        )
+
+        if (!hasAcessoRemoto) {
+          const newClosing = {
+            id: `cls-${Date.now()}`,
+            title: 'Acesso Remoto',
+            content: `<b>Você sabia?! Nosso suporte via acesso remoto pode ser ainda mais ágil! <nobr style='font-size:20px;'>&#9757;</nobr></b><nobr style='font-size:20px;'>&#129299;</nobr> \n\nPesquise pela ferramenta “<b>Acesso Remoto - Domínio Sistemas</b>”, instalada em sua máquina: <img src="https://www.dropbox.com/scl/fi/495canzpdjs211hh6la45/acesso.gif?rlkey=5khplj8wi64db0xyv2rsrql5a&st=y923wzze&raw=1"  width="200" height="32" border="0" alt="iniciar"> \n\nou clique na imagem abaixo para baixar e instalar! \n\n<a href="https://download.dominiosistemas.com.br/Suporte/AcessoRemoto/LogMeInRescueCallingCard.msi" target="_blank"> \n\n<img src="https://www.dropbox.com/scl/fi/byeq2k2diaqq9wqv2sk3r/acesso_icon.png?rlkey=qky0l9byalcwojsi04xpq7o88&st=ybvth8cw&raw=1"  width="250" height="118" border="0" alt="acesso_remoto"></a> \n\n[finalizacao]! <nobr style='font-size:18px;'>&#10024;</nobr>`,
+            shortcut: ''
+          }
+          data.closings.push(newClosing)
+          await setStorageData(GREETINGS_CLOSINGS_KEY, data, 'sync')
+          console.log(
+            'Editor SGD: Encerramento "Acesso Remoto" adicionado para usuário existente.'
+          )
+        }
+      }
+    } catch (error) {
+      console.error(
+        'Editor SGD: Falha ao adicionar encerramento "Acesso Remoto" na atualização.',
+        error
+      )
+    }
+  }
 })
 
 chrome.runtime.onStartup.addListener(() => {
@@ -189,17 +218,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ success: true })
       } else if (message.action === 'RESET_TOAST_FLAG' && message.reminderId) {
         // NOVA AÇÃO: Limpa o flag de notificação da sessão
-        const toastShownKey = `toast_shown_${message.reminderId}`;
-        console.log('Resetando flag de notificação para:', toastShownKey);
-        
+        const toastShownKey = `toast_shown_${message.reminderId}`
+        console.log('Resetando flag de notificação para:', toastShownKey)
+
         try {
           // Remove completamente o flag da sessão
-          await chrome.storage.session.remove(toastShownKey);
-          console.log('Flag removido com sucesso');
-          sendResponse({ success: true });
+          await chrome.storage.session.remove(toastShownKey)
+          console.log('Flag removido com sucesso')
+          sendResponse({ success: true })
         } catch (error) {
-          console.error('Erro ao resetar flag:', error);
-          sendResponse({ success: false, error: error.message });
+          console.error('Erro ao resetar flag:', error)
+          sendResponse({ success: false, error: error.message })
         }
       } else if (message.action === 'UPDATE_NOTIFICATION_BADGE') {
         // Atualiza o badge em todas as abas
@@ -277,41 +306,57 @@ chrome.alarms.onAlarm.addListener(async alarm => {
   broadcastToSgdTabs({ action: 'UPDATE_NOTIFICATION_BADGE' })
 
   // Verifica se a notificação do Windows está habilitada
-  const settings = await getStorageData('extensionSettingsData', 'sync') || {};
-  const preferences = settings.preferences || { enableWindowsNotifications: true };
-  
+  const settings = (await getStorageData('extensionSettingsData', 'sync')) || {}
+  const preferences = settings.preferences || {
+    enableWindowsNotifications: true
+  }
+
   if (preferences.enableWindowsNotifications) {
-      showChromeNotification(reminder);
+    showChromeNotification(reminder)
   }
 
   // Passo 3: Verifica se o toast de notificação único para esta sessão já foi exibido.
   const toastShownKey = `toast_shown_${reminder.id}`
   const sessionData = await chrome.storage.session.get(toastShownKey)
-  
-  console.log('Verificando flag de notificação:', toastShownKey, 'Valor:', sessionData[toastShownKey]);
-  console.log('Lembrete disparado em:', new Date(reminder.firedAt).toISOString());
+
+  console.log(
+    'Verificando flag de notificação:',
+    toastShownKey,
+    'Valor:',
+    sessionData[toastShownKey]
+  )
+  console.log(
+    'Lembrete disparado em:',
+    new Date(reminder.firedAt).toISOString()
+  )
 
   // Verifica se a notificação já foi exibida para este disparo específico
-  const lastShownTime = sessionData[toastShownKey];
-  const currentFireTime = reminder.firedAt;
-  
+  const lastShownTime = sessionData[toastShownKey]
+  const currentFireTime = reminder.firedAt
+
   if (!lastShownTime || lastShownTime < currentFireTime) {
     // Se ainda não foi exibido para este disparo, define o flag de visualização...
     await chrome.storage.session.set({ [toastShownKey]: currentFireTime })
     // ...e então envia a mensagem para mostrar o toast.
-    console.log('Exibindo notificação interna para lembrete:', reminder.id);
+    console.log('Exibindo notificação interna para lembrete:', reminder.id)
     broadcastToSgdTabs({ action: 'SHOW_IN_PAGE_NOTIFICATION', reminder })
   } else {
-    console.log('Notificação interna já foi exibida para este disparo do lembrete:', reminder.id);
+    console.log(
+      'Notificação interna já foi exibida para este disparo do lembrete:',
+      reminder.id
+    )
   }
 })
 
 // Listener para cliques nos botões da notificação do Windows
-chrome.notifications.onButtonClicked.addListener((notificationId, buttonIndex) => {
-    if (buttonIndex === 0) { // Índice do botão "Dispensar"
-        chrome.notifications.clear(notificationId);
+chrome.notifications.onButtonClicked.addListener(
+  (notificationId, buttonIndex) => {
+    if (buttonIndex === 0) {
+      // Índice do botão "Dispensar"
+      chrome.notifications.clear(notificationId)
     }
-});
+  }
+)
 
 /**
  * Gera um hash simples de uma string.
