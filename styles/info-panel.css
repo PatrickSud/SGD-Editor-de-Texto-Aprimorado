@@ -1,0 +1,465 @@
+/* --- INFO PANEL / DASHBOARD STYLES --- */
+
+/* Modal Content Override for Dashboard */
+#info-panel-modal .se-modal-content {
+  width: 1200px;
+  max-width: 98vw;
+  height: 85vh;
+  max-height: 900px;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+#info-panel-modal .se-modal-body {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  padding: 0;
+  overflow: hidden;
+  max-height: none; /* Override default modal body scroll */
+}
+
+/* --- SIDEBAR (Left) --- */
+.ip-sidebar {
+  width: 240px;
+  background-color: var(--background-secondary);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 0;
+  flex-shrink: 0;
+}
+
+.ip-sidebar-header {
+  padding: 0 16px 16px 16px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 12px;
+  color: var(--text-color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.ip-nav-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  cursor: pointer;
+  color: var(--text-color-main);
+  transition: background-color 0.2s, color 0.2s;
+  font-size: 14px;
+  border-left: 3px solid transparent;
+  gap: 12px;
+}
+
+.ip-nav-item:hover {
+  background-color: var(--background-hover);
+}
+
+.ip-nav-item.active {
+  background-color: color-mix(in srgb, var(--primary-color) 15%, transparent);
+  color: var(--primary-color);
+  border-left-color: var(--primary-color);
+  font-weight: 500;
+}
+
+.ip-nav-icon {
+  font-size: 18px;
+  width: 24px;
+  text-align: center;
+}
+
+/* --- CONTENT AREA (Right) --- */
+.ip-content-area {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  background-color: var(--background-main);
+}
+
+.ip-section {
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+
+.ip-section.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ip-section-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--text-color-main);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ip-section-desc {
+  color: var(--text-color-muted);
+  margin-bottom: 24px;
+  font-size: 14px;
+}
+
+/* --- CARDS & GRID --- */
+.ip-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.ip-card {
+  background-color: var(--background-glass);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 16px;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.ip-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.ip-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.ip-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-color-main);
+  margin: 0;
+}
+
+.ip-card-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.badge-success { background-color: color-mix(in srgb, var(--action-green) 20%, transparent); color: var(--action-green); }
+.badge-warning { background-color: color-mix(in srgb, var(--action-yellow) 20%, transparent); color: var(--action-yellow-hover); }
+.badge-danger { background-color: color-mix(in srgb, var(--action-red) 20%, transparent); color: var(--action-red); }
+.badge-info { background-color: color-mix(in srgb, var(--action-blue) 20%, transparent); color: var(--action-blue); }
+
+.ip-card-content {
+  font-size: 13px;
+  color: var(--text-color-muted);
+  line-height: 1.5;
+}
+
+.ip-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ip-list-item {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ip-list-item:last-child {
+  border-bottom: none;
+}
+
+.ip-link-btn {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.ip-link-btn:hover {
+  text-decoration: underline;
+}
+
+/* --- FORMS & INPUTS inside Panel --- */
+.ip-code-block {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 12px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 12px;
+  position: relative;
+  margin-top: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.dark-mode .ip-code-block,
+.tokyo-night-mode .ip-code-block {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.ip-copy-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0.6;
+  font-size: 14px;
+}
+
+.ip-copy-btn:hover {
+  opacity: 1;
+}
+
+/* --- SCROLLBARS FOR INFO PANEL --- */
+.ip-content-area::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.ip-content-area::-webkit-scrollbar-track {
+  background: var(--background-hover);
+  border-radius: 4px;
+}
+
+.ip-content-area::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+.ip-content-area::-webkit-scrollbar-thumb:hover {
+  background: var(--text-color-muted);
+}
+
+/* Scrollbar for Sidebar (if content overflows) */
+.ip-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ip-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ip-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+}
+
+.dark-mode .ip-sidebar::-webkit-scrollbar-thumb,
+.tokyo-night-mode .ip-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.ip-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.dark-mode .ip-sidebar::-webkit-scrollbar-thumb:hover,
+.tokyo-night-mode .ip-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* --- ESTILOS DE PENDÊNCIAS --- */
+
+.ip-pending-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.ip-pending-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--background-glass);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 12px;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.ip-pending-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary-color);
+}
+
+/* Faixa lateral colorida indicando status (Base) */
+.ip-pending-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background-color: var(--text-color-muted); /* Default Gray */
+}
+
+/* Cores de Status Dinâmicas */
+.ip-pending-card.status-analise::before { background-color: var(--action-yellow); }
+.ip-pending-card.status-respondido::before { background-color: var(--action-green); }
+.ip-pending-card.status-aguardando::before { background-color: var(--action-blue); }
+.ip-pending-card.status-aguardando-interna::before { background-color: #9333ea; }
+.ip-pending-card.status-respondido-interna::before { background-color: var(--action-yellow); }
+.ip-pending-card.status-outro::before { background-color: var(--text-color-muted); }
+
+
+/* Header do card: ID e Data */
+.ip-pending-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-color-muted);
+  margin-bottom: 8px;
+  padding-left: 8px;
+}
+
+.ip-pending-id {
+  font-family: monospace;
+  background: rgba(0,0,0,0.05);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: 700; /* ID em Negrito */
+}
+
+/* Corpo do card: Assunto */
+.ip-pending-subject {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color-main);
+  margin-bottom: 8px; /* Reduzido para aproximar dos detalhes */
+  line-height: 1.4;
+  padding-left: 8px;
+  
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Linha de Detalhes (Dias, Qtd, Último Trâmite) */
+.ip-pending-details {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--text-color-muted);
+  margin-bottom: 12px;
+  padding-left: 8px;
+  flex-grow: 1; /* Empurra o rodapé para baixo */
+}
+
+.ip-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Rodapé: Status e Botão */
+.ip-pending-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color);
+  padding-left: 8px;
+}
+
+.ip-pending-status {
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 65%;
+  color: var(--text-color-muted); /* Default */
+  font-weight: 500;
+}
+
+/* Cores de Texto do Status (Combinam com a borda) */
+.ip-pending-card.status-analise .ip-pending-status { color: var(--action-yellow-hover); }
+.ip-pending-card.status-respondido .ip-pending-status { color: var(--action-green); }
+.ip-pending-card.status-aguardando .ip-pending-status { color: var(--action-blue); }
+.ip-pending-card.status-aguardando-interna .ip-pending-status { color: #9333ea; }
+.ip-pending-card.status-respondido-interna .ip-pending-status { color: var(--action-yellow-hover); }
+
+.ip-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: currentColor; /* Usa a cor do texto do pai */
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.ip-pending-action-btn {
+  font-size: 12px;
+  padding: 4px 10px;
+  background-color: transparent;
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  border-radius: 4px;
+  text-decoration: none;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.ip-pending-action-btn:hover {
+  background-color: var(--primary-color);
+  color: white;
+  text-decoration: none;
+}
+
+/* Loading e Empty States */
+.ip-loading-container,
+.ip-empty-state,
+.ip-error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+  color: var(--text-color-muted);
+  width: 100%;
+  grid-column: 1 / -1;
+}
+
+.ip-spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(0,0,0,0.1);
+  border-radius: 50%;
+  border-top-color: var(--primary-color);
+  animation: spin 1s linear infinite;
+  margin-bottom: 15px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.ip-error-icon {
+  font-size: 32px;
+  margin-bottom: 10px;
+}
