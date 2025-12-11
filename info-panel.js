@@ -182,10 +182,10 @@ function createPendingCard(item) {
                     <span class="ip-meta-item" title="Dias em aberto">📅 ${escapeHTML(item.dias)}d</span>
                     <span class="ip-meta-item" title="Quantidade de trâmites">🔄 ${escapeHTML(item.qtdTramites)}</span>
                 </div>
-                <div class="ip-date-container" title="Último trâmite: ${escapeHTML(item.dataUltimoTramite)}">
-                    <span class="ip-pending-date">${escapeHTML(item.dataAbertura)}</span>
+                <div class="ip-date-container">
+                    <span class="ip-pending-date" title="Data de Abertura: ${escapeHTML(item.dataAbertura)}">${escapeHTML(item.dataAbertura)}</span>
                     <span class="ip-separator">|</span>
-                    <span class="ip-last-tramite">${escapeHTML(item.dataUltimoTramite)}</span>
+                    <span class="ip-last-tramite" title="Último Trâmite: ${escapeHTML(item.dataUltimoTramite)}">${escapeHTML(item.dataUltimoTramite)}</span>
                 </div>
             </div>
             
