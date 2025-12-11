@@ -320,7 +320,7 @@
 .ip-pending-card.status-respondido::before { background-color: var(--action-green); }
 .ip-pending-card.status-aguardando::before { background-color: var(--action-blue); }
 .ip-pending-card.status-aguardando-interna::before { background-color: #9333ea; }
-.ip-pending-card.status-respondido-interna::before { background-color: var(--action-yellow); }
+.ip-pending-card.status-respondido-interna::before { background-color: #ec4899; }
 .ip-pending-card.status-outro::before { background-color: var(--text-color-muted); }
 
 
