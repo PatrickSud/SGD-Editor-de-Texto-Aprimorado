@@ -324,14 +324,19 @@
 .ip-pending-card.status-outro::before { background-color: var(--text-color-muted); }
 
 
-/* Header do card: ID e Data */
-.ip-pending-info {
+/* Header do card: ID, Badges e Data */
+.ip-pending-header {
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
-  color: var(--text-color-muted);
+  align-items: center;
   margin-bottom: 8px;
   padding-left: 8px;
+}
+
+.ip-pending-id-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .ip-pending-id {
@@ -339,7 +344,25 @@
   background: rgba(0,0,0,0.05);
   padding: 2px 4px;
   border-radius: 3px;
-  font-weight: 700; /* ID em Negrito */
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--text-color-muted);
+}
+
+.ip-meta-item {
+  font-size: 11px;
+  color: var(--text-color-muted);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background-color: rgba(0,0,0,0.03);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+.ip-pending-date {
+  font-size: 11px;
+  color: var(--text-color-muted);
 }
 
 /* Corpo do card: Assunto */
@@ -401,7 +424,7 @@
 .ip-pending-card.status-respondido .ip-pending-status { color: var(--action-green); }
 .ip-pending-card.status-aguardando .ip-pending-status { color: var(--action-blue); }
 .ip-pending-card.status-aguardando-interna .ip-pending-status { color: #9333ea; }
-.ip-pending-card.status-respondido-interna .ip-pending-status { color: var(--action-yellow-hover); }
+.ip-pending-card.status-respondido-interna .ip-pending-status { color: #ec4899; }
 
 .ip-status-dot {
   width: 8px;
