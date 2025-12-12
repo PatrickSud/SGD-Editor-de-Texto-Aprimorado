@@ -4,10 +4,43 @@
  */
 
 /**
+ * Verifica se o contexto da extensão ainda está válido.
+ * @returns {boolean} True se o contexto está válido, false caso contrário.
+ */
+function isExtensionContextValid() {
+  try {
+    // Tenta acessar o runtime para verificar se o contexto está válido
+    return chrome.runtime && chrome.runtime.id !== undefined
+  } catch (error) {
+    return false
+  }
+}
+
+/**
+ * Verifica se um erro é do tipo "Extension context invalidated".
+ * @param {Error} error - O erro a ser verificado.
+ * @returns {boolean} True se for erro de contexto invalidado.
+ */
+function isContextInvalidatedError(error) {
+  if (!error || !error.message) return false
+  const msg = error.message.toLowerCase()
+  return (
+    msg.includes('extension context invalidated') ||
+    msg.includes('message port closed') ||
+    msg.includes('receiving end does not exist')
+  )
+}
+
+/**
  * Recupera os dados armazenados, executando migrações se necessário.
  * Esta versão inclui uma migração transparente de chrome.storage.sync para chrome.storage.local.
  */
 async function getStoredData() {
+  // Verifica se o contexto está válido antes de tentar acessar o storage
+  if (!isExtensionContextValid()) {
+    return initializeDefaultData(false)
+  }
+
   try {
     // 1. Tenta ler do novo local de armazenamento (local)
     let localResult = await chrome.storage.local.get(STORAGE_KEY)
@@ -50,6 +83,10 @@ async function getStoredData() {
 
     return data
   } catch (error) {
+    // Se for erro de contexto invalidado, retorna dados padrão silenciosamente
+    if (isContextInvalidatedError(error)) {
+      return initializeDefaultData(false)
+    }
     console.error('Editor SGD: Erro ao carregar dados.', error)
     return initializeDefaultData(false)
   }
@@ -227,6 +264,11 @@ async function runDataMigration(data) {
  * @returns {Promise<object>} As configurações armazenadas ou os padrões.
  */
 async function getSettings() {
+  // Verifica se o contexto está válido antes de tentar acessar o storage
+  if (!isExtensionContextValid()) {
+    return { ...DEFAULT_SETTINGS }
+  }
+
   try {
     // Busca tanto as configurações novas quanto as antigas (tema, preview) para migração suave.
     const result = await chrome.storage.sync.get([
@@ -273,6 +315,10 @@ async function getSettings() {
 
     return mergedSettings
   } catch (error) {
+    // Se for erro de contexto invalidado, retorna padrões silenciosamente
+    if (isContextInvalidatedError(error)) {
+      return { ...DEFAULT_SETTINGS }
+    }
     console.error('Editor SGD: Erro ao carregar configurações.', error)
     return { ...DEFAULT_SETTINGS } // Retorna padrões em caso de erro
   }
@@ -283,6 +329,12 @@ async function getSettings() {
  * @param {object} newSettings - Objeto com as configurações a serem atualizadas.
  */
 async function saveSettings(newSettings) {
+  // Verifica se o contexto está válido antes de tentar salvar
+  if (!isExtensionContextValid()) {
+    console.warn('Editor SGD: Contexto da extensão invalidado. Não é possível salvar configurações.')
+    return
+  }
+
   try {
     const currentSettings = await getSettings()
     const mergedSettings = { ...currentSettings, ...newSettings }
@@ -297,8 +349,13 @@ async function saveSettings(newSettings) {
 
     await chrome.storage.sync.set({ [SETTINGS_STORAGE_KEY]: mergedSettings })
   } catch (error) {
+    // Se for erro de contexto invalidado, apenas retorna sem propagar
+    if (isContextInvalidatedError(error)) {
+      console.warn('Editor SGD: Contexto da extensão invalidado. Não é possível salvar configurações.')
+      return
+    }
     console.error('Editor SGD: Erro ao salvar configurações.', error)
-    throw error // Propaga o erro para a UI
+    throw error // Propaga o erro para a UI apenas se não for contexto invalidado
   }
 }
 

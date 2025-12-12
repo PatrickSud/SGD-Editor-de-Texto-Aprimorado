@@ -29,7 +29,10 @@
         "ui-components.js",
         "editor-core.js",
         "features.js",
+        "pending-service.js",
         "quick-messages.js",
+        "forms-service.js",
+        "info-panel.js",
         "release-notes.js",
         "main.js"
       ],
@@ -39,7 +42,8 @@
         "styles/editor.css",
         "styles/modal.css",
         "styles/panel.css",
-        "styles/fab.css"
+        "styles/fab.css",
+        "styles/info-panel.css"
       ],
       "run_at": "document_idle"
     }

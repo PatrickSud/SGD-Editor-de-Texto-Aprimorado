@@ -2818,6 +2818,7 @@ function createFloatingActionButtons() {
 
   fabContainer.innerHTML = `
     <div class="fab-options">
+      <button type="button" class="fab-button fab-option shine-effect" data-action="fab-info-panel" data-tooltip="Central de Informações">ℹ️</button>
       <button type="button" class="fab-button fab-option shine-effect" data-action="fab-notes" data-tooltip="Anotações">✍️</button>
       <button type="button" class="fab-button fab-option shine-effect" data-action="fab-reminders" data-tooltip="Gerenciar Lembretes">⏰</button>
       <button type="button" class="fab-button fab-option shine-effect" data-action="fab-quick-steps" data-tooltip="Trâmites">⚡</button>
@@ -2852,6 +2853,9 @@ function setupFabListeners() {
     if (!actionButton) return
 
     switch (actionButton.dataset.action) {
+      case 'fab-info-panel':
+        openInfoPanel()
+        break
       case 'fab-quick-steps':
         openQuickInserterPanel()
         break

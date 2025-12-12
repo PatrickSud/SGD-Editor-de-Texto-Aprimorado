@@ -90,8 +90,14 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .ip-section-title {
@@ -152,10 +158,22 @@
   font-weight: 500;
 }
 
-.badge-success { background-color: color-mix(in srgb, var(--action-green) 20%, transparent); color: var(--action-green); }
-.badge-warning { background-color: color-mix(in srgb, var(--action-yellow) 20%, transparent); color: var(--action-yellow-hover); }
-.badge-danger { background-color: color-mix(in srgb, var(--action-red) 20%, transparent); color: var(--action-red); }
-.badge-info { background-color: color-mix(in srgb, var(--action-blue) 20%, transparent); color: var(--action-blue); }
+.badge-success {
+  background-color: color-mix(in srgb, var(--action-green) 20%, transparent);
+  color: var(--action-green);
+}
+.badge-warning {
+  background-color: color-mix(in srgb, var(--action-yellow) 20%, transparent);
+  color: var(--action-yellow-hover);
+}
+.badge-danger {
+  background-color: color-mix(in srgb, var(--action-red) 20%, transparent);
+  color: var(--action-red);
+}
+.badge-info {
+  background-color: color-mix(in srgb, var(--action-blue) 20%, transparent);
+  color: var(--action-blue);
+}
 
 .ip-card-content {
   font-size: 13px;
@@ -284,6 +302,165 @@
   margin-bottom: 16px;
 }
 
+/* Controles de filtro de pendências */
+.ip-pending-header-row {
+  margin-bottom: 12px;
+}
+
+/* Container de formulários */
+.ip-forms-container {
+  padding: 8px 0;
+}
+
+.ip-forms-category {
+  margin-bottom: 24px;
+}
+
+.ip-forms-category-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.ip-forms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ip-form-card {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.ip-form-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-medium);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.ip-form-icon {
+  font-size: 20px;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.ip-form-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.ip-form-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.ip-form-desc {
+  font-size: 12px;
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.ip-form-arrow {
+  font-size: 14px;
+  color: var(--text-tertiary);
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.ip-form-document {
+  cursor: pointer;
+}
+
+.ip-form-document:hover .ip-form-arrow {
+  color: var(--action-blue);
+}
+
+.ip-pending-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.ip-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.ip-filter-input.compact,
+.ip-filter-select.compact {
+  padding: 4px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--background-main);
+  color: var(--text-color-main);
+  font-size: 12px;
+  height: 28px;
+  min-width: 80px;
+  max-width: 120px;
+  flex-shrink: 0;
+}
+
+.ip-filter-input.compact {
+  min-width: 120px;
+  max-width: 180px;
+  flex: 1;
+}
+
+.ip-filter-input.compact:focus,
+.ip-filter-select.compact:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--primary-color) 25%, transparent);
+}
+
+.action-btn.compact {
+  padding: 4px 8px;
+  height: 28px;
+  min-width: 32px;
+  flex-shrink: 0;
+}
+
+.ip-pending-stats {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+  padding: 6px 0;
+  font-size: 12px;
+}
+
+.ip-stat-item {
+  font-size: 13px;
+  color: var(--text-color-muted);
+}
+
+.ip-stat-item strong {
+  color: var(--text-color-main);
+}
+
 .ip-pending-card {
   display: flex;
   flex-direction: column;
@@ -316,13 +493,24 @@
 }
 
 /* Cores de Status Dinâmicas */
-.ip-pending-card.status-analise::before { background-color: var(--action-yellow); }
-.ip-pending-card.status-respondido::before { background-color: var(--action-green); }
-.ip-pending-card.status-aguardando::before { background-color: var(--action-blue); }
-.ip-pending-card.status-aguardando-interna::before { background-color: #9333ea; }
-.ip-pending-card.status-respondido-interna::before { background-color: #ec4899; }
-.ip-pending-card.status-outro::before { background-color: var(--text-color-muted); }
-
+.ip-pending-card.status-analise::before {
+  background-color: var(--action-yellow);
+}
+.ip-pending-card.status-respondido::before {
+  background-color: var(--action-green);
+}
+.ip-pending-card.status-aguardando::before {
+  background-color: var(--action-blue);
+}
+.ip-pending-card.status-aguardando-interna::before {
+  background-color: #9333ea;
+}
+.ip-pending-card.status-respondido-interna::before {
+  background-color: #ec4899;
+}
+.ip-pending-card.status-outro::before {
+  background-color: var(--text-color-muted);
+}
 
 /* Header do card: ID, Badges e Data */
 .ip-pending-header {
@@ -341,7 +529,7 @@
 
 .ip-pending-id {
   font-family: monospace;
-  background: rgba(0,0,0,0.05);
+  background: rgba(0, 0, 0, 0.05);
   padding: 2px 4px;
   border-radius: 3px;
   font-weight: 700;
@@ -355,7 +543,7 @@
   display: flex;
   align-items: center;
   gap: 2px;
-  background-color: rgba(0,0,0,0.03);
+  background-color: rgba(0, 0, 0, 0.03);
   padding: 1px 4px;
   border-radius: 4px;
 }
@@ -391,7 +579,7 @@
   margin-bottom: 8px; /* Reduzido para aproximar dos detalhes */
   line-height: 1.4;
   padding-left: 8px;
-  
+
   display: -webkit-box;
   -webkit-line-clamp: 3;
   line-clamp: 3;
@@ -401,7 +589,7 @@
 
 /* Linha de Detalhes (Removida, mas mantendo estilo se precisar reverter ou usar) */
 .ip-pending-details {
-  display: none; 
+  display: none;
 }
 
 .ip-detail-item {
@@ -432,11 +620,21 @@
 }
 
 /* Cores de Texto do Status (Combinam com a borda) */
-.ip-pending-card.status-analise .ip-pending-status { color: var(--action-yellow-hover); }
-.ip-pending-card.status-respondido .ip-pending-status { color: var(--action-green); }
-.ip-pending-card.status-aguardando .ip-pending-status { color: var(--action-blue); }
-.ip-pending-card.status-aguardando-interna .ip-pending-status { color: #9333ea; }
-.ip-pending-card.status-respondido-interna .ip-pending-status { color: #ec4899; }
+.ip-pending-card.status-analise .ip-pending-status {
+  color: var(--action-yellow-hover);
+}
+.ip-pending-card.status-respondido .ip-pending-status {
+  color: var(--action-green);
+}
+.ip-pending-card.status-aguardando .ip-pending-status {
+  color: var(--action-blue);
+}
+.ip-pending-card.status-aguardando-interna .ip-pending-status {
+  color: #9333ea;
+}
+.ip-pending-card.status-respondido-interna .ip-pending-status {
+  color: #ec4899;
+}
 
 .ip-status-dot {
   width: 8px;
@@ -483,7 +681,7 @@
 .ip-spinner {
   width: 30px;
   height: 30px;
-  border: 3px solid rgba(0,0,0,0.1);
+  border: 3px solid rgba(0, 0, 0, 0.1);
   border-radius: 50%;
   border-top-color: var(--primary-color);
   animation: spin 1s linear infinite;
@@ -491,7 +689,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .ip-error-icon {
