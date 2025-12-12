@@ -520,7 +520,7 @@ function getSectionContent(sectionId) {
               <span class="ip-card-badge badge-danger">Instabilidade</span>
             </div>
             <div class="ip-card-content">
-              Lentidão generalizada no acesso ao módulo de Lançamentos. Equipe de infraestrutura já acionada.
+              Lentidão generalizada no acesso ao módulo de Escrita Fiscal. Equipe de desenvolvimento já acionada.
               <br><strong>Contorno:</strong> Aguardar normalização.
             </div>
           </div>
@@ -535,11 +535,11 @@ function getSectionContent(sectionId) {
           </div>
           <div class="ip-card">
             <div class="ip-card-header">
-              <h4 class="ip-card-title">Integração Bancária</h4>
+              <h4 class="ip-card-title">Conta Digital</h4>
               <span class="ip-card-badge badge-warning">Atenção</span>
             </div>
             <div class="ip-card-content">
-              Atraso na conciliação de alguns bancos (Itau, Bradesco).
+              Atraso na conciliação com Honorários.
             </div>
           </div>
         </div>
@@ -550,14 +550,9 @@ function getSectionContent(sectionId) {
         <p class="ip-section-desc">Avisos importantes da coordenação e comunicados internos.</p>
          <ul class="ip-list">
           <li class="ip-list-item">
-            <div>
-              <strong>Reunião Geral:</strong> Sexta-feira às 14h. Pauta: Novas métricas de qualidade.
-              <br><span style="font-size: 11px; color: var(--text-color-muted);">Postado hoje por Coordenação</span>
-            </div>
-          </li>
           <li class="ip-list-item">
             <div>
-              <strong>Atualização do SGD:</strong> Nova versão será implantada hoje à noite. Salvem seus trabalhos.
+              <strong>Atualização Dominio:</strong> Nova versão será implantada hoje à noite. Vide Link informativo.
               <br><span style="font-size: 11px; color: var(--text-color-muted);">Postado ontem por Infra</span>
             </div>
           </li>
@@ -597,10 +592,10 @@ function getSectionContent(sectionId) {
 
     case 'team':
       return `
-         <p class="ip-section-desc">Status da equipe técnica e escalas.</p>
+         <p class="ip-section-desc">Status da equipe.</p>
          <div class="ip-card">
             <div class="ip-card-header">
-              <h4 class="ip-card-title">Plantão N2</h4>
+              <h4 class="ip-card-title">Time Daniel Rodrigues</h4>
               <span class="ip-card-badge badge-info">Hoje</span>
             </div>
             <div class="ip-card-content">
@@ -617,9 +612,9 @@ function getSectionContent(sectionId) {
             <p class="ip-section-desc">Ranking de performance e dados da conta.</p>
             <div class="ip-grid">
                 <div class="ip-card">
-                    <h4 class="ip-card-title" style="margin-bottom: 8px;">Top Solucionadores (Semana)</h4>
+                    <h4 class="ip-card-title" style="margin-bottom: 8px;">Top Produtividade (Semana)</h4>
                      <ol style="padding-left: 20px; color: var(--text-color-muted);">
-                        <li>Maria Souza - 45 chamados</li>
+                        <li>Patrick Godoy - 45 chamados</li>
                         <li>Carlos Pereira - 42 chamados</li>
                         <li>Ana Costa - 38 chamados</li>
                     </ol>
@@ -629,11 +624,11 @@ function getSectionContent(sectionId) {
                     <div style="display: flex; justify-content: space-between; margin-top: 10px;">
                         <div style="text-align: center;">
                             <span style="display: block; font-size: 24px; font-weight: bold; color: var(--primary-color);">12</span>
-                            <span style="font-size: 12px;">Resolvidos</span>
+                            <span style="font-size: 12px;">Votados</span>
                         </div>
                          <div style="text-align: center;">
-                            <span style="display: block; font-size: 24px; font-weight: bold; color: var(--action-orange);">4.8</span>
-                            <span style="font-size: 12px;">Satisfação</span>
+                            <span style="display: block; font-size: 24px; font-weight: bold; color: var(--action-orange);">0.0%</span>
+                            <span style="font-size: 12px;">Insatisfação</span>
                         </div>
                     </div>
                 </div>
@@ -694,7 +689,7 @@ function getSectionContent(sectionId) {
 
     case 'commands':
       return `
-        <p class="ip-section-desc">Cheat sheet de comandos SQL e úteis.</p>
+        <p class="ip-section-desc">Cheat sheet de comandos SQL e úteis. Comunidade</p>
         
         <div class="ip-card">
             <h4 class="ip-card-title">Reset de Senha Admin</h4>
