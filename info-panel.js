@@ -552,7 +552,6 @@ function getSectionContent(sectionId) {
         <p class="ip-section-desc">Avisos importantes da coordenação e comunicados internos.</p>
          <ul class="ip-list">
           <li class="ip-list-item">
-          <li class="ip-list-item">
             <div>
               <strong>Atualização Dominio:</strong> Nova versão será implantada hoje à noite. Vide Link informativo.
               <br><span style="font-size: 11px; color: var(--text-color-muted);">Postado ontem por Infra</span>
@@ -805,16 +804,19 @@ async function loadForms(sectionElement) {
  * @param {string} content - Conteúdo HTML do documento
  */
 function showDocumentModal(content) {
-  const modal = createModal({
-    title: '📄 Visualizar Documento',
-    content: `
+  const modal = createModal(
+    '📄 Visualizar Documento',
+    `
       <div style="max-height: 60vh; overflow-y: auto; padding: 16px;">
         ${content}
       </div>
     `,
-    size: 'medium',
-    showClose: true
-  })
+    null,
+    {
+      size: 'medium',
+      showClose: true
+    }
+  )
 
   document.body.appendChild(modal)
 }

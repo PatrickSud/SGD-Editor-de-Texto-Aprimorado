@@ -34,15 +34,69 @@ const DEFAULT_FORMS_DATA = {
       ]
     },
     {
+      category: 'AI Chains - Assistentes',
+      items: [
+        {
+          type: 'link',
+          title: 'Assuntos Fila 3',
+          description: 'Onvio Gestão e Portal do Cliente',
+          url: 'https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/ec6d18b1-955b-426a-a34d-622065fd982a?sidebar=instructions',
+          icon: '🤖'
+        },
+        {
+          type: 'link',
+          title: 'Novo Portal do Empregado',
+          description: 'Domínio Para Você (Fila 3)',
+          url: 'https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/9631a5ff-16d7-4f9b-b3f4-28f5562b8749?chain_builder=true&sidebar=instructions_auto',
+          icon: '🤖'
+        },
+        {
+          type: 'link',
+          title: 'Assuntos Fila 41',
+          description: 'Domínio Processos',
+          url: 'https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/5b28725a-42d4-4de7-926b-430cde10f85c?chain_builder=true&sidebar=instructions_auto',
+          icon: '🤖'
+        },
+        {
+          type: 'link',
+          title: 'Assuntos Fila 42',
+          description: 'Domínio Messenger',
+          url: 'https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/b787e0c7-2608-4ae6-97e5-b128c205c194?chain_builder=true&sidebar=instructions_auto',
+          icon: '🤖'
+        },
+        {
+          type: 'link',
+          title: 'Assuntos Fila 5',
+          description: 'Contábil e Impostos',
+          url: 'https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/db7162a0-ad9b-4c19-85c4-315169a1ef43?sidebar=instructions_auto',
+          icon: '🤖'
+        },
+        {
+          type: 'link',
+          title: 'Assuntos Fila 61',
+          description: 'Honorários e demais módulos',
+          url: 'https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/01138fe4-aecd-48bc-a958-e8ef1006f487?chain_builder=true&sidebar=instructions_auto',
+          icon: '🤖'
+        },
+        {
+          type: 'link',
+          title: 'Assuntos Fila 62',
+          description: 'Secundários (OnBalance, CCT, Busca, Sefaz, API)',
+          url: 'https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/bdcf2679-98c5-4201-98bd-2c53ee07e63e?sidebar=instructions_auto',
+          icon: '🤖'
+        }
+      ]
+    },
+    {
       category: 'Documentos e Procedimentos',
       items: []
     }
   ]
 }
 
-// TODO: Cole aqui a URL Raw do seu Gist do GitHub
+// URL Raw do Gist do GitHub
 const REMOTE_CONFIG_URL =
-  'https://gist.githubusercontent.com/PatrickSud/a5c191a645d21494ac6f245a56dc32df/raw/f210de00294da63ec65a43349c9c698208deff12/forms-config.json'
+  'https://gist.githubusercontent.com/PatrickSud/a5c191a645d21494ac6f245a56dc32df/raw/forms-config.json'
 
 /**
  * Busca dados de formulários, priorizando configuração remota com fallback local.
