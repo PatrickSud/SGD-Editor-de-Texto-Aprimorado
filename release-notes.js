@@ -1,4 +1,14 @@
 const RELEASE_NOTES = {
+  '2.9.9': {
+    title: '✨ Novidades da Versão 2.9.9',
+    features: [
+      '<b>🏷️ Gestão de TAGS em Pendências:</b> Agora você pode classificar suas pendências com Tags coloridas (<i>Em SS</i>, <i>Em SA/NE</i>, <i>Prioridade</i> e personalizadas) para melhor organização visual.',
+      '<b>🔍 Filtro por Tags:</b> Novo filtro adicionado à Central de Pendências para visualizar rapidamente chamados por categoria.',
+      '<b>🔔 Controle de Notificações:</b> Nova opção para <b>ativar/desativar</b> alertas visuais de novas pendências na tela. (O sistema continua verificando em segundo plano).',
+      '<b>⚙️ Melhorias em Notificações:</b> Ajustado tempo de exibição para 15 segundos e adicionado botão "Dispensar" para maior conveniência.',
+      '<b>⚡ Otimizações:</b> Ajustes de performance no painel de informações e correções visuais.'
+    ]
+  },
   '2.9.8': {
     title: '✨ Novidades da Versão 2.9.8',
     features: [

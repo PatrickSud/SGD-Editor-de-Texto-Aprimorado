@@ -224,6 +224,84 @@
   transform-origin: bottom right;
 }
 
+/* Wrapper para o botão que possui badge (permite que o badge fique visível fora do overflow:hidden do botão) */
+.fab-option-wrapper {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Badge para o botão de Informações no FAB */
+.fab-badge {
+  position: absolute;
+  top: -8px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background-color: var(--action-red, #dc2626);
+  color: white;
+  border-radius: 10px; /* Formato pílula */
+  display: none; /* Controlado via JS */
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: bold;
+  border: 2px solid white;
+  z-index: 10;
+  white-space: nowrap;
+}
+
+/* Posicionamento dinâmico baseado no canto da tela */
+/* Se o FAB está na esquerda, o badge fica na direita do botão, bem afastado */
+.fab-container.top-left .fab-badge,
+.fab-container.bottom-left .fab-badge {
+  right: -20px;
+  left: auto;
+}
+
+/* Se o FAB está na direita, o badge fica na esquerda do botão, bem afastado */
+.fab-container.top-right .fab-badge,
+.fab-container.bottom-right .fab-badge {
+  left: -20px;
+  right: auto;
+}
+
+.fab-badge.has-new {
+  animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+  0% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(220, 38, 38, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+  }
+}
+
+.fab-button.pulsing-alert {
+  animation: pulse-border 2s infinite;
+  border-color: var(--action-red, #dc2626);
+}
+
+@keyframes pulse-border {
+  0% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(220, 38, 38, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+  }
+}
+
 /* --- STANDALONE NOTIFICATION BELL --- */
 @keyframes bell-pulse {
   0% {

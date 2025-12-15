@@ -137,3 +137,193 @@ async function fetchPendingItems() {
     throw error
   }
 }
+
+/**
+ * Verifica se há novas pendências comparando com as últimas visualizadas.
+ * @returns {Promise<{total: number, newCount: number, newItems: Array<object>}>}
+ */
+async function checkNewPendings() {
+  try {
+    const currentItems = await fetchPendingItems()
+    const result = await chrome.storage.local.get(['lastSeenPendingIds'])
+    const lastSeenIds = result.lastSeenPendingIds || []
+
+    const newItems = currentItems.filter(item => !lastSeenIds.includes(item.id))
+
+    const resultData = {
+      total: currentItems.length,
+      newCount: newItems.length,
+      newItems: newItems,
+      currentIds: currentItems.map(i => i.id)
+    }
+
+    await savePendingResult(resultData)
+    return resultData
+  } catch (error) {
+    console.error('PendingService: Erro ao verificar novas pendências:', error)
+    return { total: 0, newCount: 0, newItems: [], error: error.message }
+  }
+}
+
+/**
+ * Marca as pendências atuais como visualizadas.
+ * @param {Array<string>} ids - Lista de IDs das pendências atuais.
+ */
+async function markPendingsAsSeen(ids) {
+  if (!ids || !Array.isArray(ids)) return
+  await chrome.storage.local.set({ lastSeenPendingIds: ids })
+}
+
+/**
+ * Recupera o último resultado de pendências salvo no storage.
+ * @returns {Promise<{total: number, newCount: number, newItems: Array<object>}|null>}
+ */
+async function getLastPendingResult() {
+  const result = await chrome.storage.local.get(['lastPendingCheckResult'])
+  return result.lastPendingCheckResult || null
+}
+
+/**
+ * Salva o resultado da verificação de pendências.
+ * @param {object} result
+ */
+async function savePendingResult(result) {
+  await chrome.storage.local.set({ lastPendingCheckResult: result })
+}
+
+// --- GESTÃO DE TAGS ---
+
+const DEFAULT_TAGS = [
+  { id: 'tag-ss', name: 'Em SS', color: '#ff9800' }, // Laranja
+  { id: 'tag-sa-ne', name: 'Em SA/NE', color: '#2196f3' }, // Azul
+  { id: 'tag-prioridade', name: 'Prioridade', color: '#f44336' } // Vermelho
+]
+
+/**
+ * Inicializa as tags no storage se não existirem.
+ */
+async function initializeTags() {
+  const data = await chrome.storage.local.get(['pendingTags', 'pendingTagsMap'])
+  
+  if (!data.pendingTags) {
+    await chrome.storage.local.set({ pendingTags: DEFAULT_TAGS })
+  } else {
+    // Migração de nomes antigos para novos (apenas na inicialização)
+    let tags = data.pendingTags
+    let changed = false
+    
+    // Migração de nomes
+    tags = tags.map(t => {
+        if (t.name === 'Aguardando SS') { t.name = 'Em SS'; changed = true; }
+        if (t.name === 'Aguardando SA/NE') { t.name = 'Em SA/NE'; changed = true; }
+        return t
+    })
+
+    // Adicionar tag "Prioridade" se não existir
+    if (!tags.some(t => t.name === 'Prioridade')) {
+        tags.push({ id: 'tag-prioridade', name: 'Prioridade', color: '#f44336' })
+        changed = true
+    }
+    
+    if (changed) {
+        await chrome.storage.local.set({ pendingTags: tags })
+    }
+  }
+  
+  if (!data.pendingTagsMap) {
+    await chrome.storage.local.set({ pendingTagsMap: {} })
+  }
+}
+
+/**
+ * Retorna a lista de tags disponíveis.
+ * @returns {Promise<Array<{id: string, name: string, color: string}>>}
+ */
+async function getAvailableTags() {
+  const data = await chrome.storage.local.get(['pendingTags'])
+  return data.pendingTags || DEFAULT_TAGS
+}
+
+/**
+ * Cria uma nova tag customizada.
+ * @param {string} name Nome da tag
+ * @param {string} color Cor da tag (hex)
+ * @returns {Promise<object>} A tag criada
+ */
+async function createCustomTag(name, color) {
+  const tags = await getAvailableTags()
+  const newTag = {
+    id: `tag-${Date.now()}`,
+    name,
+    color
+  }
+  tags.push(newTag)
+  await chrome.storage.local.set({ pendingTags: tags })
+  return newTag
+}
+
+/**
+ * Remove uma tag customizada.
+ * @param {string} tagId ID da tag a ser removida
+ */
+async function deleteCustomTag(tagId) {
+  // Remove da lista de definições
+  let tags = await getAvailableTags()
+  tags = tags.filter(t => t.id !== tagId)
+  await chrome.storage.local.set({ pendingTags: tags })
+
+  // Remove referências nos itens
+  const map = await getPendingTagsMap()
+  let changed = false
+  
+  for (const pendingId in map) {
+    if (map[pendingId].includes(tagId)) {
+        map[pendingId] = map[pendingId].filter(t => t !== tagId)
+        if (map[pendingId].length === 0) delete map[pendingId]
+        changed = true
+    }
+  }
+  
+  if (changed) {
+    await chrome.storage.local.set({ pendingTagsMap: map })
+  }
+}
+
+/**
+ * Retorna o mapa de tags associadas aos IDs de pendência.
+ * @returns {Promise<object>} Mapa { pendingId: [tagId, ...] }
+ */
+async function getPendingTagsMap() {
+  const data = await chrome.storage.local.get(['pendingTagsMap'])
+  return data.pendingTagsMap || {}
+}
+
+/**
+ * Alterna uma tag para uma pendência específica.
+ * @param {string} pendingId ID da pendência
+ * @param {string} tagId ID da tag
+ * @returns {Promise<Array<string>>} Nova lista de tags para este ID
+ */
+async function togglePendingTag(pendingId, tagId) {
+  const map = await getPendingTagsMap()
+  let currentTags = map[pendingId] || []
+  
+  if (currentTags.includes(tagId)) {
+    currentTags = currentTags.filter(t => t !== tagId)
+  } else {
+    currentTags.push(tagId)
+  }
+  
+  map[pendingId] = currentTags
+  
+  // Limpeza básica: remove entradas vazias para não inflar o storage
+  if (currentTags.length === 0) {
+    delete map[pendingId]
+  }
+  
+  await chrome.storage.local.set({ pendingTagsMap: map })
+  return currentTags
+}
+
+// Inicializa as tags ao carregar o script (se não existir)
+initializeTags().catch(err => console.error('Erro ao inicializar tags:', err))

@@ -5,6 +5,7 @@
 
 const REMINDERS_STORAGE_KEY = 'remindersData'
 const GREETINGS_CLOSINGS_KEY = 'greetingsClosingsData'
+const PENDING_POLL_ALARM = 'pending-poll'
 const USAGE_TRACKING_KEY = 'usageTrackingData'
 const SUGGESTED_TRAMITES_KEY = 'suggestedTramites'
 const STORAGE_KEY = 'quickMessagesData'
@@ -139,9 +140,31 @@ async function clearNotificationAndAlarm(notificationId) {
 // --- INICIALIZAÇÃO E LISTENERS DE EVENTOS DO CHROME ---
 
 /**
+ * Configura o alarme de verificação de pendências com distribuição aleatória.
+ * Evita que todos os usuários façam requisições simultâneas.
+ */
+async function setupPendingPollAlarm() {
+  const alarm = await chrome.alarms.get(PENDING_POLL_ALARM)
+  if (!alarm) {
+    // Adiciona delay aleatório entre 0 e 15 minutos para distribuição de carga
+    const delayInMinutes = Math.random() * 15
+    console.log(
+      `Service Worker: Agendando verificação de pendências para iniciar em ${delayInMinutes.toFixed(
+        2
+      )} minutos.`
+    )
+    chrome.alarms.create(PENDING_POLL_ALARM, {
+      delayInMinutes,
+      periodInMinutes: 15 // Repete a cada 15 minutos
+    })
+  }
+}
+
+/**
  * Configura alarmes essenciais na inicialização da extensão.
  */
 function setupInitialAlarms() {
+  setupPendingPollAlarm()
   // Alarmes de análise de uso removidos
 }
 
@@ -184,6 +207,12 @@ chrome.runtime.onStartup.addListener(() => {
   console.log('Service Worker: Navegador iniciado.')
   setupInitialAlarms()
 })
+
+// Variável para controle de debounce de notificações genéricas
+let lastGenericNotification = {
+  hash: 0,
+  timestamp: 0
+}
 
 /**
  * Listener para mensagens do content script (para criar/limpar alarmes).
@@ -267,6 +296,58 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           action: 'UPDATE_NOTIFICATION_BADGE'
         })
         sendResponse({ success: true })
+      } else if (message.action === 'SHOW_GENERIC_NOTIFICATION') {
+        const contentString = (message.title || '') + (message.message || '')
+        const currentHash = simpleHash(contentString)
+        const now = Date.now()
+
+        // Debounce: Se a mesma notificação chegou há menos de 5 segundos, ignora
+        if (
+          lastGenericNotification.hash === currentHash &&
+          now - lastGenericNotification.timestamp < 5000
+        ) {
+          console.log('Service Worker: Notificação genérica duplicada ignorada.')
+          sendResponse({ success: true, ignored: true })
+          return
+        }
+
+        // Verifica se o usuário permitiu notificações de pendências
+        const settings = (await getStorageData('extensionSettingsData', 'sync')) || {}
+        const preferences = settings.preferences || {}
+        
+        // Padrão é false (desabilitado) se não estiver definido
+        const notificationsEnabled = preferences.enablePendingNotifications === true
+
+        if (!notificationsEnabled) {
+             console.log('Service Worker: Notificação de pendências silenciada pelo usuário.')
+             sendResponse({ success: true, silenced: true })
+             return
+        }
+
+        lastGenericNotification = {
+          hash: currentHash,
+          timestamp: now
+        }
+
+        const notificationId = `generic-${Date.now()}`
+
+        // Exibe uma notificação genérica do sistema
+        chrome.notifications.create(notificationId, {
+          type: 'basic',
+          iconUrl: 'logo.png',
+          title: message.title,
+          message: message.message,
+          priority: 2,
+          buttons: [{ title: 'Dispensar' }],
+          requireInteraction: true // Mantém para controlar o tempo manualmente
+        })
+
+        // Fecha automaticamente após 15 segundos
+        setTimeout(() => {
+          chrome.notifications.clear(notificationId)
+        }, 15000)
+
+        sendResponse({ success: true })
       }
     } catch (error) {
       console.error(`Erro ao processar ação '${message.action}':`, error)
@@ -280,6 +361,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  * Listener principal para quando um alarme é disparado.
  */
 chrome.alarms.onAlarm.addListener(async alarm => {
+  if (alarm.name === PENDING_POLL_ALARM) {
+    // Alarme de verificação de pendências disparado
+    // Envia mensagem para a aba ativa do SGD para realizar a verificação
+    console.log('Service Worker: Disparando verificação de pendências.')
+    broadcastToSgdTabs({ action: 'TRIGGER_PENDING_CHECK' })
+    return
+  }
+
   if (alarm.name.startsWith('snooze-')) {
     // Lógica para soneca (se necessário) ou pode ser unificada
   }
@@ -351,6 +440,16 @@ chrome.alarms.onAlarm.addListener(async alarm => {
 // Listener para cliques nos botões da notificação do Windows
 chrome.notifications.onButtonClicked.addListener(
   (notificationId, buttonIndex) => {
+    // Tratamento para notificações de Pendências (prefixo 'generic-')
+    if (notificationId.startsWith('generic-')) {
+      if (buttonIndex === 0) {
+        // Botão "Dispensar"
+        chrome.notifications.clear(notificationId)
+      }
+      return
+    }
+
+    // Tratamento para Lembretes (padrão antigo)
     if (buttonIndex === 0) {
       // Índice do botão "Dispensar"
       chrome.notifications.clear(notificationId)

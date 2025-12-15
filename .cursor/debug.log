@@ -1,0 +1,588 @@
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"undefined"},"timestamp":1765833897295,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"undefined"},"timestamp":1765833897904,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765833907510,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956758"},"timestamp":1765833907512,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765833907512,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765833907512,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765833907512,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765833907512,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765833907512,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954157"},"timestamp":1765833907512,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765833907512,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765833907510,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765833907510,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765833907510,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765833907511,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765833907510,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765833907511,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765833907511,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957320"},"timestamp":1765833907511,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765833907511,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765833907511,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765833907511,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765833907511,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765833911763,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765833965495,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765833966181,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765833969188,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765833969188,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765833969188,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765833969188,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765833969189,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765833969189,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765833969189,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765833969189,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765833969189,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765833969189,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765833969189,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957320"},"timestamp":1765833969189,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765833969189,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956758"},"timestamp":1765833969190,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765833969190,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765833969190,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765833969190,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765833969190,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765833969190,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954157"},"timestamp":1765833969190,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765833969190,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33853447"},"timestamp":1765833971490,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765833971492,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33958218"},"timestamp":1765833982636,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765833982638,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33957984"},"timestamp":1765833990361,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765833990362,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33929458"},"timestamp":1765834003241,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834003242,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765834119378,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765834119952,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765834122926,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765834122926,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765834122926,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765834122926,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765834122927,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765834122927,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765834122926,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765834122927,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765834122927,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765834122927,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765834122927,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957320"},"timestamp":1765834122927,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765834122927,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956758"},"timestamp":1765834122927,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765834122928,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765834122928,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765834122928,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765834122928,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765834122928,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954157"},"timestamp":1765834122928,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765834122928,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33834722"},"timestamp":1765834125304,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834125306,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:showNewTagInput","message":"Function called","data":{"pendingId":"33834722","btnElementExists":true},"timestamp":1765834128245,"sessionId":"debug-session","hypothesisId":"D"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765834195941,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765834196708,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765834198138,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765834198138,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765834198139,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765834198139,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765834198139,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765834198139,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765834198139,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765834198139,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765834198139,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765834198139,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765834198140,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957320"},"timestamp":1765834198140,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765834198140,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956758"},"timestamp":1765834198140,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765834198140,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765834198140,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765834198140,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765834198140,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765834198141,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954157"},"timestamp":1765834198141,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765834198141,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33834722"},"timestamp":1765834199837,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834199838,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:showNewTagInput","message":"Function called","data":{"pendingId":"33834722","btnElementExists":true},"timestamp":1765834201903,"sessionId":"debug-session","hypothesisId":"D"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33853447"},"timestamp":1765834207200,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834207201,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765834211724,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765834217912,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765834217912,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765834217913,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765834217913,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765834217913,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765834217913,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765834217913,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765834217913,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765834217913,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765834217913,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765834217913,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957320"},"timestamp":1765834217913,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765834217914,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956758"},"timestamp":1765834217914,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765834217914,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765834217914,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765834217914,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765834217914,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765834217914,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954157"},"timestamp":1765834217914,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765834217914,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33853447"},"timestamp":1765834226325,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834226326,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765834307908,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765834307908,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765834307909,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765834307909,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765834307908,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765834307909,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765834307909,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765834307909,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765834307909,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765834307909,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765834307909,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957320"},"timestamp":1765834307909,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765834307910,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956758"},"timestamp":1765834307910,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765834307910,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765834307910,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765834307910,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765834307910,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765834307910,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954157"},"timestamp":1765834307910,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765834307910,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33882131"},"timestamp":1765834309970,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834309972,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:showNewTagInput","message":"Function called","data":{"pendingId":"33882131","btnElementExists":true},"timestamp":1765834312029,"sessionId":"debug-session","hypothesisId":"D"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33959522"},"timestamp":1765834357090,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834357092,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765834393517,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765834394319,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765834395992,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765834395992,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765834395992,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765834395992,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765834395992,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765834395993,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765834395992,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765834395993,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765834395993,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765834395993,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765834395993,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957320"},"timestamp":1765834395993,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765834395993,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956758"},"timestamp":1765834395993,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765834395993,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765834395994,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765834395994,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765834395994,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765834395994,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954157"},"timestamp":1765834395994,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765834395994,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33853447"},"timestamp":1765834400456,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834400458,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33883765"},"timestamp":1765834404986,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834404987,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765834414254,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765834414877,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765834416648,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765834416649,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765834416649,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765834416649,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765834416649,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765834416649,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765834416649,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765834416649,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765834416649,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765834416650,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765834416650,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957320"},"timestamp":1765834416650,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765834416650,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956758"},"timestamp":1765834416650,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765834416650,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765834416650,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765834416651,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765834416651,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765834416651,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954157"},"timestamp":1765834416651,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765834416651,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33834722"},"timestamp":1765834418329,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834418330,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765834439060,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765834443472,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765834444026,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765834444977,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765834445744,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765834447920,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765834447920,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765834447921,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765834447921,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765834447921,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765834447921,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765834447921,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765834447921,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765834447921,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765834447921,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765834447922,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957320"},"timestamp":1765834447922,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765834447922,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956758"},"timestamp":1765834447922,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765834447922,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765834447922,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765834447922,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765834447923,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765834447923,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954157"},"timestamp":1765834447923,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765834447923,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33834722"},"timestamp":1765834455326,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834455328,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765834547694,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765834548364,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765834550671,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765834550671,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765834550671,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765834550671,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765834550671,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765834550671,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765834550672,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765834550672,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765834550672,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765834550672,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765834550672,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957320"},"timestamp":1765834550672,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765834550672,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956758"},"timestamp":1765834550672,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765834550672,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765834550672,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765834550673,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765834550673,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765834550673,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954157"},"timestamp":1765834550673,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765834550673,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33882131"},"timestamp":1765834554163,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834554165,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33882131"},"timestamp":1765834565952,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834565953,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33882131"},"timestamp":1765834588974,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834588975,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765834624343,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765834624343,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765834624344,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765834624344,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765834624343,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765834624343,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765834624344,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765834624344,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765834624344,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765834624344,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957320"},"timestamp":1765834624345,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765834624344,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765834624345,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956758"},"timestamp":1765834624345,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765834624345,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765834624345,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765834624345,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765834624345,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954157"},"timestamp":1765834624346,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765834624345,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765834624346,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33882131"},"timestamp":1765834625827,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834625828,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33929458"},"timestamp":1765834630819,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834630821,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765834684569,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765834684570,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957320"},"timestamp":1765834684570,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765834684570,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765834684570,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956758"},"timestamp":1765834684571,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765834684571,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765834684571,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765834684571,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765834684571,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765834684571,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954157"},"timestamp":1765834684571,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765834684571,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765834684569,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765834684569,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765834684570,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765834684570,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765834684570,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765834684570,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765834684570,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765834684570,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33958592"},"timestamp":1765834701409,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834701410,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33957984"},"timestamp":1765834703888,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834703890,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33957909"},"timestamp":1765834705620,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834705621,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33957320"},"timestamp":1765834707191,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834707192,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33956866"},"timestamp":1765834709365,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834709366,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33956758"},"timestamp":1765834710613,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834710614,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33956469"},"timestamp":1765834712090,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834712092,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33956376"},"timestamp":1765834713558,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834713560,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33956278"},"timestamp":1765834715153,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834715155,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33956200"},"timestamp":1765834716503,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834716505,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33954311"},"timestamp":1765834718891,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834718892,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33954157"},"timestamp":1765834720579,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834720580,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33959522"},"timestamp":1765834726848,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834726849,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765834733341,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765834733342,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765834733342,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765834733342,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765834733342,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765834733342,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765834733342,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957320"},"timestamp":1765834733342,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956758"},"timestamp":1765834733342,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765834733342,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765834733343,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765834733343,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765834733342,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765834733343,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765834733343,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954157"},"timestamp":1765834733343,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765834736818,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765834736819,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765834736819,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765834736819,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765834736819,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765834736819,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765834736819,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765834736819,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765834736819,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765834736820,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765834736820,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957320"},"timestamp":1765834736820,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765834736820,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956758"},"timestamp":1765834736820,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765834736820,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765834736820,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765834736820,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765834736820,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765834736820,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954157"},"timestamp":1765834736820,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765834736821,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33834722"},"timestamp":1765834740157,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834740158,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33853447"},"timestamp":1765834769132,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834769133,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765834783056,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765834783912,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765834787888,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765834787888,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765834787888,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765834787888,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765834787888,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765834787888,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765834787888,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765834787889,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765834787889,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765834787889,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765834787889,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957320"},"timestamp":1765834787889,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765834787889,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956758"},"timestamp":1765834787889,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765834787889,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765834787889,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765834787890,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765834787890,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765834787890,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954157"},"timestamp":1765834787890,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765834787890,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33929458"},"timestamp":1765834790355,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834790356,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765834822085,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765834822811,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765834824851,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765834824851,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765834824851,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765834824851,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765834824851,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765834824851,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765834824851,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765834824852,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765834824852,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765834824852,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765834824852,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957320"},"timestamp":1765834824852,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765834824852,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956758"},"timestamp":1765834824852,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765834824852,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765834824852,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765834824853,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765834824853,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765834824853,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954157"},"timestamp":1765834824853,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765834824853,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33882131"},"timestamp":1765834828755,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834828757,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765834852849,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765834852849,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765834852849,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765834852850,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765834852849,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765834852850,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765834852850,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765834852850,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765834852850,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765834852850,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765834852850,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765834852851,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957320"},"timestamp":1765834852850,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956758"},"timestamp":1765834852851,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765834852851,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765834852851,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765834852851,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765834852851,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765834852851,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954157"},"timestamp":1765834852851,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765834852851,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33834722"},"timestamp":1765834861112,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834861113,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33834722"},"timestamp":1765834862645,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765834862646,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765835052658,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957320"},"timestamp":1765835052660,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765835052660,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765835052660,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956758"},"timestamp":1765835052660,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765835052660,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765835052660,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765835052660,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765835052661,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765835052661,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954157"},"timestamp":1765835052661,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765835052661,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765835052659,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765835052659,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765835052659,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765835052659,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765835052659,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765835052659,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765835052659,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765835052659,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765835052659,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765835286052,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765835286820,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765835289601,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765835289601,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765835289601,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765835289601,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765835289602,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765835289602,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765835289601,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765835289602,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765835289602,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765835289602,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765835289602,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957320"},"timestamp":1765835289602,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765835289602,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956758"},"timestamp":1765835289602,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765835289602,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765835289603,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765835289603,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765835289603,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765835289603,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954157"},"timestamp":1765835289603,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765835289603,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765835425662,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765835425663,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957320"},"timestamp":1765835425663,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765835425663,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956758"},"timestamp":1765835425663,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765835425663,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765835425663,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765835425663,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765835425663,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765835425664,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954157"},"timestamp":1765835425664,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765835425664,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765835425662,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765835425662,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765835425662,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765835425662,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765835425662,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765835425662,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765835425662,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765835425663,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765835425663,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765835443324,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765835444135,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765835445737,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765835445737,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765835445737,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765835445737,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765835445738,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765835445738,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765835445738,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765835445738,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765835445738,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765835445738,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765835445738,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957320"},"timestamp":1765835445738,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765835445738,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956758"},"timestamp":1765835445739,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765835445739,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765835445739,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765835445739,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765835445739,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765835445739,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954157"},"timestamp":1765835445739,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765835445739,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:window.openTagManager","message":"Function called from window","data":{"pendingId":"33958218"},"timestamp":1765835474560,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:globalClick","message":"Click detected on tag button","data":{"target":"ip-add-tag-btn","isWindowOpenTagManagerDefined":true},"timestamp":1765835474562,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765835588131,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956758"},"timestamp":1765835588133,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765835588133,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765835588133,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765835588133,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765835588133,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765835588133,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954157"},"timestamp":1765835588133,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765835588133,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765835588131,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765835588131,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765835588131,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765835588132,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765835588132,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765835588132,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765835588132,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765835588132,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765835588132,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765835588132,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957320"},"timestamp":1765835588132,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765835588132,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765835601063,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765835601064,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957320"},"timestamp":1765835601064,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765835601065,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765835601064,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956758"},"timestamp":1765835601065,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765835601065,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765835601065,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765835601065,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765835601065,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765835601065,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954157"},"timestamp":1765835601065,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765835601065,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765835601063,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765835601064,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765835601064,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765835601064,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765835601064,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765835601064,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765835601064,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765835601064,"sessionId":"debug-session","hypothesisId":"A"}

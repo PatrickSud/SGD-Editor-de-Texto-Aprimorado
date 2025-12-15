@@ -201,6 +201,50 @@ function openInfoPanel() {
       })
     }
 
+    // Configuração do botão de Notificação
+    const notifyBtn = pendingSection.querySelector('#toggle-notification-btn')
+    if (notifyBtn) {
+        // Função para atualizar visual do botão
+        const updateNotifyBtnState = (enabled) => {
+            if (enabled) {
+                notifyBtn.textContent = '🔔'
+                notifyBtn.classList.add('active-notification')
+                notifyBtn.title = 'Notificações Ativadas\nVocê receberá alertas na tela durante as verificações periódicas (4x por hora).'
+                notifyBtn.style.opacity = '1'
+            } else {
+                notifyBtn.textContent = '🔕'
+                notifyBtn.classList.remove('active-notification')
+                notifyBtn.title = 'Notificações Desativadas\nO sistema verificará pendências silenciosamente 4x por hora, mas não exibirá alertas na tela.'
+                notifyBtn.style.opacity = '0.6'
+            }
+        }
+
+        // Carregar estado inicial
+        chrome.storage.sync.get(['extensionSettingsData'], (result) => {
+            const settings = result.extensionSettingsData || {}
+            const prefs = settings.preferences || {}
+            // Padrão false
+            const isEnabled = prefs.enablePendingNotifications === true
+            updateNotifyBtnState(isEnabled)
+        })
+
+        // Listener de clique
+        notifyBtn.addEventListener('click', async () => {
+             const result = await chrome.storage.sync.get(['extensionSettingsData'])
+             let settings = result.extensionSettingsData || { preferences: {} }
+             if (!settings.preferences) settings.preferences = {}
+             
+             // Alternar
+             const currentState = settings.preferences.enablePendingNotifications === true
+             const newState = !currentState
+             
+             settings.preferences.enablePendingNotifications = newState
+             
+             await chrome.storage.sync.set({ extensionSettingsData: settings })
+             updateNotifyBtnState(newState)
+        })
+    }
+
     // Carrega automaticamente as pendências se esta for a seção ativa
     if (pendingSection.classList.contains('active')) {
       loadPendingItems(pendingSection)
@@ -209,7 +253,7 @@ function openInfoPanel() {
     // Configurar listeners para os filtros
     const searchInput = pendingSection.querySelector('#pending-search')
     const statusFilter = pendingSection.querySelector('#pending-status-filter')
-
+    const tagFilter = pendingSection.querySelector('#pending-tag-filter')
     const sortSelect = pendingSection.querySelector('#pending-sort')
 
     const applyFiltersHandler = () => {
@@ -224,7 +268,9 @@ function openInfoPanel() {
     if (statusFilter) {
       statusFilter.addEventListener('change', applyFiltersHandler)
     }
-
+    if (tagFilter) {
+      tagFilter.addEventListener('change', applyFiltersHandler)
+    }
     if (sortSelect) {
       sortSelect.addEventListener('change', applyFiltersHandler)
     }
@@ -249,6 +295,19 @@ function openInfoPanel() {
 
 // Variável global para armazenar os itens pendentes carregados
 let allPendingItems = []
+
+// #region agent log
+// Global click listener to detect if clicks are happening but handler is missed
+document.addEventListener('click', (e) => {
+  if (e.target.matches('.ip-add-tag-btn') || e.target.closest('.ip-add-tag-btn')) {
+    fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'info-panel.js:globalClick',message:'Click detected on tag button',data:{target: e.target.className, isWindowOpenTagManagerDefined: typeof window.openTagManager !== 'undefined'},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+  }
+});
+// #endregion
+
+// Cache para tags
+let availableTagsCache = []
+let pendingTagsMapCache = {}
 
 // Controle do modo desenvolvedor
 let developerMode = false
@@ -283,6 +342,8 @@ function applyPendingFilters(sectionElement) {
   ).toLowerCase()
   const statusFilter =
     sectionElement.querySelector('#pending-status-filter')?.value || ''
+  const tagFilter =
+    sectionElement.querySelector('#pending-tag-filter')?.value || ''
 
   const sortOption =
     sectionElement.querySelector('#pending-sort')?.value || 'dias-desc'
@@ -310,6 +371,14 @@ function applyPendingFilters(sectionElement) {
         statusFilter !== 'outro' &&
         statusClass !== `status-${statusFilter}`
       ) {
+        return false
+      }
+    }
+
+    // Filtro de Tags
+    if (tagFilter) {
+      const itemTags = pendingTagsMapCache[item.id] || []
+      if (!itemTags.includes(tagFilter)) {
         return false
       }
     }
@@ -365,6 +434,13 @@ function applyPendingFilters(sectionElement) {
     container.innerHTML = filteredItems
       .map(item => createPendingCard(item))
       .join('')
+      
+    // Attach listeners after rendering cards
+    container.querySelectorAll('.ip-add-tag-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            openTagManager(this, this.dataset.pendingId)
+        })
+    })
   }
 }
 
@@ -400,6 +476,21 @@ async function loadPendingItems(sectionElement) {
     // fetchPendingItems deve estar disponível globalmente via pending-service.js
     const items = await fetchPendingItems()
     allPendingItems = items
+    
+    // Carregar Tags e Mapa
+    availableTagsCache = await getAvailableTags()
+    pendingTagsMapCache = await getPendingTagsMap()
+
+    // Atualiza o select de filtro de tags caso ele já tenha sido renderizado (refresh)
+    const tagFilterSelect = sectionElement.querySelector('#pending-tag-filter')
+    if (tagFilterSelect) {
+        const currentVal = tagFilterSelect.value
+        tagFilterSelect.innerHTML = `
+            <option value="">Todas as Tags</option>
+            ${availableTagsCache.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+        `
+        tagFilterSelect.value = currentVal
+    }
 
     if (items.length === 0) {
       container.innerHTML = `
@@ -453,11 +544,22 @@ function getStatusClass(status) {
  * @returns {string} HTML do card.
  */
 function createPendingCard(item) {
+// #region agent log
+fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'info-panel.js:createPendingCard',message:'Creating card',data:{id: item.id},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+// #endregion
   const statusClass = getStatusClass(item.status)
   const prioritariaIcon = item.isPrioritaria ? '<span class="ip-prioritaria-icon" title="Solicitação marcada como prioritária">⚠️</span>' : ''
+  
+  // Tags
+  const itemTags = pendingTagsMapCache[item.id] || []
+  const tagsHtml = itemTags.map(tagId => {
+    const tagDef = availableTagsCache.find(t => t.id === tagId)
+    if (!tagDef) return ''
+    return `<span class="ip-tag-badge" style="background-color: ${tagDef.color}20; color: ${tagDef.color}; border-color: ${tagDef.color}40;">${escapeHTML(tagDef.name)}</span>`
+  }).join('')
 
   return `
-        <div class="ip-pending-card ${statusClass}">
+        <div class="ip-pending-card ${statusClass}" data-id="${item.id}">
             <div class="ip-pending-header">
                 <div class="ip-pending-id-row">
                     <span class="ip-pending-id" title="N.º da Solicitação: ${escapeHTML(
@@ -470,6 +572,8 @@ function createPendingCard(item) {
                       item.qtdTramites
                     )}</span>
                     ${prioritariaIcon}
+                    <div class="ip-tags-container">${tagsHtml}</div>
+                    <button class="ip-add-tag-btn" title="Gerenciar Tags" data-pending-id="${item.id}">🏷️</button>
                 </div>
                 <div class="ip-date-container">
                     <span class="ip-pending-date" title="Data de Abertura: ${escapeHTML(
@@ -505,6 +609,241 @@ function createPendingCard(item) {
             </div>
         </div>
     `
+}
+
+// #region agent log
+// Verify if window.openTagManager is set
+fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'info-panel.js:init',message:'Exposing functions to window',data:{before: typeof window.openTagManager},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+// #endregion
+
+/**
+ * Abre o gerenciador de tags para um item específico.
+ * @param {HTMLElement} btnElement Botão clicado
+ * @param {string} pendingId ID da pendência
+ */
+async function openTagManager(btnElement, pendingId) {
+// #region agent log
+fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'info-panel.js:window.openTagManager',message:'Function called from window',data:{pendingId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+// #endregion
+
+    // Remove qualquer popup existente
+    const existingPopup = document.querySelector('.ip-tag-popup')
+    if (existingPopup) existingPopup.remove()
+
+    const popup = document.createElement('div')
+    popup.className = 'ip-tag-popup'
+    
+    const currentTags = pendingTagsMapCache[pendingId] || []
+    
+    let tagsListHtml = availableTagsCache.map(tag => {
+        const isChecked = currentTags.includes(tag.id) ? 'checked' : ''
+        return `
+            <div class="ip-tag-row">
+                <label class="ip-tag-option" style="flex: 1;">
+                    <input type="checkbox" value="${tag.id}" ${isChecked}>
+                    <span class="ip-tag-color" style="background-color: ${tag.color}"></span>
+                    ${escapeHTML(tag.name)}
+                </label>
+                <button class="ip-tag-delete-btn" data-tag-id="${tag.id}" title="Excluir Tag">🗑️</button>
+            </div>
+        `
+    }).join('')
+
+    popup.innerHTML = `
+        <div class="ip-tag-popup-header">Gerenciar Tags</div>
+        <div class="ip-tag-popup-list">${tagsListHtml}</div>
+        <div class="ip-tag-popup-footer">
+             <button class="ip-tag-new-btn" data-pending-id="${pendingId}">+ Nova Tag</button>
+        </div>
+    `
+
+    // Posicionamento
+    const rect = btnElement.getBoundingClientRect()
+    popup.style.top = `${rect.bottom + window.scrollY + 5}px`
+    popup.style.left = `${rect.left + window.scrollX}px`
+    
+    document.body.appendChild(popup)
+
+    // Attach listeners for popup elements
+    const newTagBtn = popup.querySelector('.ip-tag-new-btn')
+    if (newTagBtn) {
+        newTagBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (window.showNewTagInput) {
+                window.showNewTagInput(this, pendingId)
+            } else {
+                 console.error('Função showNewTagInput não encontrada no window');
+                 // Fallback
+                 if (typeof showNewTagInput === 'function') {
+                    showNewTagInput(this, pendingId);
+                 }
+            }
+        })
+    }
+
+    const checkboxes = popup.querySelectorAll('input[type="checkbox"]')
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+            toggleTag(pendingId, this.value)
+        })
+    })
+
+    // Delete buttons listener
+    const deleteBtns = popup.querySelectorAll('.ip-tag-delete-btn')
+    deleteBtns.forEach(btn => {
+        btn.addEventListener('click', async function(e) {
+            e.stopPropagation(); // Impede fechar ou marcar checkbox
+            if (confirm('Tem certeza que deseja excluir esta tag?')) {
+                const tagId = this.dataset.tagId
+                if (window.deleteTag) {
+                    await window.deleteTag(tagId)
+                    // Atualiza cache local
+                    availableTagsCache = availableTagsCache.filter(t => t.id !== tagId)
+                    // Fecha o popup atual pois a lista mudou
+                    if (popup && popup.parentElement) popup.remove()
+                    
+                    // Atualiza filtros
+                    const pendingSection = document.querySelector('#ip-section-pending')
+                    if (pendingSection) {
+                        const tagFilterSelect = pendingSection.querySelector('#pending-tag-filter')
+                        if (tagFilterSelect) {
+                            tagFilterSelect.innerHTML = `
+                                <option value="">Todas as Tags</option>
+                                ${availableTagsCache.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+                            `
+                        }
+                        // Refresh UI do card
+                         refreshPendingCardUI(pendingId)
+                    }
+                }
+            }
+        })
+    })
+
+    // Fechar ao clicar fora
+    const closeHandler = (e) => {
+        if (!popup.contains(e.target) && e.target !== btnElement) {
+            popup.remove()
+            document.removeEventListener('click', closeHandler)
+        }
+    }
+    setTimeout(() => document.addEventListener('click', closeHandler), 100)
+}
+
+/**
+ * Alterna a tag e atualiza a UI.
+ */
+async function toggleTag(pendingId, tagId) {
+    const newTags = await togglePendingTag(pendingId, tagId)
+    pendingTagsMapCache[pendingId] = newTags
+    
+    // Re-renderiza o card específico ou atualiza a lista se estiver filtrada
+    refreshPendingCardUI(pendingId)
+}
+
+/**
+ * Mostra input para criar nova tag
+ */
+window.showNewTagInput = function(btnElement, pendingId) {
+    // Tenta encontrar o container correto (footer do popup)
+    const container = btnElement.closest('.ip-tag-popup-footer') || btnElement.parentElement
+    if (!container) return;
+
+    container.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 4px;">
+            <input type="text" id="new-tag-name" placeholder="Nome" class="ip-new-tag-input" style="flex: 1;" autofocus>
+            <input type="color" id="new-tag-color" value="#2196f3" class="ip-new-tag-color">
+            <button id="save-tag-btn" class="ip-save-tag-btn">OK</button>
+        </div>
+    `
+    // Attach listener for the new button
+    const saveBtn = container.querySelector('#save-tag-btn')
+    if (saveBtn) {
+        saveBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent closing popup
+            if (window.saveNewTag) {
+                window.saveNewTag(pendingId);
+            } else {
+                console.error('Função saveNewTag não encontrada');
+            }
+        })
+    }
+    
+    // Prevent closing when clicking inputs
+    const inputs = container.querySelectorAll('input');
+    inputs.forEach(input => {
+        input.addEventListener('click', (e) => e.stopPropagation());
+    });
+}
+
+/**
+ * Exclui uma tag
+ */
+window.deleteTag = async function(tagId) {
+    await deleteCustomTag(tagId)
+}
+
+/**
+ * Salva a nova tag e a adiciona ao item.
+ */
+window.saveNewTag = async function(pendingId) {
+    const nameInput = document.querySelector('#new-tag-name')
+    const colorInput = document.querySelector('#new-tag-color')
+    
+    if (!nameInput || !nameInput.value.trim()) {
+        console.warn('Nome da tag vazio')
+        return
+    }
+
+    const newTag = await createCustomTag(nameInput.value.trim(), colorInput.value)
+    availableTagsCache.push(newTag)
+    
+    // Atualiza a UI do popup (fecha e reabre para simplificar)
+    const existingPopup = document.querySelector('.ip-tag-popup')
+    if (existingPopup) existingPopup.remove()
+    
+    // Adiciona a nova tag ao item automaticamente
+    if (window.toggleTag) {
+        await window.toggleTag(pendingId, newTag.id)
+    }
+    
+    // Atualiza os filtros
+    const pendingSection = document.querySelector('#ip-section-pending')
+    if (pendingSection) {
+        const tagFilterSelect = pendingSection.querySelector('#pending-tag-filter')
+        if (tagFilterSelect) {
+             tagFilterSelect.innerHTML = `
+                <option value="">Todas as Tags</option>
+                ${availableTagsCache.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+            `
+        }
+    }
+}
+
+/**
+ * Atualiza apenas a visualização de tags de um card específico para evitar reload total.
+ */
+function refreshPendingCardUI(pendingId) {
+    // Se tiver filtro de tag ativo, talvez o item suma da lista, então reload completo é mais seguro para consistência
+    const pendingSection = document.querySelector('#ip-section-pending')
+    const tagFilter = pendingSection.querySelector('#pending-tag-filter')
+    
+    if (tagFilter && tagFilter.value) {
+        applyPendingFilters(pendingSection)
+    } else {
+        // Atualização local para performance
+        const card = document.querySelector(`.ip-pending-card[data-id="${pendingId}"]`)
+        if (card) {
+             const tagsContainer = card.querySelector('.ip-tags-container')
+             const itemTags = pendingTagsMapCache[pendingId] || []
+             const tagsHtml = itemTags.map(tagId => {
+                const tagDef = availableTagsCache.find(t => t.id === tagId)
+                if (!tagDef) return ''
+                return `<span class="ip-tag-badge" style="background-color: ${tagDef.color}20; color: ${tagDef.color}; border-color: ${tagDef.color}40;">${escapeHTML(tagDef.name)}</span>`
+             }).join('')
+             tagsContainer.innerHTML = tagsHtml
+        }
+    }
 }
 
 /**
@@ -664,6 +1003,11 @@ function getSectionContent(sectionId) {
                             <option value="outro">Outros</option>
                         </select>
 
+                        <select id="pending-tag-filter" class="ip-filter-select compact" title="Filtrar por Tag">
+                            <option value="">Todas as Tags</option>
+                            ${availableTagsCache.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+                        </select>
+
                         <select id="pending-sort" class="ip-filter-select compact" title="Ordenar por">
                             <option value="dias-desc">Dias ▼</option>
                             <option value="dias-asc">Dias ▲</option>
@@ -673,7 +1017,10 @@ function getSectionContent(sectionId) {
                             <option value="data-asc">Data antiga</option>
                         </select>
                     </div>
-                    <button id="refresh-pending-btn" class="action-btn small-btn enhanced-btn compact" title="Atualizar lista">🔄</button>
+                    <div class="ip-actions-group">
+                        <button id="toggle-notification-btn" class="action-btn small-btn enhanced-btn compact" title="Carregando estado...">🔔</button>
+                        <button id="refresh-pending-btn" class="action-btn small-btn enhanced-btn compact" title="Atualizar lista">🔄</button>
+                    </div>
                 </div>
             </div>
             <div id="pending-list-container" class="ip-grid">

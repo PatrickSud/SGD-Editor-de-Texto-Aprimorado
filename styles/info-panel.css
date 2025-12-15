@@ -401,12 +401,23 @@
 }
 
 .ip-filter-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: 1;
-  flex-wrap: nowrap;
-  min-width: 0;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    flex: 1;
+}
+
+.ip-actions-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.active-notification {
+    background-color: var(--action-blue) !important; /* Visual de ativo */
+    color: white !important;
+    border-color: var(--action-blue) !important;
 }
 
 .ip-filter-input.compact,

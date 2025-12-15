@@ -2066,6 +2066,27 @@ async function initializeExtension() {
   observeForSolutionResponseRadio()
   observeForClassificationDefault()
   await checkVersionAndShowWhatsNew()
+
+  // Inicializa a verificação de pendências
+  await initializePendingBadge()
+
+  // Verifica se deve abrir o painel de pendências automaticamente (via URL param)
+  const urlParams = new URLSearchParams(window.location.search)
+  if (urlParams.get('open_sgd_panel') === 'true') {
+    // Pequeno delay para garantir inicialização de estilos/DOM
+    setTimeout(() => {
+      if (typeof openInfoPanel === 'function') {
+        openInfoPanel()
+        // Força seleção da aba de pendências
+        setTimeout(() => {
+            const pendingTab = document.querySelector('.ip-nav-item[data-target="pending"]')
+            if (pendingTab) pendingTab.click()
+        }, 100)
+      } else {
+        console.warn('Função openInfoPanel não encontrada.')
+      }
+    }, 500)
+  }
 }
 
 /**
@@ -2818,7 +2839,10 @@ function createFloatingActionButtons() {
 
   fabContainer.innerHTML = `
     <div class="fab-options">
-      <button type="button" class="fab-button fab-option shine-effect" data-action="fab-info-panel" data-tooltip="Central de Informações">ℹ️</button>
+      <div class="fab-option-wrapper">
+        <button type="button" class="fab-button fab-option shine-effect" data-action="fab-info-panel" data-tooltip="Central de Informações">ℹ️</button>
+        <span class="fab-badge"></span>
+      </div>
       <button type="button" class="fab-button fab-option shine-effect" data-action="fab-notes" data-tooltip="Anotações">✍️</button>
       <button type="button" class="fab-button fab-option shine-effect" data-action="fab-reminders" data-tooltip="Gerenciar Lembretes">⏰</button>
       <button type="button" class="fab-button fab-option shine-effect" data-action="fab-quick-steps" data-tooltip="Trâmites">⚡</button>
@@ -2854,6 +2878,8 @@ function setupFabListeners() {
 
     switch (actionButton.dataset.action) {
       case 'fab-info-panel':
+        // Marca pendências como vistas ao abrir o painel
+        handleInfoPanelOpen()
         openInfoPanel()
         break
       case 'fab-quick-steps':
@@ -3247,6 +3273,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }, 400)
     }
   }
+
+  // Acionado pelo Service Worker (alarme de 15min)
+  if (message.action === 'TRIGGER_PENDING_CHECK') {
+    console.log('Main: Recebido pedido de verificação de pendências.')
+    checkNewPendings().then(async result => {
+        updatePendingBadgeUI(result)
+        
+        // Se houver novas pendências, solicita notificação ao SW
+        if (result.newCount > 0) {
+            chrome.runtime.sendMessage({
+                action: 'SHOW_GENERIC_NOTIFICATION',
+                title: 'Novas Pendências no SGD',
+                message: `Você tem ${result.newCount} nova(s) pendência(s). Total: ${result.total}`
+            })
+        }
+    })
+  }
 })
 
 /**
@@ -3321,6 +3364,75 @@ async function checkVersionAndShowWhatsNew() {
     )
   }
 }
+
+// --- GESTÃO DE NOTIFICAÇÕES DE PENDÊNCIAS ---
+
+/**
+ * Inicializa a verificação de pendências e o badge.
+ */
+async function initializePendingBadge() {
+  // Tenta carregar o último resultado salvo para exibição imediata
+  const lastResult = await getLastPendingResult()
+  if (lastResult) {
+    updatePendingBadgeUI(lastResult)
+  }
+
+  // Verifica se precisamos fazer um fetch novo (ex: cache muito antigo)
+  // Por enquanto, confiamos no polling do Service Worker, mas se não tiver cache,
+  // podemos fazer um fetch inicial (com debounce/jitter se necessário, mas aqui é um por aba)
+  if (!lastResult) {
+    // Delay aleatório curto para evitar pico no reload de várias abas
+    setTimeout(async () => {
+        const result = await checkNewPendings()
+        updatePendingBadgeUI(result)
+    }, Math.random() * 5000)
+  }
+}
+
+/**
+ * Atualiza a interface do badge de pendências.
+ * @param {object} result - Resultado do checkNewPendings.
+ */
+function updatePendingBadgeUI(result) {
+  const fabBadge = document.querySelector('.fab-option-wrapper .fab-badge')
+  const infoBtn = document.querySelector('.fab-button[data-action="fab-info-panel"]')
+
+  if (!fabBadge || !infoBtn) return
+
+  if (result.total > 0) {
+    let badgeText = `${result.total}`
+    if (result.newCount > 0) {
+      badgeText += ` | ${result.newCount}`
+      fabBadge.classList.add('has-new')
+      infoBtn.classList.add('pulsing-alert')
+    } else {
+      fabBadge.classList.remove('has-new')
+      infoBtn.classList.remove('pulsing-alert')
+    }
+    fabBadge.textContent = badgeText
+    fabBadge.style.display = 'flex'
+  } else {
+    fabBadge.style.display = 'none'
+    infoBtn.classList.remove('pulsing-alert')
+  }
+}
+
+/**
+ * Ação ao abrir o painel de informações: marca pendências como vistas.
+ */
+async function handleInfoPanelOpen() {
+  const result = await getLastPendingResult()
+  if (result && result.currentIds) {
+    await markPendingsAsSeen(result.currentIds)
+    // Atualiza a UI para remover o contador de novos
+    result.newCount = 0
+    result.newItems = []
+    await savePendingResult(result)
+    updatePendingBadgeUI(result)
+  }
+}
+
+// --- FIM GESTÃO DE NOTIFICAÇÕES ---
 
 // --- INICIALIZAÇÃO SEGURA ---
 
