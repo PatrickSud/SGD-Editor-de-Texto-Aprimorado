@@ -74,6 +74,9 @@ async function fetchPendingItems() {
       try {
         // ID: Coluna 0
         const id = cells[0].innerText.trim()
+        
+        // Verifica se a pendência é prioritária (classe tableListaRowWarningBlue na célula do ID)
+        const isPrioritaria = cells[0].classList.contains('tableListaRowWarningBlue')
 
         // Data Abertura: Coluna 1 (Limpa spans ocultos)
         const dataAbertura = cleanDateText(cells[1])
@@ -119,7 +122,8 @@ async function fetchPendingItems() {
           qtdTramites,
           subject,
           link,
-          status
+          status,
+          isPrioritaria
         })
       } catch (err) {
         console.warn('Erro ao processar linha de pendência:', err, row)

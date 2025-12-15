@@ -527,6 +527,25 @@
   gap: 8px;
 }
 
+.ip-prioritaria-icon {
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  animation: pulse 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 2px rgba(255, 193, 7, 0.5));
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+}
+
 .ip-pending-id {
   font-family: monospace;
   background: rgba(0, 0, 0, 0.05);

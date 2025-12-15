@@ -454,6 +454,7 @@ function getStatusClass(status) {
  */
 function createPendingCard(item) {
   const statusClass = getStatusClass(item.status)
+  const prioritariaIcon = item.isPrioritaria ? '<span class="ip-prioritaria-icon" title="Solicitação marcada como prioritária">⚠️</span>' : ''
 
   return `
         <div class="ip-pending-card ${statusClass}">
@@ -468,6 +469,7 @@ function createPendingCard(item) {
                     <span class="ip-meta-item" title="Quantidade de trâmites">🔄 ${escapeHTML(
                       item.qtdTramites
                     )}</span>
+                    ${prioritariaIcon}
                 </div>
                 <div class="ip-date-container">
                     <span class="ip-pending-date" title="Data de Abertura: ${escapeHTML(
