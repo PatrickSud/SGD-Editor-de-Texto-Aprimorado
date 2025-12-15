@@ -586,3 +586,515 @@
 {"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765835601064,"sessionId":"debug-session","hypothesisId":"A"}
 {"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765835601064,"sessionId":"debug-session","hypothesisId":"A"}
 {"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765835601064,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765835861039,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765835861819,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765835937055,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957320"},"timestamp":1765835937056,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765835937056,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765835937056,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956758"},"timestamp":1765835937057,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765835937057,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765835937057,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765835937057,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765835937057,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765835937057,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954157"},"timestamp":1765835937057,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765835937057,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765835937055,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765835937055,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765835937055,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765835937056,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765835937056,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765835937056,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765835937056,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765835937056,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765835937056,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765835946365,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765835946366,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765835946366,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765835946367,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765835946367,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957320"},"timestamp":1765835946367,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765835946367,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956758"},"timestamp":1765835946367,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765835946367,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765835946367,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765835946366,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765835946367,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765835946367,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765835946367,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954157"},"timestamp":1765835946368,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765835946368,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765835946366,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765835946366,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765835946366,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765835946366,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765835946366,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765836015701,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765836016532,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765836024713,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765836024715,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765836024715,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957320"},"timestamp":1765836024715,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765836024715,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765836024715,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765836024715,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956758"},"timestamp":1765836024715,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765836024715,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765836024716,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765836024714,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765836024716,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765836024716,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765836024716,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954157"},"timestamp":1765836024716,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765836024716,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765836024714,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765836024714,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765836024714,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765836024714,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765836024714,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765836039507,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957320"},"timestamp":1765836039509,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765836039509,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765836039510,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956758"},"timestamp":1765836039510,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765836039510,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765836039510,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765836039510,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765836039510,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765836039511,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954157"},"timestamp":1765836039511,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765836039511,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765836039508,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765836039508,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765836039508,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765836039508,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765836039508,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765836039509,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765836039509,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958592"},"timestamp":1765836039509,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765836039509,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765836137313,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765836138124,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765836139843,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765836139843,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765836139844,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765836139844,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765836139844,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765836139844,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33959522"},"timestamp":1765836139844,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33958218"},"timestamp":1765836139844,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957984"},"timestamp":1765836139844,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33957909"},"timestamp":1765836139844,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765836139844,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765836139845,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765836139845,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765836139845,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765836139845,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33954311"},"timestamp":1765836139845,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765836139845,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765836157510,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765836158172,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765836166518,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765836166519,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765836166519,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765836166519,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765836166519,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765836166519,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765836166519,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956469"},"timestamp":1765836166519,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765836166519,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956278"},"timestamp":1765836166520,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765836166520,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765836166520,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765836175934,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765836175935,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765836175935,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765836175935,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765836175935,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765836175935,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956866"},"timestamp":1765836175935,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956376"},"timestamp":1765836175935,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765836175936,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33956200"},"timestamp":1765836175936,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765836243417,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765836243417,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765836243418,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765836243418,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765836243418,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765836243418,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765836243418,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765836474775,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765836475554,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765836477838,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765836477838,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765836477838,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765836477838,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765836477838,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765836477838,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765836477839,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765836522746,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765836523347,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765836525314,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765836525315,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765836525315,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765836525315,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765836525315,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765836525315,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765836525315,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765836596959,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765836597624,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765836598982,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765836598983,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765836598983,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765836598983,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765836598983,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765836598983,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765836598983,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765836628705,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765836630400,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765836630401,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765836630401,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765836630401,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765836630401,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765836630401,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765836630401,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765836638641,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765836638641,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765836638641,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765836638641,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765836638641,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765836638641,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765836638641,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765836673037,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765836673800,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765836693330,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765836693914,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765836699686,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765836699686,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765836699687,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765836699686,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765836699687,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765836699687,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765836699687,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765836732894,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765836733465,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765836789506,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765836790223,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765836791982,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765836791982,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765836791982,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765836791982,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765836791983,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765836791983,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765836791983,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765836922966,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765836923707,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765836926894,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765836926895,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765836926895,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765836926895,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765836926895,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765836926895,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765836926895,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765837035915,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765837036643,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765837038264,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765837038264,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765837038264,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765837038265,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765837038265,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765837038265,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765837038265,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765837049865,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765837050596,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765837052241,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765837052241,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765837052242,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765837052242,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765837052242,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765837052242,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765837052242,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765837224602,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765837225362,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765837227679,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765837227680,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765837227680,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765837227680,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765837227680,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765837227680,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765837227680,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765837239672,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765837239673,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765837239673,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765837239673,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765837239673,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765837239673,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765837239673,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765840069862,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765840069861,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765840069862,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765840069862,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765840069862,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765840069862,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765840069863,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765840087384,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765840087384,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765840087384,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765840087384,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765840087385,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765840087385,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765840087385,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765840091069,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765840091069,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765840091069,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765840091069,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765840091070,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765840091070,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765840091070,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765840129026,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765840129027,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765840129027,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765840129027,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765840129027,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765840129027,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765840129027,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765840214556,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765840214556,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765840214556,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765840214556,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765840214556,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765840214556,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765840214557,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765840524776,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765840525546,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765840527100,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765840527100,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765840527100,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765840527101,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765840527101,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765840527101,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765840527101,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765841073380,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765841074136,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765841076132,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765841076132,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765841076132,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765841076132,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765841076132,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765841076132,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765841076132,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765841319193,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765841319975,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765841321595,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765841321595,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765841321596,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765841321596,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765841321596,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765841321596,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765841321596,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765841336220,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765841336880,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765841338799,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765841338799,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765841338800,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765841338800,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765841338800,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765841338800,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765841338800,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765841774380,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765841775380,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765841779019,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765841779019,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765841779019,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765841779020,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765841779020,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765841779020,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765841779020,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765841810063,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765841810063,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765841810063,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765841810063,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765841810064,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765841810064,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765841810064,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765841896003,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765841896789,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765841899318,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765841899319,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765841899319,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765841899319,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765841899319,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765841899319,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765841899319,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765841923839,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765841923839,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765841923839,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765841923840,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765841923840,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765841923840,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765841923840,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765841945172,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765841946043,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765842009222,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765842009222,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765842009222,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765842009222,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765842009222,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765842009223,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765842009223,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765842015071,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765842015868,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765842086372,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765842087242,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765842090229,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765842090808,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765842094314,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765842094314,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765842094314,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765842094315,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765842094314,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765842094315,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765842094315,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765842102961,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765842103573,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765842224594,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765842225318,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765842226694,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765842226694,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765842226694,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765842226694,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765842226695,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765842226694,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765842226695,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765842452630,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765842453428,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765842455400,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765842455401,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765842455401,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765842455401,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765842455401,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765842455401,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765842455401,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:loadForms","message":"Function entry","data":{"filterType":"forms","containerId":"#forms-container"},"timestamp":1765842457348,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"forms-service.js:fetchFormsData","message":"Function entry","data":{"hasUrl":true,"url":"https://gist.githubusercontent.com/PatrickSud/a5c191a645d21494ac6f245a56dc32df/raw/forms-config.json"},"timestamp":1765842457348,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"forms-service.js:fetchFormsData","message":"Sending message to SW","data":{"url":"https://gist.githubusercontent.com/PatrickSud/a5c191a645d21494ac6f245a56dc32df/raw/forms-config.json?t=1765842457349"},"timestamp":1765842457349,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"service-worker.js:FETCH_FORMS_DATA","message":"SW fetch start","data":{"url":"https://gist.githubusercontent.com/PatrickSud/a5c191a645d21494ac6f245a56dc32df/raw/forms-config.json?t=1765842457349"},"timestamp":1765842457350,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"service-worker.js:FETCH_FORMS_DATA","message":"SW fetch response","data":{"ok":true,"status":200,"statusText":""},"timestamp":1765842457523,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"service-worker.js:FETCH_FORMS_DATA","message":"SW response text received","data":{"textLength":4863,"textPreview":"{\n  \"categories\": [\n    {\n      \"category\": \"Formulários Úteis\",\n      \"items\": [\n        {\n          \"type\": \"link\",\n          \"title\": \"Filas Domínio\",\n          \"description\": \"Planilha informativa"},"timestamp":1765842457524,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"service-worker.js:FETCH_FORMS_DATA","message":"SW fetch error","data":{"error":"Expected ',' or ']' after array element in JSON at position 4863 (line 97 column 2)","stack":"SyntaxError: Expected ',' or ']' after array element in JSON at position 4863 (line 97 column 2)\n    at JSON.parse (<anonymous>)\n    at chrome-extension://glbamfikgcnciabpnkcgbfnlnoiejgnj/service-worker.js:371:31"},"timestamp":1765842457524,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"forms-service.js:fetchFormsData","message":"SW response received","data":{"hasResponse":true,"success":false,"hasData":false,"dataType":"undefined","isArray":false,"error":"Expected ',' or ']' after array element in JSON at position 4863 (line 97 column 2)"},"timestamp":1765842457527,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"forms-service.js:fetchFormsData","message":"SW fetch failed","data":{"error":"Expected ',' or ']' after array element in JSON at position 4863 (line 97 column 2)"},"timestamp":1765842457528,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"info-panel.js:loadForms","message":"Forms data received","data":{"hasData":true,"hasCategories":true,"categoriesCount":3,"isArray":false},"timestamp":1765842457528,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"Formulários Úteis","itemIndex":1,"itemType":"link","hasTitle":true,"hasClosingData":false},"timestamp":1765842457529,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"Formulários Úteis","itemIndex":0,"itemType":"link","hasTitle":true,"hasClosingData":false},"timestamp":1765842457529,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"Documentos e Procedimentos","itemIndex":0,"itemType":"action-closing","hasTitle":true,"hasClosingData":true},"timestamp":1765842457529,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"Formulários Úteis","itemIndex":2,"itemType":"link","hasTitle":true,"hasClosingData":false},"timestamp":1765842457529,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing action-closing item","data":{"hasClosingData":true,"closingDataKeys":["title","content"],"hasTitle":true,"hasContent":true},"timestamp":1765842457529,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"action-closing encoding success","data":{"jsonLength":945,"encodedLength":1455},"timestamp":1765842457530,"sessionId":"debug-session","runId":"run1","hypothesisId":"E"}
+{"location":"service-worker.js:FETCH_FORMS_DATA","message":"SW fetch start","data":{"url":"https://gist.githubusercontent.com/PatrickSud/a5c191a645d21494ac6f245a56dc32df/raw/forms-config.json?t=1765842460068"},"timestamp":1765842460069,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"info-panel.js:loadForms","message":"Function entry","data":{"filterType":"ai","containerId":"#ai-chains-container"},"timestamp":1765842460068,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"forms-service.js:fetchFormsData","message":"Function entry","data":{"hasUrl":true,"url":"https://gist.githubusercontent.com/PatrickSud/a5c191a645d21494ac6f245a56dc32df/raw/forms-config.json"},"timestamp":1765842460068,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"forms-service.js:fetchFormsData","message":"Sending message to SW","data":{"url":"https://gist.githubusercontent.com/PatrickSud/a5c191a645d21494ac6f245a56dc32df/raw/forms-config.json?t=1765842460068"},"timestamp":1765842460068,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"service-worker.js:FETCH_FORMS_DATA","message":"SW fetch response","data":{"ok":true,"status":200,"statusText":""},"timestamp":1765842460196,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"service-worker.js:FETCH_FORMS_DATA","message":"SW response text received","data":{"textLength":4863,"textPreview":"{\n  \"categories\": [\n    {\n      \"category\": \"Formulários Úteis\",\n      \"items\": [\n        {\n          \"type\": \"link\",\n          \"title\": \"Filas Domínio\",\n          \"description\": \"Planilha informativa"},"timestamp":1765842460197,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"service-worker.js:FETCH_FORMS_DATA","message":"SW fetch error","data":{"error":"Expected ',' or ']' after array element in JSON at position 4863 (line 97 column 2)","stack":"SyntaxError: Expected ',' or ']' after array element in JSON at position 4863 (line 97 column 2)\n    at JSON.parse (<anonymous>)\n    at chrome-extension://glbamfikgcnciabpnkcgbfnlnoiejgnj/service-worker.js:371:31"},"timestamp":1765842460197,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"forms-service.js:fetchFormsData","message":"SW response received","data":{"hasResponse":true,"success":false,"hasData":false,"dataType":"undefined","isArray":false,"error":"Expected ',' or ']' after array element in JSON at position 4863 (line 97 column 2)"},"timestamp":1765842460198,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"forms-service.js:fetchFormsData","message":"SW fetch failed","data":{"error":"Expected ',' or ']' after array element in JSON at position 4863 (line 97 column 2)"},"timestamp":1765842460198,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"info-panel.js:loadForms","message":"Forms data received","data":{"hasData":true,"hasCategories":true,"categoriesCount":3,"isArray":false},"timestamp":1765842460198,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"AI Chains - Assistentes","itemIndex":0,"itemType":"link","hasTitle":true,"hasClosingData":false},"timestamp":1765842460198,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"AI Chains - Assistentes","itemIndex":1,"itemType":"link","hasTitle":true,"hasClosingData":false},"timestamp":1765842460199,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"AI Chains - Assistentes","itemIndex":2,"itemType":"link","hasTitle":true,"hasClosingData":false},"timestamp":1765842460199,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"AI Chains - Assistentes","itemIndex":3,"itemType":"link","hasTitle":true,"hasClosingData":false},"timestamp":1765842460199,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"AI Chains - Assistentes","itemIndex":4,"itemType":"link","hasTitle":true,"hasClosingData":false},"timestamp":1765842460199,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"AI Chains - Assistentes","itemIndex":5,"itemType":"link","hasTitle":true,"hasClosingData":false},"timestamp":1765842460199,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"AI Chains - Assistentes","itemIndex":6,"itemType":"link","hasTitle":true,"hasClosingData":false},"timestamp":1765842460200,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765842920063,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765842920871,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765842926110,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765842926111,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765842926111,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765842926111,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765842926111,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765842926111,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765842926111,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:loadForms","message":"Function entry","data":{"filterType":"forms","containerId":"#forms-container"},"timestamp":1765842928015,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"forms-service.js:fetchFormsData","message":"Function entry","data":{"hasUrl":true,"url":"https://gist.githubusercontent.com/PatrickSud/a5c191a645d21494ac6f245a56dc32df/raw/forms-config.json"},"timestamp":1765842928016,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"forms-service.js:fetchFormsData","message":"Sending message to SW","data":{"url":"https://gist.githubusercontent.com/PatrickSud/a5c191a645d21494ac6f245a56dc32df/raw/forms-config.json?t=1765842928016"},"timestamp":1765842928016,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"service-worker.js:FETCH_FORMS_DATA","message":"SW fetch start","data":{"url":"https://gist.githubusercontent.com/PatrickSud/a5c191a645d21494ac6f245a56dc32df/raw/forms-config.json?t=1765842928016"},"timestamp":1765842928017,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"service-worker.js:FETCH_FORMS_DATA","message":"SW fetch response","data":{"ok":true,"status":200,"statusText":""},"timestamp":1765842928261,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"service-worker.js:FETCH_FORMS_DATA","message":"SW response text received","data":{"textLength":4885,"textPreview":"{\n  \"categories\": [\n    {\n      \"category\": \"Formulários Úteis\",\n      \"items\": [\n        {\n          \"type\": \"link\",\n          \"title\": \"Filas Domínio\",\n          \"description\": \"Planilha informativa","last50Chars":"</nobr>\"\n          }\n        }\n      ]\n    }\n  ]\n}"},"timestamp":1765842928261,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"service-worker.js:FETCH_FORMS_DATA","message":"SW JSON parsed","data":{"isArray":false,"hasCategories":true,"dataType":"object","keys":["categories"]},"timestamp":1765842928262,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"forms-service.js:fetchFormsData","message":"SW response received","data":{"hasResponse":true,"success":true,"hasData":true,"dataType":"object","isArray":false},"timestamp":1765842928262,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"forms-service.js:fetchFormsData","message":"Remote data structure","data":{"isArray":false,"hasCategories":true,"categoriesCount":3,"firstCategoryName":"Formulários Úteis","firstCategoryItemsCount":3},"timestamp":1765842928262,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"forms-service.js:fetchFormsData","message":"Resolving with object format","data":{"hasCategories":true},"timestamp":1765842928263,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"info-panel.js:loadForms","message":"Forms data received","data":{"hasData":true,"hasCategories":true,"categoriesCount":3,"isArray":false},"timestamp":1765842928263,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"Formulários Úteis","itemIndex":0,"itemType":"link","hasTitle":true,"hasClosingData":false},"timestamp":1765842928263,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"Formulários Úteis","itemIndex":1,"itemType":"link","hasTitle":true,"hasClosingData":false},"timestamp":1765842928263,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"Formulários Úteis","itemIndex":2,"itemType":"link","hasTitle":true,"hasClosingData":false},"timestamp":1765842928263,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"Documentos e Procedimentos","itemIndex":0,"itemType":"action-closing","hasTitle":true,"hasClosingData":true},"timestamp":1765842928263,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing action-closing item","data":{"hasClosingData":true,"closingDataKeys":["title","content"],"hasTitle":true,"hasContent":true},"timestamp":1765842928264,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"action-closing encoding success","data":{"jsonLength":937,"encodedLength":1431},"timestamp":1765842928264,"sessionId":"debug-session","runId":"run1","hypothesisId":"E"}
+{"location":"info-panel.js:loadForms","message":"Function entry","data":{"filterType":"ai","containerId":"#ai-chains-container"},"timestamp":1765842933025,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"forms-service.js:fetchFormsData","message":"Function entry","data":{"hasUrl":true,"url":"https://gist.githubusercontent.com/PatrickSud/a5c191a645d21494ac6f245a56dc32df/raw/forms-config.json"},"timestamp":1765842933025,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"forms-service.js:fetchFormsData","message":"Sending message to SW","data":{"url":"https://gist.githubusercontent.com/PatrickSud/a5c191a645d21494ac6f245a56dc32df/raw/forms-config.json?t=1765842933026"},"timestamp":1765842933026,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"service-worker.js:FETCH_FORMS_DATA","message":"SW fetch start","data":{"url":"https://gist.githubusercontent.com/PatrickSud/a5c191a645d21494ac6f245a56dc32df/raw/forms-config.json?t=1765842933026"},"timestamp":1765842933027,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"service-worker.js:FETCH_FORMS_DATA","message":"SW fetch response","data":{"ok":true,"status":200,"statusText":""},"timestamp":1765842933229,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"service-worker.js:FETCH_FORMS_DATA","message":"SW response text received","data":{"textLength":4885,"textPreview":"{\n  \"categories\": [\n    {\n      \"category\": \"Formulários Úteis\",\n      \"items\": [\n        {\n          \"type\": \"link\",\n          \"title\": \"Filas Domínio\",\n          \"description\": \"Planilha informativa","last50Chars":"</nobr>\"\n          }\n        }\n      ]\n    }\n  ]\n}"},"timestamp":1765842933229,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"service-worker.js:FETCH_FORMS_DATA","message":"SW JSON parsed","data":{"isArray":false,"hasCategories":true,"dataType":"object","keys":["categories"]},"timestamp":1765842933230,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"forms-service.js:fetchFormsData","message":"SW response received","data":{"hasResponse":true,"success":true,"hasData":true,"dataType":"object","isArray":false},"timestamp":1765842933230,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"forms-service.js:fetchFormsData","message":"Remote data structure","data":{"isArray":false,"hasCategories":true,"categoriesCount":3,"firstCategoryName":"Formulários Úteis","firstCategoryItemsCount":3},"timestamp":1765842933230,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"forms-service.js:fetchFormsData","message":"Resolving with object format","data":{"hasCategories":true},"timestamp":1765842933230,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"info-panel.js:loadForms","message":"Forms data received","data":{"hasData":true,"hasCategories":true,"categoriesCount":3,"isArray":false},"timestamp":1765842933230,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"AI Chains - AT","itemIndex":0,"itemType":"link","hasTitle":true,"hasClosingData":false},"timestamp":1765842933231,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"AI Chains - AT","itemIndex":1,"itemType":"link","hasTitle":true,"hasClosingData":false},"timestamp":1765842933231,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"AI Chains - AT","itemIndex":2,"itemType":"link","hasTitle":true,"hasClosingData":false},"timestamp":1765842933231,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"AI Chains - AT","itemIndex":3,"itemType":"link","hasTitle":true,"hasClosingData":false},"timestamp":1765842933231,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"AI Chains - AT","itemIndex":4,"itemType":"link","hasTitle":true,"hasClosingData":false},"timestamp":1765842933231,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"AI Chains - AT","itemIndex":5,"itemType":"link","hasTitle":true,"hasClosingData":false},"timestamp":1765842933231,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"AI Chains - AT","itemIndex":6,"itemType":"link","hasTitle":true,"hasClosingData":false},"timestamp":1765842933231,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Function entry","data":{"filterType":"forms","containerId":"#forms-container"},"timestamp":1765842941070,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"forms-service.js:fetchFormsData","message":"Function entry","data":{"hasUrl":true,"url":"https://gist.githubusercontent.com/PatrickSud/a5c191a645d21494ac6f245a56dc32df/raw/forms-config.json"},"timestamp":1765842941070,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"forms-service.js:fetchFormsData","message":"Sending message to SW","data":{"url":"https://gist.githubusercontent.com/PatrickSud/a5c191a645d21494ac6f245a56dc32df/raw/forms-config.json?t=1765842941070"},"timestamp":1765842941070,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"service-worker.js:FETCH_FORMS_DATA","message":"SW fetch start","data":{"url":"https://gist.githubusercontent.com/PatrickSud/a5c191a645d21494ac6f245a56dc32df/raw/forms-config.json?t=1765842941070"},"timestamp":1765842941072,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"service-worker.js:FETCH_FORMS_DATA","message":"SW fetch response","data":{"ok":true,"status":200,"statusText":""},"timestamp":1765842941282,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"service-worker.js:FETCH_FORMS_DATA","message":"SW response text received","data":{"textLength":4885,"textPreview":"{\n  \"categories\": [\n    {\n      \"category\": \"Formulários Úteis\",\n      \"items\": [\n        {\n          \"type\": \"link\",\n          \"title\": \"Filas Domínio\",\n          \"description\": \"Planilha informativa","last50Chars":"</nobr>\"\n          }\n        }\n      ]\n    }\n  ]\n}"},"timestamp":1765842941282,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"service-worker.js:FETCH_FORMS_DATA","message":"SW JSON parsed","data":{"isArray":false,"hasCategories":true,"dataType":"object","keys":["categories"]},"timestamp":1765842941282,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"forms-service.js:fetchFormsData","message":"SW response received","data":{"hasResponse":true,"success":true,"hasData":true,"dataType":"object","isArray":false},"timestamp":1765842941282,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"forms-service.js:fetchFormsData","message":"Remote data structure","data":{"isArray":false,"hasCategories":true,"categoriesCount":3,"firstCategoryName":"Formulários Úteis","firstCategoryItemsCount":3},"timestamp":1765842941283,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"forms-service.js:fetchFormsData","message":"Resolving with object format","data":{"hasCategories":true},"timestamp":1765842941283,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"info-panel.js:loadForms","message":"Forms data received","data":{"hasData":true,"hasCategories":true,"categoriesCount":3,"isArray":false},"timestamp":1765842941283,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"Formulários Úteis","itemIndex":0,"itemType":"link","hasTitle":true,"hasClosingData":false},"timestamp":1765842941283,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"Formulários Úteis","itemIndex":1,"itemType":"link","hasTitle":true,"hasClosingData":false},"timestamp":1765842941283,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"Formulários Úteis","itemIndex":2,"itemType":"link","hasTitle":true,"hasClosingData":false},"timestamp":1765842941283,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"Documentos e Procedimentos","itemIndex":0,"itemType":"action-closing","hasTitle":true,"hasClosingData":true},"timestamp":1765842941283,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing action-closing item","data":{"hasClosingData":true,"closingDataKeys":["title","content"],"hasTitle":true,"hasContent":true},"timestamp":1765842941283,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"action-closing encoding success","data":{"jsonLength":937,"encodedLength":1431},"timestamp":1765842941284,"sessionId":"debug-session","runId":"run1","hypothesisId":"E"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765843000903,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765843001596,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33834722"},"timestamp":1765843003147,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33853447"},"timestamp":1765843003147,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33883765"},"timestamp":1765843003147,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33882131"},"timestamp":1765843003148,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33907201"},"timestamp":1765843003148,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33940155"},"timestamp":1765843003148,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:createPendingCard","message":"Creating card","data":{"id":"33929458"},"timestamp":1765843003148,"sessionId":"debug-session","hypothesisId":"A"}
+{"location":"info-panel.js:loadForms","message":"Function entry","data":{"filterType":"forms","containerId":"#forms-container"},"timestamp":1765843003955,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"forms-service.js:fetchFormsData","message":"Function entry","data":{"hasUrl":true,"url":"https://gist.githubusercontent.com/PatrickSud/a5c191a645d21494ac6f245a56dc32df/raw/forms-config.json"},"timestamp":1765843003955,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"forms-service.js:fetchFormsData","message":"Sending message to SW","data":{"url":"https://gist.githubusercontent.com/PatrickSud/a5c191a645d21494ac6f245a56dc32df/raw/forms-config.json?t=1765843003955"},"timestamp":1765843003955,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"service-worker.js:FETCH_FORMS_DATA","message":"SW fetch start","data":{"url":"https://gist.githubusercontent.com/PatrickSud/a5c191a645d21494ac6f245a56dc32df/raw/forms-config.json?t=1765843003955"},"timestamp":1765843004027,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"service-worker.js:FETCH_FORMS_DATA","message":"SW fetch response","data":{"ok":true,"status":200,"statusText":""},"timestamp":1765843004209,"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}
+{"location":"service-worker.js:FETCH_FORMS_DATA","message":"SW response text received","data":{"textLength":4885,"textPreview":"{\n  \"categories\": [\n    {\n      \"category\": \"Formulários Úteis\",\n      \"items\": [\n        {\n          \"type\": \"link\",\n          \"title\": \"Filas Domínio\",\n          \"description\": \"Planilha informativa","last50Chars":"</nobr>\"\n          }\n        }\n      ]\n    }\n  ]\n}"},"timestamp":1765843004210,"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}
+{"location":"service-worker.js:FETCH_FORMS_DATA","message":"SW JSON parsed","data":{"isArray":false,"hasCategories":true,"dataType":"object","keys":["categories"]},"timestamp":1765843004210,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"forms-service.js:fetchFormsData","message":"SW response received","data":{"hasResponse":true,"success":true,"hasData":true,"dataType":"object","isArray":false},"timestamp":1765843004211,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"forms-service.js:fetchFormsData","message":"Remote data structure","data":{"isArray":false,"hasCategories":true,"categoriesCount":3,"firstCategoryName":"Formulários Úteis","firstCategoryItemsCount":3},"timestamp":1765843004211,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"forms-service.js:fetchFormsData","message":"Resolving with object format","data":{"hasCategories":true},"timestamp":1765843004212,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"info-panel.js:loadForms","message":"Forms data received","data":{"hasData":true,"hasCategories":true,"categoriesCount":3,"isArray":false},"timestamp":1765843004212,"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"Formulários Úteis","itemIndex":0,"itemType":"link","hasTitle":true,"hasClosingData":false},"timestamp":1765843004212,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"Formulários Úteis","itemIndex":1,"itemType":"link","hasTitle":true,"hasClosingData":false},"timestamp":1765843004212,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"Formulários Úteis","itemIndex":2,"itemType":"link","hasTitle":true,"hasClosingData":false},"timestamp":1765843004212,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing item","data":{"category":"Documentos e Procedimentos","itemIndex":0,"itemType":"action-closing","hasTitle":true,"hasClosingData":true},"timestamp":1765843004213,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"Processing action-closing item","data":{"hasClosingData":true,"closingDataKeys":["title","content"],"hasTitle":true,"hasContent":true},"timestamp":1765843004213,"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}
+{"location":"info-panel.js:loadForms","message":"action-closing encoding success","data":{"jsonLength":937,"encodedLength":1431},"timestamp":1765843004213,"sessionId":"debug-session","runId":"run1","hypothesisId":"E"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765843015197,"sessionId":"debug-session","hypothesisId":"C"}
+{"location":"info-panel.js:init","message":"Exposing functions to window","data":{"before":"function"},"timestamp":1765843015823,"sessionId":"debug-session","hypothesisId":"C"}

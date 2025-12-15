@@ -336,26 +336,44 @@
   display: flex;
   align-items: center;
   padding: 16px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
+  background: var(--background-glass);
+  border: 2px solid color-mix(in srgb, var(--primary-color) 20%, transparent);
+  border-radius: var(--border-radius-md);
   text-decoration: none;
   color: inherit;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
+  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--primary-color) 5%, var(--background-glass)),
+    var(--background-glass)
+  );
 }
 
 .ip-form-card:hover {
-  background: var(--bg-card-hover);
-  border-color: var(--border-medium);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--primary-color) 10%, var(--background-glass)),
+    color-mix(in srgb, var(--primary-color) 5%, var(--background-glass))
+  );
+  border-color: color-mix(in srgb, var(--primary-color) 40%, transparent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
 .ip-form-icon {
-  font-size: 20px;
+  font-size: 24px;
   margin-right: 12px;
   flex-shrink: 0;
+  transition: transform 0.3s ease;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.ip-form-card:hover .ip-form-icon {
+  transform: scale(1.1) rotate(5deg);
 }
 
 .ip-form-content {
@@ -379,10 +397,18 @@
 }
 
 .ip-form-arrow {
-  font-size: 14px;
+  font-size: 16px;
   color: var(--text-tertiary);
   margin-left: 8px;
   flex-shrink: 0;
+  transition: all 0.3s ease;
+  opacity: 0.6;
+}
+
+.ip-form-card:hover .ip-form-arrow {
+  color: var(--primary-color);
+  opacity: 1;
+  transform: translate(2px, -2px);
 }
 
 .ip-form-document {
@@ -727,4 +753,105 @@
 .ip-error-icon {
   font-size: 32px;
   margin-bottom: 10px;
+}
+
+/* Botão de Adicionar Encerramento */
+.ip-add-closing-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: var(--border-radius-sm);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  border: none;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #17a2b8, #138496) !important;
+  border-color: #17a2b8 !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(23, 162, 184, 0.25);
+  width: 100%;
+  max-width: 100%;
+}
+
+.ip-add-closing-btn:hover {
+  background: linear-gradient(135deg, #138496, #17a2b8) !important;
+  border-color: #138496 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(23, 162, 184, 0.4);
+}
+
+.ip-add-closing-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(23, 162, 184, 0.3);
+}
+
+.ip-add-closing-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.ip-add-closing-btn .ip-btn-icon {
+  font-size: 16px;
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.ip-add-closing-btn:hover .ip-btn-icon {
+  transform: rotate(90deg) scale(1.1);
+}
+
+.ip-add-closing-btn .ip-btn-text {
+  letter-spacing: 0.3px;
+}
+
+/* Efeito de brilho no hover */
+.ip-add-closing-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.ip-add-closing-btn:hover::before {
+  left: 100%;
+}
+
+/* Estado de sucesso temporário */
+.ip-add-closing-btn.success {
+  background: linear-gradient(135deg, #28a745, #20c997) !important;
+  border-color: #28a745 !important;
+}
+
+.ip-add-closing-btn.success .ip-btn-icon {
+  content: '✓';
+}
+
+/* Card de ação especial */
+.ip-form-action {
+  border: 2px solid color-mix(in srgb, #17a2b8 20%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, #17a2b8 5%, var(--background-glass)),
+    var(--background-glass)
+  );
+}
+
+.ip-form-action:hover {
+  border-color: color-mix(in srgb, #17a2b8 40%, transparent);
+  box-shadow: 0 4px 16px rgba(23, 162, 184, 0.15);
 }

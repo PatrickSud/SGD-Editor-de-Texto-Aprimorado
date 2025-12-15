@@ -9,7 +9,8 @@
     "notifications"
   ],
   "host_permissions": [
-    "https://sgd.dominiosistemas.com.br/*"
+    "https://sgd.dominiosistemas.com.br/*",
+    "https://gist.githubusercontent.com/*"
   ],
   "background": {
     "service_worker": "service-worker.js"

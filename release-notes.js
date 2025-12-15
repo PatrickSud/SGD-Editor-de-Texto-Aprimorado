@@ -2,11 +2,14 @@ const RELEASE_NOTES = {
   '2.9.9': {
     title: '✨ Novidades da Versão 2.9.9',
     features: [
-      '<b>🏷️ Gestão de TAGS em Pendências:</b> Agora você pode classificar suas pendências com Tags coloridas (<i>Em SS</i>, <i>Em SA/NE</i>, <i>Prioridade</i> e personalizadas) para melhor organização visual.',
-      '<b>🔍 Filtro por Tags:</b> Novo filtro adicionado à Central de Pendências para visualizar rapidamente chamados por categoria.',
-      '<b>🔔 Controle de Notificações:</b> Nova opção para <b>ativar/desativar</b> alertas visuais de novas pendências na tela. (O sistema continua verificando em segundo plano).',
-      '<b>⚙️ Melhorias em Notificações:</b> Ajustado tempo de exibição para 15 segundos e adicionado botão "Dispensar" para maior conveniência.',
-      '<b>⚡ Otimizações:</b> Ajustes de performance no painel de informações e correções visuais.'
+      '<b>🚀 Central de Informações SGD (Em Desenvolvimento):</b>',
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+        '<li><b>🤖 Nova Aba AI Chains:</b> Assistentes inteligentes e fluxos agora têm sua própria seção dedicada.</li>' +
+        '<li><b>🏷️ Gestão de TAGS:</b> Classifique pendências com Tags coloridas (<i>Em SS</i>, <i>Em SA/NE</i>, <i>Prioridade</i> e personalizadas).</li>' +
+        '<li><b>🔍 Filtro por Tags:</b> Visualize rapida\mente chamados por categoria na lista de pendências.</li>' +
+        '<li><b>🔔 Controle de Notificações:</b> Ative/desative alertas visuais na tela (verificação continua em background).</li>' +
+      '</ul>',
+      '<b>⚡ Otimizações Gerais:</b> Ajustes de performance e correções visuais na extensão.'
     ]
   },
   '2.9.8': {

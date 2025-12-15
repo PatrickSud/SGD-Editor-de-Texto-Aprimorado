@@ -348,6 +348,87 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }, 15000)
 
         sendResponse({ success: true })
+      } else if (message.action === 'FETCH_FORMS_DATA') {
+        // Nova ação para buscar dados do Gist via Service Worker (evita CORS da página)
+        try {
+            const url = message.url
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'service-worker.js:FETCH_FORMS_DATA',message:'SW fetch start',data:{url},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+            // #endregion
+            
+            const response = await fetch(url)
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'service-worker.js:FETCH_FORMS_DATA',message:'SW fetch response',data:{ok:response.ok,status:response.status,statusText:response.statusText},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+            // #endregion
+            
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+            
+            const text = await response.text()
+            
+            // Validar se o texto não está vazio e tem tamanho mínimo esperado
+            if (!text || text.trim().length === 0) {
+              throw new Error('Resposta do Gist está vazia')
+            }
+            
+            // Verificar se o JSON parece estar completo (termina com } ou ])
+            const trimmedText = text.trim()
+            const lastChar = trimmedText[trimmedText.length - 1]
+            if (lastChar !== '}' && lastChar !== ']') {
+              // #region agent log
+              fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'service-worker.js:FETCH_FORMS_DATA',message:'JSON appears incomplete',data:{textLength:text.length,lastChar,last50Chars:trimmedText.substring(trimmedText.length - 50)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+              // #endregion
+              throw new Error(`JSON do Gist parece estar incompleto (termina com '${lastChar}'). Verifique se o arquivo está completo no Gist.`)
+            }
+            
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'service-worker.js:FETCH_FORMS_DATA',message:'SW response text received',data:{textLength:text.length,textPreview:text.substring(0,200),last50Chars:text.substring(text.length - 50)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+            // #endregion
+            
+            // Tentar encontrar a linha 97 para debug
+            const lines = text.split('\n')
+            let data
+            try {
+              data = JSON.parse(text)
+            } catch (parseError) {
+              // Capturar contexto detalhado do erro
+              const errorPos = parseError.message.match(/position (\d+)/)?.[1]
+              const errorLine = parseError.message.match(/line (\d+)/)?.[1]
+              const errorCol = parseError.message.match(/column (\d+)/)?.[1]
+              
+              const contextAround = errorLine ? {
+                lineBefore: lines[parseInt(errorLine) - 2]?.substring(0, 150),
+                lineError: lines[parseInt(errorLine) - 1]?.substring(0, 150),
+                lineAfter: lines[parseInt(errorLine)]?.substring(0, 150),
+                charAtPos: errorPos ? text[parseInt(errorPos)] : null,
+                charBefore: errorPos ? text[parseInt(errorPos) - 1] : null,
+                charAfter: errorPos ? text[parseInt(errorPos) + 1] : null
+              } : null
+              
+              // #region agent log
+              fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'service-worker.js:FETCH_FORMS_DATA',message:'JSON parse error details',data:{error:parseError.message,position:errorPos,line:errorLine,column:errorCol,contextAround,totalLines:lines.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+              // #endregion
+              
+              // Melhorar mensagem de erro com contexto
+              const improvedError = new Error(
+                `Erro de sintaxe JSON no Gist na linha ${errorLine || 'desconhecida'}, coluna ${errorCol || 'desconhecida'}. ` +
+                `Verifique se há vírgulas faltando ou elementos mal formatados. ` +
+                `O sistema usará os dados locais como fallback.`
+              )
+              throw improvedError
+            }
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'service-worker.js:FETCH_FORMS_DATA',message:'SW JSON parsed',data:{isArray:Array.isArray(data),hasCategories:!!data.categories,dataType:typeof data,keys:Object.keys(data || {})},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+            // #endregion
+            
+            sendResponse({ success: true, data: data })
+        } catch (error) {
+            console.error('Service Worker: Erro ao buscar forms data:', error)
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'service-worker.js:FETCH_FORMS_DATA',message:'SW fetch error',data:{error:error.message,stack:error.stack},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+            // #endregion
+            sendResponse({ success: false, error: error.message })
+        }
+        return true // Resposta assíncrona
       }
     } catch (error) {
       console.error(`Erro ao processar ação '${message.action}':`, error)

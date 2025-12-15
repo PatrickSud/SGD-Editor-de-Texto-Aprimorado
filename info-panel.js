@@ -96,10 +96,11 @@ function openInfoPanel() {
     { id: 'pending', icon: '⏳', label: 'Pendências' },
     { id: 'instabilities', icon: '🚨', label: 'Instabilidades' },
     { id: 'notices', icon: '📢', label: 'Avisos' },
+    { id: 'forms', icon: '📝', label: 'Formulários & Documentos' },
+    { id: 'ai-chains', icon: '🤖', label: 'AI Chains - Assistentes' },
     { id: 'extensions', icon: '🧩', label: 'Extensões' },
     { id: 'team', icon: '👨‍💻', label: 'Técnicos' },
     { id: 'reports', icon: '📊', label: 'Relatórios' },
-    { id: 'forms', icon: '📝', label: 'Formulários & Documentos' },
     { id: 'commands', icon: '💻', label: 'SQL & Comandos' }
   ]
 
@@ -107,7 +108,7 @@ function openInfoPanel() {
   const sections = developerMode
     ? allSections
     : allSections.filter(
-        section => section.id === 'pending' || section.id === 'forms'
+        section => section.id === 'pending' || section.id === 'ai-chains' || section.id === 'forms'
       )
 
   // Estrutura Base do Modal
@@ -185,7 +186,12 @@ function openInfoPanel() {
 
         // Se a seção for de formulários, carrega os dados
         if (targetId === 'forms') {
-          loadForms(targetSection)
+          loadForms(targetSection, 'forms')
+        }
+
+        // Se a seção for de AI Chains, carrega os dados
+        if (targetId === 'ai-chains') {
+           loadForms(targetSection, 'ai')
         }
       }
     })
@@ -975,6 +981,17 @@ function getSectionContent(sectionId) {
             </div>
         `
 
+    case 'ai-chains':
+      return `
+         <p class="ip-section-desc">Assistentes inteligentes e padrões de fluxos.</p>
+         <div id="ai-chains-container" class="ip-forms-container">
+           <div class="ip-loading-container">
+             <div class="ip-spinner"></div>
+             <span>Carregando assistentes...</span>
+           </div>
+         </div>
+      `
+
     case 'forms':
       return `
          <p class="ip-section-desc">Links rápidos para formulários e documentos internos.</p>
@@ -1064,66 +1081,137 @@ function getSectionContent(sectionId) {
 /**
  * Carrega e renderiza os formulários na seção correspondente
  * @param {HTMLElement} sectionElement - Elemento da seção de formulários
+ * @param {string} filterType - Tipo de filtro ('forms' ou 'ai')
  */
-async function loadForms(sectionElement) {
-  const container = sectionElement.querySelector('#forms-container')
+async function loadForms(sectionElement, filterType = 'forms') {
+  // Define o seletor do container baseado no filtro/seção
+  const containerId = filterType === 'ai' ? '#ai-chains-container' : '#forms-container'
+  const container = sectionElement.querySelector(containerId)
   if (!container) return
 
   try {
     // Buscar dados dos formulários
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'info-panel.js:loadForms',message:'Function entry',data:{filterType,containerId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    
     const formsData = await fetchFormsData()
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'info-panel.js:loadForms',message:'Forms data received',data:{hasData:!!formsData,hasCategories:!!formsData?.categories,categoriesCount:formsData?.categories?.length,isArray:Array.isArray(formsData)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
 
     if (!formsData || !formsData.categories) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'info-panel.js:loadForms',message:'Invalid forms data',data:{hasData:!!formsData,hasCategories:!!formsData?.categories},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       throw new Error('Dados de formulários inválidos')
     }
 
+    // Filtragem simples baseada no título da categoria (Case Insensitive)
+    // Se for 'ai', pega categorias que contenham "AI", "Chain" ou "Assistente"
+    // Se for 'forms', pega o resto.
+    const filteredCategories = formsData.categories.filter(cat => {
+        const title = cat.category.toLowerCase()
+        const isAiCategory = title.includes('ai') || title.includes('chain') || title.includes('assistente')
+        
+        return filterType === 'ai' ? isAiCategory : !isAiCategory
+    })
+
     // Renderizar categorias e itens
     let html = ''
-
-    formsData.categories.forEach(category => {
-      html += `
-        <div class="ip-forms-category">
-          <h4 class="ip-forms-category-title">${escapeHTML(
-            category.category
-          )}</h4>
-          <div class="ip-forms-grid">
-      `
-
-      category.items.forEach(item => {
-        if (item.type === 'link') {
+    
+    if (filteredCategories.length === 0) {
+        html = `
+            <div class="ip-empty-state">
+                <h4>Nenhum item encontrado nesta seção.</h4>
+            </div>
+        `
+    } else {
+        filteredCategories.forEach(category => {
           html += `
-            <a href="${escapeHTML(
-              item.url
-            )}" target="_blank" class="ip-form-card">
-              <div class="ip-form-icon">${item.icon}</div>
-              <div class="ip-form-content">
-                <h5 class="ip-form-title">${escapeHTML(item.title)}</h5>
-                <p class="ip-form-desc">${escapeHTML(item.description)}</p>
-              </div>
-              <div class="ip-form-arrow">↗</div>
-            </a>
+            <div class="ip-forms-category">
+              <h4 class="ip-forms-category-title">${escapeHTML(
+                category.category
+              )}</h4>
+              <div class="ip-forms-grid">
           `
-        } else if (item.type === 'document') {
+
+          category.items.forEach((item, itemIndex) => {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'info-panel.js:loadForms',message:'Processing item',data:{category:category.category,itemIndex,itemType:item.type,hasTitle:!!item.title,hasClosingData:!!item.closingData},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+            // #endregion
+            
+            if (item.type === 'link') {
+              html += `
+                <a href="${escapeHTML(
+                  item.url
+                )}" target="_blank" class="ip-form-card">
+                  <div class="ip-form-icon">${item.icon}</div>
+                  <div class="ip-form-content">
+                    <h5 class="ip-form-title">${escapeHTML(item.title)}</h5>
+                    <p class="ip-form-desc">${escapeHTML(item.description)}</p>
+                  </div>
+                  <div class="ip-form-arrow">↗</div>
+                </a>
+              `
+            } else if (item.type === 'document') {
+              html += `
+                <div class="ip-form-card ip-form-document" data-content="${escapeHTML(
+                  item.content
+                )}">
+                  <div class="ip-form-icon">${item.icon}</div>
+                  <div class="ip-form-content">
+                    <h5 class="ip-form-title">${escapeHTML(item.title)}</h5>
+                    <p class="ip-form-desc">${escapeHTML(item.description)}</p>
+                  </div>
+                  <div class="ip-form-arrow">📄</div>
+                </div>
+              `
+            } else if (item.type === 'action-closing') {
+              // #region agent log
+              try {
+                const hasClosingData = !!item.closingData
+                const closingDataKeys = item.closingData ? Object.keys(item.closingData) : []
+                fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'info-panel.js:loadForms',message:'Processing action-closing item',data:{hasClosingData,closingDataKeys,hasTitle:!!item.closingData?.title,hasContent:!!item.closingData?.content},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+                
+                if (!item.closingData) {
+                  throw new Error('closingData is missing')
+                }
+                const jsonString = JSON.stringify(item.closingData)
+                const encoded = encodeURIComponent(jsonString)
+                fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'info-panel.js:loadForms',message:'action-closing encoding success',data:{jsonLength:jsonString.length,encodedLength:encoded.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+              } catch (error) {
+                fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'info-panel.js:loadForms',message:'action-closing encoding error',data:{error:error.message,stack:error.stack},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+                throw error
+              }
+              // #endregion
+              
+              const closingDataEncoded = encodeURIComponent(
+                JSON.stringify(item.closingData)
+              )
+              html += `
+                <div class="ip-form-card ip-form-action" data-closing="${closingDataEncoded}">
+                  <div class="ip-form-icon">${item.icon}</div>
+                  <div class="ip-form-content">
+                    <h5 class="ip-form-title">${escapeHTML(item.title)}</h5>
+                    <p class="ip-form-desc">${escapeHTML(item.description)}</p>
+                    <button class="ip-add-closing-btn enhanced-btn" style="margin-top: 12px;">
+                      <span class="ip-btn-icon">➕</span>
+                      <span class="ip-btn-text">Adicionar aos meus encerramentos</span>
+                    </button>
+                  </div>
+                </div>
+              `
+            }
+          })
+
           html += `
-            <div class="ip-form-card ip-form-document" data-content="${escapeHTML(
-              item.content
-            )}">
-              <div class="ip-form-icon">${item.icon}</div>
-              <div class="ip-form-content">
-                <h5 class="ip-form-title">${escapeHTML(item.title)}</h5>
-                <p class="ip-form-desc">${escapeHTML(item.description)}</p>
               </div>
-              <div class="ip-form-arrow">📄</div>
             </div>
           `
-        }
-      })
-
-      html += `
-          </div>
-        </div>
-      `
-    })
+        })
+    }
 
     container.innerHTML = html
 
@@ -1134,12 +1222,61 @@ async function loadForms(sectionElement) {
         showDocumentModal(content)
       })
     })
+
+    // Adicionar event listeners para ações (add-closing)
+    container.querySelectorAll('.ip-form-action').forEach(card => {
+      const btn = card.querySelector('.ip-add-closing-btn')
+      if (btn) {
+        btn.addEventListener('click', async e => {
+          e.stopPropagation()
+          const btnIcon = btn.querySelector('.ip-btn-icon')
+          const btnText = btn.querySelector('.ip-btn-text')
+          const originalIcon = btnIcon.textContent
+          const originalText = btnText.textContent
+          
+          try {
+            // Estado de carregamento
+            btnIcon.textContent = '⏳'
+            btnText.textContent = 'Adicionando...'
+            btn.disabled = true
+            
+            const closingData = JSON.parse(decodeURIComponent(card.dataset.closing))
+            await addClosingToPersonal(closingData)
+            
+            // Estado de sucesso
+            btn.classList.add('success')
+            btnIcon.textContent = '✓'
+            btnText.textContent = 'Adicionado com sucesso!'
+            
+            setTimeout(() => {
+              btn.classList.remove('success')
+              btnIcon.textContent = originalIcon
+              btnText.textContent = originalText
+              btn.disabled = false
+            }, 2500)
+          } catch (error) {
+            console.error(error)
+            // Estado de erro
+            btnIcon.textContent = '⚠️'
+            btnText.textContent = 'Erro ao adicionar'
+            btn.style.background = 'linear-gradient(135deg, #dc3545, #c82333) !important'
+            
+            setTimeout(() => {
+              btnIcon.textContent = originalIcon
+              btnText.textContent = originalText
+              btn.style.background = ''
+              btn.disabled = false
+            }, 2500)
+          }
+        })
+      }
+    })
   } catch (error) {
     console.error('Erro ao carregar formulários:', error)
     container.innerHTML = `
       <div class="ip-error-container">
         <span style="color: var(--action-red); font-size: 24px;">⚠️</span>
-        <p>Erro ao carregar formulários</p>
+        <p>Erro ao carregar dados</p>
         <small>${escapeHTML(error.message)}</small>
       </div>
     `
@@ -1166,4 +1303,54 @@ function showDocumentModal(content) {
   )
 
   document.body.appendChild(modal)
+}
+
+/**
+ * Adiciona um encerramento aos dados pessoais do usuário
+ * @param {object} closingData - Dados do encerramento
+ */
+async function addClosingToPersonal(closingData) {
+  if (!closingData || !closingData.title || !closingData.content) {
+    throw new Error('Dados do encerramento inválidos')
+  }
+
+  // Função global do storage.js
+  if (
+    typeof getGreetingsAndClosings !== 'function' ||
+    typeof saveGreetingsAndClosings !== 'function'
+  ) {
+    throw new Error('Funções de armazenamento não disponíveis')
+  }
+
+  const data = await getGreetingsAndClosings()
+
+  // Verifica duplicidade pelo título
+  const exists = data.closings.some(c => c.title === closingData.title)
+  if (exists) {
+    if (
+      !confirm(
+        `O encerramento "${closingData.title}" já existe. Deseja adicionar uma cópia?`
+      )
+    ) {
+      return
+    }
+  }
+
+  const newClosing = {
+    id: `cls-${Date.now()}`,
+    title: closingData.title,
+    content: closingData.content,
+    shortcut: closingData.shortcut || '',
+    order: data.closings.length
+  }
+
+  data.closings.push(newClosing)
+  await saveGreetingsAndClosings(data)
+
+  // Tenta notificar sucesso
+  if (typeof showNotification === 'function') {
+    showNotification('Encerramento adicionado com sucesso!', 'success')
+  } else {
+    alert('Encerramento adicionado com sucesso!')
+  }
 }
