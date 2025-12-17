@@ -98,7 +98,7 @@ function openInfoPanel() {
     { id: 'notices', icon: '📢', label: 'Avisos' },
     { id: 'forms', icon: '📝', label: 'Formulários & Documentos' },
     { id: 'ai-chains', icon: '🤖', label: 'AI Chains - Assistentes' },
-    { id: 'extensions', icon: '🧩', label: 'Extensões' },
+    { id: 'extensions', icon: '🧩', label: 'Extensões & Apps' },
     { id: 'team', icon: '👨‍💻', label: 'Técnicos' },
     { id: 'reports', icon: '📊', label: 'Relatórios' },
     { id: 'commands', icon: '💻', label: 'SQL & Comandos' }
@@ -108,14 +108,18 @@ function openInfoPanel() {
   const sections = developerMode
     ? allSections
     : allSections.filter(
-        section => section.id === 'pending' || section.id === 'ai-chains' || section.id === 'forms'
+        section =>
+          section.id === 'pending' ||
+          section.id === 'ai-chains' ||
+          section.id === 'forms' ||
+          section.id === 'extensions'
       )
 
   // Estrutura Base do Modal
   const sidebarHtml = `
     <div class="ip-sidebar">
       <div class="ip-sidebar-header" id="developer-mode-trigger">
-        Central de Informações SGD
+        Painel
       </div>
       ${sections
         .map(
@@ -152,7 +156,7 @@ function openInfoPanel() {
 
   // Cria o Modal usando a função existente
   const modal = createModal(
-    'Central de Informações SGD',
+    'Painel',
     sidebarHtml + contentHtml,
     null,
     {
@@ -915,22 +919,74 @@ function getSectionContent(sectionId) {
       return `
         <p class="ip-section-desc">Extensões recomendadas e ferramentas úteis para produtividade.</p>
         <div class="ip-grid">
-           <div class="ip-card">
+          <div class="ip-card">
             <div class="ip-card-header">
-              <h4 class="ip-card-title">JSON Formatter</h4>
+              <h4 class="ip-card-title">Sider - Assistente de IA</h4>
             </div>
             <div class="ip-card-content">
-              Facilita a visualização de payloads e logs em JSON.
-              <a href="#" class="ip-link-btn">Instalar</a>
+              Assistente de IA para ajudar com a escrita e melhorar a produtividade.
+              <a
+                href="https://chromewebstore.google.com/detail/sider-chatgpt-sidebar-%2B-g/difoiogjjojoaoomphldepapgpbgkhkb"
+                class="ip-link-btn"
+                target="_blank"
+                rel="noopener noreferrer"
+              >Instalar</a>
             </div>
           </div>
           <div class="ip-card">
             <div class="ip-card-header">
-              <h4 class="ip-card-title">ColorZilla</h4>
+              <h4 class="ip-card-title">LanguageTool - Corretor inteligente</h4>
             </div>
             <div class="ip-card-content">
-              Picker de cores avançado e gerador de gradientes.
-              <a href="#" class="ip-link-btn">Instalar</a>
+              Corretor gramatical e de estilo para melhorar a qualidade dos textos.
+              <a
+                href="https://chromewebstore.google.com/detail/ai-grammar-checker-paraph/oldceeleldhonbafppcapldpdifcinji"
+                class="ip-link-btn"
+                target="_blank"
+                rel="noopener noreferrer"
+              >Instalar</a>
+            </div>
+          </div>
+          <div class="ip-card">
+            <div class="ip-card-header">
+              <h4 class="ip-card-title">aText</h4>
+            </div>
+            <div class="ip-card-content">
+              Ferramenta de expansão de texto e automação.
+              <a
+                href="https://www.trankynam.com/atext/"
+                class="ip-link-btn"
+                target="_blank"
+                rel="noopener noreferrer"
+              >Instalar</a>
+            </div>
+          </div>
+          <div class="ip-card">
+            <div class="ip-card-header">
+              <h4 class="ip-card-title">Assistente Técnico</h4>
+            </div>
+            <div class="ip-card-content">
+              Automatize instalações e atualizações da Domínio Sistemas.
+              <a
+                href="https://github.com/PatrickSud/assistente-tecnico/releases/latest/download/Assistente_Tecnico.exe"
+                class="ip-link-btn"
+                target="_blank"
+                rel="noopener noreferrer"
+              >Instalar</a>
+            </div>
+          </div>
+          <div class="ip-card">
+            <div class="ip-card-header">
+              <h4 class="ip-card-title">Lightshot</h4>
+            </div>
+            <div class="ip-card-content">
+              Captura de tela rápida e fácil com ferramentas de edição integradas.
+              <a
+                href="https://app.prntscr.com/build/setup-lightshot.exe"
+                class="ip-link-btn"
+                target="_blank"
+                rel="noopener noreferrer"
+              >Instalar</a>
             </div>
           </div>
         </div>

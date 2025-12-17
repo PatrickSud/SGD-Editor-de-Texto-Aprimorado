@@ -2339,7 +2339,7 @@ Verificamos que já há um atendimento de mesmo assunto registrado: <a href="htt
  
 Por gentileza, seguir acompanhando no atendimento mencionado acima.
  
-Obrigado.`
+Seguimos à disposição!`
 
       // Processa as variáveis do texto (substitui [saudacao] pela saudação apropriada)
       const processedText = await resolveVariablesInText(defaultText)

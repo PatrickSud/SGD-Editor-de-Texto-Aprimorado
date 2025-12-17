@@ -118,16 +118,9 @@ const REMOTE_CONFIG_URL =
  * @returns {Promise<Object>} Dados de formulários
  */
 async function fetchFormsData() {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'forms-service.js:fetchFormsData',message:'Function entry',data:{hasUrl:!!REMOTE_CONFIG_URL,url:REMOTE_CONFIG_URL},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-  // #endregion
-  
   // Se não há URL configurada, retorna dados locais
   if (!REMOTE_CONFIG_URL || REMOTE_CONFIG_URL.trim() === '') {
     console.log('📝 Forms Service: Usando dados locais (URL não configurada)')
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'forms-service.js:fetchFormsData',message:'Using local data - no URL',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-    // #endregion
     return DEFAULT_FORMS_DATA
   }
 
@@ -136,25 +129,14 @@ async function fetchFormsData() {
     // Adiciona timestamp único para evitar cache
     const timestamp = new Date().getTime()
     const urlWithCacheBust = `${REMOTE_CONFIG_URL}?t=${timestamp}`
-    
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'forms-service.js:fetchFormsData',message:'Sending message to SW',data:{url:urlWithCacheBust},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-    // #endregion
-    
+
     // Envia mensagem para o Service Worker fazer o fetch (bypass CORS)
     return new Promise((resolve) => {
         chrome.runtime.sendMessage(
             { action: 'FETCH_FORMS_DATA', url: urlWithCacheBust },
             (response) => {
-                // #region agent log
-                fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'forms-service.js:fetchFormsData',message:'SW response received',data:{hasResponse:!!response,success:response?.success,hasData:!!response?.data,dataType:typeof response?.data,isArray:Array.isArray(response?.data),error:response?.error,chromeError:chrome.runtime.lastError?.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-                // #endregion
-                
                 if (chrome.runtime.lastError) {
                     console.warn('Erro de comunicação com SW:', chrome.runtime.lastError)
-                    // #region agent log
-                    fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'forms-service.js:fetchFormsData',message:'SW communication error',data:{error:chrome.runtime.lastError.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-                    // #endregion
                     resolve(DEFAULT_FORMS_DATA)
                     return
                 }
@@ -163,33 +145,13 @@ async function fetchFormsData() {
                     console.log('📝 Forms Service: Dados remotos carregados com sucesso via SW')
                     const remoteData = response.data
                     
-                    // #region agent log
-                    const dataStructure = {
-                      isArray: Array.isArray(remoteData),
-                      hasCategories: !!(remoteData && remoteData.categories),
-                      categoriesCount: Array.isArray(remoteData) ? remoteData.length : (remoteData?.categories?.length || 0),
-                      firstCategoryName: Array.isArray(remoteData) ? remoteData[0]?.category : remoteData?.categories?.[0]?.category,
-                      firstCategoryItemsCount: Array.isArray(remoteData) ? remoteData[0]?.items?.length : remoteData?.categories?.[0]?.items?.length
-                    }
-                    fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'forms-service.js:fetchFormsData',message:'Remote data structure',data:dataStructure,timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-                    // #endregion
-                    
                     if (Array.isArray(remoteData)) {
-                        // #region agent log
-                        fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'forms-service.js:fetchFormsData',message:'Resolving with array format',data:{categoriesCount:remoteData.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-                        // #endregion
                         resolve({ categories: remoteData })
                     } else {
-                        // #region agent log
-                        fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'forms-service.js:fetchFormsData',message:'Resolving with object format',data:{hasCategories:!!remoteData.categories},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-                        // #endregion
                         resolve(remoteData)
                     }
                 } else {
                     console.warn('📝 Forms Service: SW falhou ao buscar dados:', response?.error)
-                    // #region agent log
-                    fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'forms-service.js:fetchFormsData',message:'SW fetch failed',data:{error:response?.error},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-                    // #endregion
                     resolve(DEFAULT_FORMS_DATA)
                 }
             }
@@ -200,9 +162,6 @@ async function fetchFormsData() {
       '📝 Forms Service: Erro inesperado, usando fallback local:',
       error.message
     )
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'forms-service.js:fetchFormsData',message:'Unexpected error',data:{error:error.message,stack:error.stack},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-    // #endregion
     return DEFAULT_FORMS_DATA
   }
 }

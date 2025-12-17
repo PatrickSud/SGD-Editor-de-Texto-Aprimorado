@@ -1,0 +1,3 @@
+# Local editor/diagnostic artifacts
+.cursor/debug.log
+.cursor/*.log

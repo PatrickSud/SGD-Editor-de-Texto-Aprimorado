@@ -53,6 +53,16 @@ const RELEASE_NOTES = {
 }
 
 const MINOR_RELEASE_NOTES = {
+  '2.9.9': [
+    {
+      version: '2.9.9.2',
+      features: [
+        '<b>📝 Ajuste na mensagem de anexo de SS:</b> Alterado o encerramento padrão de "<b>Obrigado.</b>" para "<b>Seguimos à disposição!</b>" na mensagem automática ao anexar Solicitação de Suporte duplicada.',
+        '<b>🐛 Correção de notificações:</b> Corrigido problema onde notificações de "Novas Pendências no SGD" apareciam duplicadas quando havia múltiplas abas abertas.',
+        '<b>🧩 Seção Extensões & Apps liberada:</b> A seção "<b>Extensões & Apps</b>" do Painel agora está disponível para todos os usuários terem acesso a ferramentas úteis para produtividade.'
+      ]
+    }
+  ],
   '2.9.6': [
     {
       version: '2.9.6.1',
