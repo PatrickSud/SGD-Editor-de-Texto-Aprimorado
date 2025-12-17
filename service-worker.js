@@ -163,9 +163,19 @@ async function setupPendingPollAlarm() {
 /**
  * Configura alarmes essenciais na inicialização da extensão.
  */
-function setupInitialAlarms() {
+async function setupInitialAlarms() {
   setupPendingPollAlarm()
   // Alarmes de análise de uso removidos
+  
+  // Recupera o ciclo de notificação de pendências do storage (caso o service worker tenha sido recarregado)
+  try {
+    const sessionData = await chrome.storage.session.get('lastPendingNotificationCycle')
+    if (sessionData.lastPendingNotificationCycle) {
+      pendingNotificationCycle = sessionData.lastPendingNotificationCycle
+    }
+  } catch (error) {
+    console.error('Erro ao recuperar ciclo de notificação:', error)
+  }
 }
 
 chrome.runtime.onInstalled.addListener(async details => {
@@ -211,6 +221,12 @@ chrome.runtime.onStartup.addListener(() => {
 // Variável para controle de debounce de notificações genéricas
 let lastGenericNotification = {
   hash: 0,
+  timestamp: 0
+}
+
+// Variável para controle de notificações de pendências por ciclo
+let pendingNotificationCycle = {
+  cycleId: null,
   timestamp: 0
 }
 
@@ -301,6 +317,80 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const currentHash = simpleHash(contentString)
         const now = Date.now()
 
+        // Verifica se é uma notificação de pendências (pelo título)
+        const isPendingNotification = message.title && 
+          (message.title.includes('Pendências') || message.title.includes('Pendência'))
+
+        if (isPendingNotification) {
+          // Para notificações de pendências, verifica o ciclo de verificação
+          // Recupera o ciclo atual do storage (caso o service worker tenha sido recarregado)
+          const sessionData = await chrome.storage.session.get(['lastPendingNotificationCycle', 'pendingNotificationShown'])
+          let storedCycle = sessionData.lastPendingNotificationCycle || pendingNotificationCycle
+          const shownForCycle = sessionData.pendingNotificationShown
+
+          // Se não há ciclo válido ou o ciclo expirou (mais de 30 segundos), cria um novo
+          if (!storedCycle || !storedCycle.cycleId || (storedCycle.timestamp && (now - storedCycle.timestamp) > 30000)) {
+            const newCycleId = `pending-check-${Date.now()}`
+            storedCycle = {
+              cycleId: newCycleId,
+              timestamp: now
+            }
+            pendingNotificationCycle = storedCycle
+            await chrome.storage.session.set({ 
+              lastPendingNotificationCycle: storedCycle 
+            })
+            console.log('Service Worker: Novo ciclo de verificação criado:', newCycleId)
+          }
+
+          // Se já foi exibida para este ciclo, ignora
+          if (shownForCycle === storedCycle.cycleId) {
+            console.log('Service Worker: Notificação de pendências já exibida para este ciclo:', storedCycle.cycleId)
+            sendResponse({ success: true, ignored: true })
+            return
+          }
+
+          // Verifica se o usuário permitiu notificações de pendências
+          const settings = (await getStorageData('extensionSettingsData', 'sync')) || {}
+          const preferences = settings.preferences || {}
+          
+          // Padrão é false (desabilitado) se não estiver definido
+          const notificationsEnabled = preferences.enablePendingNotifications === true
+
+          if (!notificationsEnabled) {
+               console.log('Service Worker: Notificação de pendências silenciada pelo usuário.')
+               sendResponse({ success: true, silenced: true })
+               return
+          }
+
+          // Marca que a notificação foi exibida para este ciclo
+          await chrome.storage.session.set({ 
+            pendingNotificationShown: storedCycle.cycleId 
+          })
+
+          const notificationId = `generic-${Date.now()}`
+
+          // Exibe uma notificação genérica do sistema
+          chrome.notifications.create(notificationId, {
+            type: 'basic',
+            iconUrl: 'logo.png',
+            title: message.title,
+            message: message.message,
+            priority: 2,
+            buttons: [{ title: 'Dispensar' }],
+            requireInteraction: true // Mantém para controlar o tempo manualmente
+          })
+
+          // Fecha automaticamente após 15 segundos
+          setTimeout(() => {
+            chrome.notifications.clear(notificationId)
+          }, 15000)
+
+          console.log('Service Worker: Notificação de pendências exibida para o ciclo:', storedCycle.cycleId)
+          sendResponse({ success: true })
+          return
+        }
+
+        // Para outras notificações genéricas, usa o debounce padrão
         // Debounce: Se a mesma notificação chegou há menos de 5 segundos, ignora
         if (
           lastGenericNotification.hash === currentHash &&
@@ -309,19 +399,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           console.log('Service Worker: Notificação genérica duplicada ignorada.')
           sendResponse({ success: true, ignored: true })
           return
-        }
-
-        // Verifica se o usuário permitiu notificações de pendências
-        const settings = (await getStorageData('extensionSettingsData', 'sync')) || {}
-        const preferences = settings.preferences || {}
-        
-        // Padrão é false (desabilitado) se não estiver definido
-        const notificationsEnabled = preferences.enablePendingNotifications === true
-
-        if (!notificationsEnabled) {
-             console.log('Service Worker: Notificação de pendências silenciada pelo usuário.')
-             sendResponse({ success: true, silenced: true })
-             return
         }
 
         lastGenericNotification = {
@@ -444,9 +521,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 chrome.alarms.onAlarm.addListener(async alarm => {
   if (alarm.name === PENDING_POLL_ALARM) {
     // Alarme de verificação de pendências disparado
-    // Envia mensagem para a aba ativa do SGD para realizar a verificação
-    console.log('Service Worker: Disparando verificação de pendências.')
-    broadcastToSgdTabs({ action: 'TRIGGER_PENDING_CHECK' })
+    // Cria um novo ciclo de verificação para evitar notificações duplicadas
+    const cycleId = `pending-check-${Date.now()}`
+    pendingNotificationCycle = {
+      cycleId: cycleId,
+      timestamp: Date.now()
+    }
+    // Salva o ciclo no storage para persistência entre recarregamentos do service worker
+    await chrome.storage.session.set({ 
+      lastPendingNotificationCycle: pendingNotificationCycle 
+    })
+    console.log('Service Worker: Disparando verificação de pendências. Ciclo:', cycleId)
+    broadcastToSgdTabs({ action: 'TRIGGER_PENDING_CHECK', cycleId: cycleId })
     return
   }
 
