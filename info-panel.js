@@ -156,7 +156,7 @@ function openInfoPanel() {
 
   // Cria o Modal usando a função existente
   const modal = createModal(
-    'Painel',
+    'Central de Informações SGD',
     sidebarHtml + contentHtml,
     null,
     {
