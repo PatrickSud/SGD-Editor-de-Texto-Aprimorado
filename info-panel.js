@@ -284,6 +284,11 @@ function openInfoPanel() {
     if (sortSelect) {
       sortSelect.addEventListener('change', applyFiltersHandler)
     }
+
+    const responsibleFilter = pendingSection.querySelector('#pending-responsible-filter')
+    if (responsibleFilter) {
+      responsibleFilter.addEventListener('change', applyFiltersHandler)
+    }
   }
 
   // Adicionar handler para o modo desenvolvedor
@@ -354,6 +359,9 @@ function applyPendingFilters(sectionElement) {
     sectionElement.querySelector('#pending-status-filter')?.value || ''
   const tagFilter =
     sectionElement.querySelector('#pending-tag-filter')?.value || ''
+  
+  const responsibleFilter = 
+    sectionElement.querySelector('#pending-responsible-filter')?.value || ''
 
   const sortOption =
     sectionElement.querySelector('#pending-sort')?.value || 'dias-desc'
@@ -391,6 +399,20 @@ function applyPendingFilters(sectionElement) {
       if (!itemTags.includes(tagFilter)) {
         return false
       }
+    }
+
+    if (tagFilter) {
+      const itemTags = pendingTagsMapCache[item.id] || []
+      if (!itemTags.includes(tagFilter)) {
+        return false
+      }
+    }
+
+    // Filtro de Responsável
+    if (responsibleFilter) {
+        if (item.responsible !== responsibleFilter) {
+            return false
+        }
     }
 
     return true
@@ -441,8 +463,15 @@ function applyPendingFilters(sectionElement) {
             </div>
         `
   } else {
+
+    // Lógica para mostrar o responsável:
+    // Mostrar apenas se o filtro de responsável estiver vazio (Todos)
+    // E se houver mais de um responsável distinto na lista filtrada.
+    const uniqueResponsibles = new Set(filteredItems.map(i => i.responsible).filter(Boolean))
+    const showResponsible = !responsibleFilter && uniqueResponsibles.size > 1
+
     container.innerHTML = filteredItems
-      .map(item => createPendingCard(item))
+      .map(item => createPendingCard(item, showResponsible))
       .join('')
       
     // Attach listeners after rendering cards
@@ -500,6 +529,23 @@ async function loadPendingItems(sectionElement) {
             ${availableTagsCache.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
         `
         tagFilterSelect.value = currentVal
+        tagFilterSelect.value = currentVal
+    }
+
+    // Atualiza o select de filtro de responsável
+    const responsibleSelect = sectionElement.querySelector('#pending-responsible-filter')
+    if (responsibleSelect) {
+        const currentVal = responsibleSelect.value
+        const responsibles = [...new Set(items.map(i => i.responsible).filter(Boolean))].sort()
+        
+        responsibleSelect.innerHTML = `
+            <option value="">Todos Responsáveis</option>
+            ${responsibles.map(r => `<option value="${escapeHTML(r)}">${escapeHTML(r)}</option>`).join('')}
+        `
+        // Tenta restaurar a seleção se ainda existir
+        if (responsibles.includes(currentVal)) {
+            responsibleSelect.value = currentVal
+        }
     }
 
     if (items.length === 0) {
@@ -551,71 +597,95 @@ function getStatusClass(status) {
 /**
  * Cria o HTML para um card de pendência.
  * @param {object} item - Objeto da pendência.
+ * @param {boolean} showResponsible - Se deve mostrar o nome do responsável.
  * @returns {string} HTML do card.
  */
-function createPendingCard(item) {
+function createPendingCard(item, showResponsible = false) {
 // #region agent log
-fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'info-panel.js:createPendingCard',message:'Creating card',data:{id: item.id},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'info-panel.js:createPendingCard',message:'Creating card v3',data:{id: item.id},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
 // #endregion
   const statusClass = getStatusClass(item.status)
-  const prioritariaIcon = item.isPrioritaria ? '<span class="ip-prioritaria-icon" title="Solicitação marcada como prioritária">⚠️</span>' : ''
   
   // Tags
-  const itemTags = pendingTagsMapCache[item.id] || []
-  const tagsHtml = itemTags.map(tagId => {
-    const tagDef = availableTagsCache.find(t => t.id === tagId)
-    if (!tagDef) return ''
+  let tagsRenderList = []
+  const renderedTagIds = new Set()
+
+  // 1. Tag de Prioridade (Automática - baseada em nome)
+  if (item.isPrioritaria) {
+      const priorityTag = availableTagsCache.find(t => t.name.toLowerCase() === 'prioridade')
+      if (priorityTag) {
+          tagsRenderList.push(priorityTag)
+          renderedTagIds.add(priorityTag.id)
+      }
+  }
+
+  // 2. Tag de Em SS (Automática - baseada em nome)
+  if (item.isEmSS) {
+      const ssTag = availableTagsCache.find(t => t.name.toLowerCase() === 'em ss')
+      if (ssTag) {
+          tagsRenderList.push(ssTag)
+          renderedTagIds.add(ssTag.id)
+      }
+  }
+
+  // 3. Tags do Usuário (Persistidas)
+  const storedTagIds = pendingTagsMapCache[item.id] || []
+  storedTagIds.forEach(id => {
+      // Evita duplicatas se a tag automática já foi adicionada
+      if (renderedTagIds.has(id)) return
+
+      const def = availableTagsCache.find(t => t.id === id)
+      if (def) {
+          tagsRenderList.push(def)
+          renderedTagIds.add(def.id)
+      }
+  })
+
+  const tagsHtml = tagsRenderList.map(tagDef => {
     return `<span class="ip-tag-badge" style="background-color: ${tagDef.color}20; color: ${tagDef.color}; border-color: ${tagDef.color}40;">${escapeHTML(tagDef.name)}</span>`
   }).join('')
+
+  const responsibleHtml = showResponsible && item.responsible 
+    ? `<div class="ip-pending-responsible-item" title="Responsável: ${escapeHTML(item.responsible)}" style="margin-left: 8px; font-weight: 600; font-size: 12px; color: var(--text-color-muted); display: flex; align-items: center; gap: 4px; border-left: 1px solid var(--border-color); padding-left: 8px;">
+         <span style="font-size: 14px;">👤</span>${escapeHTML(item.responsible)}
+       </div>` 
+    : ''
 
   return `
         <div class="ip-pending-card ${statusClass}" data-id="${item.id}">
             <div class="ip-pending-header">
-                <div class="ip-pending-id-row">
-                    <span class="ip-pending-id" title="N.º da Solicitação: ${escapeHTML(
-                      item.id
-                    )}">${escapeHTML(item.id)}</span>
-                    <span class="ip-meta-item" title="Dias em aberto">📅 ${escapeHTML(
-                      item.dias
-                    )}d</span>
-                    <span class="ip-meta-item" title="Quantidade de trâmites">🔄 ${escapeHTML(
-                      item.qtdTramites
-                    )}</span>
-                    ${prioritariaIcon}
-                    <div class="ip-tags-container">${tagsHtml}</div>
-                    <button class="ip-add-tag-btn" title="Gerenciar Tags" data-pending-id="${item.id}">🏷️</button>
-                </div>
-                <div class="ip-date-container">
-                    <span class="ip-pending-date" title="Data de Abertura: ${escapeHTML(
-                      item.dataAbertura
-                    )}">${escapeHTML(item.dataAbertura)}</span>
-                    <span class="ip-separator">|</span>
-                    <span class="ip-last-tramite" title="Último Trâmite: ${escapeHTML(
-                      item.dataUltimoTramite
-                    )}">${escapeHTML(item.dataUltimoTramite)}</span>
+                <div class="ip-pending-id-row" style="width: 100%; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="ip-pending-id" title="N.º da Solicitação: ${escapeHTML(item.id)}">${escapeHTML(item.id)}</span>
+                        <span class="ip-meta-item" title="Dias em aberto">📅 ${escapeHTML(item.dias)}d</span>
+                        <span class="ip-meta-item" title="Quantidade de trâmites">🔄 ${escapeHTML(item.qtdTramites)}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                         <div class="ip-tags-container">${tagsHtml}</div>
+                         <button class="ip-add-tag-btn" title="Gerenciar Tags" data-pending-id="${item.id}">🏷️</button>
+                         ${responsibleHtml}
+                    </div>
                 </div>
             </div>
             
             <div class="ip-pending-subject">
-                <a href="${escapeHTML(
-                  item.link
-                )}" target="_blank" style="color: inherit; text-decoration: none;" title="${escapeHTML(
-    item.subject
-  )}">
+                <a href="${escapeHTML(item.link)}" target="_blank" style="color: inherit; text-decoration: none;" title="${escapeHTML(item.subject)}">
                     ${escapeHTML(item.subject)}
                 </a>
             </div>
 
             <div class="ip-pending-footer">
-                <span class="ip-pending-status" title="${escapeHTML(
-                  item.status
-                )}">
+                <span class="ip-pending-status" title="${escapeHTML(item.status)}" style="max-width: 65%;">
                     <span class="ip-status-dot"></span>
-                    ${escapeHTML(item.status)}
+                    <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(item.status)}</span>
                 </span>
-                <a href="${escapeHTML(
-                  item.link
-                )}" target="_blank" class="ip-pending-action-btn">Abrir ↗</a>
+                
+                <div style="display: flex; align-items: center; gap: 10px; margin-left: auto;">
+                    <div class="ip-date-container" style="text-align: right; font-size: 10px; opacity: 0.7;">
+                        <span title="Data de Abertura: ${escapeHTML(item.dataAbertura)}">${escapeHTML(item.dataAbertura)}</span> | <span title="Último Trâmite: ${escapeHTML(item.dataUltimoTramite)}">${escapeHTML(item.dataUltimoTramite)}</span>
+                    </div>
+                    <a href="${escapeHTML(item.link)}" target="_blank" class="ip-pending-action-btn">Abrir ↗</a>
+                </div>
             </div>
         </div>
     `
@@ -643,18 +713,39 @@ fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{metho
     const popup = document.createElement('div')
     popup.className = 'ip-tag-popup'
     
+    const item = allPendingItems.find(i => i.id === pendingId)
     const currentTags = pendingTagsMapCache[pendingId] || []
     
+    // Identificar IDs das tags automáticas para este item
+    const autoTagIds = new Set()
+    
+    if (item) {
+        if (item.isPrioritaria) {
+            const priorityTag = availableTagsCache.find(t => t.name.toLowerCase() === 'prioridade')
+            if (priorityTag) autoTagIds.add(priorityTag.id)
+        }
+        if (item.isEmSS) {
+            const ssTag = availableTagsCache.find(t => t.name.toLowerCase() === 'em ss')
+            if (ssTag) autoTagIds.add(ssTag.id)
+        }
+    }
+
     let tagsListHtml = availableTagsCache.map(tag => {
-        const isChecked = currentTags.includes(tag.id) ? 'checked' : ''
+        const isAuto = autoTagIds.has(tag.id)
+        const isChecked = currentTags.includes(tag.id) || isAuto ? 'checked' : ''
+        const isDisabled = isAuto ? 'disabled' : ''
+        const tooltip = isAuto ? ' title="Esta tag é automática baseada no status da SSC e não pode ser removida." ' : ''
+        const opacityStyle = isAuto ? ' opacity: 0.7; cursor: not-allowed; ' : ''
+
         return `
-            <div class="ip-tag-row">
-                <label class="ip-tag-option" style="flex: 1;">
-                    <input type="checkbox" value="${tag.id}" ${isChecked}>
+            <div class="ip-tag-row" ${tooltip} style="${opacityStyle}">
+                <label class="ip-tag-option" style="flex: 1; ${isAuto ? 'cursor: not-allowed;' : ''}">
+                    <input type="checkbox" value="${tag.id}" ${isChecked} ${isDisabled}>
                     <span class="ip-tag-color" style="background-color: ${tag.color}"></span>
                     ${escapeHTML(tag.name)}
+                    ${isAuto ? '<span style="font-size: 10px; margin-left: 4px; color: var(--text-color-muted);">(Auto)</span>' : ''}
                 </label>
-                <button class="ip-tag-delete-btn" data-tag-id="${tag.id}" title="Excluir Tag">🗑️</button>
+                <button class="ip-tag-delete-btn" data-tag-id="${tag.id}" title="Excluir Tag" ${isDisabled}>🗑️</button>
             </div>
         `
     }).join('')
@@ -845,12 +936,48 @@ function refreshPendingCardUI(pendingId) {
         const card = document.querySelector(`.ip-pending-card[data-id="${pendingId}"]`)
         if (card) {
              const tagsContainer = card.querySelector('.ip-tags-container')
-             const itemTags = pendingTagsMapCache[pendingId] || []
-             const tagsHtml = itemTags.map(tagId => {
-                const tagDef = availableTagsCache.find(t => t.id === tagId)
-                if (!tagDef) return ''
+             
+             // Recalcular lista completa de tags (Auto + Manual) para renderização correta
+             const item = allPendingItems.find(i => i.id === pendingId)
+             let tagsRenderList = []
+             const renderedTagIds = new Set()
+
+             if (item) {
+                // 1. Tag de Prioridade (Automática)
+                if (item.isPrioritaria) {
+                    const priorityTag = availableTagsCache.find(t => t.name.toLowerCase() === 'prioridade')
+                    if (priorityTag) {
+                        tagsRenderList.push(priorityTag)
+                        renderedTagIds.add(priorityTag.id)
+                    }
+                }
+
+                // 2. Tag de Em SS (Automática)
+                if (item.isEmSS) {
+                    const ssTag = availableTagsCache.find(t => t.name.toLowerCase() === 'em ss')
+                    if (ssTag) {
+                        tagsRenderList.push(ssTag)
+                        renderedTagIds.add(ssTag.id)
+                    }
+                }
+             }
+
+             // 3. Tags do Usuário
+             const userTags = pendingTagsMapCache[pendingId] || []
+             userTags.forEach(id => {
+                if (renderedTagIds.has(id)) return // Evita duplicidade
+
+                const tagDef = availableTagsCache.find(t => t.id === id)
+                if (tagDef) {
+                    tagsRenderList.push(tagDef)
+                    renderedTagIds.add(tagDef.id)
+                }
+             })
+
+             const tagsHtml = tagsRenderList.map(tagDef => {
                 return `<span class="ip-tag-badge" style="background-color: ${tagDef.color}20; color: ${tagDef.color}; border-color: ${tagDef.color}40;">${escapeHTML(tagDef.name)}</span>`
              }).join('')
+             
              tagsContainer.innerHTML = tagsHtml
         }
     }
@@ -1074,6 +1201,11 @@ function getSectionContent(sectionId) {
                             <option value="aguardando-interna">Aguard. Interna</option>
                             <option value="respondido-interna">Resp. Interna</option>
                             <option value="outro">Outros</option>
+                        </select>
+
+
+                        <select id="pending-responsible-filter" class="ip-filter-select compact" title="Filtrar por Responsável">
+                            <option value="">Todos Responsáveis</option>
                         </select>
 
                         <select id="pending-tag-filter" class="ip-filter-select compact" title="Filtrar por Tag">

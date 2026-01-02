@@ -63,6 +63,15 @@ async function fetchPendingItems() {
         return [] 
     }
 
+    // Identificar índice da coluna "Responsável"
+    let responsibleColIndex = -1
+    const headers = dataTable.querySelectorAll('thead th')
+    headers.forEach((th, index) => {
+        if (th.innerText.toLowerCase().includes('responsável')) {
+            responsibleColIndex = index
+        }
+    })
+
     const rows = dataTable.querySelectorAll('tbody > tr')
     const pendingItems = []
 
@@ -75,8 +84,10 @@ async function fetchPendingItems() {
         // ID: Coluna 0
         const id = cells[0].innerText.trim()
         
-        // Verifica se a pendência é prioritária (classe tableListaRowWarningBlue na célula do ID)
-        const isPrioritaria = cells[0].classList.contains('tableListaRowWarningBlue')
+        // Verifica se a pendência é prioritária 
+        // Verifica classes tableListaRowWarningBlue (Prioridade Azul) e tableListaRowWarning (Prioridade Amarela)
+        const isPrioritaria = cells[0].classList.contains('tableListaRowWarningBlue') || 
+                              cells[0].classList.contains('tableListaRowWarning')
 
         // Data Abertura: Coluna 1 (Limpa spans ocultos)
         const dataAbertura = cleanDateText(cells[1])
@@ -105,6 +116,18 @@ async function fetchPendingItems() {
           }
         }
 
+        // Responsável (Dinâmico)
+        let responsible = 'Desconhecido'
+        if (responsibleColIndex > -1 && cells[responsibleColIndex]) {
+            responsible = cells[responsibleColIndex].innerText.trim()
+        }
+
+        // Verifica se é "Em SS" (texto vermelho)
+        // O SGD coloca style="color: red;" no TR ou no A quando há retorno de SS
+        const rowStyle = (row.getAttribute('style') || '').toLowerCase()
+        const anchorStyle = anchor ? (anchor.getAttribute('style') || '').toLowerCase() : ''
+        const isEmSS = rowStyle.includes('color: red') || anchorStyle.includes('color: red')
+
         // Status: Coluna 12
         let status = 'Desconhecido'
         const imgStatus = cells[12].querySelector('img')
@@ -123,7 +146,9 @@ async function fetchPendingItems() {
           subject,
           link,
           status,
-          isPrioritaria
+          responsible,
+          isPrioritaria,
+          isEmSS
         })
       } catch (err) {
         console.warn('Erro ao processar linha de pendência:', err, row)
