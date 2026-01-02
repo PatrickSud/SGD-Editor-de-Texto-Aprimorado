@@ -1,7 +1,7 @@
 {
   "categories": [
     {
-      "category": "Formulários Úteis",
+      "category": "Documentos e Formulários Úteis",
       "items": [
         {
           "type": "link",
@@ -23,11 +23,25 @@
           "description": "Notificar instabilidade no sistema Genesys",
           "url": "https://forms.office.com.mcas.ms/pages/responsepage.aspx?id=ZLjMYhpqXUuOHDl97BqCWPbHowoOAepDna1oDZ3k4exUQ1FFWkZMQlk4UVpZMEY3UTdWVldNMlZCSS4u&route=shorturl",
           "icon": "🚨"
+        },
+        {
+          "type": "link",
+          "title": "Fluxo de atendimento fone",
+          "description": "Manual de Suporte ao Cliente",
+          "url": "https://trten-my.sharepoint.com.mcas.ms/personal/artur_bortolotto_thomsonreuters_com/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fartur%5Fbortolotto%5Fthomsonreuters%5Fcom%2FDocuments%2FArquivos%20de%20Chat%20do%20Microsoft%20Teams%2FFluxo%20de%20atendimento%20fone%202026%202%201%20%281%29%2Epdf&parent=%2Fpersonal%2Fartur%5Fbortolotto%5Fthomsonreuters%5Fcom%2FDocuments%2FArquivos%20de%20Chat%20do%20Microsoft%20Teams&ga=1",
+          "icon": "📞"
+        },
+        {
+          "type": "link",
+          "title": "Manual de Accountability",
+          "description": "Otimizando a Qualidade e Padronização do Atendimento",
+          "url": "https://trten-my.sharepoint.com.mcas.ms/personal/artur_bortolotto_thomsonreuters_com/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fartur%5Fbortolotto%5Fthomsonreuters%5Fcom%2FDocuments%2FArquivos%20de%20Chat%20do%20Microsoft%20Teams%2FManual%20de%20Accountability%20%2D%20Vers%C3%A3o%201%2E1%2E2%20%281%29%2Epdf&parent=%2Fpersonal%2Fartur%5Fbortolotto%5Fthomsonreuters%5Fcom%2FDocuments%2FArquivos%20de%20Chat%20do%20Microsoft%20Teams&ga=1",
+          "icon": "📘"
         }
       ]
     },
     {
-      "category": "AI Chains - AT",
+      "category": "AI Chains -> AT",
       "items": [
         {
           "type": "link",
@@ -60,7 +74,7 @@
         {
           "type": "link",
           "title": "Assuntos Fila 5",
-          "description": "Contábil e Impostos",
+          "description": "Fila AT",
           "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/db7162a0-ad9b-4c19-85c4-315169a1ef43?sidebar=instructions_auto",
           "icon": "🤖"
         },
@@ -81,7 +95,7 @@
       ]
     },
     {
-      "category": "Documentos e Procedimentos",
+      "category": "Procedimentos e Outros",
       "items": [
         {
           "type": "action-closing",
@@ -90,7 +104,7 @@
           "icon": "🖥️",
           "closingData": {
             "title": "Acesso Remoto",
-            "content": "<b>Você sabia?! Nosso suporte via acesso remoto pode ser ainda mais ágil! </b><nobr style='font-size:20px;'>&#9757;</nobr></b><nobr style='font-size:20px;'>&#129299;</nobr> \n \n Pesquise pela ferramenta \"<b>Acesso Remoto - Domínio Sistemas</b>\", instalada em sua máquina: <img src=\"https://www.dropbox.com/scl/fi/495canzpdjs211hh6la45/acesso.gif?rlkey=5khplj8wi64db0xyv2rsrql5a&st=y923wzze&raw=1\"  width=\"200\" height=\"32\" border=\"0\" alt=\"iniciar\"> ou clique na imagem abaixo para baixar e instalar! \n \n <a href=\"https://download.dominiosistemas.com.br/Suporte/AcessoRemoto/LogMeInRescueCallingCard.msi\" target=\"_blank\"> \n \n <img src=\"https://www.dropbox.com/scl/fi/byeq2k2diaqq9wqv2sk3r/acesso_icon.png?rlkey=qky0l9byalcwojsi04xpq7o88&st=ybvth8cw&raw=1\"  width=\"250\" height=\"118\" border=\"0\" alt=\"acesso_remoto\"></a> \n \n [finalizacao]! <nobr style='font-size:18px;'>&#10024;</nobr>"
+            "content": "<span style=\"color:#FF7F00;\">___________________________________________________________________________________________</span> \n <b>Você sabia?! Nosso suporte via acesso remoto pode ser ainda mais ágil! </b><nobr style='font-size:20px;'>&#9757;</nobr></b><nobr style='font-size:20px;'>&#129299;</nobr> \n Pesquise pela ferramenta “<b>Acesso Remoto - Domínio Sistemas</b>”, instalada em sua máquina: <img src=\"https://www.dropbox.com/scl/fi/495canzpdjs211hh6la45/acesso.gif?rlkey=5khplj8wi64db0xyv2rsrql5a&st=y923wzze&raw=1\" width=\"200\" height=\"32\" border=\"0\" alt=\"iniciar\"> ou clique na imagem abaixo para baixar e instalar! \n <a href=\"https://download.dominiosistemas.com.br/Suporte/AcessoRemoto/LogMeInRescueCallingCard.msi\" target=\"_blank\"> \n <img src=\"https://www.dropbox.com/scl/fi/byeq2k2diaqq9wqv2sk3r/acesso_icon.png?rlkey=qky0l9byalcwojsi04xpq7o88&st=ybvth8cw&raw=1\" width=\"250\" height=\"118\" border=\"0\" alt=\"acesso_remoto\"></a> \n [finalizacao]! <nobr style='font-size:18px;'>&#10024;</nobr>"
           }
         }
       ]

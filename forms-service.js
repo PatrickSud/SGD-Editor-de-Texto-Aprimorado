@@ -8,7 +8,7 @@
 const DEFAULT_FORMS_DATA = {
   categories: [
     {
-      category: 'Formulários Úteis',
+      category: 'Documentos e Formulários Úteis',
       items: [
         {
           type: 'link',
@@ -30,6 +30,20 @@ const DEFAULT_FORMS_DATA = {
           description: 'Notificar instabilidade no sistema Genesys',
           url: 'https://forms.office.com.mcas.ms/pages/responsepage.aspx?id=ZLjMYhpqXUuOHDl97BqCWPbHowoOAepDna1oDZ3k4exUQ1FFWkZMQlk4UVpZMEY3UTdWVldNMlZCSS4u&route=shorturl',
           icon: '🚨'
+        },
+        {
+          type: 'link',
+          title: 'Fluxo de atendimento fone',
+          description: 'Manual de Suporte ao Cliente',
+          url: 'https://trten-my.sharepoint.com.mcas.ms/personal/artur_bortolotto_thomsonreuters_com/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fartur%5Fbortolotto%5Fthomsonreuters%5Fcom%2FDocuments%2FArquivos%20de%20Chat%20do%20Microsoft%20Teams%2FFluxo%20de%20atendimento%20fone%202026%202%201%20%281%29%2Epdf&parent=%2Fpersonal%2Fartur%5Fbortolotto%5Fthomsonreuters%5Fcom%2FDocuments%2FArquivos%20de%20Chat%20do%20Microsoft%20Teams&ga=1',
+          icon: '📞'
+        },
+        {
+          type: 'link',
+          title: 'Manual de Accountability',
+          description: 'Otimizando a Qualidade e Padronização do Atendimento',
+          url: 'https://trten-my.sharepoint.com.mcas.ms/personal/artur_bortolotto_thomsonreuters_com/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fartur%5Fbortolotto%5Fthomsonreuters%5Fcom%2FDocuments%2FArquivos%20de%20Chat%20do%20Microsoft%20Teams%2FManual%20de%20Accountability%20%2D%20Vers%C3%A3o%201%2E1%2E2%20%281%29%2Epdf&parent=%2Fpersonal%2Fartur%5Fbortolotto%5Fthomsonreuters%5Fcom%2FDocuments%2FArquivos%20de%20Chat%20do%20Microsoft%20Teams&ga=1',
+          icon: '📘'
         }
       ]
     },
@@ -67,7 +81,7 @@ const DEFAULT_FORMS_DATA = {
         {
           type: 'link',
           title: 'Assuntos Fila 5',
-          description: 'Contábil e Impostos',
+          description: 'Fila AT',
           url: 'https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/db7162a0-ad9b-4c19-85c4-315169a1ef43?sidebar=instructions_auto',
           icon: '🤖'
         },
@@ -88,7 +102,7 @@ const DEFAULT_FORMS_DATA = {
       ]
     },
     {
-      category: 'Documentos e Procedimentos',
+      category: 'Procedimentos e Outros',
       items: [
         {
           type: 'action-closing',
