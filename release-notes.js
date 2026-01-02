@@ -65,7 +65,8 @@ const MINOR_RELEASE_NOTES = {
     {
       version: '2.9.9.3',
       features: [
-        '<b>👤 Filtro de Responsável:</b> Adicionado novo filtro na aba de Pendências para visualizar chamados agrupados por responsável para quando o usuário consegue visualizar mais de um responsável.',
+        '<b>🔗 Integração com Filtros de Pendências:</b> O painel agora detecta filtros ativos no SGD (Responsável, Sistema, etc.) e permite limpá-los com um clique para carregar todas as pendências corretamente.',
+        '<b>👤 Filtro de Responsável:</b> Adicionado novo filtro na aba de Pendências para visualizar chamados agrupados por responsável (útil para quem visualiza mais de um responsável).',
         '<b>✨ Tags Automáticas:</b> Melhorada detecção de <b>Prioridade</b> e <b>Em SS</b>, com atribuição automática de tags.',
         '<b>🎨 Layout aprimorado:</b> Ajuste na exibição de datas e nomes nos cards de pendência para melhor aproveitamento de espaço.'
       ]

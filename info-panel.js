@@ -513,8 +513,65 @@ async function loadPendingItems(sectionElement) {
 
   try {
     // fetchPendingItems deve estar disponível globalmente via pending-service.js
-    const items = await fetchPendingItems()
+    const result = await fetchPendingItems()
+    const items = result.items || []
+    const siteFilter = result.siteFilter
+
     allPendingItems = items
+    
+    // Gerenciar Aviso de Filtro do Site
+    const existingWarning = sectionElement.querySelector('.ip-site-filter-warning')
+    if (existingWarning) existingWarning.remove()
+
+    if (siteFilter && siteFilter.active) {
+        const headerRow = sectionElement.querySelector('.ip-pending-header-row')
+        if (headerRow) {
+            const warningDiv = document.createElement('div')
+            warningDiv.className = 'ip-site-filter-warning'
+            warningDiv.style.cssText = 'background: #fff3cd; color: #856404; padding: 8px 12px; margin: 0 10px 10px 10px; border-radius: 4px; border: 1px solid #ffeeba; display: flex; align-items: center; justify-content: space-between; font-size: 12px;'
+            warningDiv.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="font-size: 14px;">⚠️</span>
+                    <span><strong>Filtro do site ativo:</strong> ${escapeHTML(siteFilter.name || 'Desconhecido')}</span>
+                </div>
+                <button id="reset-site-filter-btn" style="border: 1px solid #856404; background: transparent; color: #856404; cursor: pointer; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: bold; transition: all 0.2s;">CORREÇÃO: Ver Todos</button>
+            `
+            headerRow.parentNode.insertBefore(warningDiv, headerRow.nextSibling)
+            
+            // Bind click
+            const resetBtn = warningDiv.querySelector('#reset-site-filter-btn')
+            resetBtn.addEventListener('mouseenter', () => { resetBtn.style.background = '#856404'; resetBtn.style.color = '#fff'; })
+            resetBtn.addEventListener('mouseleave', () => { resetBtn.style.background = 'transparent'; resetBtn.style.color = '#856404'; })
+            
+            resetBtn.addEventListener('click', async () => {
+                 resetBtn.disabled = true
+                 const originalText = resetBtn.innerText
+                 resetBtn.innerText = 'Limpando...'
+                 warningDiv.style.opacity = '0.7'
+                 
+                 try {
+                     // resetSiteFilter deve estar no pending-service.js
+                     if (typeof resetSiteFilter === 'function') {
+                         const success = await resetSiteFilter()
+                         
+                         if (!success) {
+                             throw new Error('Não foi possível encontrar o botão de pesquisar ou limpar o filtro automaticamente.')
+                         }
+                         // Se sucesso, a página deve recarregar ou atualizar, então não restauramos o estado imediatamente
+                     } else {
+                         throw new Error('Função de limpar filtro não encontrada.')
+                     }
+                 } catch (err) {
+                     console.error(err)
+                     alert('Não conseguimos limpar o filtro automaticamente. Por favor, limpe manualmente no site de pendências.')
+                     // Restaura estado
+                     resetBtn.disabled = false
+                     resetBtn.innerText = originalText
+                     warningDiv.style.opacity = '1'
+                 }
+            })
+        }
+    }
     
     // Carregar Tags e Mapa
     availableTagsCache = await getAvailableTags()
@@ -528,7 +585,6 @@ async function loadPendingItems(sectionElement) {
             <option value="">Todas as Tags</option>
             ${availableTagsCache.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
         `
-        tagFilterSelect.value = currentVal
         tagFilterSelect.value = currentVal
     }
 

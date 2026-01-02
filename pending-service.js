@@ -72,6 +72,57 @@ async function fetchPendingItems() {
         }
     })
 
+    // Detectar Filtro do Site Ativo (Session State)
+    // Detectar Filtros do Site Ativos (Session State)
+    const filterIds = [
+        { id: 'filtrosForm:responsavel', label: 'Responsável', default: '0' },
+        { id: 'filtrosForm:sistema', label: 'Sistema', default: '0' },
+        { id: 'filtrosForm:modulo', label: 'Módulo', default: '0' },
+        { id: 'filtrosForm:topicoSuporte', label: 'Tópico', default: '0' },
+        { id: 'filtrosForm:situacao', label: 'Situação', default: '0' },
+        { id: 'filtrosForm:classificacaoSSC', label: 'Classificação', default: '0' },
+        { id: 'filtrosForm:meioAcesso', label: 'Meio de Acesso', default: '0' },
+        { id: 'filtrosForm:origem', label: 'Subtópico', default: '0' },
+        { id: 'filtrosForm:palavraChave', label: 'Palavra-chave', type: 'text', default: '' }
+    ]
+
+    const siteFilter = {
+        active: false,
+        name: null
+    }
+
+    const activeFilters = []
+
+    filterIds.forEach(f => {
+        const el = doc.getElementById(f.id)
+        if (el) {
+            const val = el.value
+            // Verifica se o valor é diferente do padrão
+            if (val && val !== f.default) {
+                let isReallyActive = false
+                if (f.type === 'text') {
+                    isReallyActive = val.trim() !== ''
+                } else {
+                    // Para selects com "selected" explícito no HTML estático ou valor atual
+                    const selectedOption = el.querySelector(`option[value="${val}"]`)
+                    // Se tiver selected ou o valor for diferente do default (assumindo value do select correto)
+                    if ((selectedOption && selectedOption.hasAttribute('selected')) || val !== '0') {
+                         isReallyActive = true
+                    }
+                }
+
+                if (isReallyActive) {
+                    activeFilters.push(f.label)
+                }
+            }
+        }
+    })
+
+    if (activeFilters.length > 0) {
+        siteFilter.active = true
+        siteFilter.name = activeFilters.length === 1 ? activeFilters[0] : `${activeFilters.length} filtros ativos`
+    }
+
     const rows = dataTable.querySelectorAll('tbody > tr')
     const pendingItems = []
 
@@ -150,17 +201,71 @@ async function fetchPendingItems() {
           isPrioritaria,
           isEmSS
         })
+    
       } catch (err) {
-        console.warn('Erro ao processar linha de pendência:', err, row)
       }
     })
 
-    return pendingItems
+    return { items: pendingItems, siteFilter }
+  } catch (error) { throw error }
+}
 
-  } catch (error) {
-    console.error('PendingService: Falha ao buscar pendências.', error)
-    throw error
-  }
+async function resetSiteFilter() {
+    const isOnFilterPage = window.location.href.includes('filtro-listas.html')
+    
+    if (isOnFilterPage) {
+        
+        const filterIds = [
+            'filtrosForm:responsavel',
+            'filtrosForm:sistema',
+            'filtrosForm:modulo',
+            'filtrosForm:topicoSuporte',
+            'filtrosForm:situacao',
+            'filtrosForm:classificacaoSSC',
+            'filtrosForm:meioAcesso',
+            'filtrosForm:origem'
+        ]
+
+        // 1. Reseta Selects
+        filterIds.forEach(id => {
+            const select = document.getElementById(id)
+            if (select) {
+                select.value = '0'
+                select.selectedIndex = 0
+                select.dispatchEvent(new Event('change', { bubbles: true }))
+            }
+        })
+
+        // 2. Reseta Input Texto
+        const textInput = document.getElementById('filtrosForm:palavraChave')
+        if (textInput) {
+            textInput.value = ''
+            textInput.dispatchEvent(new Event('input', { bubbles: true }))
+            textInput.dispatchEvent(new Event('change', { bubbles: true }))
+        }
+
+        // 3. Clica em Pesquisar/Atualizar
+        const btn = document.getElementById('filtrosForm:atualizarBtn') || 
+                    document.querySelector('button[id*="pesquisar"]') || 
+                    document.querySelector('input[type="submit"][value*="Pesquisar"]') ||
+                    document.querySelector('a[onclick*="pesquisar"]') ||
+                    document.getElementById('filtrosForm:pesquisar')
+
+        if (btn) {
+            await new Promise(r => setTimeout(r, 150)) // Delay leve
+            btn.click()
+            return true
+        } else {
+             console.warn('Botão de pesquisar não encontrado.')
+        }
+
+    } else {
+        alert('Redirecionando para a página de Pendências para limpar os filtros...')
+        window.location.href = 'https://sgd.dominiosistemas.com.br/sgpub/faces/filtro-listas.html'
+        return true
+    }
+    
+    return false
 }
 
 /**
@@ -169,7 +274,7 @@ async function fetchPendingItems() {
  */
 async function checkNewPendings() {
   try {
-    const currentItems = await fetchPendingItems()
+    const { items: currentItems } = await fetchPendingItems()
     const result = await chrome.storage.local.get(['lastSeenPendingIds'])
     const lastSeenIds = result.lastSeenPendingIds || []
 
