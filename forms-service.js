@@ -102,6 +102,18 @@ const DEFAULT_FORMS_DATA = {
       ]
     },
     {
+      category: 'Outros',
+      items: [
+        {
+          type: 'link',
+          title: 'Assistente - Cadastro SA/NE',
+          description: 'Peça para a IA sugerir cadastro SAM/NE/SAL/SAIL para o modulo desejado.',
+          url: 'https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/3ef5f8c0-721e-4ee1-bf3a-48e37ec9f9e2?sidebar=instructions_auto',
+          icon: '🤖'
+        }
+      ]
+    },
+    {
       category: 'Procedimentos e Outros',
       items: [
         {

@@ -1357,7 +1357,7 @@ async function loadForms(sectionElement, filterType = 'forms') {
     // Se for 'forms', pega o resto.
     const filteredCategories = formsData.categories.filter(cat => {
         const title = cat.category.toLowerCase()
-        const isAiCategory = title.includes('ai') || title.includes('chain') || title.includes('assistente')
+        const isAiCategory = title.includes('ai') || title.includes('chain') || title.includes('assistente') || title === 'outros' || title === 'at'
         
         return filterType === 'ai' ? isAiCategory : !isAiCategory
     })
