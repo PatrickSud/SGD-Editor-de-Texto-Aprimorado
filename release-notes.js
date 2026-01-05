@@ -78,6 +78,17 @@ const MINOR_RELEASE_NOTES = {
         '<b>🧠 Notificações Inteligentes:</b> O alerta de filtro de responsável é automaticamente ocultado caso você só tenha permissão para visualizar suas próprias pendências.',
         '<b>🪄 Interface Fluida:</b> O seletor de "Responsável" no Painel agora se oculta automaticamente quando não houver necessidade de filtragem (apenas um responsável na lista).'
       ]
+    },
+    {
+      version: '2.9.9.5',
+      features: [
+        '<b>🚨 Monitor de Instabilidades:</b> Lançamento oficial da aba para acompanhamento do status dos sistemas em tempo real.',
+        '<b>✏️ Gestão de Status Aprimorada:</b> Interface de edição redesenhada com maior espaço lateral (700px) e foco no conteúdo.',
+        '<b>🤖 Modelos Inteligentes:</b> Preenchimento automático de mensagens padrão ao selecionar um status (Operacional, Instabilidade, Fora do Ar), com seleção automática de campos para preenchimento rápido.',
+        '<b>🔗 Hiperlinks em Orientações:</b> Agora é possível inserir links clicáveis nas orientações através do modal padrão de hiperlinks da extensão.',
+        '<b>🕒 Histórico Transparente:</b> Exibição da data e hora exata da última atualização diretamente nos cards e no modal de edição.',
+        '<b>🎨 UX Refinada:</b> Títulos unificados, destaque visual para o nome do sistema em edição e fluxo de salvamento otimizado sem interrupções.'
+      ]
     }
   ],
   '2.9.6': [

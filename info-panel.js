@@ -1662,7 +1662,7 @@ function renderSystemsStatus(container, systems) {
     const statusLabel = getStatusLabel(system.status);
     // Permitimos HTML no workaround para suportar links inseridos pelo botão de hiperlink
     const workaroundHtml = system.workaround 
-      ? `<br><strong>Contorno:</strong> ${system.workaround}` 
+      ? `<br><strong>Orientação:</strong> ${system.workaround}` 
       : '';
     
     // Formatar data de atualização
@@ -1752,7 +1752,7 @@ function openSystemEditModal(system) {
 
       <div class="ip-field-group">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <label class="ip-field-label" style="margin-bottom: 0;">Orientação de Contorno (Opcional)</label>
+          <label class="ip-field-label" style="margin-bottom: 0;">Orientação (Opcional)</label>
           <button id="add-link-btn" class="action-btn secondary-btn compact" title="Inserir Hiperlink" style="font-size: 11px; padding: 2px 8px;">
             🔗 Inserir Link
           </button>
