@@ -112,7 +112,30 @@ async function fetchPendingItems() {
                 }
 
                 if (isReallyActive) {
-                    activeFilters.push(f.label)
+                    // Exceção para Responsável: Se houver apenas 1 opção (além de Todos), não considerar filtro ativo
+                    // Pois o usuário provavelmente não tem permissão para ver outros
+                    if (f.id === 'filtrosForm:responsavel') {
+                         const options = el.querySelectorAll('option')
+                         if (options.length <= 2) {
+                             isReallyActive = false
+                         }
+                    }
+                }
+
+                if (isReallyActive) {
+                    let label = f.label
+
+                    if (f.type === 'text') {
+                        if (val.trim()) label += `: "${val.trim()}"`
+                    } else {
+                         // Para selects, tenta pegar o texto da option selecionada
+                         const selectedOption = el.querySelector(`option[value="${val}"]`)
+                         if (selectedOption) {
+                             label += `: ${selectedOption.innerText.trim()}`
+                         }
+                    }
+
+                    activeFilters.push(label)
                 }
             }
         }

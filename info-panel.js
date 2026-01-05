@@ -602,6 +602,13 @@ async function loadPendingItems(sectionElement) {
         if (responsibles.includes(currentVal)) {
             responsibleSelect.value = currentVal
         }
+
+        // Se houver apenas 1 ou nenhum responsável, esconde o filtro pois é desnecessário
+        if (responsibles.length <= 1) {
+            responsibleSelect.style.display = 'none'
+        } else {
+            responsibleSelect.style.display = ''
+        }
     }
 
     if (items.length === 0) {

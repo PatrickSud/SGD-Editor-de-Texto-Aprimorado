@@ -70,6 +70,14 @@ const MINOR_RELEASE_NOTES = {
         '<b>✨ Tags Automáticas:</b> Melhorada detecção de <b>Prioridade</b> e <b>Em SS</b>, com atribuição automática de tags.',
         '<b>🎨 Layout aprimorado:</b> Ajuste na exibição de datas e nomes nos cards de pendência para melhor aproveitamento de espaço.'
       ]
+    },
+    {
+      version: '2.9.9.4',
+      features: [
+        '<b>🔍 Detecção Inteligente de Filtros:</b> O alerta de filtros ativos no SGD agora mostra exatamente o que está filtrado (ex: Sistema, Responsável, Situação).',
+        '<b>🧠 Notificações Inteligentes:</b> O alerta de filtro de responsável é automaticamente ocultado caso você só tenha permissão para visualizar suas próprias pendências.',
+        '<b>🪄 Interface Fluida:</b> O seletor de "Responsável" no Painel agora se oculta automaticamente quando não houver necessidade de filtragem (apenas um responsável na lista).'
+      ]
     }
   ],
   '2.9.6': [
