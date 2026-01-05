@@ -317,7 +317,9 @@ function insertUserName(textArea) {
  * Abre o modal para inserir um hiperlink.
  * @param {HTMLTextAreaElement} textArea - O textarea alvo.
  */
-function openLinkModal(textArea) {
+function openLinkModal(textArea, options = {}) {
+  const { hideButtonOption = false } = options;
+
   // Tenta obter o texto selecionado do editor ativo.
   let selectedText = ''
 
@@ -338,16 +340,15 @@ function openLinkModal(textArea) {
           selectedText
         )}">
      </div>
+     ${!hideButtonOption ? `
      <div class="link-as-button-container">
         <input type="checkbox" id="modal-link-as-button">
         <label for="modal-link-as-button">Inserir como botão</label>
-     </div>`,
+     </div>` : ''}`,
     (modalContent, closeModal) => {
       let urlInput = modalContent.querySelector('#modal-url-input').value.trim()
       const text = modalContent.querySelector('#modal-text-input').value.trim()
-      const asButton = modalContent.querySelector(
-        '#modal-link-as-button'
-      ).checked
+      const asButton = modalContent.querySelector('#modal-link-as-button')?.checked || false
 
       if (!urlInput) {
         showNotification('A URL é obrigatória.', 'error')

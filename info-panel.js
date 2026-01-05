@@ -1729,10 +1729,6 @@ function renderSystemsStatus(container, systems) {
 function openSystemEditModal(system) {
   const modalContent = `
     <div class="ip-edit-modal-container">
-      <h3 class="ip-section-title" style="margin-bottom: 24px;">
-        <span>✏️</span> Editar Status: <span class="ip-system-name-highlight">${escapeHTML(system.name)}</span>
-      </h3>
-      
       <div class="ip-field-group">
         <label class="ip-field-label">Status do Sistema</label>
         <select id="edit-system-status" class="ip-filter-select compact" style="width: auto; height: 36px; max-width: 250px; min-width: 180px;">
@@ -1768,7 +1764,7 @@ function openSystemEditModal(system) {
           style="width: 100%; max-width: none; min-height: 60px;"
           placeholder="Ex: Tente recarregar a página."
         >${escapeHTML(system.workaround || '')}</textarea>
-        <p style="font-size: 10px; color: var(--text-color-muted); margin-top: 4px;">Dica: Você pode usar HTML como &lt;a href="..." target="_blank"&gt;link&lt;/a&gt;</p>
+        <p style="font-size: 10px; color: var(--text-color-muted); margin-top: 4px;">Dica: Você poderá usar HTML para formatar sua mensagem.</p>
       </div>
 
       <div style="font-size: 11px; color: var(--text-color-muted); margin-top: 10px;">
@@ -1777,8 +1773,11 @@ function openSystemEditModal(system) {
     </div>
   `;
 
+  // Título padrão para o modal (será sobrescrito com HTML abaixo)
+  const modalTitle = `Editar Status: ${system.name}`;
+
   const modal = createModal(
-    'Editar Sistema',
+    modalTitle,
     modalContent,
     async (modalBody, closeModal) => {
       const saveBtn = modal.querySelector('#modal-save-btn');
@@ -1827,6 +1826,12 @@ function openSystemEditModal(system) {
     }
   );
 
+  // Injetar o título estilizado diretamente no cabeçalho do modal para aceitar HTML
+  const headerTitle = modal.querySelector('.se-modal-header h3');
+  if (headerTitle) {
+    headerTitle.innerHTML = `<span>✏️</span> Editar Status: <span class="ip-system-name-highlight">${escapeHTML(system.name)}</span>`;
+  }
+
   // Adicionar funcionalidade ao botão de link
   const addLinkBtn = modal.querySelector('#add-link-btn');
   const workaroundTextarea = modal.querySelector('#edit-system-workaround');
@@ -1865,7 +1870,7 @@ function openSystemEditModal(system) {
   if (addLinkBtn && workaroundTextarea) {
     addLinkBtn.addEventListener('click', () => {
       if (typeof openLinkModal === 'function') {
-        openLinkModal(workaroundTextarea);
+        openLinkModal(workaroundTextarea, { hideButtonOption: true });
       } else {
         // Fallback redundante
         const url = prompt('URL:', 'https://');
