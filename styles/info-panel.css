@@ -855,3 +855,69 @@
   border-color: color-mix(in srgb, #17a2b8 40%, transparent);
   box-shadow: 0 4px 16px rgba(23, 162, 184, 0.15);
 }
+
+/* --- ESTILOS PARA EDIÇÃO DE SISTEMAS (MODO DEV) --- */
+
+.ip-edit-system-btn {
+  background: var(--background-hover);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-color-main);
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+.ip-edit-system-btn:hover {
+  opacity: 1;
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+  transform: scale(1.1);
+}
+
+/* Modal de Edição de Status */
+#edit-system-modal .se-modal-content {
+  width: 500px;
+  max-width: 90vw;
+  height: auto;
+  min-height: auto;
+}
+
+.ip-edit-modal-container {
+  padding: 24px;
+  background: var(--background-main);
+}
+
+.ip-field-group {
+  margin-bottom: 20px;
+}
+
+.ip-field-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-color-main);
+}
+
+.ip-edit-textarea {
+  min-height: 80px;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.ip-modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}

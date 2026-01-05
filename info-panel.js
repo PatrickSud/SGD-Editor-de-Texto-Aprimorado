@@ -98,10 +98,7 @@ function openInfoPanel() {
     { id: 'notices', icon: '📢', label: 'Avisos' },
     { id: 'forms', icon: '📝', label: 'Formulários & Documentos' },
     { id: 'ai-chains', icon: '🤖', label: 'AI Chains - Assistentes' },
-    { id: 'extensions', icon: '🧩', label: 'Extensões & Apps' },
-    { id: 'team', icon: '👨‍💻', label: 'Técnicos' },
-    { id: 'reports', icon: '📊', label: 'Relatórios' },
-    { id: 'commands', icon: '💻', label: 'SQL & Comandos' }
+    { id: 'extensions', icon: '🧩', label: 'Extensões & Apps' }
   ]
 
   // Filtrar seções baseado no modo desenvolvedor
@@ -196,6 +193,20 @@ function openInfoPanel() {
         // Se a seção for de AI Chains, carrega os dados
         if (targetId === 'ai-chains') {
            loadForms(targetSection, 'ai')
+        }
+
+
+        // Se a seção for de Instabilidades, carrega status dos sistemas
+        if (targetId === 'instabilities') {
+          loadSystemsStatus(targetSection)
+          
+          // Configurar botão de atualizar
+          const refreshBtn = targetSection.querySelector('#refresh-systems-btn')
+          if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => {
+              loadSystemsStatus(targetSection);
+            });
+          }
         }
       }
     })
@@ -1053,35 +1064,16 @@ function getSectionContent(sectionId) {
   switch (sectionId) {
     case 'instabilities':
       return `
-        <p class="ip-section-desc">Status atual dos sistemas e recomendações de contorno.</p>
-        <div class="ip-grid">
-          <div class="ip-card">
-            <div class="ip-card-header">
-              <h4 class="ip-card-title">Sistema Contábil</h4>
-              <span class="ip-card-badge badge-danger">Instabilidade</span>
-            </div>
-            <div class="ip-card-content">
-              Lentidão generalizada no acesso ao módulo de Escrita Fiscal. Equipe de desenvolvimento já acionada.
-              <br><strong>Contorno:</strong> Aguardar normalização.
-            </div>
-          </div>
-          <div class="ip-card">
-            <div class="ip-card-header">
-              <h4 class="ip-card-title">Portal do Cliente</h4>
-              <span class="ip-card-badge badge-success">Operacional</span>
-            </div>
-            <div class="ip-card-content">
-              Todos os serviços operando normalmente.
-            </div>
-          </div>
-          <div class="ip-card">
-            <div class="ip-card-header">
-              <h4 class="ip-card-title">Conta Digital</h4>
-              <span class="ip-card-badge badge-warning">Atenção</span>
-            </div>
-            <div class="ip-card-content">
-              Atraso na conciliação com Honorários.
-            </div>
+        <div class="ip-pending-header-row">
+          <p class="ip-section-desc" style="margin-bottom: 0;">Status atual dos sistemas e recomendações de contorno.</p>
+          <button id="refresh-systems-btn" class="action-btn secondary-btn compact" title="Atualizar status">
+            <span>🔄</span>
+          </button>
+        </div>
+        <div id="systems-status-container" class="ip-grid">
+          <div class="ip-loading-container">
+            <div class="ip-spinner"></div>
+            <span>Carregando status dos sistemas...</span>
           </div>
         </div>
       `
@@ -1605,3 +1597,219 @@ async function addClosingToPersonal(closingData) {
     alert('Encerramento adicionado com sucesso!')
   }
 }
+
+
+/**
+ * @file system-status-ui.js  
+ * Funções de UI para gerenciar status dos sistemas com Firestore
+ * Adicionar essas funções ao final do info-panel.js
+ */
+
+/**
+ * Carrega e renderiza os status dos sistemas do Firestore
+ * @param {HTMLElement} sectionElement - Elemento da seção de instabilidades
+ */
+async function loadSystemsStatus(sectionElement) {
+  const container = sectionElement.querySelector('#systems-status-container');
+  
+  if (!container) return;
+
+  try {
+    // Buscar sistemas do Firestore
+    const systems = await getSystemsStatus();
+
+    // Renderizar sistemas
+    renderSystemsStatus(container, systems);
+
+    // Configurar listener em tempo real
+    subscribeToSystemsStatus((updatedSystems) => {
+      renderSystemsStatus(container, updatedSystems);
+    });
+
+  } catch (error) {
+    console.error('Erro ao carregar status dos sistemas:', error);
+    container.innerHTML = `
+      <div class="ip-error-state">
+        <span class="ip-error-icon">⚠️</span>
+        <h4>Erro ao carregar status</h4>
+        <p>${escapeHTML(error.message)}</p>
+      </div>
+    `;
+  }
+}
+
+/**
+ * Renderiza os cards de status dos sistemas
+ * @param {HTMLElement} container - Container para renderizar
+ * @param {Array} systems - Lista de sistemas
+ */
+function renderSystemsStatus(container, systems) {
+  if (!systems || systems.length === 0) {
+    container.innerHTML = `
+      <div class="ip-empty-state">
+        <span style="font-size: 24px;">📊</span>
+        <h4>Nenhum sistema configurado</h4>
+        <p>Configure os sistemas no Firebase Firestore.</p>
+      </div>
+    `;
+    return;
+  }
+
+  let html = '';
+
+  systems.forEach(system => {
+    const badgeClass = getStatusBadgeClass(system.status);
+    const statusLabel = getStatusLabel(system.status);
+    const workaroundHtml = system.workaround 
+      ? `<br><strong>Contorno:</strong> ${escapeHTML(system.workaround)}` 
+      : '';
+    
+    // Botão de edição apenas no modo desenvolvedor
+    const editButtonHtml = developerMode 
+      ? `<button class="ip-edit-system-btn" data-system-id="${escapeHTML(system.id)}" title="Editar status">✏️</button>` 
+      : '';
+
+    html += `
+      <div class="ip-card" data-system-id="${escapeHTML(system.id)}">
+        <div class="ip-card-header">
+          <h4 class="ip-card-title">${escapeHTML(system.name)}</h4>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="ip-card-badge ${badgeClass}">${statusLabel}</span>
+            ${editButtonHtml}
+          </div>
+        </div>
+        <div class="ip-card-content">
+          ${escapeHTML(system.message)}${workaroundHtml}
+        </div>
+      </div>
+    `;
+  });
+
+   container.innerHTML = html;
+
+  // Adicionar event listeners aos botões de edição
+  if (developerMode) {
+    container.querySelectorAll('.ip-edit-system-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const systemId = btn.dataset.systemId;
+        const system = systems.find(s => s.id === systemId);
+        if (system) {
+          openSystemEditModal(system);
+        }
+      });
+    });
+  }
+}
+
+/**
+ * Abre modal para editar status de um sistema
+ * @param {object} system - Dados do sistema
+ */
+function openSystemEditModal(system) {
+  const modalContent = `
+    <div class="ip-edit-modal-container">
+      <h3 class="ip-section-title" style="margin-bottom: 24px;">
+        <span>✏️</span> Editar Status: ${escapeHTML(system.name)}
+      </h3>
+      
+      <div class="ip-field-group">
+        <label class="ip-field-label">Status do Sistema</label>
+        <select id="edit-system-status" class="ip-filter-select compact" style="width: 100%; height: 36px; max-width: none;">
+          <option value="operational" ${system.status === 'operational' ? 'selected' : ''}>✅ Operacional</option>
+          <option value="warning" ${system.status === 'warning' ? 'selected' : ''}>⚠️ Atenção</option>
+          <option value="error" ${system.status === 'error' ? 'selected' : ''}>🔴 Instabilidade</option>
+          <option value="down" ${system.status === 'down' ? 'selected' : ''}>❌ Fora do Ar</option>
+        </select>
+      </div>
+
+      <div class="ip-field-group">
+        <label class="ip-field-label">Mensagem de Status</label>
+        <textarea 
+          id="edit-system-message" 
+          rows="3" 
+          class="ip-filter-input ip-edit-textarea" 
+          style="width: 100%; max-width: none;"
+          placeholder="Descreva o que está acontecendo..."
+        >${escapeHTML(system.message)}</textarea>
+      </div>
+
+      <div class="ip-field-group">
+        <label class="ip-field-label">Orientação de Contorno (Opcional)</label>
+        <textarea 
+          id="edit-system-workaround" 
+          rows="2" 
+          class="ip-filter-input ip-edit-textarea" 
+          style="width: 100%; max-width: none;"
+          placeholder="Ex: Tente recarregar a página ou usar o módulo X."
+        >${escapeHTML(system.workaround || '')}</textarea>
+      </div>
+
+      <div class="ip-modal-actions">
+        <button id="cancel-edit-btn" class="action-btn secondary-btn enhanced-btn">Cancelar</button>
+        <button id="save-edit-btn" class="action-btn primary-btn enhanced-btn">
+          <span class="btn-icon">💾</span> Salvar Alterações
+        </button>
+      </div>
+    </div>
+  `;
+
+  const modal = createModal(
+    'Editar Sistema',
+    modalContent,
+    null,
+    {
+      isManagementModal: true,
+      modalId: 'edit-system-modal',
+      showShareButton: false
+    }
+  );
+
+  document.body.appendChild(modal);
+
+  // Event listeners
+  const cancelBtn = modal.querySelector('#cancel-edit-btn');
+  const saveBtn = modal.querySelector('#save-edit-btn');
+
+  cancelBtn.addEventListener('click', () => {
+    document.body.removeChild(modal);
+  });
+
+  saveBtn.addEventListener('click', async () => {
+    const newStatus = modal.querySelector('#edit-system-status').value;
+    const newMessage = modal.querySelector('#edit-system-message').value.trim();
+    const newWorkaround = modal.querySelector('#edit-system-workaround').value.trim();
+
+    if (!newMessage) {
+      alert('Por favor, insira uma mensagem de status.');
+      return;
+    }
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Salvando...';
+
+    try {
+      await updateSystemStatus(system.id, {
+        status: newStatus,
+        message: newMessage,
+        workaround: newWorkaround
+      });
+
+      // Recarregar os sistemas automaticamente após o salvamento
+      const sectionElement = document.querySelector('#ip-section-instabilities');
+      if (sectionElement) {
+        loadSystemsStatus(sectionElement);
+      }
+
+      alert('✅ Status atualizado com sucesso!\n\nTodos os usuários verão a atualização em tempo real.');
+      document.body.removeChild(modal);
+    } catch (error) {
+      console.error('Erro ao salvar:', error);
+      alert('❌ Erro ao salvar alterações. Tente novamente.');
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Salvar Alterações';
+    }
+  });
+}
+
+

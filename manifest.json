@@ -32,6 +32,7 @@
         "pending-service.js",
         "quick-messages.js",
         "forms-service.js",
+        "system-status-service.js",
         "info-panel.js",
         "release-notes.js",
         "main.js"
