@@ -1660,10 +1660,29 @@ function renderSystemsStatus(container, systems) {
   systems.forEach(system => {
     const badgeClass = getStatusBadgeClass(system.status);
     const statusLabel = getStatusLabel(system.status);
+    // Permitimos HTML no workaround para suportar links inseridos pelo botão de hiperlink
     const workaroundHtml = system.workaround 
-      ? `<br><strong>Contorno:</strong> ${escapeHTML(system.workaround)}` 
+      ? `<br><strong>Contorno:</strong> ${system.workaround}` 
       : '';
     
+    // Formatar data de atualização
+    let updatedText = '';
+    if (system.updatedAt) {
+      try {
+        const date = new Date(system.updatedAt);
+        const formattedDate = date.toLocaleString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        updatedText = `<div class="ip-card-updated"><span>🕒</span> Atualizado em: ${formattedDate}</div>`;
+      } catch (e) {
+        console.error('Erro ao formatar data:', e);
+      }
+    }
+
     // Botão de edição apenas no modo desenvolvedor
     const editButtonHtml = developerMode 
       ? `<button class="ip-edit-system-btn" data-system-id="${escapeHTML(system.id)}" title="Editar status">✏️</button>` 
@@ -1681,6 +1700,7 @@ function renderSystemsStatus(container, systems) {
         <div class="ip-card-content">
           ${escapeHTML(system.message)}${workaroundHtml}
         </div>
+        ${updatedText}
       </div>
     `;
   });
@@ -1710,12 +1730,12 @@ function openSystemEditModal(system) {
   const modalContent = `
     <div class="ip-edit-modal-container">
       <h3 class="ip-section-title" style="margin-bottom: 24px;">
-        <span>✏️</span> Editar Status: ${escapeHTML(system.name)}
+        <span>✏️</span> Editar Status: <span class="ip-system-name-highlight">${escapeHTML(system.name)}</span>
       </h3>
       
       <div class="ip-field-group">
         <label class="ip-field-label">Status do Sistema</label>
-        <select id="edit-system-status" class="ip-filter-select compact" style="width: 100%; height: 36px; max-width: none;">
+        <select id="edit-system-status" class="ip-filter-select compact" style="width: auto; height: 36px; max-width: 250px; min-width: 180px;">
           <option value="operational" ${system.status === 'operational' ? 'selected' : ''}>✅ Operacional</option>
           <option value="warning" ${system.status === 'warning' ? 'selected' : ''}>⚠️ Atenção</option>
           <option value="error" ${system.status === 'error' ? 'selected' : ''}>🔴 Instabilidade</option>
@@ -1727,29 +1747,32 @@ function openSystemEditModal(system) {
         <label class="ip-field-label">Mensagem de Status</label>
         <textarea 
           id="edit-system-message" 
-          rows="3" 
+          rows="2" 
           class="ip-filter-input ip-edit-textarea" 
-          style="width: 100%; max-width: none;"
+          style="width: 100%; max-width: none; min-height: 60px;"
           placeholder="Descreva o que está acontecendo..."
         >${escapeHTML(system.message)}</textarea>
       </div>
 
       <div class="ip-field-group">
-        <label class="ip-field-label">Orientação de Contorno (Opcional)</label>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <label class="ip-field-label" style="margin-bottom: 0;">Orientação de Contorno (Opcional)</label>
+          <button id="add-link-btn" class="action-btn secondary-btn compact" title="Inserir Hiperlink" style="font-size: 11px; padding: 2px 8px;">
+            🔗 Inserir Link
+          </button>
+        </div>
         <textarea 
           id="edit-system-workaround" 
           rows="2" 
           class="ip-filter-input ip-edit-textarea" 
-          style="width: 100%; max-width: none;"
-          placeholder="Ex: Tente recarregar a página ou usar o módulo X."
+          style="width: 100%; max-width: none; min-height: 60px;"
+          placeholder="Ex: Tente recarregar a página."
         >${escapeHTML(system.workaround || '')}</textarea>
+        <p style="font-size: 10px; color: var(--text-color-muted); margin-top: 4px;">Dica: Você pode usar HTML como &lt;a href="..." target="_blank"&gt;link&lt;/a&gt;</p>
       </div>
 
-      <div class="ip-modal-actions">
-        <button id="cancel-edit-btn" class="action-btn secondary-btn enhanced-btn">Cancelar</button>
-        <button id="save-edit-btn" class="action-btn primary-btn enhanced-btn">
-          <span class="btn-icon">💾</span> Salvar Alterações
-        </button>
+      <div style="font-size: 11px; color: var(--text-color-muted); margin-top: 10px;">
+        ${system.updatedAt ? `Última atualização: ${new Date(system.updatedAt).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })}` : ''}
       </div>
     </div>
   `;
@@ -1757,7 +1780,46 @@ function openSystemEditModal(system) {
   const modal = createModal(
     'Editar Sistema',
     modalContent,
-    null,
+    async (modalBody, closeModal) => {
+      const saveBtn = modal.querySelector('#modal-save-btn');
+      const newStatus = modal.querySelector('#edit-system-status').value;
+      const newMessage = modal.querySelector('#edit-system-message').value.trim();
+      const newWorkaround = modal.querySelector('#edit-system-workaround').value.trim();
+
+      if (!newMessage) {
+        alert('Por favor, insira uma mensagem de status.');
+        return;
+      }
+
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Salvando...';
+      }
+
+      try {
+        const now = new Date().toISOString();
+        await updateSystemStatus(system.id, {
+          status: newStatus,
+          message: newMessage,
+          workaround: newWorkaround,
+          updatedAt: now
+        });
+
+        const sectionElement = document.querySelector('#ip-section-instabilities');
+        if (sectionElement) {
+          loadSystemsStatus(sectionElement);
+        }
+
+        closeModal();
+      } catch (error) {
+        console.error('Erro ao salvar:', error);
+        alert('❌ Erro ao salvar alterações.');
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Salvar Alterações';
+        }
+      }
+    },
     {
       isManagementModal: true,
       modalId: 'edit-system-modal',
@@ -1765,51 +1827,65 @@ function openSystemEditModal(system) {
     }
   );
 
-  document.body.appendChild(modal);
+  // Adicionar funcionalidade ao botão de link
+  const addLinkBtn = modal.querySelector('#add-link-btn');
+  const workaroundTextarea = modal.querySelector('#edit-system-workaround');
+  const statusSelect = modal.querySelector('#edit-system-status');
+  const messageTextarea = modal.querySelector('#edit-system-message');
+  
+  // Modelos de mensagens padrão por status
+  const statusTemplates = {
+    'operational': 'Todos os serviços operando normalmente.',
+    'warning': 'Lentidão intermitente ou comportamento inesperado em XXXXX. Equipe técnica monitorando.',
+    'error': 'Indisponibilidade momentânea no XXXXX devido a XXXXX.',
+    'down': 'Serviço fora do ar devido a XXXXX.'
+  };
 
-  // Event listeners
-  const cancelBtn = modal.querySelector('#cancel-edit-btn');
-  const saveBtn = modal.querySelector('#save-edit-btn');
-
-  cancelBtn.addEventListener('click', () => {
-    document.body.removeChild(modal);
-  });
-
-  saveBtn.addEventListener('click', async () => {
-    const newStatus = modal.querySelector('#edit-system-status').value;
-    const newMessage = modal.querySelector('#edit-system-message').value.trim();
-    const newWorkaround = modal.querySelector('#edit-system-workaround').value.trim();
-
-    if (!newMessage) {
-      alert('Por favor, insira uma mensagem de status.');
-      return;
-    }
-
-    saveBtn.disabled = true;
-    saveBtn.textContent = 'Salvando...';
-
-    try {
-      await updateSystemStatus(system.id, {
-        status: newStatus,
-        message: newMessage,
-        workaround: newWorkaround
-      });
-
-      // Recarregar os sistemas automaticamente após o salvamento
-      const sectionElement = document.querySelector('#ip-section-instabilities');
-      if (sectionElement) {
-        loadSystemsStatus(sectionElement);
+  if (statusSelect && messageTextarea) {
+    statusSelect.addEventListener('change', () => {
+      const selectedStatus = statusSelect.value;
+      const currentMessage = messageTextarea.value.trim();
+      
+      // Só preenche se a mensagem estiver vazia ou for um dos templates antigos
+      const isDefault = Object.values(statusTemplates).some(t => currentMessage === t) || currentMessage === '';
+      
+      if (isDefault && statusTemplates[selectedStatus]) {
+        messageTextarea.value = statusTemplates[selectedStatus];
+        messageTextarea.focus();
+        
+        // Se houver XXXXX, seleciona para facilitar a substituição
+        const index = messageTextarea.value.indexOf('XXXXX');
+        if (index !== -1) {
+          messageTextarea.setSelectionRange(index, index + 5);
+        }
       }
+    });
+  }
 
-      alert('✅ Status atualizado com sucesso!\n\nTodos os usuários verão a atualização em tempo real.');
-      document.body.removeChild(modal);
-    } catch (error) {
-      console.error('Erro ao salvar:', error);
-      alert('❌ Erro ao salvar alterações. Tente novamente.');
-      saveBtn.disabled = false;
-      saveBtn.textContent = 'Salvar Alterações';
-    }
-  });
+  if (addLinkBtn && workaroundTextarea) {
+    addLinkBtn.addEventListener('click', () => {
+      if (typeof openLinkModal === 'function') {
+        openLinkModal(workaroundTextarea);
+      } else {
+        // Fallback redundante
+        const url = prompt('URL:', 'https://');
+        if (url) {
+          const text = prompt('Texto:', 'Clique aqui');
+          const linkHtml = `<a href="${url}" target="_blank" style="color: var(--primary-color); text-decoration: underline;">${text}</a>`;
+          insertAtCursor(workaroundTextarea, linkHtml);
+        }
+      }
+    });
+  }
+
+  // Ajustar labels dos botões padrão do createModal
+  const saveBtn = modal.querySelector('#modal-save-btn');
+  const cancelBtn = modal.querySelector('#modal-cancel-btn');
+  
+  if (saveBtn) saveBtn.innerHTML = '<span>💾</span> Salvar';
+  if (cancelBtn) cancelBtn.textContent = 'Fechar';
+
+  document.body.appendChild(modal);
 }
 
 

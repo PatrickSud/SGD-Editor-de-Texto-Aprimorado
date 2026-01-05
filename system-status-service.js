@@ -31,7 +31,7 @@ function fromFirestore(doc) {
 function toFirestore(obj) {
   const fields = {};
   for (const [key, value] of Object.entries(obj)) {
-    if (key === 'id' || key === 'lastModified') continue;
+    if (key === 'id') continue;
     
     if (typeof value === 'string') fields[key] = { stringValue: value };
     else if (typeof value === 'boolean') fields[key] = { booleanValue: value };

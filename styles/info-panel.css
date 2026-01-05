@@ -181,6 +181,17 @@
   line-height: 1.5;
 }
 
+.ip-card-updated {
+  font-size: 11px;
+  color: var(--text-color-muted);
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .ip-list {
   list-style: none;
   padding: 0;
@@ -884,8 +895,8 @@
 
 /* Modal de Edição de Status */
 #edit-system-modal .se-modal-content {
-  width: 500px;
-  max-width: 90vw;
+  width: 700px;
+  max-width: 95vw;
   height: auto;
   min-height: auto;
 }
@@ -893,6 +904,15 @@
 .ip-edit-modal-container {
   padding: 24px;
   background: var(--background-main);
+}
+
+.ip-edit-modal-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: absolute;
+  right: 45px;
+  top: 10px;
 }
 
 .ip-field-group {
@@ -921,3 +941,11 @@
   padding-top: 20px;
   border-top: 1px solid var(--border-color);
 }
+
+.ip-system-name-highlight {
+  color: var(--primary-color);
+  font-weight: 800;
+  text-shadow: 0 0 1px color-mix(in srgb, var(--primary-color) 20%, transparent);
+  margin-left: 4px;
+}
+
