@@ -69,9 +69,8 @@ function createReminderCardHtml(reminder, type) {
 
   // ESTRUTURA ATUALIZADA: Descrição movida para o seu próprio container de conteúdo.
   return `
-    <div class="reminder-card ${priorityClass} ${type}" data-id="${
-    reminder.id
-  }">
+    <div class="reminder-card ${priorityClass} ${type}" data-id="${reminder.id
+    }">
       <div class="card-header">
         <div class="card-header-main">
           <h5 class="card-title">${escapeHTML(reminder.title)}</h5>
@@ -82,15 +81,14 @@ function createReminderCardHtml(reminder, type) {
         </div>
         <div class="card-actions">${actionsHtml}</div>
       </div>
-      ${
-        hasDescription
-          ? `
+      ${hasDescription
+      ? `
       <div class="card-content">
         <p class="description-snippet">${escapeHTML(reminder.description)}</p>
       </div>
       `
-          : ''
-      }
+      : ''
+    }
     </div>`
 }
 
@@ -142,8 +140,8 @@ function createModal(
   modal.innerHTML = `
         <div class="se-modal-content">
             <div class="se-modal-header"><h3>${escapeHTML(
-              title
-            )}</h3><button type="button" class="se-close-modal-btn" title="Fechar">&times;</button></div>
+    title
+  )}</h3><button type="button" class="se-close-modal-btn" title="Fechar">&times;</button></div>
             <div class="se-modal-body">${contentHtml}</div>
             <div class="se-modal-actions">${buttonsHtml}</div>
         </div>
@@ -219,7 +217,7 @@ function showNotification(
   }
 
   // Se deve mostrar botão dispensar, adiciona o botão na parte inferior
-  const dismissButtonHtml = showDismissButton 
+  const dismissButtonHtml = showDismissButton
     ? '<div class="notification-actions"><button type="button" class="notification-dismiss-btn" title="Dispensar">Dispensar</button></div>'
     : ''
 
@@ -230,7 +228,7 @@ function showNotification(
     </div>
     ${dismissButtonHtml}
   `
-  
+
   notification.innerHTML = notificationHtml
 
   if (onClick) {
@@ -393,7 +391,7 @@ function openImageUploadModal(textArea) {
       }
       reader.readAsDataURL(file)
     }
-  }, { modalId: 'image-size-modal'})
+  }, { modalId: 'image-size-modal' })
 
   document.body.appendChild(modal)
 }
@@ -435,7 +433,7 @@ function openImageSizeModal(textArea, imageDataUrl) {
     // Insere a imagem no editor
     insertAtCursor(textArea, imageHtml)
     closeModal()
-  }, { modalId: 'image-size-modal'})
+  }, { modalId: 'image-size-modal' })
 
   // Altera o texto do botão de "Salvar" para "Inserir"
   const saveBtn = modal.querySelector('#modal-save-btn')
@@ -456,7 +454,7 @@ function openImageSizeModal(textArea, imageDataUrl) {
           const desired = Number(slider.value)
           const pct = Math.min(100, (desired / containerWidth) * 100)
           previewImg.style.width = pct + '%'
-      } else {
+        } else {
           previewImg.style.width = `${slider.value}px`
         }
         previewImg.style.height = 'auto' // mantém proporção
@@ -550,8 +548,8 @@ function openNewReminderModal(existingReminder = null) {
      <div class="form-group">
         <label for="reminder-title">Título*</label>
         <input type="text" id="reminder-title" placeholder="Ex: Retornar ligação do cliente X" value="${escapeHTML(
-          titleValue
-        )}" required>
+      titleValue
+    )}" required>
      </div>
      <div class="form-row">
        <div class="form-group">
@@ -561,50 +559,42 @@ function openNewReminderModal(existingReminder = null) {
        <div class="form-group">
           <label for="reminder-priority">Prioridade</label>
           <select id="reminder-priority">
-              <option value="low" ${
-                priorityValue === 'low' ? 'selected' : ''
-              }>Baixa</option>
-              <option value="medium" ${
-                priorityValue === 'medium' ? 'selected' : ''
-              }>Média</option>
-              <option value="high" ${
-                priorityValue === 'high' ? 'selected' : ''
-              }>Alta</option>
+              <option value="low" ${priorityValue === 'low' ? 'selected' : ''
+    }>Baixa</option>
+              <option value="medium" ${priorityValue === 'medium' ? 'selected' : ''
+    }>Média</option>
+              <option value="high" ${priorityValue === 'high' ? 'selected' : ''
+    }>Alta</option>
           </select>
        </div>
        <div class="form-group">
           <label for="reminder-recurrence">Repetir</label>
           <select id="reminder-recurrence">
-              <option value="none" ${
-                recurrenceValue === 'none' ? 'selected' : ''
-              }>Nunca</option>
-              <option value="daily" ${
-                recurrenceValue === 'daily' ? 'selected' : ''
-              }>Diariamente</option>
-              <option value="weekly" ${
-                recurrenceValue === 'weekly' ? 'selected' : ''
-              }>Semanalmente</option>
-              <option value="monthly" ${
-                recurrenceValue === 'monthly' ? 'selected' : ''
-              }>Mensalmente</option>
+              <option value="none" ${recurrenceValue === 'none' ? 'selected' : ''
+    }>Nunca</option>
+              <option value="daily" ${recurrenceValue === 'daily' ? 'selected' : ''
+    }>Diariamente</option>
+              <option value="weekly" ${recurrenceValue === 'weekly' ? 'selected' : ''
+    }>Semanalmente</option>
+              <option value="monthly" ${recurrenceValue === 'monthly' ? 'selected' : ''
+    }>Mensalmente</option>
           </select>
        </div>
       </div>
      <div class="form-group">
         <label for="reminder-description">Descrição (Opcional)</label>
         <textarea id="reminder-description" placeholder="Detalhes sobre o lembrete..." rows="3" style="min-height: 80px;">${escapeHTML(
-          descriptionValue
-        )}</textarea>
+      descriptionValue
+    )}</textarea>
      </div>
      <div class="form-group url-group">
         <label for="reminder-url">Página atual</label>
         <input type="text" id="reminder-url" placeholder="https://sgd.dominiosistemas.com.br/..." value="${escapeHTML(
-          initialUrl
-        )}">
+      initialUrl
+    )}">
         <div class="form-checkbox-group">
-            <input type="checkbox" id="reminder-include-url" ${
-              isUrlIncluded ? 'checked' : ''
-            }>
+            <input type="checkbox" id="reminder-include-url" ${isUrlIncluded ? 'checked' : ''
+    }>
             <label for="reminder-include-url">Incluir Página atual no lembrete?</label>
         </div>
      </div>
@@ -812,19 +802,19 @@ async function renderRemindersList(modal) {
   const pendingHtml =
     pendingReminders.length > 0
       ? `<h6>Pendentes</h6>` +
-        pendingReminders.map(r => createReminderCardHtml(r, 'pending')).join('')
+      pendingReminders.map(r => createReminderCardHtml(r, 'pending')).join('')
       : ''
   const activeHtml =
     activeReminders.length > 0
       ? `<h6>Ativos</h6>` +
-        activeReminders.map(r => createReminderCardHtml(r, 'active')).join('')
+      activeReminders.map(r => createReminderCardHtml(r, 'active')).join('')
       : ''
   const acknowledgedHtml =
     acknowledgedReminders.length > 0
       ? `<h6>Concluídos</h6>` +
-        acknowledgedReminders
-          .map(r => createReminderCardHtml(r, 'acknowledged'))
-          .join('')
+      acknowledgedReminders
+        .map(r => createReminderCardHtml(r, 'acknowledged'))
+        .join('')
       : ''
 
   const sections = [pendingHtml, activeHtml, acknowledgedHtml].filter(Boolean)
@@ -874,7 +864,7 @@ async function renderRemindersList(modal) {
         if (reminderToComplete) {
           // Ação para resetar o flag de notificação
           chrome.runtime.sendMessage({ action: 'RESET_TOAST_FLAG', reminderId: reminderId });
-          
+
           reminderToComplete.isFired = false
           reminderToComplete.firedAt = Date.now()
 
@@ -883,11 +873,11 @@ async function renderRemindersList(modal) {
             reminderToComplete.recurrence &&
             reminderToComplete.recurrence !== 'none'
           ) {
-            const nextDateTime = calculateNextRecurrence(
-              reminderToComplete.dateTime,
+            const nextDateTime = getNextRecurrenceDate(
+              new Date(reminderToComplete.dateTime),
               reminderToComplete.recurrence
             )
-            reminderToComplete.dateTime = nextDateTime
+            reminderToComplete.dateTime = nextDateTime.toISOString()
             reminderToComplete.isFired = false
             reminderToComplete.firedAt = null
           }
@@ -1036,9 +1026,9 @@ function createColorPicker(pickerElement, onColorSelect) {
 function createEmojiPicker(pickerElement, onEmojiSelect) {
   pickerElement.innerHTML = PICKER_EMOJIS.map(emoji => {
     const safeEmojiCode = emoji.code.replace('&', '&amp;')
-    
+
     // Define o estilo base, trocando <nobr> por 'white-space: nowrap;'
-    let style = "font-size:19px; white-space:nowrap;" 
+    let style = "font-size:19px; white-space:nowrap;"
 
     // Se for o emoji de aviso, adiciona as fontes de emoji para forçar a cor
     if (emoji.code === '&#9888;') {
@@ -1111,8 +1101,8 @@ function renderNotesBlocks() {
             </div>
             <div class="note-block-content">
                 <textarea placeholder="Conteúdo do bloco...">${escapeHTML(
-                  block.content
-                )}</textarea>
+      block.content
+    )}</textarea>
             </div>
         `
     fragment.appendChild(blockEl)
@@ -1587,8 +1577,7 @@ function showInPageNotification(reminder) {
       <h5 class="in-page-notification-title">${escapeHTML(reminder.title)}</h5>
       <button type="button" class="dismiss-btn" title="Dispensar">&times;</button>
     </div>
-    <div class="in-page-notification-body">${
-      reminder.description ? `<p>${escapeHTML(reminder.description)}</p>` : ''
+    <div class="in-page-notification-body">${reminder.description ? `<p>${escapeHTML(reminder.description)}</p>` : ''
     }</div>
     <div class="in-page-notification-actions">
       ${openUrlButtonHtml}
@@ -1614,7 +1603,7 @@ function showInPageNotification(reminder) {
 
     // Tempo esgotado: Pede para o service worker atualizar o badge em TODAS as abas
     chrome.runtime.sendMessage({ action: 'UPDATE_NOTIFICATION_BADGE' })
-  }, 30000) // 30 segundos
+  }, 45000) // 45 segundos
 
   const handleInteraction = async actionFn => {
     if (wasInteractedWith) return
@@ -1669,11 +1658,11 @@ function showInPageNotification(reminder) {
             reminderToComplete.recurrence &&
             reminderToComplete.recurrence !== 'none'
           ) {
-            const nextDateTime = calculateNextRecurrence(
-              reminderToComplete.dateTime,
+            const nextDateTime = getNextRecurrenceDate(
+              new Date(reminderToComplete.dateTime),
               reminderToComplete.recurrence
             )
-            reminderToComplete.dateTime = nextDateTime
+            reminderToComplete.dateTime = nextDateTime.toISOString()
             reminderToComplete.isFired = false
             reminderToComplete.firedAt = null
           }
@@ -1696,7 +1685,7 @@ function showInPageNotification(reminder) {
   if (snoozeBtn) {
     // ALTERADO: Agora abre o modal de opções ao invés de adiar por um tempo fixo.
     snoozeBtn.addEventListener('click', () => {
-      handleInteraction(() => {}) // Fecha o toast
+      handleInteraction(() => { }) // Fecha o toast
       openSnoozeModal(reminder, null) // Abre o modal de opções
     })
   }
@@ -1749,21 +1738,21 @@ async function openFiredRemindersPanel() {
     const pendingHtml =
       pendingReminders.length > 0
         ? `<h6>Pendentes</h6>` +
-          pendingReminders
-            .map(r => createReminderCardHtml(r, 'pending'))
-            .join('')
+        pendingReminders
+          .map(r => createReminderCardHtml(r, 'pending'))
+          .join('')
         : ''
     const activeHtml =
       activeReminders.length > 0
         ? `<h6>Ativos</h6>` +
-          activeReminders.map(r => createReminderCardHtml(r, 'active')).join('')
+        activeReminders.map(r => createReminderCardHtml(r, 'active')).join('')
         : ''
     const acknowledgedHtml =
       acknowledgedReminders.length > 0
         ? `<h6>Concluídos</h6>` +
-          acknowledgedReminders
-            .map(r => createReminderCardHtml(r, 'acknowledged'))
-            .join('')
+        acknowledgedReminders
+          .map(r => createReminderCardHtml(r, 'acknowledged'))
+          .join('')
         : ''
 
     const sections = [pendingHtml, activeHtml, acknowledgedHtml].filter(Boolean)
@@ -1896,7 +1885,7 @@ async function openFiredRemindersPanel() {
         if (reminderToComplete) {
           // Ação para resetar o flag de notificação
           chrome.runtime.sendMessage({ action: 'RESET_TOAST_FLAG', reminderId: reminderId });
-          
+
           if (
             reminderToComplete.recurrence &&
             reminderToComplete.recurrence !== 'none'

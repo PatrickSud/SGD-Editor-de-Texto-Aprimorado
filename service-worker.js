@@ -84,6 +84,11 @@ function showChromeNotification(reminder) {
     buttons: [{ title: 'Dispensar' }],
     requireInteraction: true // Mantém a notificação visível até a interação do usuário
   })
+
+  // Fecha automaticamente após 45 segundos (usando alarmes para garantir execução mesmo se o SW dormir)
+  chrome.alarms.create(`dismiss-notification-${notificationId}`, {
+    when: Date.now() + 45000
+  })
 }
 
 /**
@@ -166,7 +171,7 @@ async function setupPendingPollAlarm() {
 async function setupInitialAlarms() {
   setupPendingPollAlarm()
   // Alarmes de análise de uso removidos
-  
+
   // Recupera o ciclo de notificação de pendências do storage (caso o service worker tenha sido recarregado)
   try {
     const sessionData = await chrome.storage.session.get('lastPendingNotificationCycle')
@@ -234,7 +239,7 @@ let pendingNotificationCycle = {
  * Listener para mensagens do content script (para criar/limpar alarmes).
  */
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  ;(async () => {
+  ; (async () => {
     try {
       if (
         message.action === 'SET_ALARM' &&
@@ -318,7 +323,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const now = Date.now()
 
         // Verifica se é uma notificação de pendências (pelo título)
-        const isPendingNotification = message.title && 
+        const isPendingNotification = message.title &&
           (message.title.includes('Pendências') || message.title.includes('Pendência'))
 
         if (isPendingNotification) {
@@ -336,8 +341,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
               timestamp: now
             }
             pendingNotificationCycle = storedCycle
-            await chrome.storage.session.set({ 
-              lastPendingNotificationCycle: storedCycle 
+            await chrome.storage.session.set({
+              lastPendingNotificationCycle: storedCycle
             })
             console.log('Service Worker: Novo ciclo de verificação criado:', newCycleId)
           }
@@ -352,19 +357,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           // Verifica se o usuário permitiu notificações de pendências
           const settings = (await getStorageData('extensionSettingsData', 'sync')) || {}
           const preferences = settings.preferences || {}
-          
+
           // Padrão é false (desabilitado) se não estiver definido
           const notificationsEnabled = preferences.enablePendingNotifications === true
 
           if (!notificationsEnabled) {
-               console.log('Service Worker: Notificação de pendências silenciada pelo usuário.')
-               sendResponse({ success: true, silenced: true })
-               return
+            console.log('Service Worker: Notificação de pendências silenciada pelo usuário.')
+            sendResponse({ success: true, silenced: true })
+            return
           }
 
           // Marca que a notificação foi exibida para este ciclo
-          await chrome.storage.session.set({ 
-            pendingNotificationShown: storedCycle.cycleId 
+          await chrome.storage.session.set({
+            pendingNotificationShown: storedCycle.cycleId
           })
 
           const notificationId = `generic-${Date.now()}`
@@ -428,82 +433,82 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       } else if (message.action === 'FETCH_FORMS_DATA') {
         // Nova ação para buscar dados do Gist via Service Worker (evita CORS da página)
         try {
-            const url = message.url
+          const url = message.url
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'service-worker.js:FETCH_FORMS_DATA', message: 'SW fetch start', data: { url }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'D' }) }).catch(() => { });
+          // #endregion
+
+          const response = await fetch(url)
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'service-worker.js:FETCH_FORMS_DATA', message: 'SW fetch response', data: { ok: response.ok, status: response.status, statusText: response.statusText }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'D' }) }).catch(() => { });
+          // #endregion
+
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+
+          const text = await response.text()
+
+          // Validar se o texto não está vazio e tem tamanho mínimo esperado
+          if (!text || text.trim().length === 0) {
+            throw new Error('Resposta do Gist está vazia')
+          }
+
+          // Verificar se o JSON parece estar completo (termina com } ou ])
+          const trimmedText = text.trim()
+          const lastChar = trimmedText[trimmedText.length - 1]
+          if (lastChar !== '}' && lastChar !== ']') {
             // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'service-worker.js:FETCH_FORMS_DATA',message:'SW fetch start',data:{url},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+            fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'service-worker.js:FETCH_FORMS_DATA', message: 'JSON appears incomplete', data: { textLength: text.length, lastChar, last50Chars: trimmedText.substring(trimmedText.length - 50) }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'B' }) }).catch(() => { });
             // #endregion
-            
-            const response = await fetch(url)
+            throw new Error(`JSON do Gist parece estar incompleto (termina com '${lastChar}'). Verifique se o arquivo está completo no Gist.`)
+          }
+
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'service-worker.js:FETCH_FORMS_DATA', message: 'SW response text received', data: { textLength: text.length, textPreview: text.substring(0, 200), last50Chars: text.substring(text.length - 50) }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'B' }) }).catch(() => { });
+          // #endregion
+
+          // Tentar encontrar a linha 97 para debug
+          const lines = text.split('\n')
+          let data
+          try {
+            data = JSON.parse(text)
+          } catch (parseError) {
+            // Capturar contexto detalhado do erro
+            const errorPos = parseError.message.match(/position (\d+)/)?.[1]
+            const errorLine = parseError.message.match(/line (\d+)/)?.[1]
+            const errorCol = parseError.message.match(/column (\d+)/)?.[1]
+
+            const contextAround = errorLine ? {
+              lineBefore: lines[parseInt(errorLine) - 2]?.substring(0, 150),
+              lineError: lines[parseInt(errorLine) - 1]?.substring(0, 150),
+              lineAfter: lines[parseInt(errorLine)]?.substring(0, 150),
+              charAtPos: errorPos ? text[parseInt(errorPos)] : null,
+              charBefore: errorPos ? text[parseInt(errorPos) - 1] : null,
+              charAfter: errorPos ? text[parseInt(errorPos) + 1] : null
+            } : null
+
             // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'service-worker.js:FETCH_FORMS_DATA',message:'SW fetch response',data:{ok:response.ok,status:response.status,statusText:response.statusText},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+            fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'service-worker.js:FETCH_FORMS_DATA', message: 'JSON parse error details', data: { error: parseError.message, position: errorPos, line: errorLine, column: errorCol, contextAround, totalLines: lines.length }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'B' }) }).catch(() => { });
             // #endregion
-            
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-            
-            const text = await response.text()
-            
-            // Validar se o texto não está vazio e tem tamanho mínimo esperado
-            if (!text || text.trim().length === 0) {
-              throw new Error('Resposta do Gist está vazia')
-            }
-            
-            // Verificar se o JSON parece estar completo (termina com } ou ])
-            const trimmedText = text.trim()
-            const lastChar = trimmedText[trimmedText.length - 1]
-            if (lastChar !== '}' && lastChar !== ']') {
-              // #region agent log
-              fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'service-worker.js:FETCH_FORMS_DATA',message:'JSON appears incomplete',data:{textLength:text.length,lastChar,last50Chars:trimmedText.substring(trimmedText.length - 50)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-              // #endregion
-              throw new Error(`JSON do Gist parece estar incompleto (termina com '${lastChar}'). Verifique se o arquivo está completo no Gist.`)
-            }
-            
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'service-worker.js:FETCH_FORMS_DATA',message:'SW response text received',data:{textLength:text.length,textPreview:text.substring(0,200),last50Chars:text.substring(text.length - 50)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-            // #endregion
-            
-            // Tentar encontrar a linha 97 para debug
-            const lines = text.split('\n')
-            let data
-            try {
-              data = JSON.parse(text)
-            } catch (parseError) {
-              // Capturar contexto detalhado do erro
-              const errorPos = parseError.message.match(/position (\d+)/)?.[1]
-              const errorLine = parseError.message.match(/line (\d+)/)?.[1]
-              const errorCol = parseError.message.match(/column (\d+)/)?.[1]
-              
-              const contextAround = errorLine ? {
-                lineBefore: lines[parseInt(errorLine) - 2]?.substring(0, 150),
-                lineError: lines[parseInt(errorLine) - 1]?.substring(0, 150),
-                lineAfter: lines[parseInt(errorLine)]?.substring(0, 150),
-                charAtPos: errorPos ? text[parseInt(errorPos)] : null,
-                charBefore: errorPos ? text[parseInt(errorPos) - 1] : null,
-                charAfter: errorPos ? text[parseInt(errorPos) + 1] : null
-              } : null
-              
-              // #region agent log
-              fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'service-worker.js:FETCH_FORMS_DATA',message:'JSON parse error details',data:{error:parseError.message,position:errorPos,line:errorLine,column:errorCol,contextAround,totalLines:lines.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-              // #endregion
-              
-              // Melhorar mensagem de erro com contexto
-              const improvedError = new Error(
-                `Erro de sintaxe JSON no Gist na linha ${errorLine || 'desconhecida'}, coluna ${errorCol || 'desconhecida'}. ` +
-                `Verifique se há vírgulas faltando ou elementos mal formatados. ` +
-                `O sistema usará os dados locais como fallback.`
-              )
-              throw improvedError
-            }
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'service-worker.js:FETCH_FORMS_DATA',message:'SW JSON parsed',data:{isArray:Array.isArray(data),hasCategories:!!data.categories,dataType:typeof data,keys:Object.keys(data || {})},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-            // #endregion
-            
-            sendResponse({ success: true, data: data })
+
+            // Melhorar mensagem de erro com contexto
+            const improvedError = new Error(
+              `Erro de sintaxe JSON no Gist na linha ${errorLine || 'desconhecida'}, coluna ${errorCol || 'desconhecida'}. ` +
+              `Verifique se há vírgulas faltando ou elementos mal formatados. ` +
+              `O sistema usará os dados locais como fallback.`
+            )
+            throw improvedError
+          }
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'service-worker.js:FETCH_FORMS_DATA', message: 'SW JSON parsed', data: { isArray: Array.isArray(data), hasCategories: !!data.categories, dataType: typeof data, keys: Object.keys(data || {}) }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
+          // #endregion
+
+          sendResponse({ success: true, data: data })
         } catch (error) {
-            console.error('Service Worker: Erro ao buscar forms data:', error)
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'service-worker.js:FETCH_FORMS_DATA',message:'SW fetch error',data:{error:error.message,stack:error.stack},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-            // #endregion
-            sendResponse({ success: false, error: error.message })
+          console.error('Service Worker: Erro ao buscar forms data:', error)
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'service-worker.js:FETCH_FORMS_DATA', message: 'SW fetch error', data: { error: error.message, stack: error.stack }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'D' }) }).catch(() => { });
+          // #endregion
+          sendResponse({ success: false, error: error.message })
         }
         return true // Resposta assíncrona
       }
@@ -528,8 +533,8 @@ chrome.alarms.onAlarm.addListener(async alarm => {
       timestamp: Date.now()
     }
     // Salva o ciclo no storage para persistência entre recarregamentos do service worker
-    await chrome.storage.session.set({ 
-      lastPendingNotificationCycle: pendingNotificationCycle 
+    await chrome.storage.session.set({
+      lastPendingNotificationCycle: pendingNotificationCycle
     })
     console.log('Service Worker: Disparando verificação de pendências. Ciclo:', cycleId)
     broadcastToSgdTabs({ action: 'TRIGGER_PENDING_CHECK', cycleId: cycleId })
@@ -538,6 +543,13 @@ chrome.alarms.onAlarm.addListener(async alarm => {
 
   if (alarm.name.startsWith('snooze-')) {
     // Lógica para soneca (se necessário) ou pode ser unificada
+  }
+
+  // Lógica para fechar notificação automaticamente
+  if (alarm.name.startsWith('dismiss-notification-')) {
+    const notificationId = alarm.name.replace('dismiss-notification-', '')
+    chrome.notifications.clear(notificationId)
+    return
   }
 
   const reminderId = alarm.name.replace('snooze-', '')
