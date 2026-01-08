@@ -2056,28 +2056,26 @@ async function addClosingToPersonal(closingData) {
  */
 
 /**
- * Carrega e renderiza os status dos sistemas do Firestore
- * @param {HTMLElement} sectionElement - Elemento da seção de instabilidades
+ * Carrega e renderiza os status dos sistemas e reportes de usuários
  */
 async function loadSystemsStatus(sectionElement) {
   const container = sectionElement.querySelector('#systems-status-container');
-  
   if (!container) return;
 
   try {
-    // Buscar sistemas do Firestore
-    const systems = await getSystemsStatus();
+    // 1. Carrega status oficial e estatísticas de usuários em paralelo
+    const [systems, userReports] = await Promise.all([
+        getSystemsStatus(),
+        window.systemStatusService.getRecentReportsStats()
+    ]);
 
-    // Renderizar sistemas
-    renderSystemsStatus(container, systems);
+    // 2. Renderiza combinando os dados
+    renderSystemsStatus(container, systems, userReports);
 
-    // Configurar listener em tempo real
-    subscribeToSystemsStatus((updatedSystems) => {
-      renderSystemsStatus(container, updatedSystems);
-    });
-
+    // Configurar listener (Simulado no REST)
+    // Nota: O ideal seria polling ou WebSocket, mas vamos manter simples por enquanto
   } catch (error) {
-    console.error('Erro ao carregar status dos sistemas:', error);
+    console.error('Erro ao carregar status:', error);
     container.innerHTML = `
       <div class="ip-error-state">
         <span class="ip-error-icon">⚠️</span>
@@ -2089,11 +2087,9 @@ async function loadSystemsStatus(sectionElement) {
 }
 
 /**
- * Renderiza os cards de status dos sistemas
- * @param {HTMLElement} container - Container para renderizar
- * @param {Array} systems - Lista de sistemas
+ * Renderiza os cards de status dos sistemas com votação
  */
-function renderSystemsStatus(container, systems) {
+function renderSystemsStatus(container, systems, userReports = {}) {
   if (!systems || systems.length === 0) {
     container.innerHTML = `
       <div class="ip-empty-state">
@@ -2110,64 +2106,148 @@ function renderSystemsStatus(container, systems) {
   systems.forEach(system => {
     const badgeClass = getStatusBadgeClass(system.status);
     const statusLabel = getStatusLabel(system.status);
-    // Permitimos HTML no workaround para suportar links inseridos pelo botão de hiperlink
-    const workaroundHtml = system.workaround 
-      ? `<br><strong>Orientação:</strong> ${system.workaround}` 
-      : '';
     
-    // Formatar data de atualização
-    let updatedText = '';
-    if (system.updatedAt) {
-      try {
-        const date = new Date(system.updatedAt);
-        const formattedDate = date.toLocaleString('pt-BR', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-        updatedText = `<div class="ip-card-updated"><span>🕒</span> Atualizado em: ${formattedDate}</div>`;
-      } catch (e) {
-        console.error('Erro ao formatar data:', e);
-      }
+    // Dados de reportes de usuários
+    const reportCount = userReports[system.id] || 0;
+    
+    // Lógica visual do Downdetector (Barra de intensidade)
+    // Definimos um "teto" arbitrário. Ex: 20 reportes é 100% da barra vermelha
+    const maxReportsReference = 20; 
+    const intensityPct = Math.min((reportCount / maxReportsReference) * 100, 100);
+    
+    let intensityColor = 'var(--action-green)';
+    let intensityLabel = 'Estável';
+    
+    if (reportCount > 2) { 
+        intensityColor = 'var(--action-yellow)'; 
+        intensityLabel = 'Possível Instabilidade'; 
+    }
+    if (reportCount > 10) { 
+        intensityColor = 'var(--action-red)'; 
+        intensityLabel = 'Muitos Relatos'; 
     }
 
-    // Botão de edição apenas no modo desenvolvedor
+    // Verifica se o usuário já reportou recentemente (para desabilitar botão)
+    const lastReportTime = localStorage.getItem(`last_report_${system.id}`);
+    const COOLDOWN = 30 * 60 * 1000; // 30 minutos
+    const canReport = !lastReportTime || (Date.now() - parseInt(lastReportTime) > COOLDOWN);
+
+    const reportBtnHtml = `
+        <button class="ip-report-btn ${canReport ? '' : 'disabled'}" 
+                data-system-id="${system.id}" 
+                title="${canReport ? 'Reportar que estou com problemas neste sistema' : 'Você já reportou recentemente'}">
+            ${canReport ? '✋ Tenho Problemas' : '✅ Reportado'}
+        </button>
+    `;
+
+    // Permitimos HTML no workaround para suportar links inseridos pelo botão de hiperlink
+    const workaroundHtml = system.workaround 
+      ? `<div class="ip-system-workaround"><strong>💡 Orientação:</strong> ${system.workaround}</div>` 
+      : '';
+    
+    // Botão de edição (modo dev)
     const editButtonHtml = developerMode 
       ? `<button class="ip-edit-system-btn" data-system-id="${escapeHTML(system.id)}" title="Editar status">✏️</button>` 
       : '';
 
     html += `
-      <div class="ip-card" data-system-id="${escapeHTML(system.id)}">
+      <div class="ip-card system-status-card" data-system-id="${escapeHTML(system.id)}">
         <div class="ip-card-header">
-          <h4 class="ip-card-title">${escapeHTML(system.name)}</h4>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span class="ip-card-badge ${badgeClass}">${statusLabel}</span>
-            ${editButtonHtml}
+          <div class="system-header-left">
+              <h4 class="ip-card-title">${escapeHTML(system.name)}</h4>
+          </div>
+          <div class="system-header-right">
+             <span class="ip-card-badge ${badgeClass}">${statusLabel}</span>
+             ${editButtonHtml}
           </div>
         </div>
+        
         <div class="ip-card-content">
-          ${escapeHTML(system.message)}${workaroundHtml}
+          <div class="ip-system-message">${escapeHTML(system.message)}</div>
+          ${workaroundHtml}
         </div>
-        ${updatedText}
+
+        <div class="ip-system-reports-area">
+            <div class="ip-reports-header">
+                <span class="reports-count">${reportCount} relatos na última hora</span>
+                <span class="reports-label" style="color: ${intensityColor}">${intensityLabel}</span>
+            </div>
+            <div class="ip-reports-bar-bg">
+                <div class="ip-reports-bar-fill" style="width: ${intensityPct}%; background-color: ${intensityColor}"></div>
+            </div>
+        </div>
+
+        <div class="ip-system-footer">
+            <div class="ip-footer-left">
+                ${system.updatedAt ? `<div class="ip-card-updated"><span>🕒</span> ${new Date(system.updatedAt).toLocaleString('pt-BR', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}</div>` : ''}
+            </div>
+            <div class="ip-reports-actions">
+                ${reportBtnHtml}
+            </div>
+        </div>
       </div>
     `;
   });
 
-   container.innerHTML = html;
+  container.innerHTML = html;
 
-  // Adicionar event listeners aos botões de edição
+  // Listeners dos botões de Reportar
+  container.querySelectorAll('.ip-report-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+          if (btn.classList.contains('disabled')) return;
+          
+          const sysId = btn.dataset.systemId;
+          const originalText = btn.textContent;
+          
+          // Feedback imediato
+          btn.textContent = 'Enviando...';
+          btn.classList.add('disabled');
+          
+          try {
+              await window.systemStatusService.reportUserInstability(sysId);
+              
+              // Salva cooldown local
+              localStorage.setItem(`last_report_${sysId}`, Date.now());
+              
+              btn.textContent = '✅ Reportado';
+              if (typeof showNotification === 'function') {
+                showNotification('Obrigado! Seu relato ajuda outros usuários.', 'success');
+              } else {
+                alert('Obrigado! Seu relato ajuda outros usuários.');
+              }
+              
+              // Atualiza o painel para mostrar o novo contagem
+              // Pequeno delay para garantir que o Firestore processou (consistência eventual)
+              setTimeout(() => {
+                  const section = document.querySelector('#ip-section-instabilities');
+                  if (section) loadSystemsStatus(section);
+              }, 1200);
+
+          } catch (err) {
+              console.error(err);
+              btn.textContent = originalText;
+              btn.classList.remove('disabled');
+              if (typeof showNotification === 'function') {
+                showNotification('Erro ao enviar relato.', 'error');
+              }
+          }
+      });
+  });
+
+  // Listeners de Edição (Dev)
   if (developerMode) {
     container.querySelectorAll('.ip-edit-system-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const systemId = btn.dataset.systemId;
-        const system = systems.find(s => s.id === systemId);
-        if (system) {
-          openSystemEditModal(system);
-        }
-      });
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const systemId = btn.dataset.systemId;
+            const system = systems.find(s => s.id === systemId);
+            if (system) openSystemEditModal(system);
+        });
     });
   }
 }
