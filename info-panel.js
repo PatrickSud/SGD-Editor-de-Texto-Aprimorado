@@ -9,6 +9,7 @@
  * @returns {string} String escapada.
  */
 function escapeHTML(str) {
+  if (typeof str !== 'string') return ''
   return str.replace(
     /[&<>"']/g,
     m =>
@@ -109,7 +110,9 @@ function openInfoPanel() {
           section.id === 'pending' ||
           section.id === 'ai-chains' ||
           section.id === 'forms' ||
-          section.id === 'extensions'
+          section.id === 'notices' ||
+          section.id === 'extensions' ||
+          section.id === 'instabilities'
       )
 
   // Estrutura Base do Modal
@@ -121,7 +124,7 @@ function openInfoPanel() {
       ${sections
         .map(
           (s, index) => `
-        <div class="ip-nav-item ${index === 0 ? 'active' : ''}" data-target="${
+        <div id="ip-nav-${s.id}" class="ip-nav-item ${index === 0 ? 'active' : ''}" data-target="${
             s.id
           }">
           <span class="ip-nav-icon">${s.icon}</span>
@@ -176,6 +179,17 @@ function openInfoPanel() {
       // Add active class
       item.classList.add('active')
       const targetId = item.dataset.target
+      
+      // Indicador de lido/não lido para Avisos
+      if (targetId === 'notices') {
+          // Remove a classe de notificação visual do botão
+          const noticeIcon = item.querySelector('.ip-nav-icon');
+          if (noticeIcon) noticeIcon.classList.remove('has-unread-warnings');
+          
+          // Atualiza timestamp de leitura
+          chrome.storage.local.set({ 'warningsLastReadTime': Date.now() });
+      }
+
       const targetSection = modal.querySelector(`#ip-section-${targetId}`)
       if (targetSection) {
         targetSection.classList.add('active')
@@ -207,6 +221,12 @@ function openInfoPanel() {
               loadSystemsStatus(targetSection);
             });
           }
+        }
+
+
+        // Se a seção for de Avisos, carrega os dados
+        if (targetId === 'notices') {
+            loadWarnings(targetSection)
         }
       }
     })
@@ -345,11 +365,17 @@ let lastClickTime = 0
  * @returns {string} Nome do usuário
  */
 function getCurrentUserName() {
-  // Tenta obter o nome do usuário do elemento na página do SGD
-  const userNameElement = document.querySelector(
-    '.user-info, .usuario-nome, [class*="user"], [class*="nome"]'
-  )
-  return userNameElement ? userNameElement.textContent.trim() : 'Usuário SGD'
+  // Tenta obter o nome do usuário do elemento do topo do SGD (navbar-link b)
+  const userNameElement = document.querySelector('.navbar-link b');
+  
+  if (userNameElement) {
+    // Remove os &nbsp; (no JS aparecem como \u00A0)
+    return userNameElement.textContent.replace(/\u00A0/g, ' ').trim();
+  }
+  
+  // Fallback para outros elementos se mudar
+  const fallbackElement = document.querySelector('.user-info, .usuario-nome');
+  return fallbackElement ? fallbackElement.textContent.trim() : 'Usuário SGD';
 }
 
 /**
@@ -764,6 +790,442 @@ fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{metho
         </div>
     `
 }
+
+// #region Avisos (Warnings)
+/**
+ * Carrega e renderiza os avisos.
+ * @param {HTMLElement} sectionElement 
+ */
+async function loadWarnings(sectionElement) {
+    let container = sectionElement.querySelector('.ip-warnings-container');
+    
+    // Se não existir o container, cria a estrutura inicial
+    if (!container) {
+        // Cabeçalho da seção com botão de novo aviso (se dev)
+        const headerHtml = `
+            <div class="ip-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div class="ip-section-desc" style="margin-bottom: 0;">Fique por dentro dos comunicados e avisos importantes.</div>
+                ${developerMode ? `<button id="new-warning-btn" class="ip-add-closing-btn" style="width: auto;">+ Novo Aviso</button>` : ''}
+            </div>
+            <div id="warnings-list" class="ip-grid">
+                 <div class="ip-loading-container">
+                    <div class="ip-spinner"></div>
+                    <span>Carregando avisos...</span>
+                </div>
+            </div>
+        `;
+        
+        sectionElement.innerHTML = headerHtml;
+        container = sectionElement.querySelector('#warnings-list');
+        
+        // Listener do botão de criar
+        const newBtn = sectionElement.querySelector('#new-warning-btn');
+        if (newBtn) {
+            newBtn.addEventListener('click', () => openCreateWarningModal(null));
+        }
+    } else {
+        // Se já existe, apenas bota o loading
+         container = sectionElement.querySelector('#warnings-list');
+         if(container) {
+             container.innerHTML = `
+                <div class="ip-loading-container">
+                    <div class="ip-spinner"></div>
+                    <span>Atualizando...</span>
+                </div>
+             `;
+         }
+    }
+
+    try {
+        if (typeof window.warningsService === 'undefined') {
+            throw new Error('Serviço de avisos não carregado.');
+        }
+
+        let warnings = await window.warningsService.getWarnings();
+        
+        // --- 1. Filtro de Expiração (7 dias) ---
+        const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+        const now = Date.now();
+        warnings = warnings.filter(w => {
+            if (!w.date) return true; // Se não tem data, mantém
+            const warnDate = new Date(w.date).getTime();
+            return (now - warnDate) < SEVEN_DAYS_MS;
+        });
+
+        // --- 2. Filtro de Ignorados (Storage) ---
+        const storage = await new Promise(resolve => chrome.storage.local.get(['ignoredWarnings'], resolve));
+        const ignoredIds = storage.ignoredWarnings || [];
+        warnings = warnings.filter(w => !ignoredIds.includes(w.id));
+        
+        const listContainer = sectionElement.querySelector('#warnings-list');
+        if (!listContainer) return;
+
+        if (warnings.length === 0) {
+            listContainer.innerHTML = `
+                <div class="ip-empty-state">
+                    <span style="font-size: 24px;">✅</span>
+                    <h4>Nenhum aviso no momento</h4>
+                    <p>Tudo tranquilo por aqui.</p>
+                </div>
+            `;
+            listContainer.style.display = 'flex';
+            listContainer.style.justifyContent = 'center';
+        } else {
+            listContainer.style.display = 'flex';
+            listContainer.style.flexDirection = 'column';
+            listContainer.style.gap = '16px';
+            listContainer.innerHTML = warnings.map(createWarningCard).join('');
+
+            // Adicionar listeners para botões de edição/exclusão (apenas se dev)
+            if (developerMode) {
+                listContainer.querySelectorAll('.ip-warn-edit-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const card = e.target.closest('.ip-card');
+                        const warnId = card.dataset.id;
+                        // Encontra o objeto completo do array (não temos aqui, mas podemos pegar dos atributos ou recarregar)
+                        // Melhor: ao renderizar, já colocar os dados no dataset ou buscar do array 'warnings' que está no escopo
+                        const warning = warnings.find(w => w.id === warnId);
+                        if (warning) openCreateWarningModal(warning);
+                    });
+                });
+
+                listContainer.querySelectorAll('.ip-warn-delete-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        if (confirm('Tem certeza que deseja excluir este aviso?')) {
+                            const card = e.target.closest('.ip-card');
+                            const warnId = card.dataset.id;
+                            try {
+                                await window.warningsService.deleteWarning(warnId);
+                                card.remove();
+                                // Se não sobrar nada, reload para mostrar empty state
+                                if (listContainer.children.length === 0) loadWarnings(sectionElement);
+                            } catch (err) {
+                                alert('Erro ao excluir: ' + err.message);
+                            }
+                        }
+                    });
+                });
+            }
+
+            // Adicionar listeners para botões de ignorar (para todos)
+            listContainer.querySelectorAll('.ip-warn-ignore-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const card = e.target.closest('.ip-card');
+                    const warnId = card.dataset.id;
+                    
+                    // Salvar no storage
+                    chrome.storage.local.get(['ignoredWarnings'], (result) => {
+                        const ignored = result.ignoredWarnings || [];
+                        if (!ignored.includes(warnId)) {
+                            ignored.push(warnId);
+                            chrome.storage.local.set({ 'ignoredWarnings': ignored }, () => {
+                                card.style.opacity = '0';
+                                card.style.transform = 'translateX(20px)';
+                                card.style.transition = 'all 0.3s ease';
+                                setTimeout(() => {
+                                    card.remove();
+                                    if (listContainer.children.length === 0) loadWarnings(sectionElement);
+                                }, 300);
+                            });
+                        }
+                    });
+                });
+            });
+
+            // Verificar indicadores de não lido
+            checkUnreadWarnings(warnings);
+        }
+
+    } catch (error) {
+        console.error(error);
+        const listContainer = sectionElement.querySelector('#warnings-list');
+        if (listContainer) {
+            listContainer.innerHTML = `
+                <div class="ip-error-state">
+                    <span>⚠️</span>
+                    <p>Erro ao carregar avisos.</p>
+                </div>
+            `;
+        }
+    }
+}
+
+
+/**
+ * Processa HTML seguro (White-list simples)
+ * Permite: b, strong, i, em, u, br, p, ul, ol, li, a (com href)
+ */
+function processSafeHTML(text) {
+    if (!text) return '';
+    
+    // 1. Escapa tudo para neutralizar scripts e tags não permitidas
+    let safe = escapeHTML(text);
+
+    // 2. Des-escapa tags permitidas (sem atributos, exceto A)
+    // Tags simples: <b>, </b>, <strong>, </strong>, etc.
+    const tags = ['b', 'strong', 'i', 'em', 'u', 'br', 'p', 'ul', 'ol', 'li'];
+    tags.forEach(tag => {
+        // Regex para abrir e fechar
+        // <tag> -> &lt;tag&gt;
+        const regexOpen = new RegExp(`&lt;${tag}&gt;`, 'gi');
+        safe = safe.replace(regexOpen, `<${tag}>`);
+        
+        // </tag> -> &lt;/tag&gt;
+        const regexClose = new RegExp(`&lt;/${tag}&gt;`, 'gi');
+        safe = safe.replace(regexClose, `</${tag}>`);
+    });
+
+    // 3. Trata tag <a href="..."> especificamente
+    // Formato escapado: &lt;a href=&quot;URL&quot;&gt;
+    safe = safe.replace(/&lt;a\s+href=&quot;(.*?)&quot;&gt;/gi, (match, url) => {
+        let fixedUrl = url.trim();
+        // Se não começa com protocolo ou barra (link relativo ao site), adiciona https://
+        if (fixedUrl && !/^(https?:\/\/|mailto:|tel:|\/|#)/i.test(fixedUrl)) {
+            fixedUrl = 'https://' + fixedUrl;
+        }
+        return `<a href="${fixedUrl}" target="_blank">`;
+    });
+    safe = safe.replace(/&lt;\/a&gt;/gi, '</a>');
+    
+    // Mantém quebras de linha normais como <br> se não estiverem dentro de tags que já dão bloco?
+    // O usuário pode usar <br> explícito agora. Mas para compatibilidade com texto plano antigo:
+    // Se o texto não parece ter tags HTML, talvez devêssemos converter \n.
+    // Mas o usuário pediu suporte a HTML, então <br> é esperado.
+    // Vamos converter \n apenas se não houver tags de bloco detectadas para evitar duplicação ou quebra de layout?
+    // Simples: converte \n para <br> E deixa os <br> explícitos.
+    safe = safe.replace(/\n/g, '<br>');
+
+    return safe;
+}
+
+/**
+ * Cria o HTML do card de aviso
+ */
+function createWarningCard(warning) {
+    const typeClass = warning.type === 'danger' ? 'badge-danger' : 
+                      warning.type === 'warning' ? 'badge-warning' : 
+                      warning.type === 'success' ? 'badge-success' : 'badge-info';
+    
+    const typeLabel = warning.type === 'danger' ? 'Importante' : 
+                      warning.type === 'warning' ? 'Alerta' : 
+                      warning.type === 'success' ? 'Novidade' : 'Informativo';
+    
+    // Formata a data (timestamp string do Firestore ISO)
+    let dateStr = 'Data desconhecida';
+    if (warning.date) {
+        try {
+            const date = new Date(warning.date);
+            dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute:'2-digit' });
+        } catch (e) {}
+    }
+
+    const messageHtml = processSafeHTML(warning.message || '');
+
+    // Autor só aparece no modo desenvolvedor
+    const authorHtml = developerMode ? `
+        <div style="font-size: 11px; color: var(--text-color-muted); display: flex; align-items: center; gap: 4px;">
+            ✍️ ${escapeHTML(warning.author || 'Usuário')}
+        </div>
+    ` : '';
+
+    let devControls = '';
+    const ignoreBtn = `<button class="ip-warn-ignore-btn" style="background:none; border:none; cursor:pointer; font-size:12px; color: var(--text-color-muted); text-decoration: underline;" title="Não mostrar novamente">Ocultar</button>`;
+
+    if (developerMode) {
+        devControls = `
+            <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border-color); display: flex; gap: 12px; justify-content: flex-end; align-items: center;">
+                ${ignoreBtn}
+                <button class="ip-warn-edit-btn" style="background:none; border:none; cursor:pointer; font-size:14px;" title="Editar">✏️</button>
+                <button class="ip-warn-delete-btn" style="background:none; border:none; cursor:pointer; font-size:14px;" title="Excluir">🗑️</button>
+            </div>
+        `;
+    } else {
+        devControls = `
+            <div style="margin-top: 8px; display: flex; justify-content: flex-end;">
+                ${ignoreBtn}
+            </div>
+        `;
+    }
+
+    return `
+        <div class="ip-card ip-card-${warning.type || 'info'}" data-id="${warning.id}">
+            <div class="ip-card-header">
+                <h4 class="ip-card-title">${escapeHTML(warning.title || 'Aviso')}</h4>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <span class="ip-card-badge ${typeClass}">${escapeHTML(typeLabel)}</span>
+                </div>
+            </div>
+            <div class="ip-card-content">${messageHtml}</div>
+            <div class="ip-card-updated" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>🕒 ${dateStr}</span>
+                ${authorHtml}
+            </div>
+            ${devControls}
+        </div>
+    `;
+}
+
+/**
+ * Verifica avisos não lidos e atualiza indicador visual no sidebar
+ */
+function checkUnreadWarnings(warnings) {
+    if (!warnings || warnings.length === 0) return;
+    
+    chrome.storage.local.get(['warningsLastReadTime'], (result) => {
+        const lastRead = result.warningsLastReadTime || 0;
+        const newestWarning = warnings[0]; // Assumindo ordenação por data desc
+        
+        if (newestWarning && newestWarning.date) {
+             const newestDate = new Date(newestWarning.date).getTime();
+             if (newestDate > lastRead) {
+                 // Tem aviso novo!
+                 // Achar o ícone na sidebar e colocar a bolinha (via classe CSS)
+                 // Como o modal pode ser recriado, precisamos garantir que o seletor funcione
+                 const navItem = document.querySelector('#ip-nav-notices .ip-nav-icon');
+                 // Mas espere, o seletor #ip-nav-notices precisa existir. Vamos adicionar ID no ip-nav-item
+                 if (navItem) {
+                     navItem.classList.add('has-unread-warnings');
+                     
+                     // Adicionar estilo inline se CSS não tiver carregado (fallback)
+                     if (!document.getElementById('unread-style-inject')) {
+                         const style = document.createElement('style');
+                         style.id = 'unread-style-inject';
+                         style.textContent = `
+                            .has-unread-warnings { position: relative; }
+                            .has-unread-warnings::after {
+                                content: '';
+                                position: absolute;
+                                top: -2px;
+                                right: -2px;
+                                width: 8px;
+                                height: 8px;
+                                background-color: var(--action-red);
+                                border-radius: 50%;
+                                border: 1px solid var(--background-secondary);
+                            }
+                         `;
+                         document.head.appendChild(style);
+                     }
+                 }
+             }
+        }
+    });
+}
+
+/**
+ * Abre modal para criar ou editar aviso
+ * @param {Object} existingWarning - (Opcional) Objeto do aviso para edição
+ */
+function openCreateWarningModal(existingWarning = null) {
+    // Remover modal anterior se existir
+    const existing = document.getElementById('create-warning-modal');
+    if (existing) existing.remove();
+
+    const isEdit = !!existingWarning;
+    const titleVal = isEdit ? escapeHTML(existingWarning.title) : '';
+    const msgVal = isEdit ? escapeHTML(existingWarning.message) : '';
+    const typeVal = isEdit ? existingWarning.type : 'info';
+
+    const fieldStyle = "display: block; width: 100%; margin-bottom: 12px; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main);";
+    
+    const modalHtml = `
+        <div style="padding: 10px;">
+            <label style="display:block; margin-bottom:4px; font-size:12px;">Título</label>
+            <input type="text" id="warn-title" style="${fieldStyle}" placeholder="Ex: Nova Atualização do Sistema Programada" value="${titleVal}">
+            
+            <label style="display:block; margin-bottom:4px; font-size:12px;">Mensagem</label>
+            <textarea id="warn-message" rows="3" style="${fieldStyle} margin-bottom: 4px; resize: vertical;" placeholder="Detalhes do aviso...">${msgVal}</textarea>
+            <div style="font-size: 11px; color: var(--text-color-muted); margin-bottom: 12px; opacity: 0.8;">
+                Dica: Você poderá usar HTML para formatar sua mensagem.
+            </div>
+            
+            <label style="display:block; margin-bottom:4px; font-size:12px;">Tipo</label>
+            <select id="warn-type" style="${fieldStyle} width: 200px;">
+                <option value="info" ${typeVal === 'info' ? 'selected' : ''}>ℹ️ Informativo</option>
+                <option value="success" ${typeVal === 'success' ? 'selected' : ''}>✨ Novidade</option>
+                <option value="warning" ${typeVal === 'warning' ? 'selected' : ''}>⚠️ Alerta</option>
+                <option value="danger" ${typeVal === 'danger' ? 'selected' : ''}>🚨 Importante</option>
+            </select>
+            
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
+                <button id="cancel-warn-btn" style="padding: 8px 16px; background: transparent; border: 1px solid var(--border-color); color: var(--text-color-main); border-radius: 4px; cursor: pointer;">Cancelar</button>
+                <button id="save-warn-btn" class="ip-add-closing-btn" style="width: auto;">${isEdit ? 'Atualizar Aviso' : 'Publicar Aviso'}</button>
+            </div>
+        </div>
+    `;
+
+    const modal = createModal(isEdit ? 'Editar Aviso' : 'Novo Aviso', modalHtml, null, {
+        isManagementModal: false, // Modal menor central
+        modalId: 'create-warning-modal',
+        showShareButton: false
+    });
+    
+    // Remover o rodapé padrão do createModal para não duplicar botões
+    const defaultActions = modal.querySelector('.se-modal-actions');
+    if (defaultActions) defaultActions.remove();
+    
+    modal.style.zIndex = '10002'; // Painel costuma ser alto
+    
+    document.body.appendChild(modal);
+
+    // Handlers
+    const saveBtn = modal.querySelector('#save-warn-btn');
+    const cancelBtn = modal.querySelector('#cancel-warn-btn');
+    
+    cancelBtn.addEventListener('click', () => modal.remove());
+    
+    saveBtn.addEventListener('click', async () => {
+        const title = modal.querySelector('#warn-title').value.trim();
+        const message = modal.querySelector('#warn-message').value.trim();
+        const type = modal.querySelector('#warn-type').value;
+        const author = getCurrentUserName(); // Em edição, mantém autor original ou atualiza? Vamos atualizar para "Author (edited)"? Não, simplificar.
+        
+        if (!title || !message) {
+            alert('Preencha título e mensagem.');
+            return;
+        }
+        
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Salvando...';
+        
+        try {
+            if (isEdit) {
+                await window.warningsService.updateWarning(existingWarning.id, {
+                    title,
+                    message,
+                    type,
+                    author // Atualiza quem editou
+                });
+            } else {
+                await window.warningsService.createWarning({
+                    title,
+                    message,
+                    type,
+                    author,
+                    date: new Date().toISOString()
+                });
+            }
+            
+            modal.remove();
+            
+            // Recarregar lista se o painel de avisos estiver aberto
+            const activeSection = document.querySelector('#ip-section-notices.active');
+            if (activeSection) {
+                loadWarnings(activeSection);
+            }
+            
+            // Feedback
+            alert(isEdit ? 'Aviso atualizado!' : 'Aviso publicado!');
+            
+        } catch (err) {
+            console.error(err);
+            alert('Erro ao salvar: ' + err.message);
+            saveBtn.disabled = false;
+            saveBtn.textContent = isEdit ? 'Atualizar Aviso' : 'Publicar Aviso';
+        }
+    });
+}
+// #endregion
 
 // #region agent log
 // Verify if window.openTagManager is set

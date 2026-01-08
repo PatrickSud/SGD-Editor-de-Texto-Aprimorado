@@ -33,6 +33,7 @@
         "quick-messages.js",
         "forms-service.js",
         "system-status-service.js",
+        "warnings-service.js",
         "info-panel.js",
         "release-notes.js",
         "main.js"

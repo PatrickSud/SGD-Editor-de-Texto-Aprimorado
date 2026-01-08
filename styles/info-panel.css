@@ -130,7 +130,14 @@
   padding: 16px;
   box-shadow: var(--shadow-md);
   transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+  overflow: hidden;
 }
+
+.ip-card.ip-card-danger { border-left: 5px solid #dc3545; }
+.ip-card.ip-card-warning { border-left: 5px solid #ffc107; }
+.ip-card.ip-card-success { border-left: 5px solid #28a745; }
+.ip-card.ip-card-info { border-left: 5px solid var(--action-blue); }
 
 .ip-card:hover {
   transform: translateY(-2px);
@@ -728,6 +735,26 @@
   background-color: var(--primary-color);
   color: white;
   text-decoration: none;
+}
+
+.badge-info {
+  background-color: var(--action-blue);
+  color: white;
+}
+
+.badge-success {
+  background-color: #28a745;
+  color: white;
+}
+
+.badge-warning {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.badge-danger {
+  background-color: #dc3545;
+  color: white;
 }
 
 /* Loading e Empty States */
