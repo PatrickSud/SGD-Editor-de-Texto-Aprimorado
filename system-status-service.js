@@ -172,7 +172,11 @@ async function reportUserInstability(systemId) {
       body: JSON.stringify(fields)
     });
 
-    if (!response.ok) throw new Error('Erro ao enviar reporte');
+    if (!response.ok) {
+        const errorDetail = await response.json();
+        console.error('Firestore Error Detail:', JSON.stringify(errorDetail, null, 2));
+        throw new Error(`Erro ao enviar reporte: ${errorDetail.error?.message || response.statusText}`);
+    }
     return true;
   } catch (error) {
     console.error('Erro ao reportar instabilidade:', error);

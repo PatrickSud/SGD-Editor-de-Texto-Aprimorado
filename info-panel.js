@@ -45,7 +45,7 @@ function debounce(func, wait) {
  * Manipula o clique para ativar o modo desenvolvedor
  * @param {Event} event - Evento de clique
  */
-function handleDeveloperModeClick(event) {
+async function handleDeveloperModeClick(event) {
   const now = Date.now()
 
   // Reset contador se passou mais de 3 segundos desde o último clique
@@ -56,16 +56,11 @@ function handleDeveloperModeClick(event) {
   clickCount++
   lastClickTime = now
 
-  // Feedback visual
-  const element = event.currentTarget
-  element.style.backgroundColor =
-    'color-mix(in srgb, var(--action-blue) 20%, transparent)'
-  setTimeout(() => {
-    element.style.backgroundColor = ''
-  }, 200)
-
   // Ativar modo desenvolvedor após 5 cliques
   if (clickCount >= 5 && !developerMode) {
+    // Persiste a ativação
+    await toggleDevMode();
+    
     developerMode = true
     clickCount = 0
 
@@ -73,17 +68,17 @@ function handleDeveloperModeClick(event) {
     const toast = document.createElement('div')
     toast.style.cssText =
       'position: fixed; top: 20px; right: 20px; padding: 12px 16px; background-color: var(--action-green); color: white; border-radius: var(--border-radius-sm); z-index: 10000; font-size: 14px;'
-    toast.textContent = '✅ Modo desenvolvedor ativado!'
+    toast.textContent = '✅ Modo desenvolvedor ativado e salvo!'
     document.body.appendChild(toast)
 
     setTimeout(() => {
-      document.body.removeChild(toast)
+       if (document.body.contains(toast)) document.body.removeChild(toast)
     }, 3000)
 
     // Recarregar o painel para mostrar todas as seções
-    const modal = document.querySelector('.ip-modal')
+    const modal = document.querySelector('#info-panel-modal')
     if (modal) {
-      document.body.removeChild(modal)
+      modal.remove()
     }
     openInfoPanel()
   }
@@ -92,7 +87,13 @@ function handleDeveloperModeClick(event) {
 /**
  * Abre o Painel de Informações e Alertas.
  */
-function openInfoPanel() {
+async function openInfoPanel() {
+  // Injeta estilos necessários
+  injectDevSwitchStyles();
+
+  // 1. Carregar estado persistente do modo desenvolvedor
+  developerMode = await isDevModeEnabled();
+
   const allSections = [
     { id: 'pending', icon: '⏳', label: 'Pendências' },
     { id: 'instabilities', icon: '🚨', label: 'Instabilidades' },
@@ -115,24 +116,40 @@ function openInfoPanel() {
           section.id === 'instabilities'
       )
 
+  // HTML do rodapé da sidebar (Interruptor Dev Mode)
+  const sidebarFooterHtml = developerMode ? `
+    <div class="ip-sidebar-footer">
+      <div class="ip-dev-toggle-wrapper">
+        <span>Modo Dev</span>
+        <label class="ip-switch" title="Desativar Modo Desenvolvedor">
+          <input type="checkbox" id="ip-dev-mode-switch" checked>
+          <span class="ip-slider round"></span>
+        </label>
+      </div>
+    </div>
+  ` : '';
+
   // Estrutura Base do Modal
   const sidebarHtml = `
     <div class="ip-sidebar">
-      <div class="ip-sidebar-header" id="developer-mode-trigger">
+      <div class="ip-sidebar-header" id="developer-mode-trigger" style="cursor: default; user-select: none;">
         Painel
       </div>
-      ${sections
-        .map(
-          (s, index) => `
-        <div id="ip-nav-${s.id}" class="ip-nav-item ${index === 0 ? 'active' : ''}" data-target="${
-            s.id
-          }">
-          <span class="ip-nav-icon">${s.icon}</span>
-          <span class="ip-nav-label">${s.label}</span>
-        </div>
-      `
-        )
-        .join('')}
+      <div style="flex: 1; overflow-y: auto;">
+        ${sections
+          .map(
+            (s, index) => `
+          <div id="ip-nav-${s.id}" class="ip-nav-item ${index === 0 ? 'active' : ''}" data-target="${
+              s.id
+            }">
+            <span class="ip-nav-icon">${s.icon}</span>
+            <span class="ip-nav-label">${s.label}</span>
+          </div>
+        `
+          )
+          .join('')}
+      </div>
+      ${sidebarFooterHtml}
     </div>
   `
 
@@ -166,7 +183,7 @@ function openInfoPanel() {
     }
   )
 
-  // Adiciona lógica de navegação
+  // --- Lógica de Navegação ---
   const navItems = modal.querySelectorAll('.ip-nav-item')
   const contentSections = modal.querySelectorAll('.ip-section')
 
@@ -182,11 +199,8 @@ function openInfoPanel() {
       
       // Indicador de lido/não lido para Avisos
       if (targetId === 'notices') {
-          // Remove a classe de notificação visual do botão
           const noticeIcon = item.querySelector('.ip-nav-icon');
           if (noticeIcon) noticeIcon.classList.remove('has-unread-warnings');
-          
-          // Atualiza timestamp de leitura
           chrome.storage.local.set({ 'warningsLastReadTime': Date.now() });
       }
 
@@ -194,91 +208,58 @@ function openInfoPanel() {
       if (targetSection) {
         targetSection.classList.add('active')
 
-        // Se a seção for de pendências, carrega/atualiza os dados
-        if (targetId === 'pending') {
-          loadPendingItems(targetSection)
-        }
-
-        // Se a seção for de formulários, carrega os dados
-        if (targetId === 'forms') {
-          loadForms(targetSection, 'forms')
-        }
-
-        // Se a seção for de AI Chains, carrega os dados
-        if (targetId === 'ai-chains') {
-           loadForms(targetSection, 'ai')
-        }
-
-
-        // Se a seção for de Instabilidades, carrega status dos sistemas
+        // Carregamento dinâmico das seções
+        if (targetId === 'pending') loadPendingItems(targetSection)
+        if (targetId === 'forms') loadForms(targetSection, 'forms')
+        if (targetId === 'ai-chains') loadForms(targetSection, 'ai')
         if (targetId === 'instabilities') {
           loadSystemsStatus(targetSection)
-          
-          // Configurar botão de atualizar
           const refreshBtn = targetSection.querySelector('#refresh-systems-btn')
           if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => {
-              loadSystemsStatus(targetSection);
-            });
+            refreshBtn.addEventListener('click', () => loadSystemsStatus(targetSection));
           }
         }
-
-
-        // Se a seção for de Avisos, carrega os dados
-        if (targetId === 'notices') {
-            loadWarnings(targetSection)
-        }
+        if (targetId === 'notices') loadWarnings(targetSection)
       }
     })
   })
 
-  // Configura o listener para o botão de atualizar na aba de pendências
+  // --- Lógica do Botão de Notificação e Refresh (Pendências) ---
   const pendingSection = modal.querySelector('#ip-section-pending')
   if (pendingSection) {
     const refreshBtn = pendingSection.querySelector('#refresh-pending-btn')
     if (refreshBtn) {
-      refreshBtn.addEventListener('click', () => {
-        loadPendingItems(pendingSection)
-      })
+      refreshBtn.addEventListener('click', () => loadPendingItems(pendingSection))
     }
 
-    // Configuração do botão de Notificação
     const notifyBtn = pendingSection.querySelector('#toggle-notification-btn')
     if (notifyBtn) {
-        // Função para atualizar visual do botão
         const updateNotifyBtnState = (enabled) => {
             if (enabled) {
                 notifyBtn.textContent = '🔔'
                 notifyBtn.classList.add('active-notification')
-                notifyBtn.title = 'Notificações Ativadas\nVocê receberá alertas na tela durante as verificações periódicas (4x por hora).'
+                notifyBtn.title = 'Notificações Ativadas'
                 notifyBtn.style.opacity = '1'
             } else {
                 notifyBtn.textContent = '🔕'
                 notifyBtn.classList.remove('active-notification')
-                notifyBtn.title = 'Notificações Desativadas\nO sistema verificará pendências silenciosamente 4x por hora, mas não exibirá alertas na tela.'
+                notifyBtn.title = 'Notificações Desativadas'
                 notifyBtn.style.opacity = '0.6'
             }
         }
 
-        // Carregar estado inicial
         chrome.storage.sync.get(['extensionSettingsData'], (result) => {
             const settings = result.extensionSettingsData || {}
             const prefs = settings.preferences || {}
-            // Padrão false
-            const isEnabled = prefs.enablePendingNotifications === true
-            updateNotifyBtnState(isEnabled)
+            updateNotifyBtnState(prefs.enablePendingNotifications === true)
         })
 
-        // Listener de clique
         notifyBtn.addEventListener('click', async () => {
              const result = await chrome.storage.sync.get(['extensionSettingsData'])
              let settings = result.extensionSettingsData || { preferences: {} }
              if (!settings.preferences) settings.preferences = {}
              
-             // Alternar
-             const currentState = settings.preferences.enablePendingNotifications === true
-             const newState = !currentState
-             
+             const newState = !(settings.preferences.enablePendingNotifications === true)
              settings.preferences.enablePendingNotifications = newState
              
              await chrome.storage.sync.set({ extensionSettingsData: settings })
@@ -286,16 +267,16 @@ function openInfoPanel() {
         })
     }
 
-    // Carrega automaticamente as pendências se esta for a seção ativa
     if (pendingSection.classList.contains('active')) {
       loadPendingItems(pendingSection)
     }
-
+    
     // Configurar listeners para os filtros
     const searchInput = pendingSection.querySelector('#pending-search')
     const statusFilter = pendingSection.querySelector('#pending-status-filter')
     const tagFilter = pendingSection.querySelector('#pending-tag-filter')
     const sortSelect = pendingSection.querySelector('#pending-sort')
+    const responsibleFilter = pendingSection.querySelector('#pending-responsible-filter')
 
     const applyFiltersHandler = () => {
       if (allPendingItems.length > 0) {
@@ -303,38 +284,43 @@ function openInfoPanel() {
       }
     }
 
-    if (searchInput) {
-      searchInput.addEventListener('input', debounce(applyFiltersHandler, 300))
-    }
-    if (statusFilter) {
-      statusFilter.addEventListener('change', applyFiltersHandler)
-    }
-    if (tagFilter) {
-      tagFilter.addEventListener('change', applyFiltersHandler)
-    }
-    if (sortSelect) {
-      sortSelect.addEventListener('change', applyFiltersHandler)
-    }
-
-    const responsibleFilter = pendingSection.querySelector('#pending-responsible-filter')
-    if (responsibleFilter) {
-      responsibleFilter.addEventListener('change', applyFiltersHandler)
-    }
+    if (searchInput) searchInput.addEventListener('input', debounce(applyFiltersHandler, 300))
+    if (statusFilter) statusFilter.addEventListener('change', applyFiltersHandler)
+    if (tagFilter) tagFilter.addEventListener('change', applyFiltersHandler)
+    if (sortSelect) sortSelect.addEventListener('change', applyFiltersHandler)
+    if (responsibleFilter) responsibleFilter.addEventListener('change', applyFiltersHandler)
   }
 
-  // Adicionar handler para o modo desenvolvedor
+  // --- Lógica do Interruptor de Modo Dev (NOVO) ---
+  const devSwitch = modal.querySelector('#ip-dev-mode-switch');
+  if (devSwitch) {
+    devSwitch.addEventListener('change', async (e) => {
+      if (!e.target.checked) {
+        await toggleDevMode(); // Persiste no storage
+        developerMode = false;
+        
+        // Recarrega o painel para aplicar o layout de usuário comum
+        modal.remove();
+        openInfoPanel();
+      }
+    });
+  }
+
+  // --- Lógica do Gatilho Secreto (5 cliques) ---
   const devTrigger = modal.querySelector('#developer-mode-trigger')
   if (devTrigger) {
     devTrigger.addEventListener('click', handleDeveloperModeClick)
   }
 
-  // Adicionar mensagem de desenvolvimento no final do modal
-  const devMessage = document.createElement('div')
-  devMessage.style.cssText =
-    'padding: 12px 16px; margin-top: 16px; background-color: color-mix(in srgb, var(--action-yellow) 15%, transparent); border: 1px solid color-mix(in srgb, var(--action-yellow) 30%, transparent); border-radius: var(--border-radius-sm); color: var(--text-color-main); font-size: 13px;'
-  devMessage.innerHTML =
-    '<strong>⚠️ Em Desenvolvimento:</strong> Esta funcionalidade ainda está sendo desenvolvida.'
-  modal.querySelector('.ip-content-area').appendChild(devMessage)
+  // Mensagem de desenvolvimento no rodapé do conteúdo (apenas se dev)
+  if (developerMode) {
+      const devMessage = document.createElement('div')
+      devMessage.style.cssText =
+        'padding: 12px 16px; margin-top: 16px; background-color: color-mix(in srgb, var(--action-yellow) 15%, transparent); border: 1px solid color-mix(in srgb, var(--action-yellow) 30%, transparent); border-radius: var(--border-radius-sm); color: var(--text-color-main); font-size: 13px;'
+      devMessage.innerHTML =
+        '<strong>⚠️ Modo Desenvolvedor Ativo:</strong> Você tem acesso a recursos experimentais e de edição.'
+      modal.querySelector('.ip-content-area').appendChild(devMessage)
+  }
 
   document.body.appendChild(modal)
 }
@@ -359,6 +345,96 @@ let pendingTagsMapCache = {}
 let developerMode = false
 let clickCount = 0
 let lastClickTime = 0
+
+/**
+ * Verifica se o modo desenvolvedor está ativo no storage
+ */
+async function isDevModeEnabled() {
+  const result = await chrome.storage.local.get(['developerMode'])
+  return result.developerMode === true
+}
+
+/**
+ * Alterna o estado do modo desenvolvedor no storage
+ */
+async function toggleDevMode() {
+  const currentState = await isDevModeEnabled()
+  const newState = !currentState
+  await chrome.storage.local.set({ developerMode: newState })
+  return newState
+}
+
+/**
+ * Injeta os estilos CSS para o interruptor do modo desenvolvedor
+ */
+function injectDevSwitchStyles() {
+  if (document.getElementById('ip-dev-switch-styles')) return;
+  
+  const style = document.createElement('style');
+  style.id = 'ip-dev-switch-styles';
+  style.textContent = `
+    .ip-sidebar-footer {
+      margin-top: auto;
+      padding: 16px;
+      border-top: 1px solid var(--border-color);
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+    .ip-dev-toggle-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-color-main);
+      font-weight: 600;
+    }
+    /* The Switch - the box around the slider */
+    .ip-switch {
+      position: relative;
+      display: inline-block;
+      width: 34px;
+      height: 20px;
+    }
+    /* Hide default HTML checkbox */
+    .ip-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    /* The slider */
+    .ip-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 34px;
+    }
+    .ip-slider:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .ip-slider {
+      background-color: var(--primary-color);
+    }
+    input:focus + .ip-slider {
+      box-shadow: 0 0 1px var(--primary-color);
+    }
+    input:checked + .ip-slider:before {
+      transform: translateX(14px);
+    }
+  `;
+  document.head.appendChild(style);
+}
 
 /**
  * Obtém o nome do usuário atual do SGD
@@ -849,6 +925,12 @@ async function loadWarnings(sectionElement) {
             return (now - warnDate) < SEVEN_DAYS_MS;
         });
 
+        // [NOVO] --- 1.5 Filtro de Teste/Desenvolvedor ---
+        // Se NÃO estiver em modo desenvolvedor, remove avisos marcados como isTest
+        if (!developerMode) {
+            warnings = warnings.filter(w => !w.isTest);
+        }
+
         // --- 2. Filtro de Ignorados (Storage) ---
         const storage = await new Promise(resolve => chrome.storage.local.get(['ignoredWarnings'], resolve));
         const ignoredIds = storage.ignoredWarnings || [];
@@ -1027,9 +1109,14 @@ function createWarningCard(warning) {
 
     const ignoreBtn = `<button class="ip-warn-ignore-btn" style="background:none; border:none; cursor:pointer; font-size:11px; color: var(--text-color-muted); text-decoration: underline; padding: 0; margin-right: 4px;" title="Não mostrar novamente">Ocultar</button>`;
     
+    // [NOVO] Badge de Teste
+    const testBadge = warning.isTest 
+        ? `<span style="background-color: #607d8b; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-right: 6px; border: 1px dashed white;">TESTE / DEV</span>` 
+        : '';
+
     const actionsHtml = `
         <div style="display:flex; gap:10px; align-items:center;">
-            ${ignoreBtn}
+            ${testBadge} ${ignoreBtn}
             ${developerMode ? `
                 <button class="ip-warn-edit-btn" style="background:none; border:none; cursor:pointer; font-size:14px; padding:0; line-height:1;" title="Editar">✏️</button>
                 <button class="ip-warn-delete-btn" style="background:none; border:none; cursor:pointer; font-size:14px; padding:0; line-height:1;" title="Excluir">🗑️</button>
@@ -1039,7 +1126,7 @@ function createWarningCard(warning) {
     `;
 
     return `
-        <div class="ip-card ip-card-${warning.type || 'info'}" data-id="${warning.id}">
+        <div class="ip-card ip-card-${warning.type || 'info'}" data-id="${warning.id}" ${warning.isTest ? 'style="border-style: dashed;"' : ''}>
             <div class="ip-card-header">
                 <h4 class="ip-card-title">${escapeHTML(warning.title || 'Aviso')}</h4>
                 ${actionsHtml}
@@ -1113,6 +1200,7 @@ function openCreateWarningModal(existingWarning = null) {
     const titleVal = isEdit ? escapeHTML(existingWarning.title) : '';
     const msgVal = isEdit ? escapeHTML(existingWarning.message) : '';
     const typeVal = isEdit ? existingWarning.type : 'info';
+    const isTestVal = isEdit ? existingWarning.isTest : false; 
 
     const fieldStyle = "display: block; width: 100%; margin-bottom: 12px; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main);";
     
@@ -1134,6 +1222,16 @@ function openCreateWarningModal(existingWarning = null) {
                 <option value="warning" ${typeVal === 'warning' ? 'selected' : ''}>⚠️ Alerta</option>
                 <option value="danger" ${typeVal === 'danger' ? 'selected' : ''}>🚨 Importante</option>
             </select>
+
+            <div style="margin-bottom: 16px; padding: 10px; background-color: var(--background-secondary); border-radius: 4px; border: 1px dashed var(--border-color);">
+                <div class="form-checkbox-group" style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" id="warn-is-test" ${isTestVal ? 'checked' : ''} style="width: auto; margin: 0;">
+                    <label for="warn-is-test" style="font-weight: 600; color: var(--text-color-main); font-size: 13px; cursor: pointer;">Modo de Teste / Demonstração</label>
+                </div>
+                <div style="font-size: 11px; color: var(--text-color-muted); margin-top: 4px; margin-left: 24px;">
+                    Se marcado, este aviso aparecerá <b>apenas</b> para usuários com "Modo Desenvolvedor" ativado e não enviará notificações para a equipe geral.
+                </div>
+            </div>
             
             <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
                 <button id="cancel-warn-btn" style="padding: 8px 16px; background: transparent; border: 1px solid var(--border-color); color: var(--text-color-main); border-radius: 4px; cursor: pointer;">Cancelar</button>
@@ -1166,7 +1264,8 @@ function openCreateWarningModal(existingWarning = null) {
         const title = modal.querySelector('#warn-title').value.trim();
         const message = modal.querySelector('#warn-message').value.trim();
         const type = modal.querySelector('#warn-type').value;
-        const author = getCurrentUserName(); // Em edição, mantém autor original ou atualiza? Vamos atualizar para "Author (edited)"? Não, simplificar.
+        const isTest = modal.querySelector('#warn-is-test').checked;
+        const author = getCurrentUserName(); 
         
         if (!title || !message) {
             alert('Preencha título e mensagem.');
@@ -1182,7 +1281,8 @@ function openCreateWarningModal(existingWarning = null) {
                     title,
                     message,
                     type,
-                    author // Atualiza quem editou
+                    author,
+                    isTest
                 });
             } else {
                 await window.warningsService.createWarning({
@@ -1190,6 +1290,7 @@ function openCreateWarningModal(existingWarning = null) {
                     message,
                     type,
                     author,
+                    isTest,
                     date: new Date().toISOString()
                 });
             }
@@ -2116,13 +2217,13 @@ function renderSystemsStatus(container, systems, userReports = {}) {
     const intensityPct = Math.min((reportCount / maxReportsReference) * 100, 100);
     
     let intensityColor = 'var(--action-green)';
-    let intensityLabel = 'Estável';
+    let intensityLabel = 'Poucos Relatos';
     
     if (reportCount > 2) { 
         intensityColor = 'var(--action-yellow)'; 
         intensityLabel = 'Possível Instabilidade'; 
     }
-    if (reportCount > 10) { 
+    if (reportCount > 5) { 
         intensityColor = 'var(--action-red)'; 
         intensityLabel = 'Muitos Relatos'; 
     }
