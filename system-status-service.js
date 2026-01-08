@@ -151,14 +151,34 @@ function getStatusLabel(status) {
 }
 
 /**
- * Envia um reporte de instabilidade de um usuário
+ * Captura o nome do usuário logado na barra de navegação do SGD
+ * Seletor baseado em: <a class="navbar-link"><b>NOME</b></a>
+ */
+function getCurrentSgdUser() {
+  try {
+    const userElement = document.querySelector('.navbar-link b');
+    if (userElement) {
+      // Remove &nbsp; (espaços inquebráveis) e espaços extras
+      return userElement.textContent.replace(/\u00A0/g, ' ').trim();
+    }
+  } catch (e) {
+    console.warn('Não foi possível obter o nome do usuário:', e);
+  }
+  return 'Usuário Desconhecido';
+}
+
+/**
+ * Envia um reporte de instabilidade de um usuário com o nome
  * @param {string} systemId - ID do sistema
  */
 async function reportUserInstability(systemId) {
   try {
+    const userName = getCurrentSgdUser(); 
+
     const reportData = {
       systemId: systemId,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      userName: userName
     };
     
     const fields = toFirestore(reportData);
