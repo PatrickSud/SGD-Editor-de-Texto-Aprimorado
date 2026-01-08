@@ -797,10 +797,10 @@ fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{metho
  * @param {HTMLElement} sectionElement 
  */
 async function loadWarnings(sectionElement) {
-    let container = sectionElement.querySelector('.ip-warnings-container');
+    let listContainer = sectionElement.querySelector('#warnings-list');
     
-    // Se não existir o container, cria a estrutura inicial
-    if (!container) {
+    // Se não existir o listContainer, cria a estrutura inicial
+    if (!listContainer) {
         // Cabeçalho da seção com botão de novo aviso (se dev)
         const headerHtml = `
             <div class="ip-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -816,7 +816,7 @@ async function loadWarnings(sectionElement) {
         `;
         
         sectionElement.innerHTML = headerHtml;
-        container = sectionElement.querySelector('#warnings-list');
+        listContainer = sectionElement.querySelector('#warnings-list');
         
         // Listener do botão de criar
         const newBtn = sectionElement.querySelector('#new-warning-btn');
@@ -824,16 +824,13 @@ async function loadWarnings(sectionElement) {
             newBtn.addEventListener('click', () => openCreateWarningModal(null));
         }
     } else {
-        // Se já existe, apenas bota o loading
-         container = sectionElement.querySelector('#warnings-list');
-         if(container) {
-             container.innerHTML = `
-                <div class="ip-loading-container">
-                    <div class="ip-spinner"></div>
-                    <span>Atualizando...</span>
-                </div>
-             `;
-         }
+        // Se já existe, apenas bota o loading dentro do listContainer
+        listContainer.innerHTML = `
+            <div class="ip-loading-container">
+                <div class="ip-spinner"></div>
+                <span>Atualizando...</span>
+            </div>
+        `;
     }
 
     try {
@@ -1028,39 +1025,30 @@ function createWarningCard(warning) {
         </div>
     ` : '';
 
-    let devControls = '';
-    const ignoreBtn = `<button class="ip-warn-ignore-btn" style="background:none; border:none; cursor:pointer; font-size:12px; color: var(--text-color-muted); text-decoration: underline;" title="Não mostrar novamente">Ocultar</button>`;
-
-    if (developerMode) {
-        devControls = `
-            <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border-color); display: flex; gap: 12px; justify-content: flex-end; align-items: center;">
-                ${ignoreBtn}
-                <button class="ip-warn-edit-btn" style="background:none; border:none; cursor:pointer; font-size:14px;" title="Editar">✏️</button>
-                <button class="ip-warn-delete-btn" style="background:none; border:none; cursor:pointer; font-size:14px;" title="Excluir">🗑️</button>
-            </div>
-        `;
-    } else {
-        devControls = `
-            <div style="margin-top: 8px; display: flex; justify-content: flex-end;">
-                ${ignoreBtn}
-            </div>
-        `;
-    }
+    const ignoreBtn = `<button class="ip-warn-ignore-btn" style="background:none; border:none; cursor:pointer; font-size:11px; color: var(--text-color-muted); text-decoration: underline; padding: 0; margin-right: 4px;" title="Não mostrar novamente">Ocultar</button>`;
+    
+    const actionsHtml = `
+        <div style="display:flex; gap:10px; align-items:center;">
+            ${ignoreBtn}
+            ${developerMode ? `
+                <button class="ip-warn-edit-btn" style="background:none; border:none; cursor:pointer; font-size:14px; padding:0; line-height:1;" title="Editar">✏️</button>
+                <button class="ip-warn-delete-btn" style="background:none; border:none; cursor:pointer; font-size:14px; padding:0; line-height:1;" title="Excluir">🗑️</button>
+            ` : ''}
+            <span class="ip-card-badge ${typeClass}">${escapeHTML(typeLabel)}</span>
+        </div>
+    `;
 
     return `
         <div class="ip-card ip-card-${warning.type || 'info'}" data-id="${warning.id}">
             <div class="ip-card-header">
                 <h4 class="ip-card-title">${escapeHTML(warning.title || 'Aviso')}</h4>
-                <div style="display:flex; gap:8px; align-items:center;">
-                    <span class="ip-card-badge ${typeClass}">${escapeHTML(typeLabel)}</span>
-                </div>
+                ${actionsHtml}
             </div>
             <div class="ip-card-content">${messageHtml}</div>
-            <div class="ip-card-updated" style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="ip-card-updated" style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 8px; border-top: 1px dashed var(--border-color);">
                 <span>🕒 ${dateStr}</span>
                 ${authorHtml}
             </div>
-            ${devControls}
         </div>
     `;
 }
@@ -1208,14 +1196,14 @@ function openCreateWarningModal(existingWarning = null) {
             
             modal.remove();
             
-            // Recarregar lista se o painel de avisos estiver aberto
-            const activeSection = document.querySelector('#ip-section-notices.active');
-            if (activeSection) {
-                loadWarnings(activeSection);
+            // Recarregar lista se o painel de avisos estiver aberto no DOM
+            const warningsSection = document.querySelector('#ip-section-notices');
+            if (warningsSection) {
+                loadWarnings(warningsSection);
             }
             
-            // Feedback
-            alert(isEdit ? 'Aviso atualizado!' : 'Aviso publicado!');
+            // Feedback omitido conforme solicitado
+            // alert(isEdit ? 'Aviso atualizado!' : 'Aviso publicado!');
             
         } catch (err) {
             console.error(err);
