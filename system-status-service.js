@@ -1,22 +1,40 @@
 /**
  * @file system-status-service.js
  * Serviço para gerenciar status de sistemas usando a API REST do Firestore
- * (Evita erros de CSP do Manifest V3)
+ * OTIMIZADO: Estratégia "Metadata Check" (Vigia) para economia de leituras e tempo real.
  */
 
 const FIREBASE_PROJECT_ID = "sgd-extension";
 const FIREBASE_API_KEY = "AIzaSyBJgLpNfiycnIr-OybbfAOAuIa4ZU3nBbY";
 const BASE_URL = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/systemStatus`;
 const REPORTS_COLLECTION = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/systemReports`;
-
+// URL do documento "Vigia" que guarda a data da última alteração
+const METADATA_URL = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/metadata/systems`;
 
 /**
- * Converte o formato bizarro de campos do Firestore REST para um objeto limpo
+ * Atualiza o timestamp de controle (O "Vigia")
+ */
+async function touchMetadata() {
+  try {
+    const now = new Date().toISOString();
+    const fields = { lastUpdated: { timestampValue: now } };
+    await fetch(`${METADATA_URL}?key=${FIREBASE_API_KEY}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields })
+    });
+  } catch (e) {
+    console.warn('Falha ao atualizar metadados:', e);
+  }
+}
+
+/**
+ * Converte o formato do Firestore REST para objeto JS (Mantém TODOS os campos/relatos)
  */
 function fromFirestore(doc) {
   const fields = doc.fields || {};
   const data = { id: doc.name.split('/').pop() };
-  
+
   for (const [key, value] of Object.entries(fields)) {
     if (value.stringValue !== undefined) data[key] = value.stringValue;
     else if (value.integerValue !== undefined) data[key] = parseInt(value.integerValue);
@@ -27,14 +45,10 @@ function fromFirestore(doc) {
   return data;
 }
 
-/**
- * Converte um objeto JS para o formato de campos do Firestore REST
- */
 function toFirestore(obj) {
   const fields = {};
   for (const [key, value] of Object.entries(obj)) {
     if (key === 'id') continue;
-    
     if (typeof value === 'string') fields[key] = { stringValue: value };
     else if (typeof value === 'boolean') fields[key] = { booleanValue: value };
     else if (Number.isInteger(value)) fields[key] = { integerValue: value.toString() };
@@ -44,20 +58,51 @@ function toFirestore(obj) {
 }
 
 /**
- * Busca o status atual de todos os sistemas
+ * Busca status com validação inteligente (Metadata Check)
+ * @param {boolean} forceRefresh - Se true, ignora o vigia e baixa tudo
  */
-async function getSystemsStatus() {
+async function getSystemsStatus(forceRefresh = false) {
   try {
+    // 1. Carrega dados locais
+    const storage = await chrome.storage.local.get(['cachedSystemsStatus', 'metadataLastSignature']);
+    let cachedData = storage.cachedSystemsStatus || [];
+    const localSignature = storage.metadataLastSignature;
+    let serverSignature = null;
+
+    // 2. Verifica o "Vigia" (Custo: 1 Leitura)
+    if (!forceRefresh) {
+      try {
+        const metaResponse = await fetch(`${METADATA_URL}?key=${FIREBASE_API_KEY}`);
+        if (metaResponse.ok) {
+          const metaDoc = await metaResponse.json();
+          serverSignature = metaDoc.fields?.lastUpdated?.timestampValue;
+        }
+      } catch (e) { console.warn('Erro checando meta:', e); }
+
+      // Se assinaturas batem, usa cache
+      if (cachedData.length > 0 && serverSignature && serverSignature === localSignature) {
+        console.log('✅ Sistemas: Sem alterações (Cache).');
+        return cachedData;
+      }
+    }
+
+    // 3. Baixa atualização completa
+    console.log('🔄 Sistemas: Baixando dados atualizados...');
     const response = await fetch(`${BASE_URL}?key=${FIREBASE_API_KEY}`);
     if (!response.ok) throw new Error('Erro ao buscar dados do Firestore');
-    
+
     const result = await response.json();
     const systems = (result.documents || []).map(fromFirestore);
-    
-    // Ordenar por campo 'order'
+
+    // Ordenar
     systems.sort((a, b) => (a.order || 0) - (b.order || 0));
 
-    await chrome.storage.local.set({ cachedSystemsStatus: systems });
+    // 4. Salva cache
+    await chrome.storage.local.set({
+      cachedSystemsStatus: systems,
+      metadataLastSignature: serverSignature || new Date().toISOString()
+    });
+
     return systems;
   } catch (error) {
     console.error('Erro ao buscar status:', error);
@@ -66,27 +111,19 @@ async function getSystemsStatus() {
   }
 }
 
-/**
- * Atualiza o status de um sistema (PATCH)
- */
 async function updateSystemStatus(systemId, updates) {
   try {
     const fields = toFirestore(updates);
-    
-    // No REST, precisamos especificar quais campos estamos atualizando (mask)
     const updateMask = Object.keys(updates).map(k => `updateMask.fieldPaths=${k}`).join('&');
-    
+
     const response = await fetch(`${BASE_URL}/${systemId}?key=${FIREBASE_API_KEY}&${updateMask}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(fields)
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error?.message || 'Erro ao atualizar Firestore');
-    }
-    
+    if (!response.ok) throw new Error('Erro ao atualizar Firestore');
+    await touchMetadata(); // Atualiza o vigia
     return true;
   } catch (error) {
     console.error('Erro ao atualizar status:', error);
@@ -94,42 +131,29 @@ async function updateSystemStatus(systemId, updates) {
   }
 }
 
-/**
- * Cria ou substitui um sistema (com o método POST/PATCH do REST)
- */
 async function setSystemStatus(systemId, data) {
   try {
     const fields = toFirestore(data);
     const response = await fetch(`${BASE_URL}/${systemId}?key=${FIREBASE_API_KEY}`, {
-      method: 'PATCH', // Usamos PATCH aqui para "upsert" (criar ou atualizar)
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(fields)
     });
 
     if (!response.ok) throw new Error('Erro ao salvar no Firestore');
+    await touchMetadata();
     return true;
   } catch (error) {
-    console.error('Erro ao criar/atualizar:', error);
+    console.error('Erro ao criar:', error);
     throw error;
   }
 }
 
-/**
- * Como estamos usando REST puro, não temos o listener em tempo real real-time.
- * Vamos simular chamando a cada vez que o usuário abre o painel ou manualmente.
- */
 function subscribeToSystemsStatus(callback) {
-  // Chamada inicial
-  getSystemsStatus().then(callback);
-  
-  // No REST, poderíamos fazer um polling, mas para economizar requisições,
-  // vamos apenas avisar que a função foi registrada.
-  console.log('REST Mode: Listener simulado ativado.');
+  getSystemsStatus(false).then(callback);
 }
 
-/**
- * Tradutores de UI (mantidos para compatibilidade com info-panel.js)
- */
+// Helpers de UI
 function getStatusBadgeClass(status) {
   switch (status) {
     case 'operational': return 'badge-success';
@@ -152,13 +176,11 @@ function getStatusLabel(status) {
 
 /**
  * Captura o nome do usuário logado na barra de navegação do SGD
- * Seletor baseado em: <a class="navbar-link"><b>NOME</b></a>
  */
 function getCurrentSgdUser() {
   try {
     const userElement = document.querySelector('.navbar-link b');
     if (userElement) {
-      // Remove &nbsp; (espaços inquebráveis) e espaços extras
       return userElement.textContent.replace(/\u00A0/g, ' ').trim();
     }
   } catch (e) {
@@ -168,24 +190,19 @@ function getCurrentSgdUser() {
 }
 
 /**
- * Envia um reporte de instabilidade de um usuário com o nome
- * @param {string} systemId - ID do sistema
+ * Envia um reporte de instabilidade de um usuário
  */
 async function reportUserInstability(systemId) {
   try {
-    const userName = getCurrentSgdUser(); 
-
+    const userName = getCurrentSgdUser();
     const reportData = {
       systemId: systemId,
       timestamp: new Date().toISOString(),
       userName: userName
     };
-    
     const fields = toFirestore(reportData);
-    
-    // Transforma timestamp em formato Firestore Timestamp para o query funcionar melhor
     fields.fields.timestamp = { timestampValue: reportData.timestamp };
-    
+
     const response = await fetch(`${REPORTS_COLLECTION}?key=${FIREBASE_API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -193,9 +210,8 @@ async function reportUserInstability(systemId) {
     });
 
     if (!response.ok) {
-        const errorDetail = await response.json();
-        console.error('Firestore Error Detail:', JSON.stringify(errorDetail, null, 2));
-        throw new Error(`Erro ao enviar reporte: ${errorDetail.error?.message || response.statusText}`);
+      const errorDetail = await response.json();
+      throw new Error(`Erro ao enviar reporte: ${errorDetail.error?.message || response.statusText}`);
     }
     return true;
   } catch (error) {
@@ -205,15 +221,11 @@ async function reportUserInstability(systemId) {
 }
 
 /**
- * Busca a contagem de reportes da última hora para todos os sistemas
- * @returns {Promise<Object>} Objeto { systemId: count }
+ * Busca a contagem de reportes da última hora
  */
 async function getRecentReportsStats() {
   try {
-    // Define janela de tempo (última 1 hora)
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-
-    // Query estruturada do Firestore para filtrar por data
     const query = {
       structuredQuery: {
         from: [{ collectionId: "systemReports" }],
@@ -224,7 +236,7 @@ async function getRecentReportsStats() {
             value: { timestampValue: oneHourAgo }
           }
         },
-        limit: 500 // Limite de segurança para não explodir leituras
+        limit: 500
       }
     };
 
@@ -235,23 +247,18 @@ async function getRecentReportsStats() {
     });
 
     if (!response.ok) return {};
-
     const result = await response.json();
-    
-    // Processar resultados para contar por sistema
     const stats = {};
-    
     if (Array.isArray(result)) {
-        result.forEach(item => {
-            if (item.document) {
-                const data = fromFirestore(item.document);
-                if (data.systemId) {
-                    stats[data.systemId] = (stats[data.systemId] || 0) + 1;
-                }
-            }
-        });
+      result.forEach(item => {
+        if (item.document) {
+          const data = fromFirestore(item.document);
+          if (data.systemId) {
+            stats[data.systemId] = (stats[data.systemId] || 0) + 1;
+          }
+        }
+      });
     }
-    
     return stats;
   } catch (error) {
     console.error('Erro ao buscar estatísticas de reportes:', error);
@@ -259,19 +266,19 @@ async function getRecentReportsStats() {
   }
 }
 
-// Expor globalmente
-window.systemStatusService = {
-    ...(window.systemStatusService || {}),
-    getSystemsStatus,
-    updateSystemStatus,
-    reportUserInstability,
-    getRecentReportsStats,
-    getStatusBadgeClass,
-    getStatusLabel
+window.initializeSystemsInFirestore = async function () {
+  if (typeof initializeSystemsInFirestore === 'function') {
+    return await initializeSystemsInFirestore();
+  }
 };
 
-window.initializeSystemsInFirestore = async function() {
-  if (typeof initializeSystemsInFirestore === 'function') {
-      return await initializeSystemsInFirestore();
-  }
+window.systemStatusService = {
+  getSystemsStatus,
+  updateSystemStatus,
+  setSystemStatus,
+  subscribeToSystemsStatus,
+  getStatusBadgeClass,
+  getStatusLabel,
+  reportUserInstability,
+  getRecentReportsStats
 };

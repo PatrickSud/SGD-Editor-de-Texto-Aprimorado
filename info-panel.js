@@ -206,18 +206,24 @@ async function openInfoPanel() {
       if (targetSection) {
         targetSection.classList.add('active')
 
-        // Carregamento dinâmico das seções
         if (targetId === 'pending') loadPendingItems(targetSection)
         if (targetId === 'forms') loadForms(targetSection, 'forms')
         if (targetId === 'ai-chains') loadForms(targetSection, 'ai')
+
+        // CORREÇÃO: Passa false (usar cache) por padrão
         if (targetId === 'instabilities') {
-          loadSystemsStatus(targetSection)
+          loadSystemsStatus(targetSection, false)
           const refreshBtn = targetSection.querySelector('#refresh-systems-btn')
           if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => loadSystemsStatus(targetSection));
+            const newBtn = refreshBtn.cloneNode(true);
+            refreshBtn.parentNode.replaceChild(newBtn, refreshBtn);
+            newBtn.addEventListener('click', () => {
+              // Clicar no botão força atualização (true)
+              loadSystemsStatus(targetSection, true);
+            });
           }
         }
-        if (targetId === 'notices') loadWarnings(targetSection)
+        if (targetId === 'notices') loadWarnings(targetSection, false)
       }
     })
   })
@@ -867,9 +873,9 @@ function createPendingCard(item, showResponsible = false) {
 // #region Avisos (Warnings)
 /**
  * Carrega e renderiza os avisos.
- * @param {HTMLElement} sectionElement 
+ * ATUALIZADO: Suporta forceRefresh
  */
-async function loadWarnings(sectionElement) {
+async function loadWarnings(sectionElement, forceRefresh = false) {
   let listContainer = sectionElement.querySelector('#warnings-list');
 
   // Se não existir o listContainer, cria a estrutura inicial
@@ -896,8 +902,8 @@ async function loadWarnings(sectionElement) {
     if (newBtn) {
       newBtn.addEventListener('click', () => openCreateWarningModal(null));
     }
-  } else {
-    // Se já existe, apenas bota o loading dentro do listContainer
+  } else if (forceRefresh) {
+    // Mostra loading se for refresh forçado
     listContainer.innerHTML = `
             <div class="ip-loading-container">
                 <div class="ip-spinner"></div>
@@ -911,7 +917,8 @@ async function loadWarnings(sectionElement) {
       throw new Error('Serviço de avisos não carregado.');
     }
 
-    let warnings = await window.warningsService.getWarnings();
+    // Passa o parâmetro forceRefresh
+    let warnings = await window.warningsService.getWarnings(forceRefresh);
 
     // --- 1. Filtro de Expiração (7 dias) ---
     const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -1052,7 +1059,7 @@ function processSafeHTML(text) {
   });
 
   // 3. Trata tag <a href="..."> especificamente
-  // Formato escapado: &lt;a href=&quot;URL&quot;&gt;
+  // Formato escapado: &lt;a\s+href=&quot;(.*?)&quot;&gt;
   safe = safe.replace(/&lt;a\s+href=&quot;(.*?)&quot;&gt;/gi, (match, url) => {
     let fixedUrl = url.trim();
     // Se não começa com protocolo ou barra (link relativo ao site), adiciona https://
@@ -2154,26 +2161,36 @@ async function addClosingToPersonal(closingData) {
  */
 
 /**
- * Carrega e renderiza os status dos sistemas e reportes de usuários
+ * Carrega e renderiza os status dos sistemas do Firestore
+ * ATUALIZADO: Suporta forceRefresh
  */
-async function loadSystemsStatus(sectionElement) {
+async function loadSystemsStatus(sectionElement, forceRefresh = false) {
   const container = sectionElement.querySelector('#systems-status-container');
   if (!container) return;
 
+  // Mostra loading se for refresh forçado ou estiver vazio
+  if (forceRefresh || !container.innerHTML.trim() || container.innerHTML.includes('ip-empty-state')) {
+    container.innerHTML = `
+        <div class="ip-loading-container">
+          <div class="ip-spinner"></div>
+          <span>Carregando status dos sistemas...</span>
+        </div>
+      `;
+  }
+
   try {
     // 1. Carrega status oficial e estatísticas de usuários em paralelo
+    // Passa forceRefresh para o serviço
     const [systems, userReports] = await Promise.all([
-      getSystemsStatus(),
+      getSystemsStatus(forceRefresh),
       window.systemStatusService.getRecentReportsStats()
     ]);
 
-    // 2. Renderiza combinando os dados
+    // 2. Renderiza combinando os dados (Incluindo Relatos)
     renderSystemsStatus(container, systems, userReports);
 
-    // Configurar listener (Simulado no REST)
-    // Nota: O ideal seria polling ou WebSocket, mas vamos manter simples por enquanto
   } catch (error) {
-    console.error('Erro ao carregar status:', error);
+    console.error('Erro ao carregar status dos sistemas:', error);
     container.innerHTML = `
       <div class="ip-error-state">
         <span class="ip-error-icon">⚠️</span>
@@ -2185,7 +2202,7 @@ async function loadSystemsStatus(sectionElement) {
 }
 
 /**
- * Renderiza os cards de status dos sistemas com votação
+ * Renderiza os cards de status dos sistemas com votação/relatos
  */
 function renderSystemsStatus(container, systems, userReports = {}) {
   if (!systems || systems.length === 0) {
@@ -2209,7 +2226,6 @@ function renderSystemsStatus(container, systems, userReports = {}) {
     const reportCount = userReports[system.id] || 0;
 
     // Lógica visual do Downdetector (Barra de intensidade)
-    // Definimos um "teto" arbitrário. Ex: 20 reportes é 100% da barra vermelha
     const maxReportsReference = 20;
     const intensityPct = Math.min((reportCount / maxReportsReference) * 100, 100);
 
@@ -2225,9 +2241,9 @@ function renderSystemsStatus(container, systems, userReports = {}) {
       intensityLabel = 'Muitos Relatos';
     }
 
-    // Verifica se o usuário já reportou recentemente (para desabilitar botão)
+    // Verifica se o usuário já reportou recentemente
     const lastReportTime = localStorage.getItem(`last_report_${system.id}`);
-    const COOLDOWN = 30 * 60 * 1000; // 30 minutos
+    const COOLDOWN = 30 * 60 * 1000;
     const canReport = !lastReportTime || (Date.now() - parseInt(lastReportTime) > COOLDOWN);
 
     const reportBtnHtml = `
@@ -2264,7 +2280,7 @@ function renderSystemsStatus(container, systems, userReports = {}) {
           <div class="ip-system-message">${escapeHTML(system.message)}</div>
           ${workaroundHtml}
         </div>
-
+        
         <div class="ip-system-reports-area">
             <div class="ip-reports-header">
                 <span class="reports-count">${reportCount} relatos na última hora</span>
@@ -2277,7 +2293,7 @@ function renderSystemsStatus(container, systems, userReports = {}) {
 
         <div class="ip-system-footer">
             <div class="ip-footer-left">
-                ${system.updatedAt ? `<div class="ip-card-updated"><span>🕒</span> ${new Date(system.updatedAt).toLocaleString('pt-BR', {
+                ${system.updatedAt ? `<div class="ip-card-updated" title="Última Atualização Oficial"><span>🕒</span> ${new Date(system.updatedAt).toLocaleString('pt-BR', {
       day: '2-digit',
       month: '2-digit',
       hour: '2-digit',
@@ -2301,31 +2317,22 @@ function renderSystemsStatus(container, systems, userReports = {}) {
 
       const sysId = btn.dataset.systemId;
       const originalText = btn.textContent;
-
-      // Feedback imediato
       btn.textContent = 'Enviando...';
       btn.classList.add('disabled');
 
       try {
         await window.systemStatusService.reportUserInstability(sysId);
-
-        // Salva cooldown local
         localStorage.setItem(`last_report_${sysId}`, Date.now());
-
         btn.textContent = '✅ Reportado';
         if (typeof showNotification === 'function') {
           showNotification('Obrigado! Seu relato ajuda outros usuários.', 'success');
         } else {
           alert('Obrigado! Seu relato ajuda outros usuários.');
         }
-
-        // Atualiza o painel para mostrar o novo contagem
-        // Pequeno delay para garantir que o Firestore processou (consistência eventual)
         setTimeout(() => {
           const section = document.querySelector('#ip-section-instabilities');
-          if (section) loadSystemsStatus(section);
+          if (section) loadSystemsStatus(section, false);
         }, 1200);
-
       } catch (err) {
         console.error(err);
         btn.textContent = originalText;
