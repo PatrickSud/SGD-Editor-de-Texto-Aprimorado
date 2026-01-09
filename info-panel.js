@@ -13,13 +13,13 @@ function escapeHTML(str) {
   return str.replace(
     /[&<>"']/g,
     m =>
-      ({
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#39;'
-      }[m])
+    ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[m])
   )
 }
 
@@ -60,7 +60,7 @@ async function handleDeveloperModeClick(event) {
   if (clickCount >= 5 && !developerMode) {
     // Persiste a ativação
     await toggleDevMode();
-    
+
     developerMode = true
     clickCount = 0
 
@@ -72,7 +72,7 @@ async function handleDeveloperModeClick(event) {
     document.body.appendChild(toast)
 
     setTimeout(() => {
-       if (document.body.contains(toast)) document.body.removeChild(toast)
+      if (document.body.contains(toast)) document.body.removeChild(toast)
     }, 3000)
 
     // Recarregar o painel para mostrar todas as seções
@@ -107,14 +107,14 @@ async function openInfoPanel() {
   const sections = developerMode
     ? allSections
     : allSections.filter(
-        section =>
-          section.id === 'pending' ||
-          section.id === 'ai-chains' ||
-          section.id === 'forms' ||
-          section.id === 'notices' ||
-          section.id === 'extensions' ||
-          section.id === 'instabilities'
-      )
+      section =>
+        section.id === 'pending' ||
+        section.id === 'ai-chains' ||
+        section.id === 'forms' ||
+        section.id === 'notices' ||
+        section.id === 'extensions' ||
+        section.id === 'instabilities'
+    )
 
   // HTML do rodapé da sidebar (Interruptor Dev Mode)
   const sidebarFooterHtml = developerMode ? `
@@ -137,17 +137,16 @@ async function openInfoPanel() {
       </div>
       <div style="flex: 1; overflow-y: auto;">
         ${sections
-          .map(
-            (s, index) => `
-          <div id="ip-nav-${s.id}" class="ip-nav-item ${index === 0 ? 'active' : ''}" data-target="${
-              s.id
-            }">
+      .map(
+        (s, index) => `
+          <div id="ip-nav-${s.id}" class="ip-nav-item ${index === 0 ? 'active' : ''}" data-target="${s.id
+          }">
             <span class="ip-nav-icon">${s.icon}</span>
             <span class="ip-nav-label">${s.label}</span>
           </div>
         `
-          )
-          .join('')}
+      )
+      .join('')}
       </div>
       ${sidebarFooterHtml}
     </div>
@@ -157,17 +156,16 @@ async function openInfoPanel() {
   const contentHtml = `
     <div class="ip-content-area">
       ${sections
-        .map(
-          (s, index) => `
-        <div id="ip-section-${s.id}" class="ip-section ${
-            index === 0 ? 'active' : ''
+      .map(
+        (s, index) => `
+        <div id="ip-section-${s.id}" class="ip-section ${index === 0 ? 'active' : ''
           }">
           <h3 class="ip-section-title">${s.icon} ${s.label}</h3>
           ${getSectionContent(s.id)}
         </div>
       `
-        )
-        .join('')}
+      )
+      .join('')}
     </div>
   `
 
@@ -196,12 +194,12 @@ async function openInfoPanel() {
       // Add active class
       item.classList.add('active')
       const targetId = item.dataset.target
-      
+
       // Indicador de lido/não lido para Avisos
       if (targetId === 'notices') {
-          const noticeIcon = item.querySelector('.ip-nav-icon');
-          if (noticeIcon) noticeIcon.classList.remove('has-unread-warnings');
-          chrome.storage.local.set({ 'warningsLastReadTime': Date.now() });
+        const noticeIcon = item.querySelector('.ip-nav-icon');
+        if (noticeIcon) noticeIcon.classList.remove('has-unread-warnings');
+        chrome.storage.local.set({ 'warningsLastReadTime': Date.now() });
       }
 
       const targetSection = modal.querySelector(`#ip-section-${targetId}`)
@@ -234,43 +232,43 @@ async function openInfoPanel() {
 
     const notifyBtn = pendingSection.querySelector('#toggle-notification-btn')
     if (notifyBtn) {
-        const updateNotifyBtnState = (enabled) => {
-            if (enabled) {
-                notifyBtn.textContent = '🔔'
-                notifyBtn.classList.add('active-notification')
-                notifyBtn.title = 'Notificações Ativadas'
-                notifyBtn.style.opacity = '1'
-            } else {
-                notifyBtn.textContent = '🔕'
-                notifyBtn.classList.remove('active-notification')
-                notifyBtn.title = 'Notificações Desativadas'
-                notifyBtn.style.opacity = '0.6'
-            }
+      const updateNotifyBtnState = (enabled) => {
+        if (enabled) {
+          notifyBtn.textContent = '🔔'
+          notifyBtn.classList.add('active-notification')
+          notifyBtn.title = 'Notificações Ativadas'
+          notifyBtn.style.opacity = '1'
+        } else {
+          notifyBtn.textContent = '🔕'
+          notifyBtn.classList.remove('active-notification')
+          notifyBtn.title = 'Notificações Desativadas'
+          notifyBtn.style.opacity = '0.6'
         }
+      }
 
-        chrome.storage.sync.get(['extensionSettingsData'], (result) => {
-            const settings = result.extensionSettingsData || {}
-            const prefs = settings.preferences || {}
-            updateNotifyBtnState(prefs.enablePendingNotifications === true)
-        })
+      chrome.storage.sync.get(['extensionSettingsData'], (result) => {
+        const settings = result.extensionSettingsData || {}
+        const prefs = settings.preferences || {}
+        updateNotifyBtnState(prefs.enablePendingNotifications === true)
+      })
 
-        notifyBtn.addEventListener('click', async () => {
-             const result = await chrome.storage.sync.get(['extensionSettingsData'])
-             let settings = result.extensionSettingsData || { preferences: {} }
-             if (!settings.preferences) settings.preferences = {}
-             
-             const newState = !(settings.preferences.enablePendingNotifications === true)
-             settings.preferences.enablePendingNotifications = newState
-             
-             await chrome.storage.sync.set({ extensionSettingsData: settings })
-             updateNotifyBtnState(newState)
-        })
+      notifyBtn.addEventListener('click', async () => {
+        const result = await chrome.storage.sync.get(['extensionSettingsData'])
+        let settings = result.extensionSettingsData || { preferences: {} }
+        if (!settings.preferences) settings.preferences = {}
+
+        const newState = !(settings.preferences.enablePendingNotifications === true)
+        settings.preferences.enablePendingNotifications = newState
+
+        await chrome.storage.sync.set({ extensionSettingsData: settings })
+        updateNotifyBtnState(newState)
+      })
     }
 
     if (pendingSection.classList.contains('active')) {
       loadPendingItems(pendingSection)
     }
-    
+
     // Configurar listeners para os filtros
     const searchInput = pendingSection.querySelector('#pending-search')
     const statusFilter = pendingSection.querySelector('#pending-status-filter')
@@ -298,7 +296,7 @@ async function openInfoPanel() {
       if (!e.target.checked) {
         await toggleDevMode(); // Persiste no storage
         developerMode = false;
-        
+
         // Recarrega o painel para aplicar o layout de usuário comum
         modal.remove();
         openInfoPanel();
@@ -314,12 +312,12 @@ async function openInfoPanel() {
 
   // Mensagem de desenvolvimento no rodapé do conteúdo (apenas se dev)
   if (developerMode) {
-      const devMessage = document.createElement('div')
-      devMessage.style.cssText =
-        'padding: 12px 16px; margin-top: 16px; background-color: color-mix(in srgb, var(--action-yellow) 15%, transparent); border: 1px solid color-mix(in srgb, var(--action-yellow) 30%, transparent); border-radius: var(--border-radius-sm); color: var(--text-color-main); font-size: 13px;'
-      devMessage.innerHTML =
-        '<strong>⚠️ Modo Desenvolvedor Ativo:</strong> Você tem acesso a recursos experimentais e de edição.'
-      modal.querySelector('.ip-content-area').appendChild(devMessage)
+    const devMessage = document.createElement('div')
+    devMessage.style.cssText =
+      'padding: 12px 16px; margin-top: 16px; background-color: color-mix(in srgb, var(--action-yellow) 15%, transparent); border: 1px solid color-mix(in srgb, var(--action-yellow) 30%, transparent); border-radius: var(--border-radius-sm); color: var(--text-color-main); font-size: 13px;'
+    devMessage.innerHTML =
+      '<strong>⚠️ Modo Desenvolvedor Ativo:</strong> Você tem acesso a recursos experimentais e de edição.'
+    modal.querySelector('.ip-content-area').appendChild(devMessage)
   }
 
   document.body.appendChild(modal)
@@ -332,7 +330,7 @@ let allPendingItems = []
 // Global click listener to detect if clicks are happening but handler is missed
 document.addEventListener('click', (e) => {
   if (e.target.matches('.ip-add-tag-btn') || e.target.closest('.ip-add-tag-btn')) {
-    fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'info-panel.js:globalClick',message:'Click detected on tag button',data:{target: e.target.className, isWindowOpenTagManagerDefined: typeof window.openTagManager !== 'undefined'},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'info-panel.js:globalClick', message: 'Click detected on tag button', data: { target: e.target.className, isWindowOpenTagManagerDefined: typeof window.openTagManager !== 'undefined' }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'A' }) }).catch(() => { });
   }
 });
 // #endregion
@@ -369,7 +367,7 @@ async function toggleDevMode() {
  */
 function injectDevSwitchStyles() {
   if (document.getElementById('ip-dev-switch-styles')) return;
-  
+
   const style = document.createElement('style');
   style.id = 'ip-dev-switch-styles';
   style.textContent = `
@@ -443,12 +441,12 @@ function injectDevSwitchStyles() {
 function getCurrentUserName() {
   // Tenta obter o nome do usuário do elemento do topo do SGD (navbar-link b)
   const userNameElement = document.querySelector('.navbar-link b');
-  
+
   if (userNameElement) {
     // Remove os &nbsp; (no JS aparecem como \u00A0)
     return userNameElement.textContent.replace(/\u00A0/g, ' ').trim();
   }
-  
+
   // Fallback para outros elementos se mudar
   const fallbackElement = document.querySelector('.user-info, .usuario-nome');
   return fallbackElement ? fallbackElement.textContent.trim() : 'Usuário SGD';
@@ -472,8 +470,8 @@ function applyPendingFilters(sectionElement) {
     sectionElement.querySelector('#pending-status-filter')?.value || ''
   const tagFilter =
     sectionElement.querySelector('#pending-tag-filter')?.value || ''
-  
-  const responsibleFilter = 
+
+  const responsibleFilter =
     sectionElement.querySelector('#pending-responsible-filter')?.value || ''
 
   const sortOption =
@@ -523,9 +521,9 @@ function applyPendingFilters(sectionElement) {
 
     // Filtro de Responsável
     if (responsibleFilter) {
-        if (item.responsible !== responsibleFilter) {
-            return false
-        }
+      if (item.responsible !== responsibleFilter) {
+        return false
+      }
     }
 
     return true
@@ -586,12 +584,12 @@ function applyPendingFilters(sectionElement) {
     container.innerHTML = filteredItems
       .map(item => createPendingCard(item, showResponsible))
       .join('')
-      
+
     // Attach listeners after rendering cards
     container.querySelectorAll('.ip-add-tag-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            openTagManager(this, this.dataset.pendingId)
-        })
+      btn.addEventListener('click', function () {
+        openTagManager(this, this.dataset.pendingId)
+      })
     })
   }
 }
@@ -631,61 +629,61 @@ async function loadPendingItems(sectionElement) {
     const siteFilter = result.siteFilter
 
     allPendingItems = items
-    
+
     // Gerenciar Aviso de Filtro do Site
     const existingWarning = sectionElement.querySelector('.ip-site-filter-warning')
     if (existingWarning) existingWarning.remove()
 
     if (siteFilter && siteFilter.active) {
-        const headerRow = sectionElement.querySelector('.ip-pending-header-row')
-        if (headerRow) {
-            const warningDiv = document.createElement('div')
-            warningDiv.className = 'ip-site-filter-warning'
-            warningDiv.style.cssText = 'background: #fff3cd; color: #856404; padding: 8px 12px; margin: 0 10px 10px 10px; border-radius: 4px; border: 1px solid #ffeeba; display: flex; align-items: center; justify-content: space-between; font-size: 12px;'
-            warningDiv.innerHTML = `
+      const headerRow = sectionElement.querySelector('.ip-pending-header-row')
+      if (headerRow) {
+        const warningDiv = document.createElement('div')
+        warningDiv.className = 'ip-site-filter-warning'
+        warningDiv.style.cssText = 'background: #fff3cd; color: #856404; padding: 8px 12px; margin: 0 10px 10px 10px; border-radius: 4px; border: 1px solid #ffeeba; display: flex; align-items: center; justify-content: space-between; font-size: 12px;'
+        warningDiv.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 6px;">
                     <span style="font-size: 14px;">⚠️</span>
                     <span><strong>Filtro do site ativo:</strong> ${escapeHTML(siteFilter.name || 'Desconhecido')}</span>
                 </div>
                 <button id="reset-site-filter-btn" style="border: 1px solid #856404; background: transparent; color: #856404; cursor: pointer; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: bold; transition: all 0.2s;">CORREÇÃO: Ver Todos</button>
             `
-            headerRow.parentNode.insertBefore(warningDiv, headerRow.nextSibling)
-            
-            // Bind click
-            const resetBtn = warningDiv.querySelector('#reset-site-filter-btn')
-            resetBtn.addEventListener('mouseenter', () => { resetBtn.style.background = '#856404'; resetBtn.style.color = '#fff'; })
-            resetBtn.addEventListener('mouseleave', () => { resetBtn.style.background = 'transparent'; resetBtn.style.color = '#856404'; })
-            
-            resetBtn.addEventListener('click', async () => {
-                 resetBtn.disabled = true
-                 const originalText = resetBtn.innerText
-                 resetBtn.innerText = 'Limpando...'
-                 warningDiv.style.opacity = '0.7'
-                 
-                 try {
-                     // resetSiteFilter deve estar no pending-service.js
-                     if (typeof resetSiteFilter === 'function') {
-                         const success = await resetSiteFilter()
-                         
-                         if (!success) {
-                             throw new Error('Não foi possível encontrar o botão de pesquisar ou limpar o filtro automaticamente.')
-                         }
-                         // Se sucesso, a página deve recarregar ou atualizar, então não restauramos o estado imediatamente
-                     } else {
-                         throw new Error('Função de limpar filtro não encontrada.')
-                     }
-                 } catch (err) {
-                     console.error(err)
-                     alert('Não conseguimos limpar o filtro automaticamente. Por favor, limpe manualmente no site de pendências.')
-                     // Restaura estado
-                     resetBtn.disabled = false
-                     resetBtn.innerText = originalText
-                     warningDiv.style.opacity = '1'
-                 }
-            })
-        }
+        headerRow.parentNode.insertBefore(warningDiv, headerRow.nextSibling)
+
+        // Bind click
+        const resetBtn = warningDiv.querySelector('#reset-site-filter-btn')
+        resetBtn.addEventListener('mouseenter', () => { resetBtn.style.background = '#856404'; resetBtn.style.color = '#fff'; })
+        resetBtn.addEventListener('mouseleave', () => { resetBtn.style.background = 'transparent'; resetBtn.style.color = '#856404'; })
+
+        resetBtn.addEventListener('click', async () => {
+          resetBtn.disabled = true
+          const originalText = resetBtn.innerText
+          resetBtn.innerText = 'Limpando...'
+          warningDiv.style.opacity = '0.7'
+
+          try {
+            // resetSiteFilter deve estar no pending-service.js
+            if (typeof resetSiteFilter === 'function') {
+              const success = await resetSiteFilter()
+
+              if (!success) {
+                throw new Error('Não foi possível encontrar o botão de pesquisar ou limpar o filtro automaticamente.')
+              }
+              // Se sucesso, a página deve recarregar ou atualizar, então não restauramos o estado imediatamente
+            } else {
+              throw new Error('Função de limpar filtro não encontrada.')
+            }
+          } catch (err) {
+            console.error(err)
+            alert('Não conseguimos limpar o filtro automaticamente. Por favor, limpe manualmente no site de pendências.')
+            // Restaura estado
+            resetBtn.disabled = false
+            resetBtn.innerText = originalText
+            warningDiv.style.opacity = '1'
+          }
+        })
+      }
     }
-    
+
     // Carregar Tags e Mapa
     availableTagsCache = await getAvailableTags()
     pendingTagsMapCache = await getPendingTagsMap()
@@ -693,35 +691,35 @@ async function loadPendingItems(sectionElement) {
     // Atualiza o select de filtro de tags caso ele já tenha sido renderizado (refresh)
     const tagFilterSelect = sectionElement.querySelector('#pending-tag-filter')
     if (tagFilterSelect) {
-        const currentVal = tagFilterSelect.value
-        tagFilterSelect.innerHTML = `
+      const currentVal = tagFilterSelect.value
+      tagFilterSelect.innerHTML = `
             <option value="">Todas as Tags</option>
             ${availableTagsCache.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
         `
-        tagFilterSelect.value = currentVal
+      tagFilterSelect.value = currentVal
     }
 
     // Atualiza o select de filtro de responsável
     const responsibleSelect = sectionElement.querySelector('#pending-responsible-filter')
     if (responsibleSelect) {
-        const currentVal = responsibleSelect.value
-        const responsibles = [...new Set(items.map(i => i.responsible).filter(Boolean))].sort()
-        
-        responsibleSelect.innerHTML = `
+      const currentVal = responsibleSelect.value
+      const responsibles = [...new Set(items.map(i => i.responsible).filter(Boolean))].sort()
+
+      responsibleSelect.innerHTML = `
             <option value="">Todos Responsáveis</option>
             ${responsibles.map(r => `<option value="${escapeHTML(r)}">${escapeHTML(r)}</option>`).join('')}
         `
-        // Tenta restaurar a seleção se ainda existir
-        if (responsibles.includes(currentVal)) {
-            responsibleSelect.value = currentVal
-        }
+      // Tenta restaurar a seleção se ainda existir
+      if (responsibles.includes(currentVal)) {
+        responsibleSelect.value = currentVal
+      }
 
-        // Se houver apenas 1 ou nenhum responsável, esconde o filtro pois é desnecessário
-        if (responsibles.length <= 1) {
-            responsibleSelect.style.display = 'none'
-        } else {
-            responsibleSelect.style.display = ''
-        }
+      // Se houver apenas 1 ou nenhum responsável, esconde o filtro pois é desnecessário
+      if (responsibles.length <= 1) {
+        responsibleSelect.style.display = 'none'
+      } else {
+        responsibleSelect.style.display = ''
+      }
     }
 
     if (items.length === 0) {
@@ -777,54 +775,54 @@ function getStatusClass(status) {
  * @returns {string} HTML do card.
  */
 function createPendingCard(item, showResponsible = false) {
-// #region agent log
-fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'info-panel.js:createPendingCard',message:'Creating card v3',data:{id: item.id},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-// #endregion
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'info-panel.js:createPendingCard', message: 'Creating card v3', data: { id: item.id }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'A' }) }).catch(() => { });
+  // #endregion
   const statusClass = getStatusClass(item.status)
-  
+
   // Tags
   let tagsRenderList = []
   const renderedTagIds = new Set()
 
   // 1. Tag de Prioridade (Automática - baseada em nome)
   if (item.isPrioritaria) {
-      const priorityTag = availableTagsCache.find(t => t.name.toLowerCase() === 'prioridade')
-      if (priorityTag) {
-          tagsRenderList.push(priorityTag)
-          renderedTagIds.add(priorityTag.id)
-      }
+    const priorityTag = availableTagsCache.find(t => t.name.toLowerCase() === 'prioridade')
+    if (priorityTag) {
+      tagsRenderList.push(priorityTag)
+      renderedTagIds.add(priorityTag.id)
+    }
   }
 
   // 2. Tag de Em SS (Automática - baseada em nome)
   if (item.isEmSS) {
-      const ssTag = availableTagsCache.find(t => t.name.toLowerCase() === 'em ss')
-      if (ssTag) {
-          tagsRenderList.push(ssTag)
-          renderedTagIds.add(ssTag.id)
-      }
+    const ssTag = availableTagsCache.find(t => t.name.toLowerCase() === 'em ss')
+    if (ssTag) {
+      tagsRenderList.push(ssTag)
+      renderedTagIds.add(ssTag.id)
+    }
   }
 
   // 3. Tags do Usuário (Persistidas)
   const storedTagIds = pendingTagsMapCache[item.id] || []
   storedTagIds.forEach(id => {
-      // Evita duplicatas se a tag automática já foi adicionada
-      if (renderedTagIds.has(id)) return
+    // Evita duplicatas se a tag automática já foi adicionada
+    if (renderedTagIds.has(id)) return
 
-      const def = availableTagsCache.find(t => t.id === id)
-      if (def) {
-          tagsRenderList.push(def)
-          renderedTagIds.add(def.id)
-      }
+    const def = availableTagsCache.find(t => t.id === id)
+    if (def) {
+      tagsRenderList.push(def)
+      renderedTagIds.add(def.id)
+    }
   })
 
   const tagsHtml = tagsRenderList.map(tagDef => {
     return `<span class="ip-tag-badge" style="background-color: ${tagDef.color}20; color: ${tagDef.color}; border-color: ${tagDef.color}40;">${escapeHTML(tagDef.name)}</span>`
   }).join('')
 
-  const responsibleHtml = showResponsible && item.responsible 
+  const responsibleHtml = showResponsible && item.responsible
     ? `<div class="ip-pending-responsible-item" title="Responsável: ${escapeHTML(item.responsible)}" style="margin-left: 8px; font-weight: 600; font-size: 12px; color: var(--text-color-muted); display: flex; align-items: center; gap: 4px; border-left: 1px solid var(--border-color); padding-left: 8px;">
          <span style="font-size: 14px;">👤</span>${escapeHTML(item.responsible)}
-       </div>` 
+       </div>`
     : ''
 
   return `
@@ -860,7 +858,6 @@ fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{metho
                     <div class="ip-date-container" style="text-align: right; font-size: 10px; opacity: 0.7;">
                         <span title="Data de Abertura: ${escapeHTML(item.dataAbertura)}">${escapeHTML(item.dataAbertura)}</span> | <span title="Último Trâmite: ${escapeHTML(item.dataUltimoTramite)}">${escapeHTML(item.dataUltimoTramite)}</span>
                     </div>
-                    <a href="${escapeHTML(item.link)}" target="_blank" class="ip-pending-action-btn">Abrir ↗</a>
                 </div>
             </div>
         </div>
@@ -873,12 +870,12 @@ fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{metho
  * @param {HTMLElement} sectionElement 
  */
 async function loadWarnings(sectionElement) {
-    let listContainer = sectionElement.querySelector('#warnings-list');
-    
-    // Se não existir o listContainer, cria a estrutura inicial
-    if (!listContainer) {
-        // Cabeçalho da seção com botão de novo aviso (se dev)
-        const headerHtml = `
+  let listContainer = sectionElement.querySelector('#warnings-list');
+
+  // Se não existir o listContainer, cria a estrutura inicial
+  if (!listContainer) {
+    // Cabeçalho da seção com botão de novo aviso (se dev)
+    const headerHtml = `
             <div class="ip-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <div class="ip-section-desc" style="margin-bottom: 0;">Fique por dentro dos comunicados e avisos importantes.</div>
                 ${developerMode ? `<button id="new-warning-btn" class="ip-add-closing-btn" style="width: auto;">+ Novo Aviso</button>` : ''}
@@ -890,143 +887,143 @@ async function loadWarnings(sectionElement) {
                 </div>
             </div>
         `;
-        
-        sectionElement.innerHTML = headerHtml;
-        listContainer = sectionElement.querySelector('#warnings-list');
-        
-        // Listener do botão de criar
-        const newBtn = sectionElement.querySelector('#new-warning-btn');
-        if (newBtn) {
-            newBtn.addEventListener('click', () => openCreateWarningModal(null));
-        }
-    } else {
-        // Se já existe, apenas bota o loading dentro do listContainer
-        listContainer.innerHTML = `
+
+    sectionElement.innerHTML = headerHtml;
+    listContainer = sectionElement.querySelector('#warnings-list');
+
+    // Listener do botão de criar
+    const newBtn = sectionElement.querySelector('#new-warning-btn');
+    if (newBtn) {
+      newBtn.addEventListener('click', () => openCreateWarningModal(null));
+    }
+  } else {
+    // Se já existe, apenas bota o loading dentro do listContainer
+    listContainer.innerHTML = `
             <div class="ip-loading-container">
                 <div class="ip-spinner"></div>
                 <span>Atualizando...</span>
             </div>
         `;
+  }
+
+  try {
+    if (typeof window.warningsService === 'undefined') {
+      throw new Error('Serviço de avisos não carregado.');
     }
 
-    try {
-        if (typeof window.warningsService === 'undefined') {
-            throw new Error('Serviço de avisos não carregado.');
-        }
+    let warnings = await window.warningsService.getWarnings();
 
-        let warnings = await window.warningsService.getWarnings();
-        
-        // --- 1. Filtro de Expiração (7 dias) ---
-        const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
-        const now = Date.now();
-        warnings = warnings.filter(w => {
-            if (!w.date) return true; // Se não tem data, mantém
-            const warnDate = new Date(w.date).getTime();
-            return (now - warnDate) < SEVEN_DAYS_MS;
-        });
+    // --- 1. Filtro de Expiração (7 dias) ---
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    warnings = warnings.filter(w => {
+      if (!w.date) return true; // Se não tem data, mantém
+      const warnDate = new Date(w.date).getTime();
+      return (now - warnDate) < SEVEN_DAYS_MS;
+    });
 
-        // [NOVO] --- 1.5 Filtro de Teste/Desenvolvedor ---
-        // Se NÃO estiver em modo desenvolvedor, remove avisos marcados como isTest
-        if (!developerMode) {
-            warnings = warnings.filter(w => !w.isTest);
-        }
+    // [NOVO] --- 1.5 Filtro de Teste/Desenvolvedor ---
+    // Se NÃO estiver em modo desenvolvedor, remove avisos marcados como isTest
+    if (!developerMode) {
+      warnings = warnings.filter(w => !w.isTest);
+    }
 
-        // --- 2. Filtro de Ignorados (Storage) ---
-        const storage = await new Promise(resolve => chrome.storage.local.get(['ignoredWarnings'], resolve));
-        const ignoredIds = storage.ignoredWarnings || [];
-        warnings = warnings.filter(w => !ignoredIds.includes(w.id));
-        
-        const listContainer = sectionElement.querySelector('#warnings-list');
-        if (!listContainer) return;
+    // --- 2. Filtro de Ignorados (Storage) ---
+    const storage = await new Promise(resolve => chrome.storage.local.get(['ignoredWarnings'], resolve));
+    const ignoredIds = storage.ignoredWarnings || [];
+    warnings = warnings.filter(w => !ignoredIds.includes(w.id));
 
-        if (warnings.length === 0) {
-            listContainer.innerHTML = `
+    const listContainer = sectionElement.querySelector('#warnings-list');
+    if (!listContainer) return;
+
+    if (warnings.length === 0) {
+      listContainer.innerHTML = `
                 <div class="ip-empty-state">
                     <span style="font-size: 24px;">✅</span>
                     <h4>Nenhum aviso no momento</h4>
                     <p>Tudo tranquilo por aqui.</p>
                 </div>
             `;
-            listContainer.style.display = 'flex';
-            listContainer.style.justifyContent = 'center';
-        } else {
-            listContainer.style.display = 'flex';
-            listContainer.style.flexDirection = 'column';
-            listContainer.style.gap = '16px';
-            listContainer.innerHTML = warnings.map(createWarningCard).join('');
+      listContainer.style.display = 'flex';
+      listContainer.style.justifyContent = 'center';
+    } else {
+      listContainer.style.display = 'flex';
+      listContainer.style.flexDirection = 'column';
+      listContainer.style.gap = '16px';
+      listContainer.innerHTML = warnings.map(createWarningCard).join('');
 
-            // Adicionar listeners para botões de edição/exclusão (apenas se dev)
-            if (developerMode) {
-                listContainer.querySelectorAll('.ip-warn-edit-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const card = e.target.closest('.ip-card');
-                        const warnId = card.dataset.id;
-                        // Encontra o objeto completo do array (não temos aqui, mas podemos pegar dos atributos ou recarregar)
-                        // Melhor: ao renderizar, já colocar os dados no dataset ou buscar do array 'warnings' que está no escopo
-                        const warning = warnings.find(w => w.id === warnId);
-                        if (warning) openCreateWarningModal(warning);
-                    });
-                });
+      // Adicionar listeners para botões de edição/exclusão (apenas se dev)
+      if (developerMode) {
+        listContainer.querySelectorAll('.ip-warn-edit-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            const card = e.target.closest('.ip-card');
+            const warnId = card.dataset.id;
+            // Encontra o objeto completo do array (não temos aqui, mas podemos pegar dos atributos ou recarregar)
+            // Melhor: ao renderizar, já colocar os dados no dataset ou buscar do array 'warnings' que está no escopo
+            const warning = warnings.find(w => w.id === warnId);
+            if (warning) openCreateWarningModal(warning);
+          });
+        });
 
-                listContainer.querySelectorAll('.ip-warn-delete-btn').forEach(btn => {
-                    btn.addEventListener('click', async (e) => {
-                        if (confirm('Tem certeza que deseja excluir este aviso?')) {
-                            const card = e.target.closest('.ip-card');
-                            const warnId = card.dataset.id;
-                            try {
-                                await window.warningsService.deleteWarning(warnId);
-                                card.remove();
-                                // Se não sobrar nada, reload para mostrar empty state
-                                if (listContainer.children.length === 0) loadWarnings(sectionElement);
-                            } catch (err) {
-                                alert('Erro ao excluir: ' + err.message);
-                            }
-                        }
-                    });
-                });
+        listContainer.querySelectorAll('.ip-warn-delete-btn').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            if (confirm('Tem certeza que deseja excluir este aviso?')) {
+              const card = e.target.closest('.ip-card');
+              const warnId = card.dataset.id;
+              try {
+                await window.warningsService.deleteWarning(warnId);
+                card.remove();
+                // Se não sobrar nada, reload para mostrar empty state
+                if (listContainer.children.length === 0) loadWarnings(sectionElement);
+              } catch (err) {
+                alert('Erro ao excluir: ' + err.message);
+              }
             }
+          });
+        });
+      }
 
-            // Adicionar listeners para botões de ignorar (para todos)
-            listContainer.querySelectorAll('.ip-warn-ignore-btn').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    const card = e.target.closest('.ip-card');
-                    const warnId = card.dataset.id;
-                    
-                    // Salvar no storage
-                    chrome.storage.local.get(['ignoredWarnings'], (result) => {
-                        const ignored = result.ignoredWarnings || [];
-                        if (!ignored.includes(warnId)) {
-                            ignored.push(warnId);
-                            chrome.storage.local.set({ 'ignoredWarnings': ignored }, () => {
-                                card.style.opacity = '0';
-                                card.style.transform = 'translateX(20px)';
-                                card.style.transition = 'all 0.3s ease';
-                                setTimeout(() => {
-                                    card.remove();
-                                    if (listContainer.children.length === 0) loadWarnings(sectionElement);
-                                }, 300);
-                            });
-                        }
-                    });
-                });
-            });
+      // Adicionar listeners para botões de ignorar (para todos)
+      listContainer.querySelectorAll('.ip-warn-ignore-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const card = e.target.closest('.ip-card');
+          const warnId = card.dataset.id;
 
-            // Verificar indicadores de não lido
-            checkUnreadWarnings(warnings);
-        }
+          // Salvar no storage
+          chrome.storage.local.get(['ignoredWarnings'], (result) => {
+            const ignored = result.ignoredWarnings || [];
+            if (!ignored.includes(warnId)) {
+              ignored.push(warnId);
+              chrome.storage.local.set({ 'ignoredWarnings': ignored }, () => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateX(20px)';
+                card.style.transition = 'all 0.3s ease';
+                setTimeout(() => {
+                  card.remove();
+                  if (listContainer.children.length === 0) loadWarnings(sectionElement);
+                }, 300);
+              });
+            }
+          });
+        });
+      });
 
-    } catch (error) {
-        console.error(error);
-        const listContainer = sectionElement.querySelector('#warnings-list');
-        if (listContainer) {
-            listContainer.innerHTML = `
+      // Verificar indicadores de não lido
+      checkUnreadWarnings(warnings);
+    }
+
+  } catch (error) {
+    console.error(error);
+    const listContainer = sectionElement.querySelector('#warnings-list');
+    if (listContainer) {
+      listContainer.innerHTML = `
                 <div class="ip-error-state">
                     <span>⚠️</span>
                     <p>Erro ao carregar avisos.</p>
                 </div>
             `;
-        }
     }
+  }
 }
 
 
@@ -1035,86 +1032,86 @@ async function loadWarnings(sectionElement) {
  * Permite: b, strong, i, em, u, br, p, ul, ol, li, a (com href)
  */
 function processSafeHTML(text) {
-    if (!text) return '';
-    
-    // 1. Escapa tudo para neutralizar scripts e tags não permitidas
-    let safe = escapeHTML(text);
+  if (!text) return '';
 
-    // 2. Des-escapa tags permitidas (sem atributos, exceto A)
-    // Tags simples: <b>, </b>, <strong>, </strong>, etc.
-    const tags = ['b', 'strong', 'i', 'em', 'u', 'br', 'p', 'ul', 'ol', 'li'];
-    tags.forEach(tag => {
-        // Regex para abrir e fechar
-        // <tag> -> &lt;tag&gt;
-        const regexOpen = new RegExp(`&lt;${tag}&gt;`, 'gi');
-        safe = safe.replace(regexOpen, `<${tag}>`);
-        
-        // </tag> -> &lt;/tag&gt;
-        const regexClose = new RegExp(`&lt;/${tag}&gt;`, 'gi');
-        safe = safe.replace(regexClose, `</${tag}>`);
-    });
+  // 1. Escapa tudo para neutralizar scripts e tags não permitidas
+  let safe = escapeHTML(text);
 
-    // 3. Trata tag <a href="..."> especificamente
-    // Formato escapado: &lt;a href=&quot;URL&quot;&gt;
-    safe = safe.replace(/&lt;a\s+href=&quot;(.*?)&quot;&gt;/gi, (match, url) => {
-        let fixedUrl = url.trim();
-        // Se não começa com protocolo ou barra (link relativo ao site), adiciona https://
-        if (fixedUrl && !/^(https?:\/\/|mailto:|tel:|\/|#)/i.test(fixedUrl)) {
-            fixedUrl = 'https://' + fixedUrl;
-        }
-        return `<a href="${fixedUrl}" target="_blank">`;
-    });
-    safe = safe.replace(/&lt;\/a&gt;/gi, '</a>');
-    
-    // Mantém quebras de linha normais como <br> se não estiverem dentro de tags que já dão bloco?
-    // O usuário pode usar <br> explícito agora. Mas para compatibilidade com texto plano antigo:
-    // Se o texto não parece ter tags HTML, talvez devêssemos converter \n.
-    // Mas o usuário pediu suporte a HTML, então <br> é esperado.
-    // Vamos converter \n apenas se não houver tags de bloco detectadas para evitar duplicação ou quebra de layout?
-    // Simples: converte \n para <br> E deixa os <br> explícitos.
-    safe = safe.replace(/\n/g, '<br>');
+  // 2. Des-escapa tags permitidas (sem atributos, exceto A)
+  // Tags simples: <b>, </b>, <strong>, </strong>, etc.
+  const tags = ['b', 'strong', 'i', 'em', 'u', 'br', 'p', 'ul', 'ol', 'li'];
+  tags.forEach(tag => {
+    // Regex para abrir e fechar
+    // <tag> -> &lt;tag&gt;
+    const regexOpen = new RegExp(`&lt;${tag}&gt;`, 'gi');
+    safe = safe.replace(regexOpen, `<${tag}>`);
 
-    return safe;
+    // </tag> -> &lt;/tag&gt;
+    const regexClose = new RegExp(`&lt;/${tag}&gt;`, 'gi');
+    safe = safe.replace(regexClose, `</${tag}>`);
+  });
+
+  // 3. Trata tag <a href="..."> especificamente
+  // Formato escapado: &lt;a href=&quot;URL&quot;&gt;
+  safe = safe.replace(/&lt;a\s+href=&quot;(.*?)&quot;&gt;/gi, (match, url) => {
+    let fixedUrl = url.trim();
+    // Se não começa com protocolo ou barra (link relativo ao site), adiciona https://
+    if (fixedUrl && !/^(https?:\/\/|mailto:|tel:|\/|#)/i.test(fixedUrl)) {
+      fixedUrl = 'https://' + fixedUrl;
+    }
+    return `<a href="${fixedUrl}" target="_blank">`;
+  });
+  safe = safe.replace(/&lt;\/a&gt;/gi, '</a>');
+
+  // Mantém quebras de linha normais como <br> se não estiverem dentro de tags que já dão bloco?
+  // O usuário pode usar <br> explícito agora. Mas para compatibilidade com texto plano antigo:
+  // Se o texto não parece ter tags HTML, talvez devêssemos converter \n.
+  // Mas o usuário pediu suporte a HTML, então <br> é esperado.
+  // Vamos converter \n apenas se não houver tags de bloco detectadas para evitar duplicação ou quebra de layout?
+  // Simples: converte \n para <br> E deixa os <br> explícitos.
+  safe = safe.replace(/\n/g, '<br>');
+
+  return safe;
 }
 
 /**
  * Cria o HTML do card de aviso
  */
 function createWarningCard(warning) {
-    const typeClass = warning.type === 'danger' ? 'badge-danger' : 
-                      warning.type === 'warning' ? 'badge-warning' : 
-                      warning.type === 'success' ? 'badge-success' : 'badge-info';
-    
-    const typeLabel = warning.type === 'danger' ? 'Importante' : 
-                      warning.type === 'warning' ? 'Alerta' : 
-                      warning.type === 'success' ? 'Novidade' : 'Informativo';
-    
-    // Formata a data (timestamp string do Firestore ISO)
-    let dateStr = 'Data desconhecida';
-    if (warning.date) {
-        try {
-            const date = new Date(warning.date);
-            dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute:'2-digit' });
-        } catch (e) {}
-    }
+  const typeClass = warning.type === 'danger' ? 'badge-danger' :
+    warning.type === 'warning' ? 'badge-warning' :
+      warning.type === 'success' ? 'badge-success' : 'badge-info';
 
-    const messageHtml = processSafeHTML(warning.message || '');
+  const typeLabel = warning.type === 'danger' ? 'Importante' :
+    warning.type === 'warning' ? 'Alerta' :
+      warning.type === 'success' ? 'Novidade' : 'Informativo';
 
-    // Autor só aparece no modo desenvolvedor
-    const authorHtml = developerMode ? `
+  // Formata a data (timestamp string do Firestore ISO)
+  let dateStr = 'Data desconhecida';
+  if (warning.date) {
+    try {
+      const date = new Date(warning.date);
+      dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+    } catch (e) { }
+  }
+
+  const messageHtml = processSafeHTML(warning.message || '');
+
+  // Autor só aparece no modo desenvolvedor
+  const authorHtml = developerMode ? `
         <div style="font-size: 11px; color: var(--text-color-muted); display: flex; align-items: center; gap: 4px;">
             ✍️ ${escapeHTML(warning.author || 'Usuário')}
         </div>
     ` : '';
 
-    const ignoreBtn = `<button class="ip-warn-ignore-btn" style="background:none; border:none; cursor:pointer; font-size:11px; color: var(--text-color-muted); text-decoration: underline; padding: 0; margin-right: 4px;" title="Não mostrar novamente">Ocultar</button>`;
-    
-    // [NOVO] Badge de Teste
-    const testBadge = warning.isTest 
-        ? `<span style="background-color: #607d8b; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-right: 6px; border: 1px dashed white;">TESTE / DEV</span>` 
-        : '';
+  const ignoreBtn = `<button class="ip-warn-ignore-btn" style="background:none; border:none; cursor:pointer; font-size:11px; color: var(--text-color-muted); text-decoration: underline; padding: 0; margin-right: 4px;" title="Não mostrar novamente">Ocultar</button>`;
 
-    const actionsHtml = `
+  // [NOVO] Badge de Teste
+  const testBadge = warning.isTest
+    ? `<span style="background-color: #607d8b; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-right: 6px; border: 1px dashed white;">TESTE / DEV</span>`
+    : '';
+
+  const actionsHtml = `
         <div style="display:flex; gap:10px; align-items:center;">
             ${testBadge} ${ignoreBtn}
             ${developerMode ? `
@@ -1125,7 +1122,7 @@ function createWarningCard(warning) {
         </div>
     `;
 
-    return `
+  return `
         <div class="ip-card ip-card-${warning.type || 'info'}" data-id="${warning.id}" ${warning.isTest ? 'style="border-style: dashed;"' : ''}>
             <div class="ip-card-header">
                 <h4 class="ip-card-title">${escapeHTML(warning.title || 'Aviso')}</h4>
@@ -1144,28 +1141,28 @@ function createWarningCard(warning) {
  * Verifica avisos não lidos e atualiza indicador visual no sidebar
  */
 function checkUnreadWarnings(warnings) {
-    if (!warnings || warnings.length === 0) return;
-    
-    chrome.storage.local.get(['warningsLastReadTime'], (result) => {
-        const lastRead = result.warningsLastReadTime || 0;
-        const newestWarning = warnings[0]; // Assumindo ordenação por data desc
-        
-        if (newestWarning && newestWarning.date) {
-             const newestDate = new Date(newestWarning.date).getTime();
-             if (newestDate > lastRead) {
-                 // Tem aviso novo!
-                 // Achar o ícone na sidebar e colocar a bolinha (via classe CSS)
-                 // Como o modal pode ser recriado, precisamos garantir que o seletor funcione
-                 const navItem = document.querySelector('#ip-nav-notices .ip-nav-icon');
-                 // Mas espere, o seletor #ip-nav-notices precisa existir. Vamos adicionar ID no ip-nav-item
-                 if (navItem) {
-                     navItem.classList.add('has-unread-warnings');
-                     
-                     // Adicionar estilo inline se CSS não tiver carregado (fallback)
-                     if (!document.getElementById('unread-style-inject')) {
-                         const style = document.createElement('style');
-                         style.id = 'unread-style-inject';
-                         style.textContent = `
+  if (!warnings || warnings.length === 0) return;
+
+  chrome.storage.local.get(['warningsLastReadTime'], (result) => {
+    const lastRead = result.warningsLastReadTime || 0;
+    const newestWarning = warnings[0]; // Assumindo ordenação por data desc
+
+    if (newestWarning && newestWarning.date) {
+      const newestDate = new Date(newestWarning.date).getTime();
+      if (newestDate > lastRead) {
+        // Tem aviso novo!
+        // Achar o ícone na sidebar e colocar a bolinha (via classe CSS)
+        // Como o modal pode ser recriado, precisamos garantir que o seletor funcione
+        const navItem = document.querySelector('#ip-nav-notices .ip-nav-icon');
+        // Mas espere, o seletor #ip-nav-notices precisa existir. Vamos adicionar ID no ip-nav-item
+        if (navItem) {
+          navItem.classList.add('has-unread-warnings');
+
+          // Adicionar estilo inline se CSS não tiver carregado (fallback)
+          if (!document.getElementById('unread-style-inject')) {
+            const style = document.createElement('style');
+            style.id = 'unread-style-inject';
+            style.textContent = `
                             .has-unread-warnings { position: relative; }
                             .has-unread-warnings::after {
                                 content: '';
@@ -1179,12 +1176,12 @@ function checkUnreadWarnings(warnings) {
                                 border: 1px solid var(--background-secondary);
                             }
                          `;
-                         document.head.appendChild(style);
-                     }
-                 }
-             }
+            document.head.appendChild(style);
+          }
         }
-    });
+      }
+    }
+  });
 }
 
 /**
@@ -1192,19 +1189,19 @@ function checkUnreadWarnings(warnings) {
  * @param {Object} existingWarning - (Opcional) Objeto do aviso para edição
  */
 function openCreateWarningModal(existingWarning = null) {
-    // Remover modal anterior se existir
-    const existing = document.getElementById('create-warning-modal');
-    if (existing) existing.remove();
+  // Remover modal anterior se existir
+  const existing = document.getElementById('create-warning-modal');
+  if (existing) existing.remove();
 
-    const isEdit = !!existingWarning;
-    const titleVal = isEdit ? escapeHTML(existingWarning.title) : '';
-    const msgVal = isEdit ? escapeHTML(existingWarning.message) : '';
-    const typeVal = isEdit ? existingWarning.type : 'info';
-    const isTestVal = isEdit ? existingWarning.isTest : false; 
+  const isEdit = !!existingWarning;
+  const titleVal = isEdit ? escapeHTML(existingWarning.title) : '';
+  const msgVal = isEdit ? escapeHTML(existingWarning.message) : '';
+  const typeVal = isEdit ? existingWarning.type : 'info';
+  const isTestVal = isEdit ? existingWarning.isTest : false;
 
-    const fieldStyle = "display: block; width: 100%; margin-bottom: 12px; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main);";
-    
-    const modalHtml = `
+  const fieldStyle = "display: block; width: 100%; margin-bottom: 12px; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main);";
+
+  const modalHtml = `
         <div style="padding: 10px;">
             <label style="display:block; margin-bottom:4px; font-size:12px;">Título</label>
             <input type="text" id="warn-title" style="${fieldStyle}" placeholder="Ex: Nova Atualização do Sistema Programada" value="${titleVal}">
@@ -1240,85 +1237,85 @@ function openCreateWarningModal(existingWarning = null) {
         </div>
     `;
 
-    const modal = createModal(isEdit ? 'Editar Aviso' : 'Novo Aviso', modalHtml, null, {
-        isManagementModal: false, // Modal menor central
-        modalId: 'create-warning-modal',
-        showShareButton: false
-    });
-    
-    // Remover o rodapé padrão do createModal para não duplicar botões
-    const defaultActions = modal.querySelector('.se-modal-actions');
-    if (defaultActions) defaultActions.remove();
-    
-    modal.style.zIndex = '10002'; // Painel costuma ser alto
-    
-    document.body.appendChild(modal);
+  const modal = createModal(isEdit ? 'Editar Aviso' : 'Novo Aviso', modalHtml, null, {
+    isManagementModal: false, // Modal menor central
+    modalId: 'create-warning-modal',
+    showShareButton: false
+  });
 
-    // Handlers
-    const saveBtn = modal.querySelector('#save-warn-btn');
-    const cancelBtn = modal.querySelector('#cancel-warn-btn');
-    
-    cancelBtn.addEventListener('click', () => modal.remove());
-    
-    saveBtn.addEventListener('click', async () => {
-        const title = modal.querySelector('#warn-title').value.trim();
-        const message = modal.querySelector('#warn-message').value.trim();
-        const type = modal.querySelector('#warn-type').value;
-        const isTest = modal.querySelector('#warn-is-test').checked;
-        const author = getCurrentUserName(); 
-        
-        if (!title || !message) {
-            alert('Preencha título e mensagem.');
-            return;
-        }
-        
-        saveBtn.disabled = true;
-        saveBtn.textContent = 'Salvando...';
-        
-        try {
-            if (isEdit) {
-                await window.warningsService.updateWarning(existingWarning.id, {
-                    title,
-                    message,
-                    type,
-                    author,
-                    isTest
-                });
-            } else {
-                await window.warningsService.createWarning({
-                    title,
-                    message,
-                    type,
-                    author,
-                    isTest,
-                    date: new Date().toISOString()
-                });
-            }
-            
-            modal.remove();
-            
-            // Recarregar lista se o painel de avisos estiver aberto no DOM
-            const warningsSection = document.querySelector('#ip-section-notices');
-            if (warningsSection) {
-                loadWarnings(warningsSection);
-            }
-            
-            // Feedback omitido conforme solicitado
-            // alert(isEdit ? 'Aviso atualizado!' : 'Aviso publicado!');
-            
-        } catch (err) {
-            console.error(err);
-            alert('Erro ao salvar: ' + err.message);
-            saveBtn.disabled = false;
-            saveBtn.textContent = isEdit ? 'Atualizar Aviso' : 'Publicar Aviso';
-        }
-    });
+  // Remover o rodapé padrão do createModal para não duplicar botões
+  const defaultActions = modal.querySelector('.se-modal-actions');
+  if (defaultActions) defaultActions.remove();
+
+  modal.style.zIndex = '10002'; // Painel costuma ser alto
+
+  document.body.appendChild(modal);
+
+  // Handlers
+  const saveBtn = modal.querySelector('#save-warn-btn');
+  const cancelBtn = modal.querySelector('#cancel-warn-btn');
+
+  cancelBtn.addEventListener('click', () => modal.remove());
+
+  saveBtn.addEventListener('click', async () => {
+    const title = modal.querySelector('#warn-title').value.trim();
+    const message = modal.querySelector('#warn-message').value.trim();
+    const type = modal.querySelector('#warn-type').value;
+    const isTest = modal.querySelector('#warn-is-test').checked;
+    const author = getCurrentUserName();
+
+    if (!title || !message) {
+      alert('Preencha título e mensagem.');
+      return;
+    }
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Salvando...';
+
+    try {
+      if (isEdit) {
+        await window.warningsService.updateWarning(existingWarning.id, {
+          title,
+          message,
+          type,
+          author,
+          isTest
+        });
+      } else {
+        await window.warningsService.createWarning({
+          title,
+          message,
+          type,
+          author,
+          isTest,
+          date: new Date().toISOString()
+        });
+      }
+
+      modal.remove();
+
+      // Recarregar lista se o painel de avisos estiver aberto no DOM
+      const warningsSection = document.querySelector('#ip-section-notices');
+      if (warningsSection) {
+        loadWarnings(warningsSection);
+      }
+
+      // Feedback omitido conforme solicitado
+      // alert(isEdit ? 'Aviso atualizado!' : 'Aviso publicado!');
+
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao salvar: ' + err.message);
+      saveBtn.disabled = false;
+      saveBtn.textContent = isEdit ? 'Atualizar Aviso' : 'Publicar Aviso';
+    }
+  });
 }
 // #endregion
 
 // #region agent log
 // Verify if window.openTagManager is set
-fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'info-panel.js:init',message:'Exposing functions to window',data:{before: typeof window.openTagManager},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'info-panel.js:init', message: 'Exposing functions to window', data: { before: typeof window.openTagManager }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'C' }) }).catch(() => { });
 // #endregion
 
 /**
@@ -1327,42 +1324,42 @@ fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{metho
  * @param {string} pendingId ID da pendência
  */
 async function openTagManager(btnElement, pendingId) {
-// #region agent log
-fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'info-panel.js:window.openTagManager',message:'Function called from window',data:{pendingId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
-// #endregion
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'info-panel.js:window.openTagManager', message: 'Function called from window', data: { pendingId }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'C' }) }).catch(() => { });
+  // #endregion
 
-    // Remove qualquer popup existente
-    const existingPopup = document.querySelector('.ip-tag-popup')
-    if (existingPopup) existingPopup.remove()
+  // Remove qualquer popup existente
+  const existingPopup = document.querySelector('.ip-tag-popup')
+  if (existingPopup) existingPopup.remove()
 
-    const popup = document.createElement('div')
-    popup.className = 'ip-tag-popup'
-    
-    const item = allPendingItems.find(i => i.id === pendingId)
-    const currentTags = pendingTagsMapCache[pendingId] || []
-    
-    // Identificar IDs das tags automáticas para este item
-    const autoTagIds = new Set()
-    
-    if (item) {
-        if (item.isPrioritaria) {
-            const priorityTag = availableTagsCache.find(t => t.name.toLowerCase() === 'prioridade')
-            if (priorityTag) autoTagIds.add(priorityTag.id)
-        }
-        if (item.isEmSS) {
-            const ssTag = availableTagsCache.find(t => t.name.toLowerCase() === 'em ss')
-            if (ssTag) autoTagIds.add(ssTag.id)
-        }
+  const popup = document.createElement('div')
+  popup.className = 'ip-tag-popup'
+
+  const item = allPendingItems.find(i => i.id === pendingId)
+  const currentTags = pendingTagsMapCache[pendingId] || []
+
+  // Identificar IDs das tags automáticas para este item
+  const autoTagIds = new Set()
+
+  if (item) {
+    if (item.isPrioritaria) {
+      const priorityTag = availableTagsCache.find(t => t.name.toLowerCase() === 'prioridade')
+      if (priorityTag) autoTagIds.add(priorityTag.id)
     }
+    if (item.isEmSS) {
+      const ssTag = availableTagsCache.find(t => t.name.toLowerCase() === 'em ss')
+      if (ssTag) autoTagIds.add(ssTag.id)
+    }
+  }
 
-    let tagsListHtml = availableTagsCache.map(tag => {
-        const isAuto = autoTagIds.has(tag.id)
-        const isChecked = currentTags.includes(tag.id) || isAuto ? 'checked' : ''
-        const isDisabled = isAuto ? 'disabled' : ''
-        const tooltip = isAuto ? ' title="Esta tag é automática baseada no status da SSC e não pode ser removida." ' : ''
-        const opacityStyle = isAuto ? ' opacity: 0.7; cursor: not-allowed; ' : ''
+  let tagsListHtml = availableTagsCache.map(tag => {
+    const isAuto = autoTagIds.has(tag.id)
+    const isChecked = currentTags.includes(tag.id) || isAuto ? 'checked' : ''
+    const isDisabled = isAuto ? 'disabled' : ''
+    const tooltip = isAuto ? ' title="Esta tag é automática baseada no status da SSC e não pode ser removida." ' : ''
+    const opacityStyle = isAuto ? ' opacity: 0.7; cursor: not-allowed; ' : ''
 
-        return `
+    return `
             <div class="ip-tag-row" ${tooltip} style="${opacityStyle}">
                 <label class="ip-tag-option" style="flex: 1; ${isAuto ? 'cursor: not-allowed;' : ''}">
                     <input type="checkbox" value="${tag.id}" ${isChecked} ${isDisabled}>
@@ -1373,9 +1370,9 @@ fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{metho
                 <button class="ip-tag-delete-btn" data-tag-id="${tag.id}" title="Excluir Tag" ${isDisabled}>🗑️</button>
             </div>
         `
-    }).join('')
+  }).join('')
 
-    popup.innerHTML = `
+  popup.innerHTML = `
         <div class="ip-tag-popup-header">Gerenciar Tags</div>
         <div class="ip-tag-popup-list">${tagsListHtml}</div>
         <div class="ip-tag-popup-footer">
@@ -1383,229 +1380,229 @@ fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{metho
         </div>
     `
 
-    // Posicionamento
-    const rect = btnElement.getBoundingClientRect()
-    popup.style.top = `${rect.bottom + window.scrollY + 5}px`
-    popup.style.left = `${rect.left + window.scrollX}px`
-    
-    document.body.appendChild(popup)
+  // Posicionamento
+  const rect = btnElement.getBoundingClientRect()
+  popup.style.top = `${rect.bottom + window.scrollY + 5}px`
+  popup.style.left = `${rect.left + window.scrollX}px`
 
-    // Attach listeners for popup elements
-    const newTagBtn = popup.querySelector('.ip-tag-new-btn')
-    if (newTagBtn) {
-        newTagBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            if (window.showNewTagInput) {
-                window.showNewTagInput(this, pendingId)
-            } else {
-                 console.error('Função showNewTagInput não encontrada no window');
-                 // Fallback
-                 if (typeof showNewTagInput === 'function') {
-                    showNewTagInput(this, pendingId);
-                 }
-            }
-        })
-    }
+  document.body.appendChild(popup)
 
-    const checkboxes = popup.querySelectorAll('input[type="checkbox"]')
-    checkboxes.forEach(cb => {
-        cb.addEventListener('change', function() {
-            toggleTag(pendingId, this.value)
-        })
+  // Attach listeners for popup elements
+  const newTagBtn = popup.querySelector('.ip-tag-new-btn')
+  if (newTagBtn) {
+    newTagBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (window.showNewTagInput) {
+        window.showNewTagInput(this, pendingId)
+      } else {
+        console.error('Função showNewTagInput não encontrada no window');
+        // Fallback
+        if (typeof showNewTagInput === 'function') {
+          showNewTagInput(this, pendingId);
+        }
+      }
     })
+  }
 
-    // Delete buttons listener
-    const deleteBtns = popup.querySelectorAll('.ip-tag-delete-btn')
-    deleteBtns.forEach(btn => {
-        btn.addEventListener('click', async function(e) {
-            e.stopPropagation(); // Impede fechar ou marcar checkbox
-            if (confirm('Tem certeza que deseja excluir esta tag?')) {
-                const tagId = this.dataset.tagId
-                if (window.deleteTag) {
-                    await window.deleteTag(tagId)
-                    // Atualiza cache local
-                    availableTagsCache = availableTagsCache.filter(t => t.id !== tagId)
-                    // Fecha o popup atual pois a lista mudou
-                    if (popup && popup.parentElement) popup.remove()
-                    
-                    // Atualiza filtros
-                    const pendingSection = document.querySelector('#ip-section-pending')
-                    if (pendingSection) {
-                        const tagFilterSelect = pendingSection.querySelector('#pending-tag-filter')
-                        if (tagFilterSelect) {
-                            tagFilterSelect.innerHTML = `
+  const checkboxes = popup.querySelectorAll('input[type="checkbox"]')
+  checkboxes.forEach(cb => {
+    cb.addEventListener('change', function () {
+      toggleTag(pendingId, this.value)
+    })
+  })
+
+  // Delete buttons listener
+  const deleteBtns = popup.querySelectorAll('.ip-tag-delete-btn')
+  deleteBtns.forEach(btn => {
+    btn.addEventListener('click', async function (e) {
+      e.stopPropagation(); // Impede fechar ou marcar checkbox
+      if (confirm('Tem certeza que deseja excluir esta tag?')) {
+        const tagId = this.dataset.tagId
+        if (window.deleteTag) {
+          await window.deleteTag(tagId)
+          // Atualiza cache local
+          availableTagsCache = availableTagsCache.filter(t => t.id !== tagId)
+          // Fecha o popup atual pois a lista mudou
+          if (popup && popup.parentElement) popup.remove()
+
+          // Atualiza filtros
+          const pendingSection = document.querySelector('#ip-section-pending')
+          if (pendingSection) {
+            const tagFilterSelect = pendingSection.querySelector('#pending-tag-filter')
+            if (tagFilterSelect) {
+              tagFilterSelect.innerHTML = `
                                 <option value="">Todas as Tags</option>
                                 ${availableTagsCache.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
                             `
-                        }
-                        // Refresh UI do card
-                         refreshPendingCardUI(pendingId)
-                    }
-                }
             }
-        })
-    })
-
-    // Fechar ao clicar fora
-    const closeHandler = (e) => {
-        if (!popup.contains(e.target) && e.target !== btnElement) {
-            popup.remove()
-            document.removeEventListener('click', closeHandler)
+            // Refresh UI do card
+            refreshPendingCardUI(pendingId)
+          }
         }
+      }
+    })
+  })
+
+  // Fechar ao clicar fora
+  const closeHandler = (e) => {
+    if (!popup.contains(e.target) && e.target !== btnElement) {
+      popup.remove()
+      document.removeEventListener('click', closeHandler)
     }
-    setTimeout(() => document.addEventListener('click', closeHandler), 100)
+  }
+  setTimeout(() => document.addEventListener('click', closeHandler), 100)
 }
 
 /**
  * Alterna a tag e atualiza a UI.
  */
 async function toggleTag(pendingId, tagId) {
-    const newTags = await togglePendingTag(pendingId, tagId)
-    pendingTagsMapCache[pendingId] = newTags
-    
-    // Re-renderiza o card específico ou atualiza a lista se estiver filtrada
-    refreshPendingCardUI(pendingId)
+  const newTags = await togglePendingTag(pendingId, tagId)
+  pendingTagsMapCache[pendingId] = newTags
+
+  // Re-renderiza o card específico ou atualiza a lista se estiver filtrada
+  refreshPendingCardUI(pendingId)
 }
 
 /**
  * Mostra input para criar nova tag
  */
-window.showNewTagInput = function(btnElement, pendingId) {
-    // Tenta encontrar o container correto (footer do popup)
-    const container = btnElement.closest('.ip-tag-popup-footer') || btnElement.parentElement
-    if (!container) return;
+window.showNewTagInput = function (btnElement, pendingId) {
+  // Tenta encontrar o container correto (footer do popup)
+  const container = btnElement.closest('.ip-tag-popup-footer') || btnElement.parentElement
+  if (!container) return;
 
-    container.innerHTML = `
+  container.innerHTML = `
         <div style="display: flex; align-items: center; gap: 4px;">
             <input type="text" id="new-tag-name" placeholder="Nome" class="ip-new-tag-input" style="flex: 1;" autofocus>
             <input type="color" id="new-tag-color" value="#2196f3" class="ip-new-tag-color">
             <button id="save-tag-btn" class="ip-save-tag-btn">OK</button>
         </div>
     `
-    // Attach listener for the new button
-    const saveBtn = container.querySelector('#save-tag-btn')
-    if (saveBtn) {
-        saveBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevent closing popup
-            if (window.saveNewTag) {
-                window.saveNewTag(pendingId);
-            } else {
-                console.error('Função saveNewTag não encontrada');
-            }
-        })
-    }
-    
-    // Prevent closing when clicking inputs
-    const inputs = container.querySelectorAll('input');
-    inputs.forEach(input => {
-        input.addEventListener('click', (e) => e.stopPropagation());
-    });
+  // Attach listener for the new button
+  const saveBtn = container.querySelector('#save-tag-btn')
+  if (saveBtn) {
+    saveBtn.addEventListener('click', (e) => {
+      e.stopPropagation(); // Prevent closing popup
+      if (window.saveNewTag) {
+        window.saveNewTag(pendingId);
+      } else {
+        console.error('Função saveNewTag não encontrada');
+      }
+    })
+  }
+
+  // Prevent closing when clicking inputs
+  const inputs = container.querySelectorAll('input');
+  inputs.forEach(input => {
+    input.addEventListener('click', (e) => e.stopPropagation());
+  });
 }
 
 /**
  * Exclui uma tag
  */
-window.deleteTag = async function(tagId) {
-    await deleteCustomTag(tagId)
+window.deleteTag = async function (tagId) {
+  await deleteCustomTag(tagId)
 }
 
 /**
  * Salva a nova tag e a adiciona ao item.
  */
-window.saveNewTag = async function(pendingId) {
-    const nameInput = document.querySelector('#new-tag-name')
-    const colorInput = document.querySelector('#new-tag-color')
-    
-    if (!nameInput || !nameInput.value.trim()) {
-        console.warn('Nome da tag vazio')
-        return
-    }
+window.saveNewTag = async function (pendingId) {
+  const nameInput = document.querySelector('#new-tag-name')
+  const colorInput = document.querySelector('#new-tag-color')
 
-    const newTag = await createCustomTag(nameInput.value.trim(), colorInput.value)
-    availableTagsCache.push(newTag)
-    
-    // Atualiza a UI do popup (fecha e reabre para simplificar)
-    const existingPopup = document.querySelector('.ip-tag-popup')
-    if (existingPopup) existingPopup.remove()
-    
-    // Adiciona a nova tag ao item automaticamente
-    if (window.toggleTag) {
-        await window.toggleTag(pendingId, newTag.id)
-    }
-    
-    // Atualiza os filtros
-    const pendingSection = document.querySelector('#ip-section-pending')
-    if (pendingSection) {
-        const tagFilterSelect = pendingSection.querySelector('#pending-tag-filter')
-        if (tagFilterSelect) {
-             tagFilterSelect.innerHTML = `
+  if (!nameInput || !nameInput.value.trim()) {
+    console.warn('Nome da tag vazio')
+    return
+  }
+
+  const newTag = await createCustomTag(nameInput.value.trim(), colorInput.value)
+  availableTagsCache.push(newTag)
+
+  // Atualiza a UI do popup (fecha e reabre para simplificar)
+  const existingPopup = document.querySelector('.ip-tag-popup')
+  if (existingPopup) existingPopup.remove()
+
+  // Adiciona a nova tag ao item automaticamente
+  if (window.toggleTag) {
+    await window.toggleTag(pendingId, newTag.id)
+  }
+
+  // Atualiza os filtros
+  const pendingSection = document.querySelector('#ip-section-pending')
+  if (pendingSection) {
+    const tagFilterSelect = pendingSection.querySelector('#pending-tag-filter')
+    if (tagFilterSelect) {
+      tagFilterSelect.innerHTML = `
                 <option value="">Todas as Tags</option>
                 ${availableTagsCache.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
             `
-        }
     }
+  }
 }
 
 /**
  * Atualiza apenas a visualização de tags de um card específico para evitar reload total.
  */
 function refreshPendingCardUI(pendingId) {
-    // Se tiver filtro de tag ativo, talvez o item suma da lista, então reload completo é mais seguro para consistência
-    const pendingSection = document.querySelector('#ip-section-pending')
-    const tagFilter = pendingSection.querySelector('#pending-tag-filter')
-    
-    if (tagFilter && tagFilter.value) {
-        applyPendingFilters(pendingSection)
-    } else {
-        // Atualização local para performance
-        const card = document.querySelector(`.ip-pending-card[data-id="${pendingId}"]`)
-        if (card) {
-             const tagsContainer = card.querySelector('.ip-tags-container')
-             
-             // Recalcular lista completa de tags (Auto + Manual) para renderização correta
-             const item = allPendingItems.find(i => i.id === pendingId)
-             let tagsRenderList = []
-             const renderedTagIds = new Set()
+  // Se tiver filtro de tag ativo, talvez o item suma da lista, então reload completo é mais seguro para consistência
+  const pendingSection = document.querySelector('#ip-section-pending')
+  const tagFilter = pendingSection.querySelector('#pending-tag-filter')
 
-             if (item) {
-                // 1. Tag de Prioridade (Automática)
-                if (item.isPrioritaria) {
-                    const priorityTag = availableTagsCache.find(t => t.name.toLowerCase() === 'prioridade')
-                    if (priorityTag) {
-                        tagsRenderList.push(priorityTag)
-                        renderedTagIds.add(priorityTag.id)
-                    }
-                }
+  if (tagFilter && tagFilter.value) {
+    applyPendingFilters(pendingSection)
+  } else {
+    // Atualização local para performance
+    const card = document.querySelector(`.ip-pending-card[data-id="${pendingId}"]`)
+    if (card) {
+      const tagsContainer = card.querySelector('.ip-tags-container')
 
-                // 2. Tag de Em SS (Automática)
-                if (item.isEmSS) {
-                    const ssTag = availableTagsCache.find(t => t.name.toLowerCase() === 'em ss')
-                    if (ssTag) {
-                        tagsRenderList.push(ssTag)
-                        renderedTagIds.add(ssTag.id)
-                    }
-                }
-             }
+      // Recalcular lista completa de tags (Auto + Manual) para renderização correta
+      const item = allPendingItems.find(i => i.id === pendingId)
+      let tagsRenderList = []
+      const renderedTagIds = new Set()
 
-             // 3. Tags do Usuário
-             const userTags = pendingTagsMapCache[pendingId] || []
-             userTags.forEach(id => {
-                if (renderedTagIds.has(id)) return // Evita duplicidade
-
-                const tagDef = availableTagsCache.find(t => t.id === id)
-                if (tagDef) {
-                    tagsRenderList.push(tagDef)
-                    renderedTagIds.add(tagDef.id)
-                }
-             })
-
-             const tagsHtml = tagsRenderList.map(tagDef => {
-                return `<span class="ip-tag-badge" style="background-color: ${tagDef.color}20; color: ${tagDef.color}; border-color: ${tagDef.color}40;">${escapeHTML(tagDef.name)}</span>`
-             }).join('')
-             
-             tagsContainer.innerHTML = tagsHtml
+      if (item) {
+        // 1. Tag de Prioridade (Automática)
+        if (item.isPrioritaria) {
+          const priorityTag = availableTagsCache.find(t => t.name.toLowerCase() === 'prioridade')
+          if (priorityTag) {
+            tagsRenderList.push(priorityTag)
+            renderedTagIds.add(priorityTag.id)
+          }
         }
+
+        // 2. Tag de Em SS (Automática)
+        if (item.isEmSS) {
+          const ssTag = availableTagsCache.find(t => t.name.toLowerCase() === 'em ss')
+          if (ssTag) {
+            tagsRenderList.push(ssTag)
+            renderedTagIds.add(ssTag.id)
+          }
+        }
+      }
+
+      // 3. Tags do Usuário
+      const userTags = pendingTagsMapCache[pendingId] || []
+      userTags.forEach(id => {
+        if (renderedTagIds.has(id)) return // Evita duplicidade
+
+        const tagDef = availableTagsCache.find(t => t.id === id)
+        if (tagDef) {
+          tagsRenderList.push(tagDef)
+          renderedTagIds.add(tagDef.id)
+        }
+      })
+
+      const tagsHtml = tagsRenderList.map(tagDef => {
+        return `<span class="ip-tag-badge" style="background-color: ${tagDef.color}20; color: ${tagDef.color}; border-color: ${tagDef.color}40;">${escapeHTML(tagDef.name)}</span>`
+      }).join('')
+
+      tagsContainer.innerHTML = tagsHtml
     }
+  }
 }
 
 /**
@@ -1886,18 +1883,18 @@ async function loadForms(sectionElement, filterType = 'forms') {
   try {
     // Buscar dados dos formulários
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'info-panel.js:loadForms',message:'Function entry',data:{filterType,containerId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'info-panel.js:loadForms', message: 'Function entry', data: { filterType, containerId }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
     // #endregion
-    
+
     const formsData = await fetchFormsData()
-    
+
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'info-panel.js:loadForms',message:'Forms data received',data:{hasData:!!formsData,hasCategories:!!formsData?.categories,categoriesCount:formsData?.categories?.length,isArray:Array.isArray(formsData)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'info-panel.js:loadForms', message: 'Forms data received', data: { hasData: !!formsData, hasCategories: !!formsData?.categories, categoriesCount: formsData?.categories?.length, isArray: Array.isArray(formsData) }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
     // #endregion
 
     if (!formsData || !formsData.categories) {
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'info-panel.js:loadForms',message:'Invalid forms data',data:{hasData:!!formsData,hasCategories:!!formsData?.categories},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'info-panel.js:loadForms', message: 'Invalid forms data', data: { hasData: !!formsData, hasCategories: !!formsData?.categories }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
       // #endregion
       throw new Error('Dados de formulários inválidos')
     }
@@ -1906,41 +1903,41 @@ async function loadForms(sectionElement, filterType = 'forms') {
     // Se for 'ai', pega categorias que contenham "AI", "Chain" ou "Assistente"
     // Se for 'forms', pega o resto.
     const filteredCategories = formsData.categories.filter(cat => {
-        const title = cat.category.toLowerCase()
-        const isAiCategory = title.includes('ai') || title.includes('chain') || title.includes('assistente') || title === 'outros' || title === 'at'
-        
-        return filterType === 'ai' ? isAiCategory : !isAiCategory
+      const title = cat.category.toLowerCase()
+      const isAiCategory = title.includes('ai') || title.includes('chain') || title.includes('assistente') || title === 'outros' || title === 'at'
+
+      return filterType === 'ai' ? isAiCategory : !isAiCategory
     })
 
     // Renderizar categorias e itens
     let html = ''
-    
+
     if (filteredCategories.length === 0) {
-        html = `
+      html = `
             <div class="ip-empty-state">
                 <h4>Nenhum item encontrado nesta seção.</h4>
             </div>
         `
     } else {
-        filteredCategories.forEach(category => {
-          html += `
+      filteredCategories.forEach(category => {
+        html += `
             <div class="ip-forms-category">
               <h4 class="ip-forms-category-title">${escapeHTML(
-                category.category
-              )}</h4>
+          category.category
+        )}</h4>
               <div class="ip-forms-grid">
           `
 
-          category.items.forEach((item, itemIndex) => {
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'info-panel.js:loadForms',message:'Processing item',data:{category:category.category,itemIndex,itemType:item.type,hasTitle:!!item.title,hasClosingData:!!item.closingData},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-            // #endregion
-            
-            if (item.type === 'link') {
-              html += `
+        category.items.forEach((item, itemIndex) => {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'info-panel.js:loadForms', message: 'Processing item', data: { category: category.category, itemIndex, itemType: item.type, hasTitle: !!item.title, hasClosingData: !!item.closingData }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'C' }) }).catch(() => { });
+          // #endregion
+
+          if (item.type === 'link') {
+            html += `
                 <a href="${escapeHTML(
-                  item.url
-                )}" target="_blank" class="ip-form-card">
+              item.url
+            )}" target="_blank" class="ip-form-card">
                   <div class="ip-form-icon">${item.icon}</div>
                   <div class="ip-form-content">
                     <h5 class="ip-form-title">${escapeHTML(item.title)}</h5>
@@ -1949,11 +1946,11 @@ async function loadForms(sectionElement, filterType = 'forms') {
                   <div class="ip-form-arrow">↗</div>
                 </a>
               `
-            } else if (item.type === 'document') {
-              html += `
+          } else if (item.type === 'document') {
+            html += `
                 <div class="ip-form-card ip-form-document" data-content="${escapeHTML(
-                  item.content
-                )}">
+              item.content
+            )}">
                   <div class="ip-form-icon">${item.icon}</div>
                   <div class="ip-form-content">
                     <h5 class="ip-form-title">${escapeHTML(item.title)}</h5>
@@ -1962,29 +1959,29 @@ async function loadForms(sectionElement, filterType = 'forms') {
                   <div class="ip-form-arrow">📄</div>
                 </div>
               `
-            } else if (item.type === 'action-closing') {
-              // #region agent log
-              try {
-                const hasClosingData = !!item.closingData
-                const closingDataKeys = item.closingData ? Object.keys(item.closingData) : []
-                fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'info-panel.js:loadForms',message:'Processing action-closing item',data:{hasClosingData,closingDataKeys,hasTitle:!!item.closingData?.title,hasContent:!!item.closingData?.content},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-                
-                if (!item.closingData) {
-                  throw new Error('closingData is missing')
-                }
-                const jsonString = JSON.stringify(item.closingData)
-                const encoded = encodeURIComponent(jsonString)
-                fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'info-panel.js:loadForms',message:'action-closing encoding success',data:{jsonLength:jsonString.length,encodedLength:encoded.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-              } catch (error) {
-                fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'info-panel.js:loadForms',message:'action-closing encoding error',data:{error:error.message,stack:error.stack},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-                throw error
+          } else if (item.type === 'action-closing') {
+            // #region agent log
+            try {
+              const hasClosingData = !!item.closingData
+              const closingDataKeys = item.closingData ? Object.keys(item.closingData) : []
+              fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'info-panel.js:loadForms', message: 'Processing action-closing item', data: { hasClosingData, closingDataKeys, hasTitle: !!item.closingData?.title, hasContent: !!item.closingData?.content }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'C' }) }).catch(() => { });
+
+              if (!item.closingData) {
+                throw new Error('closingData is missing')
               }
-              // #endregion
-              
-              const closingDataEncoded = encodeURIComponent(
-                JSON.stringify(item.closingData)
-              )
-              html += `
+              const jsonString = JSON.stringify(item.closingData)
+              const encoded = encodeURIComponent(jsonString)
+              fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'info-panel.js:loadForms', message: 'action-closing encoding success', data: { jsonLength: jsonString.length, encodedLength: encoded.length }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'E' }) }).catch(() => { });
+            } catch (error) {
+              fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'info-panel.js:loadForms', message: 'action-closing encoding error', data: { error: error.message, stack: error.stack }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'E' }) }).catch(() => { });
+              throw error
+            }
+            // #endregion
+
+            const closingDataEncoded = encodeURIComponent(
+              JSON.stringify(item.closingData)
+            )
+            html += `
                 <div class="ip-form-card ip-form-action" data-closing="${closingDataEncoded}">
                   <div class="ip-form-icon">${item.icon}</div>
                   <div class="ip-form-content">
@@ -1997,14 +1994,14 @@ async function loadForms(sectionElement, filterType = 'forms') {
                   </div>
                 </div>
               `
-            }
-          })
+          }
+        })
 
-          html += `
+        html += `
               </div>
             </div>
           `
-        })
+      })
     }
 
     container.innerHTML = html
@@ -2027,21 +2024,21 @@ async function loadForms(sectionElement, filterType = 'forms') {
           const btnText = btn.querySelector('.ip-btn-text')
           const originalIcon = btnIcon.textContent
           const originalText = btnText.textContent
-          
+
           try {
             // Estado de carregamento
             btnIcon.textContent = '⏳'
             btnText.textContent = 'Adicionando...'
             btn.disabled = true
-            
+
             const closingData = JSON.parse(decodeURIComponent(card.dataset.closing))
             await addClosingToPersonal(closingData)
-            
+
             // Estado de sucesso
             btn.classList.add('success')
             btnIcon.textContent = '✓'
             btnText.textContent = 'Adicionado com sucesso!'
-            
+
             setTimeout(() => {
               btn.classList.remove('success')
               btnIcon.textContent = originalIcon
@@ -2054,7 +2051,7 @@ async function loadForms(sectionElement, filterType = 'forms') {
             btnIcon.textContent = '⚠️'
             btnText.textContent = 'Erro ao adicionar'
             btn.style.background = 'linear-gradient(135deg, #dc3545, #c82333) !important'
-            
+
             setTimeout(() => {
               btnIcon.textContent = originalIcon
               btnText.textContent = originalText
@@ -2166,8 +2163,8 @@ async function loadSystemsStatus(sectionElement) {
   try {
     // 1. Carrega status oficial e estatísticas de usuários em paralelo
     const [systems, userReports] = await Promise.all([
-        getSystemsStatus(),
-        window.systemStatusService.getRecentReportsStats()
+      getSystemsStatus(),
+      window.systemStatusService.getRecentReportsStats()
     ]);
 
     // 2. Renderiza combinando os dados
@@ -2207,25 +2204,25 @@ function renderSystemsStatus(container, systems, userReports = {}) {
   systems.forEach(system => {
     const badgeClass = getStatusBadgeClass(system.status);
     const statusLabel = getStatusLabel(system.status);
-    
+
     // Dados de reportes de usuários
     const reportCount = userReports[system.id] || 0;
-    
+
     // Lógica visual do Downdetector (Barra de intensidade)
     // Definimos um "teto" arbitrário. Ex: 20 reportes é 100% da barra vermelha
-    const maxReportsReference = 20; 
+    const maxReportsReference = 20;
     const intensityPct = Math.min((reportCount / maxReportsReference) * 100, 100);
-    
+
     let intensityColor = 'var(--action-green)';
     let intensityLabel = 'Poucos Relatos';
-    
-    if (reportCount > 2) { 
-        intensityColor = 'var(--action-yellow)'; 
-        intensityLabel = 'Possível Instabilidade'; 
+
+    if (reportCount > 2) {
+      intensityColor = 'var(--action-yellow)';
+      intensityLabel = 'Possível Instabilidade';
     }
-    if (reportCount > 5) { 
-        intensityColor = 'var(--action-red)'; 
-        intensityLabel = 'Muitos Relatos'; 
+    if (reportCount > 5) {
+      intensityColor = 'var(--action-red)';
+      intensityLabel = 'Muitos Relatos';
     }
 
     // Verifica se o usuário já reportou recentemente (para desabilitar botão)
@@ -2242,13 +2239,13 @@ function renderSystemsStatus(container, systems, userReports = {}) {
     `;
 
     // Permitimos HTML no workaround para suportar links inseridos pelo botão de hiperlink
-    const workaroundHtml = system.workaround 
-      ? `<div class="ip-system-workaround"><strong>💡 Orientação:</strong> ${system.workaround}</div>` 
+    const workaroundHtml = system.workaround
+      ? `<div class="ip-system-workaround"><strong>💡 Orientação:</strong> ${system.workaround}</div>`
       : '';
-    
+
     // Botão de edição (modo dev)
-    const editButtonHtml = developerMode 
-      ? `<button class="ip-edit-system-btn" data-system-id="${escapeHTML(system.id)}" title="Editar status">✏️</button>` 
+    const editButtonHtml = developerMode
+      ? `<button class="ip-edit-system-btn" data-system-id="${escapeHTML(system.id)}" title="Editar status">✏️</button>`
       : '';
 
     html += `
@@ -2281,11 +2278,11 @@ function renderSystemsStatus(container, systems, userReports = {}) {
         <div class="ip-system-footer">
             <div class="ip-footer-left">
                 ${system.updatedAt ? `<div class="ip-card-updated"><span>🕒</span> ${new Date(system.updatedAt).toLocaleString('pt-BR', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}</div>` : ''}
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    })}</div>` : ''}
             </div>
             <div class="ip-reports-actions">
                 ${reportBtnHtml}
@@ -2299,56 +2296,56 @@ function renderSystemsStatus(container, systems, userReports = {}) {
 
   // Listeners dos botões de Reportar
   container.querySelectorAll('.ip-report-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-          if (btn.classList.contains('disabled')) return;
-          
-          const sysId = btn.dataset.systemId;
-          const originalText = btn.textContent;
-          
-          // Feedback imediato
-          btn.textContent = 'Enviando...';
-          btn.classList.add('disabled');
-          
-          try {
-              await window.systemStatusService.reportUserInstability(sysId);
-              
-              // Salva cooldown local
-              localStorage.setItem(`last_report_${sysId}`, Date.now());
-              
-              btn.textContent = '✅ Reportado';
-              if (typeof showNotification === 'function') {
-                showNotification('Obrigado! Seu relato ajuda outros usuários.', 'success');
-              } else {
-                alert('Obrigado! Seu relato ajuda outros usuários.');
-              }
-              
-              // Atualiza o painel para mostrar o novo contagem
-              // Pequeno delay para garantir que o Firestore processou (consistência eventual)
-              setTimeout(() => {
-                  const section = document.querySelector('#ip-section-instabilities');
-                  if (section) loadSystemsStatus(section);
-              }, 1200);
+    btn.addEventListener('click', async (e) => {
+      if (btn.classList.contains('disabled')) return;
 
-          } catch (err) {
-              console.error(err);
-              btn.textContent = originalText;
-              btn.classList.remove('disabled');
-              if (typeof showNotification === 'function') {
-                showNotification('Erro ao enviar relato.', 'error');
-              }
-          }
-      });
+      const sysId = btn.dataset.systemId;
+      const originalText = btn.textContent;
+
+      // Feedback imediato
+      btn.textContent = 'Enviando...';
+      btn.classList.add('disabled');
+
+      try {
+        await window.systemStatusService.reportUserInstability(sysId);
+
+        // Salva cooldown local
+        localStorage.setItem(`last_report_${sysId}`, Date.now());
+
+        btn.textContent = '✅ Reportado';
+        if (typeof showNotification === 'function') {
+          showNotification('Obrigado! Seu relato ajuda outros usuários.', 'success');
+        } else {
+          alert('Obrigado! Seu relato ajuda outros usuários.');
+        }
+
+        // Atualiza o painel para mostrar o novo contagem
+        // Pequeno delay para garantir que o Firestore processou (consistência eventual)
+        setTimeout(() => {
+          const section = document.querySelector('#ip-section-instabilities');
+          if (section) loadSystemsStatus(section);
+        }, 1200);
+
+      } catch (err) {
+        console.error(err);
+        btn.textContent = originalText;
+        btn.classList.remove('disabled');
+        if (typeof showNotification === 'function') {
+          showNotification('Erro ao enviar relato.', 'error');
+        }
+      }
+    });
   });
 
   // Listeners de Edição (Dev)
   if (developerMode) {
     container.querySelectorAll('.ip-edit-system-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const systemId = btn.dataset.systemId;
-            const system = systems.find(s => s.id === systemId);
-            if (system) openSystemEditModal(system);
-        });
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const systemId = btn.dataset.systemId;
+        const system = systems.find(s => s.id === systemId);
+        if (system) openSystemEditModal(system);
+      });
     });
   }
 }
@@ -2399,7 +2396,7 @@ function openSystemEditModal(system) {
       </div>
 
       <div style="font-size: 11px; color: var(--text-color-muted); margin-top: 10px;">
-        ${system.updatedAt ? `Última atualização: ${new Date(system.updatedAt).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })}` : ''}
+        ${system.updatedAt ? `Última atualização: ${new Date(system.updatedAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}` : ''}
       </div>
     </div>
   `;
@@ -2468,7 +2465,7 @@ function openSystemEditModal(system) {
   const workaroundTextarea = modal.querySelector('#edit-system-workaround');
   const statusSelect = modal.querySelector('#edit-system-status');
   const messageTextarea = modal.querySelector('#edit-system-message');
-  
+
   // Modelos de mensagens padrão por status
   const statusTemplates = {
     'operational': 'Todos os serviços operando normalmente.',
@@ -2481,14 +2478,14 @@ function openSystemEditModal(system) {
     statusSelect.addEventListener('change', () => {
       const selectedStatus = statusSelect.value;
       const currentMessage = messageTextarea.value.trim();
-      
+
       // Só preenche se a mensagem estiver vazia ou for um dos templates antigos
       const isDefault = Object.values(statusTemplates).some(t => currentMessage === t) || currentMessage === '';
-      
+
       if (isDefault && statusTemplates[selectedStatus]) {
         messageTextarea.value = statusTemplates[selectedStatus];
         messageTextarea.focus();
-        
+
         // Se houver XXXXX, seleciona para facilitar a substituição
         const index = messageTextarea.value.indexOf('XXXXX');
         if (index !== -1) {
@@ -2517,7 +2514,7 @@ function openSystemEditModal(system) {
   // Ajustar labels dos botões padrão do createModal
   const saveBtn = modal.querySelector('#modal-save-btn');
   const cancelBtn = modal.querySelector('#modal-cancel-btn');
-  
+
   if (saveBtn) saveBtn.innerHTML = '<span>💾</span> Salvar';
   if (cancelBtn) cancelBtn.textContent = 'Fechar';
 

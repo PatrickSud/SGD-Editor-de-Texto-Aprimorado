@@ -2,7 +2,7 @@
 
 /* Modal Content Override for Dashboard */
 #info-panel-modal .se-modal-content {
-  width: 1200px;
+  width: 1450px;
   max-width: 98vw;
   height: 85vh;
   max-height: 900px;
@@ -18,7 +18,8 @@
   flex-direction: row;
   padding: 0;
   overflow: hidden;
-  max-height: none; /* Override default modal body scroll */
+  max-height: none;
+  /* Override default modal body scroll */
 }
 
 /* --- SIDEBAR (Left) --- */
@@ -94,6 +95,7 @@
     opacity: 0;
     transform: translateY(5px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -119,8 +121,12 @@
 /* --- CARDS & GRID --- */
 .ip-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 16px;
+}
+
+#pending-list-container {
+  grid-template-columns: repeat(3, 1fr);
 }
 
 .ip-card {
@@ -134,10 +140,21 @@
   overflow: hidden;
 }
 
-.ip-card.ip-card-danger { border-left: 5px solid #dc3545; }
-.ip-card.ip-card-warning { border-left: 5px solid #ffc107; }
-.ip-card.ip-card-success { border-left: 5px solid #28a745; }
-.ip-card.ip-card-info { border-left: 5px solid var(--action-blue); }
+.ip-card.ip-card-danger {
+  border-left: 5px solid #dc3545;
+}
+
+.ip-card.ip-card-warning {
+  border-left: 5px solid #ffc107;
+}
+
+.ip-card.ip-card-success {
+  border-left: 5px solid #28a745;
+}
+
+.ip-card.ip-card-info {
+  border-left: 5px solid var(--action-blue);
+}
 
 .ip-card:hover {
   transform: translateY(-2px);
@@ -169,14 +186,17 @@
   background-color: color-mix(in srgb, var(--action-green) 20%, transparent);
   color: var(--action-green);
 }
+
 .badge-warning {
   background-color: color-mix(in srgb, var(--action-yellow) 20%, transparent);
   color: var(--action-yellow-hover);
 }
+
 .badge-danger {
   background-color: color-mix(in srgb, var(--action-red) 20%, transparent);
   color: var(--action-red);
 }
+
 .badge-info {
   background-color: color-mix(in srgb, var(--action-blue) 20%, transparent);
   color: var(--action-blue);
@@ -364,19 +384,15 @@
   box-shadow: var(--shadow-md);
   position: relative;
   overflow: hidden;
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--primary-color) 5%, var(--background-glass)),
-    var(--background-glass)
-  );
+  background: linear-gradient(135deg,
+      color-mix(in srgb, var(--primary-color) 5%, var(--background-glass)),
+      var(--background-glass));
 }
 
 .ip-form-card:hover {
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--primary-color) 10%, var(--background-glass)),
-    color-mix(in srgb, var(--primary-color) 5%, var(--background-glass))
-  );
+  background: linear-gradient(135deg,
+      color-mix(in srgb, var(--primary-color) 10%, var(--background-glass)),
+      color-mix(in srgb, var(--primary-color) 5%, var(--background-glass)));
   border-color: color-mix(in srgb, var(--primary-color) 40%, transparent);
   transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
@@ -445,23 +461,24 @@
 }
 
 .ip-filter-group {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    flex-wrap: wrap;
-    flex: 1;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  flex: 1;
 }
 
 .ip-actions-group {
-    display: flex;
-    gap: 8px;
-    align-items: center;
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .active-notification {
-    background-color: var(--action-blue) !important; /* Visual de ativo */
-    color: white !important;
-    border-color: var(--action-blue) !important;
+  background-color: var(--action-blue) !important;
+  /* Visual de ativo */
+  color: white !important;
+  border-color: var(--action-blue) !important;
 }
 
 .ip-filter-input.compact,
@@ -488,8 +505,7 @@
 .ip-filter-select.compact:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px
-    color-mix(in srgb, var(--primary-color) 25%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 25%, transparent);
 }
 
 .action-btn.compact {
@@ -544,25 +560,31 @@
   left: 0;
   width: 4px;
   height: 100%;
-  background-color: var(--text-color-muted); /* Default Gray */
+  background-color: var(--text-color-muted);
+  /* Default Gray */
 }
 
 /* Cores de Status Dinâmicas */
 .ip-pending-card.status-analise::before {
   background-color: var(--action-yellow);
 }
+
 .ip-pending-card.status-respondido::before {
   background-color: var(--action-green);
 }
+
 .ip-pending-card.status-aguardando::before {
   background-color: var(--action-blue);
 }
+
 .ip-pending-card.status-aguardando-interna::before {
   background-color: #9333ea;
 }
+
 .ip-pending-card.status-respondido-interna::before {
   background-color: #ec4899;
 }
+
 .ip-pending-card.status-outro::before {
   background-color: var(--text-color-muted);
 }
@@ -591,10 +613,13 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }
+
   50% {
     opacity: 0.8;
     transform: scale(1.1);
@@ -650,7 +675,8 @@
   font-size: 14px;
   font-weight: 600;
   color: var(--text-color-main);
-  margin-bottom: 8px; /* Reduzido para aproximar dos detalhes */
+  margin-bottom: 8px;
+  /* Reduzido para aproximar dos detalhes */
   line-height: 1.4;
   padding-left: 8px;
 
@@ -689,7 +715,8 @@
   align-items: center;
   gap: 4px;
   max-width: 65%;
-  color: var(--text-color-muted); /* Default */
+  color: var(--text-color-muted);
+  /* Default */
   font-weight: 500;
 }
 
@@ -697,15 +724,19 @@
 .ip-pending-card.status-analise .ip-pending-status {
   color: var(--action-yellow-hover);
 }
+
 .ip-pending-card.status-respondido .ip-pending-status {
   color: var(--action-green);
 }
+
 .ip-pending-card.status-aguardando .ip-pending-status {
   color: var(--action-blue);
 }
+
 .ip-pending-card.status-aguardando-interna .ip-pending-status {
   color: #9333ea;
 }
+
 .ip-pending-card.status-respondido-interna .ip-pending-status {
   color: #ec4899;
 }
@@ -714,7 +745,8 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background-color: currentColor; /* Usa a cor do texto do pai */
+  background-color: currentColor;
+  /* Usa a cor do texto do pai */
   display: inline-block;
   flex-shrink: 0;
 }
@@ -797,109 +829,110 @@
 /* --- ESTILOS DE STATUS DOS SISTEMAS (VOTAÇÃO) --- */
 
 .ip-system-reports-area {
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid var(--border-color);
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color);
 }
 
 .ip-reports-header {
-    display: flex;
-    justify-content: space-between;
-    font-size: 11px;
-    margin-bottom: 4px;
-    color: var(--text-color-muted);
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  margin-bottom: 4px;
+  color: var(--text-color-muted);
 }
 
 .reports-label {
-    font-weight: 700;
+  font-weight: 700;
 }
 
 .ip-reports-bar-bg {
-    width: 100%;
-    height: 6px;
-    background-color: var(--background-hover);
-    border-radius: 3px;
-    overflow: hidden;
-    margin-bottom: 5px;
+  width: 100%;
+  height: 6px;
+  background-color: var(--background-hover);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 5px;
 }
 
 .ip-reports-bar-fill {
-    height: 100%;
-    border-radius: 3px;
-    transition: width 0.5s ease, background-color 0.5s ease;
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease, background-color 0.5s ease;
 }
 
 .ip-reports-actions {
-    display: flex;
-    align-items: center;
+  display: flex;
+  align-items: center;
 }
 
 .ip-report-btn {
-    background-color: transparent;
-    border: 1px solid var(--action-red);
-    color: var(--action-red);
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 11px;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-weight: 600;
+  background-color: transparent;
+  border: 1px solid var(--action-red);
+  color: var(--action-red);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 600;
 }
 
 .ip-report-btn:hover {
-    background-color: var(--action-red);
-    color: white;
+  background-color: var(--action-red);
+  color: white;
 }
 
 .ip-report-btn.disabled {
-    opacity: 0.5;
-    cursor: default;
-    border-color: var(--border-color);
-    color: var(--text-color-muted);
-    background-color: var(--background-hover);
+  opacity: 0.5;
+  cursor: default;
+  border-color: var(--border-color);
+  color: var(--text-color-muted);
+  background-color: var(--background-hover);
 }
 
 .ip-system-workaround {
-    margin-top: 8px;
-    padding: 8px;
-    background-color: color-mix(in srgb, var(--primary-color) 5%, transparent);
-    border-radius: 4px;
-    font-size: 12px;
-    border-left: 3px solid var(--primary-color);
+  margin-top: 8px;
+  padding: 8px;
+  background-color: color-mix(in srgb, var(--primary-color) 5%, transparent);
+  border-radius: 4px;
+  font-size: 12px;
+  border-left: 3px solid var(--primary-color);
 }
 
 .system-header-left {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .system-header-right {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .ip-system-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px dashed var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-color);
 }
 
 .ip-system-footer .ip-card-updated {
-    margin-top: 0;
-    padding-top: 0;
-    border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
 }
 
 .ip-system-message {
-    font-size: 13px;
-    color: var(--text-color-main);
-    margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--text-color-main);
+  margin-bottom: 8px;
 }
+
 .ip-add-closing-btn {
   display: inline-flex;
   align-items: center;
@@ -963,12 +996,10 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.3),
-    transparent
-  );
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.3),
+      transparent);
   transition: left 0.5s;
 }
 
@@ -989,11 +1020,9 @@
 /* Card de ação especial */
 .ip-form-action {
   border: 2px solid color-mix(in srgb, #17a2b8 20%, transparent);
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, #17a2b8 5%, var(--background-glass)),
-    var(--background-glass)
-  );
+  background: linear-gradient(135deg,
+      color-mix(in srgb, #17a2b8 5%, var(--background-glass)),
+      var(--background-glass));
 }
 
 .ip-form-action:hover {
@@ -1082,4 +1111,3 @@
   text-shadow: 0 0 1px color-mix(in srgb, var(--primary-color) 20%, transparent);
   margin-left: 4px;
 }
-
