@@ -89,6 +89,17 @@ const MINOR_RELEASE_NOTES = {
         '<b>🕒 Histórico Transparente:</b> Exibição da data e hora exata da última atualização diretamente nos cards e no modal de edição.',
         '<b>🎨 UX Refinada:</b> Títulos unificados, destaque visual para o nome do sistema em edição e fluxo de salvamento otimizado sem interrupções.'
       ]
+    },
+    {
+      version: '2.9.9.6',
+      features: [
+        '<b>📢 Aba de Avisos Aprimorada:</b> Gestão completa de comunicados internos com suporte a HTML e formatação segura.',
+        '<b>🏷️ Identidade Visual por Tipo:</b> Cada aviso agora possui uma borda lateral e ícones específicos conforme a categoria (<i>Informativo</i>, <i>Novidade</i>, <i>Alerta</i> e <i>Importante</i>).',
+        '<b>🙈 Gestão de Leitura:</b> Opção "<b>Ocultar</b>" integrada em cada card, permitindo que cada usuário dispense avisos já lidos individualmente.',
+        '<b>🧹 Limpeza Automática:</b> Implementada expiração automática de avisos após <b>7 dias</b>, mantendo o painel sempre atualizado.',
+        '<b>👤 Identificação de Autoria:</b> Captura automática do nome do publicador diretamente do SGD (visível apenas para desenvolvedores).',
+        '<b>⚡ UX & Agilidade:</b> Interface de criação mais compacta, atualização automática da lista após salvar e ações movidas para o cabeçalho do card para melhor aproveitamento de espaço.'
+      ]
     }
   ],
   '2.9.6': [

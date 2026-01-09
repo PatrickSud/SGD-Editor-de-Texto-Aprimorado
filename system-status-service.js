@@ -7,6 +7,8 @@
 const FIREBASE_PROJECT_ID = "sgd-extension";
 const FIREBASE_API_KEY = "AIzaSyBJgLpNfiycnIr-OybbfAOAuIa4ZU3nBbY";
 const BASE_URL = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/systemStatus`;
+const REPORTS_COLLECTION = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/systemReports`;
+
 
 /**
  * Converte o formato bizarro de campos do Firestore REST para um objeto limpo
@@ -148,7 +150,126 @@ function getStatusLabel(status) {
   }
 }
 
+/**
+ * Captura o nome do usuário logado na barra de navegação do SGD
+ * Seletor baseado em: <a class="navbar-link"><b>NOME</b></a>
+ */
+function getCurrentSgdUser() {
+  try {
+    const userElement = document.querySelector('.navbar-link b');
+    if (userElement) {
+      // Remove &nbsp; (espaços inquebráveis) e espaços extras
+      return userElement.textContent.replace(/\u00A0/g, ' ').trim();
+    }
+  } catch (e) {
+    console.warn('Não foi possível obter o nome do usuário:', e);
+  }
+  return 'Usuário Desconhecido';
+}
+
+/**
+ * Envia um reporte de instabilidade de um usuário com o nome
+ * @param {string} systemId - ID do sistema
+ */
+async function reportUserInstability(systemId) {
+  try {
+    const userName = getCurrentSgdUser(); 
+
+    const reportData = {
+      systemId: systemId,
+      timestamp: new Date().toISOString(),
+      userName: userName
+    };
+    
+    const fields = toFirestore(reportData);
+    
+    // Transforma timestamp em formato Firestore Timestamp para o query funcionar melhor
+    fields.fields.timestamp = { timestampValue: reportData.timestamp };
+    
+    const response = await fetch(`${REPORTS_COLLECTION}?key=${FIREBASE_API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(fields)
+    });
+
+    if (!response.ok) {
+        const errorDetail = await response.json();
+        console.error('Firestore Error Detail:', JSON.stringify(errorDetail, null, 2));
+        throw new Error(`Erro ao enviar reporte: ${errorDetail.error?.message || response.statusText}`);
+    }
+    return true;
+  } catch (error) {
+    console.error('Erro ao reportar instabilidade:', error);
+    throw error;
+  }
+}
+
+/**
+ * Busca a contagem de reportes da última hora para todos os sistemas
+ * @returns {Promise<Object>} Objeto { systemId: count }
+ */
+async function getRecentReportsStats() {
+  try {
+    // Define janela de tempo (última 1 hora)
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
+    // Query estruturada do Firestore para filtrar por data
+    const query = {
+      structuredQuery: {
+        from: [{ collectionId: "systemReports" }],
+        where: {
+          fieldFilter: {
+            field: { fieldPath: "timestamp" },
+            op: "GREATER_THAN_OR_EQUAL",
+            value: { timestampValue: oneHourAgo }
+          }
+        },
+        limit: 500 // Limite de segurança para não explodir leituras
+      }
+    };
+
+    const response = await fetch(`${BASE_URL.replace('systemStatus', '')}:runQuery?key=${FIREBASE_API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(query)
+    });
+
+    if (!response.ok) return {};
+
+    const result = await response.json();
+    
+    // Processar resultados para contar por sistema
+    const stats = {};
+    
+    if (Array.isArray(result)) {
+        result.forEach(item => {
+            if (item.document) {
+                const data = fromFirestore(item.document);
+                if (data.systemId) {
+                    stats[data.systemId] = (stats[data.systemId] || 0) + 1;
+                }
+            }
+        });
+    }
+    
+    return stats;
+  } catch (error) {
+    console.error('Erro ao buscar estatísticas de reportes:', error);
+    return {};
+  }
+}
+
 // Expor globalmente
+window.systemStatusService = {
+    ...(window.systemStatusService || {}),
+    getSystemsStatus,
+    updateSystemStatus,
+    reportUserInstability,
+    getRecentReportsStats,
+    getStatusBadgeClass,
+    getStatusLabel
+};
+
 window.initializeSystemsInFirestore = async function() {
   if (typeof initializeSystemsInFirestore === 'function') {
       return await initializeSystemsInFirestore();

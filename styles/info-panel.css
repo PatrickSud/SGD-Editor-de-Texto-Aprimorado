@@ -119,7 +119,7 @@
 /* --- CARDS & GRID --- */
 .ip-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 16px;
 }
 
@@ -130,7 +130,14 @@
   padding: 16px;
   box-shadow: var(--shadow-md);
   transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+  overflow: hidden;
 }
+
+.ip-card.ip-card-danger { border-left: 5px solid #dc3545; }
+.ip-card.ip-card-warning { border-left: 5px solid #ffc107; }
+.ip-card.ip-card-success { border-left: 5px solid #28a745; }
+.ip-card.ip-card-info { border-left: 5px solid var(--action-blue); }
 
 .ip-card:hover {
   transform: translateY(-2px);
@@ -338,7 +345,7 @@
 
 .ip-forms-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -730,6 +737,26 @@
   text-decoration: none;
 }
 
+.badge-info {
+  background-color: var(--action-blue);
+  color: white;
+}
+
+.badge-success {
+  background-color: #28a745;
+  color: white;
+}
+
+.badge-warning {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.badge-danger {
+  background-color: #dc3545;
+  color: white;
+}
+
 /* Loading e Empty States */
 .ip-loading-container,
 .ip-empty-state,
@@ -766,12 +793,119 @@
   margin-bottom: 10px;
 }
 
-/* Botão de Adicionar Encerramento */
+
+/* --- ESTILOS DE STATUS DOS SISTEMAS (VOTAÇÃO) --- */
+
+.ip-system-reports-area {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color);
+}
+
+.ip-reports-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    margin-bottom: 4px;
+    color: var(--text-color-muted);
+}
+
+.reports-label {
+    font-weight: 700;
+}
+
+.ip-reports-bar-bg {
+    width: 100%;
+    height: 6px;
+    background-color: var(--background-hover);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 5px;
+}
+
+.ip-reports-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease, background-color 0.5s ease;
+}
+
+.ip-reports-actions {
+    display: flex;
+    align-items: center;
+}
+
+.ip-report-btn {
+    background-color: transparent;
+    border: 1px solid var(--action-red);
+    color: var(--action-red);
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 600;
+}
+
+.ip-report-btn:hover {
+    background-color: var(--action-red);
+    color: white;
+}
+
+.ip-report-btn.disabled {
+    opacity: 0.5;
+    cursor: default;
+    border-color: var(--border-color);
+    color: var(--text-color-muted);
+    background-color: var(--background-hover);
+}
+
+.ip-system-workaround {
+    margin-top: 8px;
+    padding: 8px;
+    background-color: color-mix(in srgb, var(--primary-color) 5%, transparent);
+    border-radius: 4px;
+    font-size: 12px;
+    border-left: 3px solid var(--primary-color);
+}
+
+.system-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.system-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ip-system-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border-color);
+}
+
+.ip-system-footer .ip-card-updated {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+
+.ip-system-message {
+    font-size: 13px;
+    color: var(--text-color-main);
+    margin-bottom: 8px;
+}
 .ip-add-closing-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  width: 100%;
   padding: 10px 18px;
   font-size: 13px;
   font-weight: 600;
@@ -785,9 +919,9 @@
   border-color: #17a2b8 !important;
   color: white !important;
   box-shadow: 0 2px 8px rgba(23, 162, 184, 0.25);
-  width: 100%;
   max-width: 100%;
 }
+
 
 .ip-add-closing-btn:hover {
   background: linear-gradient(135deg, #138496, #17a2b8) !important;

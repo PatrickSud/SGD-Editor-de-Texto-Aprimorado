@@ -9,6 +9,7 @@
  * @returns {string} String escapada.
  */
 function escapeHTML(str) {
+  if (typeof str !== 'string') return ''
   return str.replace(
     /[&<>"']/g,
     m =>
@@ -44,7 +45,7 @@ function debounce(func, wait) {
  * Manipula o clique para ativar o modo desenvolvedor
  * @param {Event} event - Evento de clique
  */
-function handleDeveloperModeClick(event) {
+async function handleDeveloperModeClick(event) {
   const now = Date.now()
 
   // Reset contador se passou mais de 3 segundos desde o último clique
@@ -55,16 +56,11 @@ function handleDeveloperModeClick(event) {
   clickCount++
   lastClickTime = now
 
-  // Feedback visual
-  const element = event.currentTarget
-  element.style.backgroundColor =
-    'color-mix(in srgb, var(--action-blue) 20%, transparent)'
-  setTimeout(() => {
-    element.style.backgroundColor = ''
-  }, 200)
-
   // Ativar modo desenvolvedor após 5 cliques
   if (clickCount >= 5 && !developerMode) {
+    // Persiste a ativação
+    await toggleDevMode();
+    
     developerMode = true
     clickCount = 0
 
@@ -72,17 +68,17 @@ function handleDeveloperModeClick(event) {
     const toast = document.createElement('div')
     toast.style.cssText =
       'position: fixed; top: 20px; right: 20px; padding: 12px 16px; background-color: var(--action-green); color: white; border-radius: var(--border-radius-sm); z-index: 10000; font-size: 14px;'
-    toast.textContent = '✅ Modo desenvolvedor ativado!'
+    toast.textContent = '✅ Modo desenvolvedor ativado e salvo!'
     document.body.appendChild(toast)
 
     setTimeout(() => {
-      document.body.removeChild(toast)
+       if (document.body.contains(toast)) document.body.removeChild(toast)
     }, 3000)
 
     // Recarregar o painel para mostrar todas as seções
-    const modal = document.querySelector('.ip-modal')
+    const modal = document.querySelector('#info-panel-modal')
     if (modal) {
-      document.body.removeChild(modal)
+      modal.remove()
     }
     openInfoPanel()
   }
@@ -91,7 +87,13 @@ function handleDeveloperModeClick(event) {
 /**
  * Abre o Painel de Informações e Alertas.
  */
-function openInfoPanel() {
+async function openInfoPanel() {
+  // Injeta estilos necessários
+  injectDevSwitchStyles();
+
+  // 1. Carregar estado persistente do modo desenvolvedor
+  developerMode = await isDevModeEnabled();
+
   const allSections = [
     { id: 'pending', icon: '⏳', label: 'Pendências' },
     { id: 'instabilities', icon: '🚨', label: 'Instabilidades' },
@@ -109,27 +111,45 @@ function openInfoPanel() {
           section.id === 'pending' ||
           section.id === 'ai-chains' ||
           section.id === 'forms' ||
-          section.id === 'extensions'
+          section.id === 'notices' ||
+          section.id === 'extensions' ||
+          section.id === 'instabilities'
       )
+
+  // HTML do rodapé da sidebar (Interruptor Dev Mode)
+  const sidebarFooterHtml = developerMode ? `
+    <div class="ip-sidebar-footer">
+      <div class="ip-dev-toggle-wrapper">
+        <span>Modo Dev</span>
+        <label class="ip-switch" title="Desativar Modo Desenvolvedor">
+          <input type="checkbox" id="ip-dev-mode-switch" checked>
+          <span class="ip-slider round"></span>
+        </label>
+      </div>
+    </div>
+  ` : '';
 
   // Estrutura Base do Modal
   const sidebarHtml = `
     <div class="ip-sidebar">
-      <div class="ip-sidebar-header" id="developer-mode-trigger">
+      <div class="ip-sidebar-header" id="developer-mode-trigger" style="cursor: default; user-select: none;">
         Painel
       </div>
-      ${sections
-        .map(
-          (s, index) => `
-        <div class="ip-nav-item ${index === 0 ? 'active' : ''}" data-target="${
-            s.id
-          }">
-          <span class="ip-nav-icon">${s.icon}</span>
-          <span class="ip-nav-label">${s.label}</span>
-        </div>
-      `
-        )
-        .join('')}
+      <div style="flex: 1; overflow-y: auto;">
+        ${sections
+          .map(
+            (s, index) => `
+          <div id="ip-nav-${s.id}" class="ip-nav-item ${index === 0 ? 'active' : ''}" data-target="${
+              s.id
+            }">
+            <span class="ip-nav-icon">${s.icon}</span>
+            <span class="ip-nav-label">${s.label}</span>
+          </div>
+        `
+          )
+          .join('')}
+      </div>
+      ${sidebarFooterHtml}
     </div>
   `
 
@@ -163,7 +183,7 @@ function openInfoPanel() {
     }
   )
 
-  // Adiciona lógica de navegação
+  // --- Lógica de Navegação ---
   const navItems = modal.querySelectorAll('.ip-nav-item')
   const contentSections = modal.querySelectorAll('.ip-section')
 
@@ -176,89 +196,70 @@ function openInfoPanel() {
       // Add active class
       item.classList.add('active')
       const targetId = item.dataset.target
+      
+      // Indicador de lido/não lido para Avisos
+      if (targetId === 'notices') {
+          const noticeIcon = item.querySelector('.ip-nav-icon');
+          if (noticeIcon) noticeIcon.classList.remove('has-unread-warnings');
+          chrome.storage.local.set({ 'warningsLastReadTime': Date.now() });
+      }
+
       const targetSection = modal.querySelector(`#ip-section-${targetId}`)
       if (targetSection) {
         targetSection.classList.add('active')
 
-        // Se a seção for de pendências, carrega/atualiza os dados
-        if (targetId === 'pending') {
-          loadPendingItems(targetSection)
-        }
-
-        // Se a seção for de formulários, carrega os dados
-        if (targetId === 'forms') {
-          loadForms(targetSection, 'forms')
-        }
-
-        // Se a seção for de AI Chains, carrega os dados
-        if (targetId === 'ai-chains') {
-           loadForms(targetSection, 'ai')
-        }
-
-
-        // Se a seção for de Instabilidades, carrega status dos sistemas
+        // Carregamento dinâmico das seções
+        if (targetId === 'pending') loadPendingItems(targetSection)
+        if (targetId === 'forms') loadForms(targetSection, 'forms')
+        if (targetId === 'ai-chains') loadForms(targetSection, 'ai')
         if (targetId === 'instabilities') {
           loadSystemsStatus(targetSection)
-          
-          // Configurar botão de atualizar
           const refreshBtn = targetSection.querySelector('#refresh-systems-btn')
           if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => {
-              loadSystemsStatus(targetSection);
-            });
+            refreshBtn.addEventListener('click', () => loadSystemsStatus(targetSection));
           }
         }
+        if (targetId === 'notices') loadWarnings(targetSection)
       }
     })
   })
 
-  // Configura o listener para o botão de atualizar na aba de pendências
+  // --- Lógica do Botão de Notificação e Refresh (Pendências) ---
   const pendingSection = modal.querySelector('#ip-section-pending')
   if (pendingSection) {
     const refreshBtn = pendingSection.querySelector('#refresh-pending-btn')
     if (refreshBtn) {
-      refreshBtn.addEventListener('click', () => {
-        loadPendingItems(pendingSection)
-      })
+      refreshBtn.addEventListener('click', () => loadPendingItems(pendingSection))
     }
 
-    // Configuração do botão de Notificação
     const notifyBtn = pendingSection.querySelector('#toggle-notification-btn')
     if (notifyBtn) {
-        // Função para atualizar visual do botão
         const updateNotifyBtnState = (enabled) => {
             if (enabled) {
                 notifyBtn.textContent = '🔔'
                 notifyBtn.classList.add('active-notification')
-                notifyBtn.title = 'Notificações Ativadas\nVocê receberá alertas na tela durante as verificações periódicas (4x por hora).'
+                notifyBtn.title = 'Notificações Ativadas'
                 notifyBtn.style.opacity = '1'
             } else {
                 notifyBtn.textContent = '🔕'
                 notifyBtn.classList.remove('active-notification')
-                notifyBtn.title = 'Notificações Desativadas\nO sistema verificará pendências silenciosamente 4x por hora, mas não exibirá alertas na tela.'
+                notifyBtn.title = 'Notificações Desativadas'
                 notifyBtn.style.opacity = '0.6'
             }
         }
 
-        // Carregar estado inicial
         chrome.storage.sync.get(['extensionSettingsData'], (result) => {
             const settings = result.extensionSettingsData || {}
             const prefs = settings.preferences || {}
-            // Padrão false
-            const isEnabled = prefs.enablePendingNotifications === true
-            updateNotifyBtnState(isEnabled)
+            updateNotifyBtnState(prefs.enablePendingNotifications === true)
         })
 
-        // Listener de clique
         notifyBtn.addEventListener('click', async () => {
              const result = await chrome.storage.sync.get(['extensionSettingsData'])
              let settings = result.extensionSettingsData || { preferences: {} }
              if (!settings.preferences) settings.preferences = {}
              
-             // Alternar
-             const currentState = settings.preferences.enablePendingNotifications === true
-             const newState = !currentState
-             
+             const newState = !(settings.preferences.enablePendingNotifications === true)
              settings.preferences.enablePendingNotifications = newState
              
              await chrome.storage.sync.set({ extensionSettingsData: settings })
@@ -266,16 +267,16 @@ function openInfoPanel() {
         })
     }
 
-    // Carrega automaticamente as pendências se esta for a seção ativa
     if (pendingSection.classList.contains('active')) {
       loadPendingItems(pendingSection)
     }
-
+    
     // Configurar listeners para os filtros
     const searchInput = pendingSection.querySelector('#pending-search')
     const statusFilter = pendingSection.querySelector('#pending-status-filter')
     const tagFilter = pendingSection.querySelector('#pending-tag-filter')
     const sortSelect = pendingSection.querySelector('#pending-sort')
+    const responsibleFilter = pendingSection.querySelector('#pending-responsible-filter')
 
     const applyFiltersHandler = () => {
       if (allPendingItems.length > 0) {
@@ -283,38 +284,43 @@ function openInfoPanel() {
       }
     }
 
-    if (searchInput) {
-      searchInput.addEventListener('input', debounce(applyFiltersHandler, 300))
-    }
-    if (statusFilter) {
-      statusFilter.addEventListener('change', applyFiltersHandler)
-    }
-    if (tagFilter) {
-      tagFilter.addEventListener('change', applyFiltersHandler)
-    }
-    if (sortSelect) {
-      sortSelect.addEventListener('change', applyFiltersHandler)
-    }
-
-    const responsibleFilter = pendingSection.querySelector('#pending-responsible-filter')
-    if (responsibleFilter) {
-      responsibleFilter.addEventListener('change', applyFiltersHandler)
-    }
+    if (searchInput) searchInput.addEventListener('input', debounce(applyFiltersHandler, 300))
+    if (statusFilter) statusFilter.addEventListener('change', applyFiltersHandler)
+    if (tagFilter) tagFilter.addEventListener('change', applyFiltersHandler)
+    if (sortSelect) sortSelect.addEventListener('change', applyFiltersHandler)
+    if (responsibleFilter) responsibleFilter.addEventListener('change', applyFiltersHandler)
   }
 
-  // Adicionar handler para o modo desenvolvedor
+  // --- Lógica do Interruptor de Modo Dev (NOVO) ---
+  const devSwitch = modal.querySelector('#ip-dev-mode-switch');
+  if (devSwitch) {
+    devSwitch.addEventListener('change', async (e) => {
+      if (!e.target.checked) {
+        await toggleDevMode(); // Persiste no storage
+        developerMode = false;
+        
+        // Recarrega o painel para aplicar o layout de usuário comum
+        modal.remove();
+        openInfoPanel();
+      }
+    });
+  }
+
+  // --- Lógica do Gatilho Secreto (5 cliques) ---
   const devTrigger = modal.querySelector('#developer-mode-trigger')
   if (devTrigger) {
     devTrigger.addEventListener('click', handleDeveloperModeClick)
   }
 
-  // Adicionar mensagem de desenvolvimento no final do modal
-  const devMessage = document.createElement('div')
-  devMessage.style.cssText =
-    'padding: 12px 16px; margin-top: 16px; background-color: color-mix(in srgb, var(--action-yellow) 15%, transparent); border: 1px solid color-mix(in srgb, var(--action-yellow) 30%, transparent); border-radius: var(--border-radius-sm); color: var(--text-color-main); font-size: 13px;'
-  devMessage.innerHTML =
-    '<strong>⚠️ Em Desenvolvimento:</strong> Esta funcionalidade ainda está sendo desenvolvida.'
-  modal.querySelector('.ip-content-area').appendChild(devMessage)
+  // Mensagem de desenvolvimento no rodapé do conteúdo (apenas se dev)
+  if (developerMode) {
+      const devMessage = document.createElement('div')
+      devMessage.style.cssText =
+        'padding: 12px 16px; margin-top: 16px; background-color: color-mix(in srgb, var(--action-yellow) 15%, transparent); border: 1px solid color-mix(in srgb, var(--action-yellow) 30%, transparent); border-radius: var(--border-radius-sm); color: var(--text-color-main); font-size: 13px;'
+      devMessage.innerHTML =
+        '<strong>⚠️ Modo Desenvolvedor Ativo:</strong> Você tem acesso a recursos experimentais e de edição.'
+      modal.querySelector('.ip-content-area').appendChild(devMessage)
+  }
 
   document.body.appendChild(modal)
 }
@@ -341,15 +347,111 @@ let clickCount = 0
 let lastClickTime = 0
 
 /**
+ * Verifica se o modo desenvolvedor está ativo no storage
+ */
+async function isDevModeEnabled() {
+  const result = await chrome.storage.local.get(['developerMode'])
+  return result.developerMode === true
+}
+
+/**
+ * Alterna o estado do modo desenvolvedor no storage
+ */
+async function toggleDevMode() {
+  const currentState = await isDevModeEnabled()
+  const newState = !currentState
+  await chrome.storage.local.set({ developerMode: newState })
+  return newState
+}
+
+/**
+ * Injeta os estilos CSS para o interruptor do modo desenvolvedor
+ */
+function injectDevSwitchStyles() {
+  if (document.getElementById('ip-dev-switch-styles')) return;
+  
+  const style = document.createElement('style');
+  style.id = 'ip-dev-switch-styles';
+  style.textContent = `
+    .ip-sidebar-footer {
+      margin-top: auto;
+      padding: 16px;
+      border-top: 1px solid var(--border-color);
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+    .ip-dev-toggle-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-color-main);
+      font-weight: 600;
+    }
+    /* The Switch - the box around the slider */
+    .ip-switch {
+      position: relative;
+      display: inline-block;
+      width: 34px;
+      height: 20px;
+    }
+    /* Hide default HTML checkbox */
+    .ip-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    /* The slider */
+    .ip-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 34px;
+    }
+    .ip-slider:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .ip-slider {
+      background-color: var(--primary-color);
+    }
+    input:focus + .ip-slider {
+      box-shadow: 0 0 1px var(--primary-color);
+    }
+    input:checked + .ip-slider:before {
+      transform: translateX(14px);
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+/**
  * Obtém o nome do usuário atual do SGD
  * @returns {string} Nome do usuário
  */
 function getCurrentUserName() {
-  // Tenta obter o nome do usuário do elemento na página do SGD
-  const userNameElement = document.querySelector(
-    '.user-info, .usuario-nome, [class*="user"], [class*="nome"]'
-  )
-  return userNameElement ? userNameElement.textContent.trim() : 'Usuário SGD'
+  // Tenta obter o nome do usuário do elemento do topo do SGD (navbar-link b)
+  const userNameElement = document.querySelector('.navbar-link b');
+  
+  if (userNameElement) {
+    // Remove os &nbsp; (no JS aparecem como \u00A0)
+    return userNameElement.textContent.replace(/\u00A0/g, ' ').trim();
+  }
+  
+  // Fallback para outros elementos se mudar
+  const fallbackElement = document.querySelector('.user-info, .usuario-nome');
+  return fallbackElement ? fallbackElement.textContent.trim() : 'Usuário SGD';
 }
 
 /**
@@ -764,6 +866,455 @@ fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',{metho
         </div>
     `
 }
+
+// #region Avisos (Warnings)
+/**
+ * Carrega e renderiza os avisos.
+ * @param {HTMLElement} sectionElement 
+ */
+async function loadWarnings(sectionElement) {
+    let listContainer = sectionElement.querySelector('#warnings-list');
+    
+    // Se não existir o listContainer, cria a estrutura inicial
+    if (!listContainer) {
+        // Cabeçalho da seção com botão de novo aviso (se dev)
+        const headerHtml = `
+            <div class="ip-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div class="ip-section-desc" style="margin-bottom: 0;">Fique por dentro dos comunicados e avisos importantes.</div>
+                ${developerMode ? `<button id="new-warning-btn" class="ip-add-closing-btn" style="width: auto;">+ Novo Aviso</button>` : ''}
+            </div>
+            <div id="warnings-list" class="ip-grid">
+                 <div class="ip-loading-container">
+                    <div class="ip-spinner"></div>
+                    <span>Carregando avisos...</span>
+                </div>
+            </div>
+        `;
+        
+        sectionElement.innerHTML = headerHtml;
+        listContainer = sectionElement.querySelector('#warnings-list');
+        
+        // Listener do botão de criar
+        const newBtn = sectionElement.querySelector('#new-warning-btn');
+        if (newBtn) {
+            newBtn.addEventListener('click', () => openCreateWarningModal(null));
+        }
+    } else {
+        // Se já existe, apenas bota o loading dentro do listContainer
+        listContainer.innerHTML = `
+            <div class="ip-loading-container">
+                <div class="ip-spinner"></div>
+                <span>Atualizando...</span>
+            </div>
+        `;
+    }
+
+    try {
+        if (typeof window.warningsService === 'undefined') {
+            throw new Error('Serviço de avisos não carregado.');
+        }
+
+        let warnings = await window.warningsService.getWarnings();
+        
+        // --- 1. Filtro de Expiração (7 dias) ---
+        const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+        const now = Date.now();
+        warnings = warnings.filter(w => {
+            if (!w.date) return true; // Se não tem data, mantém
+            const warnDate = new Date(w.date).getTime();
+            return (now - warnDate) < SEVEN_DAYS_MS;
+        });
+
+        // [NOVO] --- 1.5 Filtro de Teste/Desenvolvedor ---
+        // Se NÃO estiver em modo desenvolvedor, remove avisos marcados como isTest
+        if (!developerMode) {
+            warnings = warnings.filter(w => !w.isTest);
+        }
+
+        // --- 2. Filtro de Ignorados (Storage) ---
+        const storage = await new Promise(resolve => chrome.storage.local.get(['ignoredWarnings'], resolve));
+        const ignoredIds = storage.ignoredWarnings || [];
+        warnings = warnings.filter(w => !ignoredIds.includes(w.id));
+        
+        const listContainer = sectionElement.querySelector('#warnings-list');
+        if (!listContainer) return;
+
+        if (warnings.length === 0) {
+            listContainer.innerHTML = `
+                <div class="ip-empty-state">
+                    <span style="font-size: 24px;">✅</span>
+                    <h4>Nenhum aviso no momento</h4>
+                    <p>Tudo tranquilo por aqui.</p>
+                </div>
+            `;
+            listContainer.style.display = 'flex';
+            listContainer.style.justifyContent = 'center';
+        } else {
+            listContainer.style.display = 'flex';
+            listContainer.style.flexDirection = 'column';
+            listContainer.style.gap = '16px';
+            listContainer.innerHTML = warnings.map(createWarningCard).join('');
+
+            // Adicionar listeners para botões de edição/exclusão (apenas se dev)
+            if (developerMode) {
+                listContainer.querySelectorAll('.ip-warn-edit-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const card = e.target.closest('.ip-card');
+                        const warnId = card.dataset.id;
+                        // Encontra o objeto completo do array (não temos aqui, mas podemos pegar dos atributos ou recarregar)
+                        // Melhor: ao renderizar, já colocar os dados no dataset ou buscar do array 'warnings' que está no escopo
+                        const warning = warnings.find(w => w.id === warnId);
+                        if (warning) openCreateWarningModal(warning);
+                    });
+                });
+
+                listContainer.querySelectorAll('.ip-warn-delete-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        if (confirm('Tem certeza que deseja excluir este aviso?')) {
+                            const card = e.target.closest('.ip-card');
+                            const warnId = card.dataset.id;
+                            try {
+                                await window.warningsService.deleteWarning(warnId);
+                                card.remove();
+                                // Se não sobrar nada, reload para mostrar empty state
+                                if (listContainer.children.length === 0) loadWarnings(sectionElement);
+                            } catch (err) {
+                                alert('Erro ao excluir: ' + err.message);
+                            }
+                        }
+                    });
+                });
+            }
+
+            // Adicionar listeners para botões de ignorar (para todos)
+            listContainer.querySelectorAll('.ip-warn-ignore-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const card = e.target.closest('.ip-card');
+                    const warnId = card.dataset.id;
+                    
+                    // Salvar no storage
+                    chrome.storage.local.get(['ignoredWarnings'], (result) => {
+                        const ignored = result.ignoredWarnings || [];
+                        if (!ignored.includes(warnId)) {
+                            ignored.push(warnId);
+                            chrome.storage.local.set({ 'ignoredWarnings': ignored }, () => {
+                                card.style.opacity = '0';
+                                card.style.transform = 'translateX(20px)';
+                                card.style.transition = 'all 0.3s ease';
+                                setTimeout(() => {
+                                    card.remove();
+                                    if (listContainer.children.length === 0) loadWarnings(sectionElement);
+                                }, 300);
+                            });
+                        }
+                    });
+                });
+            });
+
+            // Verificar indicadores de não lido
+            checkUnreadWarnings(warnings);
+        }
+
+    } catch (error) {
+        console.error(error);
+        const listContainer = sectionElement.querySelector('#warnings-list');
+        if (listContainer) {
+            listContainer.innerHTML = `
+                <div class="ip-error-state">
+                    <span>⚠️</span>
+                    <p>Erro ao carregar avisos.</p>
+                </div>
+            `;
+        }
+    }
+}
+
+
+/**
+ * Processa HTML seguro (White-list simples)
+ * Permite: b, strong, i, em, u, br, p, ul, ol, li, a (com href)
+ */
+function processSafeHTML(text) {
+    if (!text) return '';
+    
+    // 1. Escapa tudo para neutralizar scripts e tags não permitidas
+    let safe = escapeHTML(text);
+
+    // 2. Des-escapa tags permitidas (sem atributos, exceto A)
+    // Tags simples: <b>, </b>, <strong>, </strong>, etc.
+    const tags = ['b', 'strong', 'i', 'em', 'u', 'br', 'p', 'ul', 'ol', 'li'];
+    tags.forEach(tag => {
+        // Regex para abrir e fechar
+        // <tag> -> &lt;tag&gt;
+        const regexOpen = new RegExp(`&lt;${tag}&gt;`, 'gi');
+        safe = safe.replace(regexOpen, `<${tag}>`);
+        
+        // </tag> -> &lt;/tag&gt;
+        const regexClose = new RegExp(`&lt;/${tag}&gt;`, 'gi');
+        safe = safe.replace(regexClose, `</${tag}>`);
+    });
+
+    // 3. Trata tag <a href="..."> especificamente
+    // Formato escapado: &lt;a href=&quot;URL&quot;&gt;
+    safe = safe.replace(/&lt;a\s+href=&quot;(.*?)&quot;&gt;/gi, (match, url) => {
+        let fixedUrl = url.trim();
+        // Se não começa com protocolo ou barra (link relativo ao site), adiciona https://
+        if (fixedUrl && !/^(https?:\/\/|mailto:|tel:|\/|#)/i.test(fixedUrl)) {
+            fixedUrl = 'https://' + fixedUrl;
+        }
+        return `<a href="${fixedUrl}" target="_blank">`;
+    });
+    safe = safe.replace(/&lt;\/a&gt;/gi, '</a>');
+    
+    // Mantém quebras de linha normais como <br> se não estiverem dentro de tags que já dão bloco?
+    // O usuário pode usar <br> explícito agora. Mas para compatibilidade com texto plano antigo:
+    // Se o texto não parece ter tags HTML, talvez devêssemos converter \n.
+    // Mas o usuário pediu suporte a HTML, então <br> é esperado.
+    // Vamos converter \n apenas se não houver tags de bloco detectadas para evitar duplicação ou quebra de layout?
+    // Simples: converte \n para <br> E deixa os <br> explícitos.
+    safe = safe.replace(/\n/g, '<br>');
+
+    return safe;
+}
+
+/**
+ * Cria o HTML do card de aviso
+ */
+function createWarningCard(warning) {
+    const typeClass = warning.type === 'danger' ? 'badge-danger' : 
+                      warning.type === 'warning' ? 'badge-warning' : 
+                      warning.type === 'success' ? 'badge-success' : 'badge-info';
+    
+    const typeLabel = warning.type === 'danger' ? 'Importante' : 
+                      warning.type === 'warning' ? 'Alerta' : 
+                      warning.type === 'success' ? 'Novidade' : 'Informativo';
+    
+    // Formata a data (timestamp string do Firestore ISO)
+    let dateStr = 'Data desconhecida';
+    if (warning.date) {
+        try {
+            const date = new Date(warning.date);
+            dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute:'2-digit' });
+        } catch (e) {}
+    }
+
+    const messageHtml = processSafeHTML(warning.message || '');
+
+    // Autor só aparece no modo desenvolvedor
+    const authorHtml = developerMode ? `
+        <div style="font-size: 11px; color: var(--text-color-muted); display: flex; align-items: center; gap: 4px;">
+            ✍️ ${escapeHTML(warning.author || 'Usuário')}
+        </div>
+    ` : '';
+
+    const ignoreBtn = `<button class="ip-warn-ignore-btn" style="background:none; border:none; cursor:pointer; font-size:11px; color: var(--text-color-muted); text-decoration: underline; padding: 0; margin-right: 4px;" title="Não mostrar novamente">Ocultar</button>`;
+    
+    // [NOVO] Badge de Teste
+    const testBadge = warning.isTest 
+        ? `<span style="background-color: #607d8b; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-right: 6px; border: 1px dashed white;">TESTE / DEV</span>` 
+        : '';
+
+    const actionsHtml = `
+        <div style="display:flex; gap:10px; align-items:center;">
+            ${testBadge} ${ignoreBtn}
+            ${developerMode ? `
+                <button class="ip-warn-edit-btn" style="background:none; border:none; cursor:pointer; font-size:14px; padding:0; line-height:1;" title="Editar">✏️</button>
+                <button class="ip-warn-delete-btn" style="background:none; border:none; cursor:pointer; font-size:14px; padding:0; line-height:1;" title="Excluir">🗑️</button>
+            ` : ''}
+            <span class="ip-card-badge ${typeClass}">${escapeHTML(typeLabel)}</span>
+        </div>
+    `;
+
+    return `
+        <div class="ip-card ip-card-${warning.type || 'info'}" data-id="${warning.id}" ${warning.isTest ? 'style="border-style: dashed;"' : ''}>
+            <div class="ip-card-header">
+                <h4 class="ip-card-title">${escapeHTML(warning.title || 'Aviso')}</h4>
+                ${actionsHtml}
+            </div>
+            <div class="ip-card-content">${messageHtml}</div>
+            <div class="ip-card-updated" style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 8px; border-top: 1px dashed var(--border-color);">
+                <span>🕒 ${dateStr}</span>
+                ${authorHtml}
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Verifica avisos não lidos e atualiza indicador visual no sidebar
+ */
+function checkUnreadWarnings(warnings) {
+    if (!warnings || warnings.length === 0) return;
+    
+    chrome.storage.local.get(['warningsLastReadTime'], (result) => {
+        const lastRead = result.warningsLastReadTime || 0;
+        const newestWarning = warnings[0]; // Assumindo ordenação por data desc
+        
+        if (newestWarning && newestWarning.date) {
+             const newestDate = new Date(newestWarning.date).getTime();
+             if (newestDate > lastRead) {
+                 // Tem aviso novo!
+                 // Achar o ícone na sidebar e colocar a bolinha (via classe CSS)
+                 // Como o modal pode ser recriado, precisamos garantir que o seletor funcione
+                 const navItem = document.querySelector('#ip-nav-notices .ip-nav-icon');
+                 // Mas espere, o seletor #ip-nav-notices precisa existir. Vamos adicionar ID no ip-nav-item
+                 if (navItem) {
+                     navItem.classList.add('has-unread-warnings');
+                     
+                     // Adicionar estilo inline se CSS não tiver carregado (fallback)
+                     if (!document.getElementById('unread-style-inject')) {
+                         const style = document.createElement('style');
+                         style.id = 'unread-style-inject';
+                         style.textContent = `
+                            .has-unread-warnings { position: relative; }
+                            .has-unread-warnings::after {
+                                content: '';
+                                position: absolute;
+                                top: -2px;
+                                right: -2px;
+                                width: 8px;
+                                height: 8px;
+                                background-color: var(--action-red);
+                                border-radius: 50%;
+                                border: 1px solid var(--background-secondary);
+                            }
+                         `;
+                         document.head.appendChild(style);
+                     }
+                 }
+             }
+        }
+    });
+}
+
+/**
+ * Abre modal para criar ou editar aviso
+ * @param {Object} existingWarning - (Opcional) Objeto do aviso para edição
+ */
+function openCreateWarningModal(existingWarning = null) {
+    // Remover modal anterior se existir
+    const existing = document.getElementById('create-warning-modal');
+    if (existing) existing.remove();
+
+    const isEdit = !!existingWarning;
+    const titleVal = isEdit ? escapeHTML(existingWarning.title) : '';
+    const msgVal = isEdit ? escapeHTML(existingWarning.message) : '';
+    const typeVal = isEdit ? existingWarning.type : 'info';
+    const isTestVal = isEdit ? existingWarning.isTest : false; 
+
+    const fieldStyle = "display: block; width: 100%; margin-bottom: 12px; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main);";
+    
+    const modalHtml = `
+        <div style="padding: 10px;">
+            <label style="display:block; margin-bottom:4px; font-size:12px;">Título</label>
+            <input type="text" id="warn-title" style="${fieldStyle}" placeholder="Ex: Nova Atualização do Sistema Programada" value="${titleVal}">
+            
+            <label style="display:block; margin-bottom:4px; font-size:12px;">Mensagem</label>
+            <textarea id="warn-message" rows="3" style="${fieldStyle} margin-bottom: 4px; resize: vertical;" placeholder="Detalhes do aviso...">${msgVal}</textarea>
+            <div style="font-size: 11px; color: var(--text-color-muted); margin-bottom: 12px; opacity: 0.8;">
+                Dica: Você poderá usar HTML para formatar sua mensagem.
+            </div>
+            
+            <label style="display:block; margin-bottom:4px; font-size:12px;">Tipo</label>
+            <select id="warn-type" style="${fieldStyle} width: 200px;">
+                <option value="info" ${typeVal === 'info' ? 'selected' : ''}>ℹ️ Informativo</option>
+                <option value="success" ${typeVal === 'success' ? 'selected' : ''}>✨ Novidade</option>
+                <option value="warning" ${typeVal === 'warning' ? 'selected' : ''}>⚠️ Alerta</option>
+                <option value="danger" ${typeVal === 'danger' ? 'selected' : ''}>🚨 Importante</option>
+            </select>
+
+            <div style="margin-bottom: 16px; padding: 10px; background-color: var(--background-secondary); border-radius: 4px; border: 1px dashed var(--border-color);">
+                <div class="form-checkbox-group" style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" id="warn-is-test" ${isTestVal ? 'checked' : ''} style="width: auto; margin: 0;">
+                    <label for="warn-is-test" style="font-weight: 600; color: var(--text-color-main); font-size: 13px; cursor: pointer;">Modo de Teste / Demonstração</label>
+                </div>
+                <div style="font-size: 11px; color: var(--text-color-muted); margin-top: 4px; margin-left: 24px;">
+                    Se marcado, este aviso aparecerá <b>apenas</b> para usuários com "Modo Desenvolvedor" ativado e não enviará notificações para a equipe geral.
+                </div>
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
+                <button id="cancel-warn-btn" style="padding: 8px 16px; background: transparent; border: 1px solid var(--border-color); color: var(--text-color-main); border-radius: 4px; cursor: pointer;">Cancelar</button>
+                <button id="save-warn-btn" class="ip-add-closing-btn" style="width: auto;">${isEdit ? 'Atualizar Aviso' : 'Publicar Aviso'}</button>
+            </div>
+        </div>
+    `;
+
+    const modal = createModal(isEdit ? 'Editar Aviso' : 'Novo Aviso', modalHtml, null, {
+        isManagementModal: false, // Modal menor central
+        modalId: 'create-warning-modal',
+        showShareButton: false
+    });
+    
+    // Remover o rodapé padrão do createModal para não duplicar botões
+    const defaultActions = modal.querySelector('.se-modal-actions');
+    if (defaultActions) defaultActions.remove();
+    
+    modal.style.zIndex = '10002'; // Painel costuma ser alto
+    
+    document.body.appendChild(modal);
+
+    // Handlers
+    const saveBtn = modal.querySelector('#save-warn-btn');
+    const cancelBtn = modal.querySelector('#cancel-warn-btn');
+    
+    cancelBtn.addEventListener('click', () => modal.remove());
+    
+    saveBtn.addEventListener('click', async () => {
+        const title = modal.querySelector('#warn-title').value.trim();
+        const message = modal.querySelector('#warn-message').value.trim();
+        const type = modal.querySelector('#warn-type').value;
+        const isTest = modal.querySelector('#warn-is-test').checked;
+        const author = getCurrentUserName(); 
+        
+        if (!title || !message) {
+            alert('Preencha título e mensagem.');
+            return;
+        }
+        
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Salvando...';
+        
+        try {
+            if (isEdit) {
+                await window.warningsService.updateWarning(existingWarning.id, {
+                    title,
+                    message,
+                    type,
+                    author,
+                    isTest
+                });
+            } else {
+                await window.warningsService.createWarning({
+                    title,
+                    message,
+                    type,
+                    author,
+                    isTest,
+                    date: new Date().toISOString()
+                });
+            }
+            
+            modal.remove();
+            
+            // Recarregar lista se o painel de avisos estiver aberto no DOM
+            const warningsSection = document.querySelector('#ip-section-notices');
+            if (warningsSection) {
+                loadWarnings(warningsSection);
+            }
+            
+            // Feedback omitido conforme solicitado
+            // alert(isEdit ? 'Aviso atualizado!' : 'Aviso publicado!');
+            
+        } catch (err) {
+            console.error(err);
+            alert('Erro ao salvar: ' + err.message);
+            saveBtn.disabled = false;
+            saveBtn.textContent = isEdit ? 'Atualizar Aviso' : 'Publicar Aviso';
+        }
+    });
+}
+// #endregion
 
 // #region agent log
 // Verify if window.openTagManager is set
@@ -1606,28 +2157,26 @@ async function addClosingToPersonal(closingData) {
  */
 
 /**
- * Carrega e renderiza os status dos sistemas do Firestore
- * @param {HTMLElement} sectionElement - Elemento da seção de instabilidades
+ * Carrega e renderiza os status dos sistemas e reportes de usuários
  */
 async function loadSystemsStatus(sectionElement) {
   const container = sectionElement.querySelector('#systems-status-container');
-  
   if (!container) return;
 
   try {
-    // Buscar sistemas do Firestore
-    const systems = await getSystemsStatus();
+    // 1. Carrega status oficial e estatísticas de usuários em paralelo
+    const [systems, userReports] = await Promise.all([
+        getSystemsStatus(),
+        window.systemStatusService.getRecentReportsStats()
+    ]);
 
-    // Renderizar sistemas
-    renderSystemsStatus(container, systems);
+    // 2. Renderiza combinando os dados
+    renderSystemsStatus(container, systems, userReports);
 
-    // Configurar listener em tempo real
-    subscribeToSystemsStatus((updatedSystems) => {
-      renderSystemsStatus(container, updatedSystems);
-    });
-
+    // Configurar listener (Simulado no REST)
+    // Nota: O ideal seria polling ou WebSocket, mas vamos manter simples por enquanto
   } catch (error) {
-    console.error('Erro ao carregar status dos sistemas:', error);
+    console.error('Erro ao carregar status:', error);
     container.innerHTML = `
       <div class="ip-error-state">
         <span class="ip-error-icon">⚠️</span>
@@ -1639,11 +2188,9 @@ async function loadSystemsStatus(sectionElement) {
 }
 
 /**
- * Renderiza os cards de status dos sistemas
- * @param {HTMLElement} container - Container para renderizar
- * @param {Array} systems - Lista de sistemas
+ * Renderiza os cards de status dos sistemas com votação
  */
-function renderSystemsStatus(container, systems) {
+function renderSystemsStatus(container, systems, userReports = {}) {
   if (!systems || systems.length === 0) {
     container.innerHTML = `
       <div class="ip-empty-state">
@@ -1660,64 +2207,148 @@ function renderSystemsStatus(container, systems) {
   systems.forEach(system => {
     const badgeClass = getStatusBadgeClass(system.status);
     const statusLabel = getStatusLabel(system.status);
-    // Permitimos HTML no workaround para suportar links inseridos pelo botão de hiperlink
-    const workaroundHtml = system.workaround 
-      ? `<br><strong>Orientação:</strong> ${system.workaround}` 
-      : '';
     
-    // Formatar data de atualização
-    let updatedText = '';
-    if (system.updatedAt) {
-      try {
-        const date = new Date(system.updatedAt);
-        const formattedDate = date.toLocaleString('pt-BR', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-        updatedText = `<div class="ip-card-updated"><span>🕒</span> Atualizado em: ${formattedDate}</div>`;
-      } catch (e) {
-        console.error('Erro ao formatar data:', e);
-      }
+    // Dados de reportes de usuários
+    const reportCount = userReports[system.id] || 0;
+    
+    // Lógica visual do Downdetector (Barra de intensidade)
+    // Definimos um "teto" arbitrário. Ex: 20 reportes é 100% da barra vermelha
+    const maxReportsReference = 20; 
+    const intensityPct = Math.min((reportCount / maxReportsReference) * 100, 100);
+    
+    let intensityColor = 'var(--action-green)';
+    let intensityLabel = 'Poucos Relatos';
+    
+    if (reportCount > 2) { 
+        intensityColor = 'var(--action-yellow)'; 
+        intensityLabel = 'Possível Instabilidade'; 
+    }
+    if (reportCount > 5) { 
+        intensityColor = 'var(--action-red)'; 
+        intensityLabel = 'Muitos Relatos'; 
     }
 
-    // Botão de edição apenas no modo desenvolvedor
+    // Verifica se o usuário já reportou recentemente (para desabilitar botão)
+    const lastReportTime = localStorage.getItem(`last_report_${system.id}`);
+    const COOLDOWN = 30 * 60 * 1000; // 30 minutos
+    const canReport = !lastReportTime || (Date.now() - parseInt(lastReportTime) > COOLDOWN);
+
+    const reportBtnHtml = `
+        <button class="ip-report-btn ${canReport ? '' : 'disabled'}" 
+                data-system-id="${system.id}" 
+                title="${canReport ? 'Reportar que estou com problemas neste sistema' : 'Você já reportou recentemente'}">
+            ${canReport ? '✋ Tenho Problemas' : '✅ Reportado'}
+        </button>
+    `;
+
+    // Permitimos HTML no workaround para suportar links inseridos pelo botão de hiperlink
+    const workaroundHtml = system.workaround 
+      ? `<div class="ip-system-workaround"><strong>💡 Orientação:</strong> ${system.workaround}</div>` 
+      : '';
+    
+    // Botão de edição (modo dev)
     const editButtonHtml = developerMode 
       ? `<button class="ip-edit-system-btn" data-system-id="${escapeHTML(system.id)}" title="Editar status">✏️</button>` 
       : '';
 
     html += `
-      <div class="ip-card" data-system-id="${escapeHTML(system.id)}">
+      <div class="ip-card system-status-card" data-system-id="${escapeHTML(system.id)}">
         <div class="ip-card-header">
-          <h4 class="ip-card-title">${escapeHTML(system.name)}</h4>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span class="ip-card-badge ${badgeClass}">${statusLabel}</span>
-            ${editButtonHtml}
+          <div class="system-header-left">
+              <h4 class="ip-card-title">${escapeHTML(system.name)}</h4>
+          </div>
+          <div class="system-header-right">
+             <span class="ip-card-badge ${badgeClass}">${statusLabel}</span>
+             ${editButtonHtml}
           </div>
         </div>
+        
         <div class="ip-card-content">
-          ${escapeHTML(system.message)}${workaroundHtml}
+          <div class="ip-system-message">${escapeHTML(system.message)}</div>
+          ${workaroundHtml}
         </div>
-        ${updatedText}
+
+        <div class="ip-system-reports-area">
+            <div class="ip-reports-header">
+                <span class="reports-count">${reportCount} relatos na última hora</span>
+                <span class="reports-label" style="color: ${intensityColor}">${intensityLabel}</span>
+            </div>
+            <div class="ip-reports-bar-bg">
+                <div class="ip-reports-bar-fill" style="width: ${intensityPct}%; background-color: ${intensityColor}"></div>
+            </div>
+        </div>
+
+        <div class="ip-system-footer">
+            <div class="ip-footer-left">
+                ${system.updatedAt ? `<div class="ip-card-updated"><span>🕒</span> ${new Date(system.updatedAt).toLocaleString('pt-BR', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}</div>` : ''}
+            </div>
+            <div class="ip-reports-actions">
+                ${reportBtnHtml}
+            </div>
+        </div>
       </div>
     `;
   });
 
-   container.innerHTML = html;
+  container.innerHTML = html;
 
-  // Adicionar event listeners aos botões de edição
+  // Listeners dos botões de Reportar
+  container.querySelectorAll('.ip-report-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+          if (btn.classList.contains('disabled')) return;
+          
+          const sysId = btn.dataset.systemId;
+          const originalText = btn.textContent;
+          
+          // Feedback imediato
+          btn.textContent = 'Enviando...';
+          btn.classList.add('disabled');
+          
+          try {
+              await window.systemStatusService.reportUserInstability(sysId);
+              
+              // Salva cooldown local
+              localStorage.setItem(`last_report_${sysId}`, Date.now());
+              
+              btn.textContent = '✅ Reportado';
+              if (typeof showNotification === 'function') {
+                showNotification('Obrigado! Seu relato ajuda outros usuários.', 'success');
+              } else {
+                alert('Obrigado! Seu relato ajuda outros usuários.');
+              }
+              
+              // Atualiza o painel para mostrar o novo contagem
+              // Pequeno delay para garantir que o Firestore processou (consistência eventual)
+              setTimeout(() => {
+                  const section = document.querySelector('#ip-section-instabilities');
+                  if (section) loadSystemsStatus(section);
+              }, 1200);
+
+          } catch (err) {
+              console.error(err);
+              btn.textContent = originalText;
+              btn.classList.remove('disabled');
+              if (typeof showNotification === 'function') {
+                showNotification('Erro ao enviar relato.', 'error');
+              }
+          }
+      });
+  });
+
+  // Listeners de Edição (Dev)
   if (developerMode) {
     container.querySelectorAll('.ip-edit-system-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const systemId = btn.dataset.systemId;
-        const system = systems.find(s => s.id === systemId);
-        if (system) {
-          openSystemEditModal(system);
-        }
-      });
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const systemId = btn.dataset.systemId;
+            const system = systems.find(s => s.id === systemId);
+            if (system) openSystemEditModal(system);
+        });
     });
   }
 }
