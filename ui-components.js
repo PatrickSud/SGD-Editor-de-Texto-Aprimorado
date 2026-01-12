@@ -1603,7 +1603,7 @@ function showInPageNotification(reminder) {
 
     // Tempo esgotado: Pede para o service worker atualizar o badge em TODAS as abas
     chrome.runtime.sendMessage({ action: 'UPDATE_NOTIFICATION_BADGE' })
-  }, 45000) // 45 segundos
+  }, 60000) // 60 segundos
 
   const handleInteraction = async actionFn => {
     if (wasInteractedWith) return

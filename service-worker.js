@@ -372,7 +372,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             pendingNotificationShown: storedCycle.cycleId
           })
 
-          const notificationId = `generic-${Date.now()}`
+          const notificationId = `pending-${Date.now()}`
 
           // Exibe uma notificação genérica do sistema
           chrome.notifications.create(notificationId, {
@@ -381,14 +381,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             title: message.title,
             message: message.message,
             priority: 2,
-            buttons: [{ title: 'Dispensar' }],
+            buttons: [
+              { title: 'Visualizar' },
+              { title: 'Dispensar' }
+            ],
             requireInteraction: true // Mantém para controlar o tempo manualmente
           })
 
-          // Fecha automaticamente após 15 segundos
-          setTimeout(() => {
-            chrome.notifications.clear(notificationId)
-          }, 15000)
+          // Fecha automaticamente após 60 segundos
+          chrome.alarms.create(`dismiss-notification-${notificationId}`, {
+            when: Date.now() + 60000
+          })
 
           console.log('Service Worker: Notificação de pendências exibida para o ciclo:', storedCycle.cycleId)
           sendResponse({ success: true })
@@ -424,10 +427,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           requireInteraction: true // Mantém para controlar o tempo manualmente
         })
 
-        // Fecha automaticamente após 15 segundos
-        setTimeout(() => {
-          chrome.notifications.clear(notificationId)
-        }, 15000)
+        // Fecha automaticamente após 60 segundos
+        chrome.alarms.create(`dismiss-notification-${notificationId}`, {
+          when: Date.now() + 60000
+        })
 
         sendResponse({ success: true })
       } else if (message.action === 'FETCH_FORMS_DATA') {
@@ -619,7 +622,22 @@ chrome.alarms.onAlarm.addListener(async alarm => {
 // Listener para cliques nos botões da notificação do Windows
 chrome.notifications.onButtonClicked.addListener(
   (notificationId, buttonIndex) => {
-    // Tratamento para notificações de Pendências (prefixo 'generic-')
+    // Tratamento para notificações de Pendências (prefixo 'pending-')
+    if (notificationId.startsWith('pending-')) {
+      if (buttonIndex === 0) {
+        // Botão "Visualizar"
+        chrome.tabs.create({
+          url: 'https://sgd.dominiosistemas.com.br/sgpub/faces/filtro-listas.html?open_sgd_panel=true'
+        })
+        chrome.notifications.clear(notificationId)
+      } else if (buttonIndex === 1) {
+        // Botão "Dispensar"
+        chrome.notifications.clear(notificationId)
+      }
+      return
+    }
+
+    // Tratamento para outras notificações genéricas (prefixo 'generic-')
     if (notificationId.startsWith('generic-')) {
       if (buttonIndex === 0) {
         // Botão "Dispensar"
