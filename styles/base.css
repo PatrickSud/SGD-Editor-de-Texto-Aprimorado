@@ -62,7 +62,7 @@
 .padrao-mode {
   --primary-color: rgba(99, 102, 241, 0.8);
   --primary-color-hover: rgba(79, 70, 229, 0.85);
-  --border-color: rgba(229, 231, 235, 0.4);
+  --border-color: rgba(184, 186, 190, 0.4);
   --background-main: rgba(255, 255, 255, 0.5);
   --background-secondary: rgba(232, 233, 233, 0.45);
   --background-hover: rgba(243, 244, 246, 0.45);

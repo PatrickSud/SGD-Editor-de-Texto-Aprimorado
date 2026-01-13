@@ -2402,6 +2402,13 @@ function openSystemEditModal(system) {
         <p style="font-size: 10px; color: var(--text-color-muted); margin-top: 4px;">Dica: Você poderá usar HTML para formatar sua mensagem.</p>
       </div>
 
+      <div class="ip-field-group">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 10px; background-color: var(--background-secondary); border-radius: 4px; border: 1px dashed var(--border-color);">
+          <input type='checkbox' id='auto-publish-warning' style='width: 16px; height: 16px; margin: 0; cursor: pointer; accent-color: var(--primary-color); border: 2px solid var(--border-color); border-radius: 3px; flex-shrink: 0;'>
+          <label for='auto-publish-warning' style='font-weight: 600; color: var(--text-color-main); font-size: 13px; cursor: pointer; margin: 0;'>📢 Publicar um Aviso sobre esta alteração</label>
+        </div>
+      </div>
+
       <div style="font-size: 11px; color: var(--text-color-muted); margin-top: 10px;">
         ${system.updatedAt ? `Última atualização: ${new Date(system.updatedAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}` : ''}
       </div>
@@ -2419,6 +2426,7 @@ function openSystemEditModal(system) {
       const newStatus = modal.querySelector('#edit-system-status').value;
       const newMessage = modal.querySelector('#edit-system-message').value.trim();
       const newWorkaround = modal.querySelector('#edit-system-workaround').value.trim();
+      const autoPublishWarning = modal.querySelector('#auto-publish-warning').checked;
 
       if (!newMessage) {
         alert('Por favor, insira uma mensagem de status.');
@@ -2438,6 +2446,45 @@ function openSystemEditModal(system) {
           workaround: newWorkaround,
           updatedAt: now
         });
+
+        // Se checkbox marcado, criar aviso automaticamente
+        if (autoPublishWarning) {
+          try {
+            // Mapear status para tipo de aviso
+            let warningType = 'info';
+            if (newStatus === 'down' || newStatus === 'error') {
+              warningType = 'danger';
+            } else if (newStatus === 'warning') {
+              warningType = 'warning';
+            } else if (newStatus === 'operational') {
+              warningType = 'success';
+            }
+
+            // Formatar o status para exibição
+            const statusLabel = getStatusLabel(newStatus);
+
+            // Compor mensagem do aviso (sem o status, que vai no título)
+            let warningMessage = newMessage;
+            
+            if (newWorkaround) {
+              warningMessage += `<br><strong>💡 Orientação:</strong> ${newWorkaround}`;
+            }
+
+            // Criar aviso
+            await window.warningsService.createWarning({
+              title: `Status do Sistema: ${system.name} - ${statusLabel}`,
+              message: warningMessage,
+              type: warningType,
+              author: getCurrentUserName(),
+              isTest: false,
+              date: now
+            });
+
+          } catch (warningError) {
+            console.error('Erro ao criar aviso automático:', warningError);
+            // Não bloqueia o salvamento do status mesmo se o aviso falhar
+          }
+        }
 
         const sectionElement = document.querySelector('#ip-section-instabilities');
         if (sectionElement) {
