@@ -240,15 +240,15 @@ async function openInfoPanel() {
     if (notifyBtn) {
       const updateNotifyBtnState = (enabled) => {
         if (enabled) {
-          notifyBtn.textContent = '🔔'
+          notifyBtn.innerHTML = '🔔 <span style="margin-left: 4px;">Notificações Ativas</span>'
           notifyBtn.classList.add('active-notification')
           notifyBtn.title = 'Notificações Ativadas'
           notifyBtn.style.opacity = '1'
         } else {
-          notifyBtn.textContent = '🔕'
+          notifyBtn.innerHTML = '🔕 <span style="margin-left: 4px;">Notificações Inativas</span>'
           notifyBtn.classList.remove('active-notification')
           notifyBtn.title = 'Notificações Desativadas'
-          notifyBtn.style.opacity = '0.6'
+          notifyBtn.style.opacity = '0.7'
         }
       }
 
@@ -1205,6 +1205,8 @@ function openCreateWarningModal(existingWarning = null) {
   const msgVal = isEdit ? escapeHTML(existingWarning.message) : '';
   const typeVal = isEdit ? existingWarning.type : 'info';
   const isTestVal = isEdit ? existingWarning.isTest : false;
+  // Verifica se já estava marcado para notificar (em caso de edição)
+  const notifyVal = isEdit && existingWarning.notify ? 'checked' : '';
 
   const fieldStyle = "display: block; width: 100%; margin-bottom: 12px; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main);";
 
@@ -1219,13 +1221,27 @@ function openCreateWarningModal(existingWarning = null) {
                 Dica: Você poderá usar HTML para formatar sua mensagem.
             </div>
             
-            <label style="display:block; margin-bottom:4px; font-size:12px;">Tipo</label>
-            <select id="warn-type" style="${fieldStyle} width: 200px;">
-                <option value="info" ${typeVal === 'info' ? 'selected' : ''}>ℹ️ Informativo</option>
-                <option value="success" ${typeVal === 'success' ? 'selected' : ''}>✨ Novidade</option>
-                <option value="warning" ${typeVal === 'warning' ? 'selected' : ''}>⚠️ Alerta</option>
-                <option value="danger" ${typeVal === 'danger' ? 'selected' : ''}>🚨 Importante</option>
-            </select>
+            <div style="display: flex; gap: 15px; margin-bottom: 12px;">
+                <div style="flex: 1;">
+                    <label style="display:block; margin-bottom:4px; font-size:12px;">Tipo</label>
+                    <select id="warn-type" style="${fieldStyle}">
+                        <option value="info" ${typeVal === 'info' ? 'selected' : ''}>ℹ️ Informativo</option>
+                        <option value="success" ${typeVal === 'success' ? 'selected' : ''}>✨ Novidade</option>
+                        <option value="warning" ${typeVal === 'warning' ? 'selected' : ''}>⚠️ Alerta</option>
+                        <option value="danger" ${typeVal === 'danger' ? 'selected' : ''}>🚨 Importante</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="padding: 10px; background-color: var(--background-secondary); border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 15px;">
+                <div class="form-checkbox-group" style="margin-top: 0;">
+                    <input type="checkbox" id="warn-notify" ${notifyVal}>
+                    <label for="warn-notify" style="font-weight: 600;">🔔 Enviar notificação push (Chrome)</label>
+                </div>
+                <p style="font-size: 11px; color: var(--text-color-muted); margin: 4px 0 0 24px;">
+                    Se marcado, os usuários receberão um alerta visual no Windows/Navegador.
+                </p>
+            </div>
 
             <div style="margin-bottom: 16px; padding: 10px; background-color: var(--background-secondary); border-radius: 4px; border: 1px dashed var(--border-color);">
                 <div class="form-checkbox-group" style="display: flex; align-items: center; gap: 8px;">
@@ -1269,6 +1285,7 @@ function openCreateWarningModal(existingWarning = null) {
     const message = modal.querySelector('#warn-message').value.trim();
     const type = modal.querySelector('#warn-type').value;
     const isTest = modal.querySelector('#warn-is-test').checked;
+    const notify = modal.querySelector('#warn-notify').checked; // Captura o estado do checkbox
     const author = getCurrentUserName();
 
     if (!title || !message) {
@@ -1286,7 +1303,8 @@ function openCreateWarningModal(existingWarning = null) {
           message,
           type,
           author,
-          isTest
+          isTest,
+          notify // Atualiza a flag de notificação
         });
       } else {
         await window.warningsService.createWarning({
@@ -1295,7 +1313,17 @@ function openCreateWarningModal(existingWarning = null) {
           type,
           author,
           isTest,
+          notify, // Salva a flag de notificação
           date: new Date().toISOString()
+        });
+      }
+
+      // Dispara notificação de teste para o próprio criador se a opção foi marcada
+      if (notify) {
+        chrome.runtime.sendMessage({
+          action: 'SHOW_GENERIC_NOTIFICATION',
+          title: `📢 ${title}`,
+          message: message.replace(/<[^>]*>?/gm, '').substring(0, 100) // Remove HTML simples para notificação
         });
       }
 
@@ -1833,7 +1861,7 @@ function getSectionContent(sectionId) {
                         </select>
                     </div>
                     <div class="ip-actions-group">
-                        <button id="toggle-notification-btn" class="action-btn small-btn enhanced-btn compact" title="Carregando estado...">🔔</button>
+                        <button id="toggle-notification-btn" class="action-btn small-btn enhanced-btn" title="Carregando estado..." style="width: auto; height: 28px; padding: 0 10px; display: flex; align-items: center; justify-content: center; white-space: nowrap; font-size: 11px; line-height: 1;">🔔 <span style="margin-left: 4px;">Notificações</span></button>
                         <button id="refresh-pending-btn" class="action-btn small-btn enhanced-btn compact" title="Atualizar lista">🔄</button>
                     </div>
                 </div>
