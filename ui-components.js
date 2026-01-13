@@ -1067,11 +1067,12 @@ function createEmojiPicker(pickerElement, onEmojiSelect) {
  */
 function renderNotesBlocks() {
   const container = document.getElementById('notes-list-container')
-  if (!container || !notesDataCache) return
+  if (!container || !notesDataCache) return false
 
   container.innerHTML = ''
   const fragment = document.createDocumentFragment()
   const currentPageUrl = window.location.href
+  let hasMatch = false
 
   notesDataCache.blocks.forEach(block => {
     const blockEl = document.createElement('div')
@@ -1081,6 +1082,7 @@ function renderNotesBlocks() {
     if (block.associatedUrl && block.associatedUrl === currentPageUrl) {
       blockEl.classList.add('active', 'context-match')
       notesDataCache.activeBlockId = block.id
+      hasMatch = true
     } else if (block.id === notesDataCache.activeBlockId) {
       blockEl.classList.add('active')
     }
@@ -1108,6 +1110,7 @@ function renderNotesBlocks() {
     fragment.appendChild(blockEl)
   })
   container.appendChild(fragment)
+  return hasMatch
 }
 
 /**
@@ -1418,7 +1421,22 @@ async function handleLinkNoteToggle(blockId) {
 async function initializeNotesPanel() {
   createNotesPanel()
   notesDataCache = await getSavedNotes()
-  renderNotesBlocks()
+  const hasMatch = renderNotesBlocks()
+
+  if (hasMatch) {
+    const panel = document.getElementById('notes-side-panel')
+    if (panel && !panel.classList.contains('visible')) {
+      toggleNotesPanel()
+
+      // Scroll suave até o bloco correspondente após o painel abrir
+      setTimeout(() => {
+        const match = panel.querySelector('.note-block.context-match')
+        if (match) {
+          match.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      }, 500)
+    }
+  }
 }
 
 /**

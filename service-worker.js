@@ -654,6 +654,17 @@ chrome.notifications.onButtonClicked.addListener(
   }
 )
 
+// Listener para cliques no CORPO da notificação (Windows)
+chrome.notifications.onClicked.addListener((notificationId) => {
+  // Se clicar no corpo da notificação de pendências, age como o botão "Visualizar"
+  if (notificationId.startsWith('pending-')) {
+    chrome.tabs.create({
+      url: 'https://sgd.dominiosistemas.com.br/sgpub/faces/filtro-listas.html?open_sgd_panel=true'
+    })
+    chrome.notifications.clear(notificationId)
+  }
+})
+
 /**
  * Gera um hash simples de uma string.
  * @param {string} str A string de entrada.

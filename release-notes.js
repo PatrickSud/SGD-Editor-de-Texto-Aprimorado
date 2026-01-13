@@ -106,7 +106,10 @@ const MINOR_RELEASE_NOTES = {
       features: [
         '<b>📢 Publicação Automática de Avisos:</b> Ao editar status de sistemas, agora é possível publicar automaticamente um aviso para toda equipe através de um checkbox na interface de edição.',
         '<b>✨ Títulos Descritivos:</b> Os avisos gerados incluem automaticamente o nome do sistema e o novo status no título (ex: "<i>Status do Sistema: Dominio Web - Fora do Ar</i>").',
-        '<b>👤 Autoria Automática:</b> Captura automática do nome do responsável pela alteração usando a identificação do usuário logado.'
+        '<b>👤 Autoria Automática:</b> Captura automática do nome do responsável pela alteração usando a identificação do usuário logado.',
+        '<b>📝 Abertura Automática de Anotações:</b> Anotações Rápidas vinculadas a links específicos agora abrem automaticamente ao acessar a página, com scroll suave até a nota.',
+        '<b>🔔 Notificações mais Flexíveis:</b> Agora é possível clicar em qualquer lugar da notificação de pendências (não apenas no botão "Visualizar") para acessar a lista.',
+        '<b>⚡ Navegação Inteligente:</b> Melhorada a confiabilidade ao abrir o painel via links, com sistema de tentativas automáticas para garantir que a aba de pendências seja selecionada corretamente.'
       ]
     }
   ],

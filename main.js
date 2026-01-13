@@ -481,6 +481,10 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
     setupUserSelectionListener(textArea)
     setupSituationListener(textArea)
     performAutoFill(textArea)
+
+    if (typeof initializeNotesPanel === 'function') {
+      initializeNotesPanel()
+    }
   }
 }
 
@@ -2073,19 +2077,33 @@ async function initializeExtension() {
   // Verifica se deve abrir o painel de pendências automaticamente (via URL param)
   const urlParams = new URLSearchParams(window.location.search)
   if (urlParams.get('open_sgd_panel') === 'true') {
-    // Pequeno delay para garantir inicialização de estilos/DOM
-    setTimeout(() => {
+    // Delay um pouco maior para garantir que tudo (estilos, serviços) foi carregado
+    setTimeout(async () => {
       if (typeof openInfoPanel === 'function') {
-        openInfoPanel()
-        // Força seleção da aba de pendências
-        setTimeout(() => {
+        try {
+          await openInfoPanel()
+          
+          // Aguarda o modal ser injetado no DOM antes de tentar clicar na aba
+          let attempts = 0
+          const clickPendingTab = () => {
             const pendingTab = document.querySelector('.ip-nav-item[data-target="pending"]')
-            if (pendingTab) pendingTab.click()
-        }, 100)
+            if (pendingTab) {
+              pendingTab.click()
+            } else if (attempts < 10) {
+              attempts++
+              setTimeout(clickPendingTab, 200)
+            }
+          }
+          
+          // Inicia a tentativa de focar na aba de pendências
+          setTimeout(clickPendingTab, 300)
+        } catch (error) {
+          console.error('Erro ao abrir painel via parâmetro URL:', error)
+        }
       } else {
-        console.warn('Função openInfoPanel não encontrada.')
+        console.warn('Função openInfoPanel não encontrada ao tentar abrir via parâmetro URL.')
       }
-    }, 500)
+    }, 1000)
   }
 }
 
@@ -3436,5 +3454,5 @@ async function handleInfoPanelOpen() {
 
 // --- INICIALIZAÇÃO SEGURA ---
 
-// Inicia a observação para encontrar o textarea principal quando o DOM estiver pronto.
-observeForTextArea()
+// A inicialização principal ocorre via initializeExtension() acima.
+// observeForTextArea() já é chamado dentro de initializeExtension().
