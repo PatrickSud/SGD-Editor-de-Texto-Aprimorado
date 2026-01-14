@@ -44,6 +44,13 @@ const DEFAULT_FORMS_DATA = {
           description: 'Otimizando a Qualidade e Padronização do Atendimento',
           url: 'https://trten-my.sharepoint.com/:b:/g/personal/d_rodrigues_thomsonreuters_com/IQDoVnyK8-DWSZ1GEt1CW5LpAdq3ohBsplGmBaO-5gGJfrI?e=dmSlm0',
           icon: '📘'
+        },
+        {
+          type: 'link',
+          title: 'Padrão de Atendimento - Accountability',
+          description: 'Reportar inconsistencias no Padrão de Atendimento',
+          url: 'https://forms.office.com.mcas.ms/pages/responsepage.aspx?id=ZLjMYhpqXUuOHDl97BqCWM59WIRDW35Lmh6MTWauMJxUN1ZRUU5OUEhXOUpHMlFKTEI1UkVPRk84Vy4u',
+          icon: '📋'
         }
       ]
     },
