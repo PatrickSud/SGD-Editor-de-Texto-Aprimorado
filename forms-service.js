@@ -96,7 +96,7 @@ const DEFAULT_FORMS_DATA = {
           type: 'link',
           title: 'Assuntos Fila 62',
           description: 'Secundários (OnBalance, CCT, Busca, Sefaz, API)',
-          url: 'https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/bdcf2679-98c5-4201-98bd-2c53ee07e63e?sidebar=instructions_auto',
+          url: 'https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/bdcf2679-98c5-4201-98bd-2c53ee07e63e',
           icon: '🤖'
         }
       ]
@@ -158,30 +158,30 @@ async function fetchFormsData() {
 
     // Envia mensagem para o Service Worker fazer o fetch (bypass CORS)
     return new Promise((resolve) => {
-        chrome.runtime.sendMessage(
-            { action: 'FETCH_FORMS_DATA', url: urlWithCacheBust },
-            (response) => {
-                if (chrome.runtime.lastError) {
-                    console.warn('Erro de comunicação com SW:', chrome.runtime.lastError)
-                    resolve(DEFAULT_FORMS_DATA)
-                    return
-                }
-                
-                if (response && response.success) {
-                    console.log('📝 Forms Service: Dados remotos carregados com sucesso via SW')
-                    const remoteData = response.data
-                    
-                    if (Array.isArray(remoteData)) {
-                        resolve({ categories: remoteData })
-                    } else {
-                        resolve(remoteData)
-                    }
-                } else {
-                    console.warn('📝 Forms Service: SW falhou ao buscar dados:', response?.error)
-                    resolve(DEFAULT_FORMS_DATA)
-                }
+      chrome.runtime.sendMessage(
+        { action: 'FETCH_FORMS_DATA', url: urlWithCacheBust },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            console.warn('Erro de comunicação com SW:', chrome.runtime.lastError)
+            resolve(DEFAULT_FORMS_DATA)
+            return
+          }
+
+          if (response && response.success) {
+            console.log('📝 Forms Service: Dados remotos carregados com sucesso via SW')
+            const remoteData = response.data
+
+            if (Array.isArray(remoteData)) {
+              resolve({ categories: remoteData })
+            } else {
+              resolve(remoteData)
             }
-        )
+          } else {
+            console.warn('📝 Forms Service: SW falhou ao buscar dados:', response?.error)
+            resolve(DEFAULT_FORMS_DATA)
+          }
+        }
+      )
     })
   } catch (error) {
     console.warn(
