@@ -1145,7 +1145,7 @@ function createWarningCard(warning) {
   return `
         <div class="ip-card ip-card-${warning.type || 'info'}" data-id="${warning.id}" ${warning.isTest ? 'style="border-style: dashed;"' : ''}>
             <div class="ip-card-header">
-                <h4 class="ip-card-title">${escapeHTML(warning.title || 'Aviso')}</h4>
+                <h4 class="ip-card-title">${warning.title || 'Aviso'}</h4>
                 ${actionsHtml}
             </div>
             <div class="ip-card-content">${messageHtml}</div>
@@ -1227,6 +1227,7 @@ function openCreateWarningModal(existingWarning = null) {
         <div style="padding: 10px;">
             <label style="display:block; margin-bottom:4px; font-size:12px;">Título</label>
             <input type="text" id="warn-title" style="${fieldStyle}" placeholder="Ex: Nova Atualização do Sistema Programada" value="${titleVal}">
+
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                 <label style="font-size:12px;">Mensagem</label>
@@ -2343,7 +2344,8 @@ function renderSystemsStatus(container, systems, userReports = {}) {
         </div>
         
         <div class="ip-card-content">
-          <div class="ip-system-message">${escapeHTML(system.message)}</div>
+  
+        <div class="ip-system-message">${system.message}</div>
           ${workaroundHtml}
         </div>
         
@@ -2449,6 +2451,7 @@ function openSystemEditModal(system) {
           style="width: 100%; max-width: none; min-height: 60px;"
           placeholder="Descreva o que está acontecendo..."
         >${escapeHTML(system.message)}</textarea>
+        <p style="font-size: 10px; color: var(--text-color-muted); margin-top: 4px;">Dica: Você poderá usar HTML (ex: &lt;b&gt;, &lt;br&gt;).</p>
       </div>
 
       <div class="ip-field-group">
