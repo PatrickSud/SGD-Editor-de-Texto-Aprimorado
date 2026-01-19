@@ -102,6 +102,13 @@ const MINOR_RELEASE_NOTES = {
       ]
     },
     {
+      version: '2.9.9.8',
+      features: [
+        '<b>🐛 Correção de Links em Avisos:</b> Corrigido problema onde links com formatação (cores, estilos) ficavam quebrados na exibição de avisos.',
+        '<b>🔗 Inserir Link em Avisos:</b> Adicionado botão "<b>Inserir Link</b>" na janela de criação e edição de avisos, padronizando a experiência com a gestão de status.'
+      ]
+    },
+    {
       version: '2.9.9.7',
       features: [
         '<b>📢 Publicação Automática de Avisos:</b> Ao editar status de sistemas, agora é possível publicar automaticamente um aviso para toda equipe através de um checkbox na interface de edição.',

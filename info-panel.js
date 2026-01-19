@@ -1060,7 +1060,7 @@ function processSafeHTML(text) {
 
   // 3. Trata tag <a href="..."> especificamente
   // Formato escapado: &lt;a\s+href=&quot;(.*?)&quot;&gt;
-  safe = safe.replace(/&lt;a\s+href=&quot;(.*?)&quot;&gt;/gi, (match, url) => {
+  safe = safe.replace(/&lt;a\s+href=&quot;(.*?)&quot;.*?&gt;/gi, (match, url) => {
     let fixedUrl = url.trim();
     // Se não começa com protocolo ou barra (link relativo ao site), adiciona https://
     if (fixedUrl && !/^(https?:\/\/|mailto:|tel:|\/|#)/i.test(fixedUrl)) {
@@ -1069,6 +1069,19 @@ function processSafeHTML(text) {
     return `<a href="${fixedUrl}" target="_blank">`;
   });
   safe = safe.replace(/&lt;\/a&gt;/gi, '</a>');
+
+  // 4. Trata tag <img ...> especificamente
+  // Permitir src, alt e style.
+  // Regex generosa para capturar atributos comuns escapados
+  safe = safe.replace(/&lt;img\s+(.*?)&gt;/gi, (match, attrs) => {
+    // Des-escapar aspas para os atributos funcionarem
+    let fixedAttrs = attrs.replace(/&quot;/g, '"');
+    // Limpeza de segurança básica: garantir que não tenha eventos on...
+    if (/on\w+\s*=/i.test(fixedAttrs) || /javascript:/i.test(fixedAttrs)) {
+      return ''; // Recusa se tiver script
+    }
+    return `<img ${fixedAttrs}>`;
+  });
 
   // Mantém quebras de linha normais como <br> se não estiverem dentro de tags que já dão bloco?
   // O usuário pode usar <br> explícito agora. Mas para compatibilidade com texto plano antigo:
@@ -1215,7 +1228,10 @@ function openCreateWarningModal(existingWarning = null) {
             <label style="display:block; margin-bottom:4px; font-size:12px;">Título</label>
             <input type="text" id="warn-title" style="${fieldStyle}" placeholder="Ex: Nova Atualização do Sistema Programada" value="${titleVal}">
             
-            <label style="display:block; margin-bottom:4px; font-size:12px;">Mensagem</label>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <label style="font-size:12px;">Mensagem</label>
+                <button id="warn-add-link-btn" class="action-btn secondary-btn compact" style="font-size: 10px; padding: 2px 6px; background: transparent; border: 1px solid var(--border-color); cursor: pointer; border-radius: 4px;">🔗 Inserir Link</button>
+            </div>
             <textarea id="warn-message" rows="3" style="${fieldStyle} margin-bottom: 4px; resize: vertical;" placeholder="Detalhes do aviso...">${msgVal}</textarea>
             <div style="font-size: 11px; color: var(--text-color-muted); margin-bottom: 12px; opacity: 0.8;">
                 Dica: Você poderá usar HTML para formatar sua mensagem.
@@ -1277,6 +1293,28 @@ function openCreateWarningModal(existingWarning = null) {
   // Handlers
   const saveBtn = modal.querySelector('#save-warn-btn');
   const cancelBtn = modal.querySelector('#cancel-warn-btn');
+  const addLinkBtn = modal.querySelector('#warn-add-link-btn');
+  const messageTextarea = modal.querySelector('#warn-message');
+
+  if (addLinkBtn && messageTextarea) {
+    addLinkBtn.addEventListener('click', () => {
+      if (typeof openLinkModal === 'function') {
+        openLinkModal(messageTextarea, { hideButtonOption: true, zIndex: 10005 });
+      } else {
+        const url = prompt('URL:', 'https://');
+        if (url) {
+          const text = prompt('Texto:', 'Clique aqui');
+          const linkHtml = `<a href="${url}" target="_blank">${text}</a>`;
+          // Tenta usar insertAtCursor se existir, senão append
+          if (typeof insertAtCursor === 'function') {
+            insertAtCursor(messageTextarea, linkHtml);
+          } else {
+            messageTextarea.value += linkHtml;
+          }
+        }
+      }
+    });
+  }
 
   cancelBtn.addEventListener('click', () => modal.remove());
 
@@ -2580,7 +2618,7 @@ function openSystemEditModal(system) {
   if (addLinkBtn && workaroundTextarea) {
     addLinkBtn.addEventListener('click', () => {
       if (typeof openLinkModal === 'function') {
-        openLinkModal(workaroundTextarea, { hideButtonOption: true });
+        openLinkModal(workaroundTextarea, { hideButtonOption: true, zIndex: 10005 });
       } else {
         // Fallback redundante
         const url = prompt('URL:', 'https://');

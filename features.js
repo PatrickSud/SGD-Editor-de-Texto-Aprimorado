@@ -318,7 +318,7 @@ function insertUserName(textArea) {
  * @param {HTMLTextAreaElement} textArea - O textarea alvo.
  */
 function openLinkModal(textArea, options = {}) {
-  const { hideButtonOption = false } = options;
+  const { hideButtonOption = false, zIndex = null } = options;
 
   // Tenta obter o texto selecionado do editor ativo.
   let selectedText = ''
@@ -389,6 +389,11 @@ function openLinkModal(textArea, options = {}) {
       closeModal()
     }
   )
+
+  if (zIndex) {
+    modal.style.zIndex = zIndex;
+  }
+
   document.body.appendChild(modal)
 }
 
