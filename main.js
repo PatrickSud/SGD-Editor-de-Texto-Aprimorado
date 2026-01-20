@@ -2982,9 +2982,15 @@ function stopStopwatchTicker() {
 
 function updateStopwatchIcon() {
   const btn = document.getElementById('fab-timer-toggle')
+  const wrapper = document.getElementById('fab-stopwatch-wrapper')
+  
   if (btn) {
     btn.textContent = stopwatchState.isRunning ? '⏸️' : '▶️'
     btn.title = stopwatchState.isRunning ? 'Pausar' : 'Iniciar'
+  }
+  
+  if (wrapper) {
+    wrapper.classList.toggle('is-running', stopwatchState.isRunning)
   }
 }
 
@@ -3024,22 +3030,50 @@ function createFloatingActionButtons() {
   fabContainer.className = 'fab-container'
 
   fabContainer.innerHTML = `
-    <div class="fab-options">
-
-      
-      <div class="fab-option-wrapper">
+    <div class="fab-options" id="fab-options">
+      <div class="fab-option-wrapper" id="fab-wrapper-info">
+        <button type="button" class="fab-pin-btn" title="Fixar" data-target="fab-wrapper-info">
+          <svg viewBox="0 0 24 24"><path d="M12,2A3,3 0 0,1 15,5V11L17,13V15H13V21L12,22L11,21V15H7V13L9,11V5A3,3 0 0,1 12,2Z" /></svg>
+        </button>
         <button type="button" class="fab-button fab-option shine-effect" data-action="fab-info-panel" data-tooltip="Central de Informações">ℹ️</button>
         <span class="fab-badge"></span>
       </div>
-      <button type="button" class="fab-button fab-option shine-effect" data-action="fab-notes" data-tooltip="Anotações">✍️</button>
-      <button type="button" class="fab-button fab-option shine-effect" data-action="fab-reminders" data-tooltip="Gerenciar Lembretes">⏰</button>
-      <button type="button" class="fab-button fab-option shine-effect" data-action="fab-quick-steps" data-tooltip="Trâmites">⚡</button>
-      <button type="button" class="fab-button fab-option shine-effect" data-action="fab-manage-steps" data-tooltip="Configurações">⚙️</button>
+
+      <div class="fab-option-wrapper" id="fab-wrapper-notes">
+        <button type="button" class="fab-pin-btn" title="Fixar" data-target="fab-wrapper-notes">
+          <svg viewBox="0 0 24 24"><path d="M12,2A3,3 0 0,1 15,5V11L17,13V15H13V21L12,22L11,21V15H7V13L9,11V5A3,3 0 0,1 12,2Z" /></svg>
+        </button>
+        <button type="button" class="fab-button fab-option shine-effect" data-action="fab-notes" data-tooltip="Anotações">✍️</button>
+      </div>
+
+      <div class="fab-option-wrapper" id="fab-wrapper-reminders">
+        <button type="button" class="fab-pin-btn" title="Fixar" data-target="fab-wrapper-reminders">
+          <svg viewBox="0 0 24 24"><path d="M12,2A3,3 0 0,1 15,5V11L17,13V15H13V21L12,22L11,21V15H7V13L9,11V5A3,3 0 0,1 12,2Z" /></svg>
+        </button>
+        <button type="button" class="fab-button fab-option shine-effect" data-action="fab-reminders" data-tooltip="Gerenciar Lembretes">⏰</button>
+      </div>
+
+      <div class="fab-option-wrapper" id="fab-wrapper-quicksteps">
+        <button type="button" class="fab-pin-btn" title="Fixar" data-target="fab-wrapper-quicksteps">
+          <svg viewBox="0 0 24 24"><path d="M12,2A3,3 0 0,1 15,5V11L17,13V15H13V21L12,22L11,21V15H7V13L9,11V5A3,3 0 0,1 12,2Z" /></svg>
+        </button>
+        <button type="button" class="fab-button fab-option shine-effect" data-action="fab-quick-steps" data-tooltip="Trâmites">⚡</button>
+      </div>
+
+      <div class="fab-option-wrapper" id="fab-wrapper-manage">
+        <button type="button" class="fab-pin-btn" title="Fixar" data-target="fab-wrapper-manage">
+          <svg viewBox="0 0 24 24"><path d="M12,2A3,3 0 0,1 15,5V11L17,13V15H13V21L12,22L11,21V15H7V13L9,11V5A3,3 0 0,1 12,2Z" /></svg>
+        </button>
+        <button type="button" class="fab-button fab-option shine-effect" data-action="fab-manage-steps" data-tooltip="Configurações">⚙️</button>
+      </div>
     </div>
     <button type="button" class="fab-button main-fab" title="Ações Rápidas">+</button>
     
     <!-- WRAPPER DO CRONÔMETRO (SIBLING) -->
-    <div class="fab-stopwatch-wrapper">
+    <div class="fab-stopwatch-wrapper" id="fab-stopwatch-wrapper">
+      <button type="button" class="fab-pin-btn" title="Fixar Cronômetro" data-target="fab-stopwatch-wrapper">
+        <svg viewBox="0 0 24 24"><path d="M12,2A3,3 0 0,1 15,5V11L17,13V15H13V21L12,22L11,21V15H7V13L9,11V5A3,3 0 0,1 12,2Z" /></svg>
+      </button>
       <button type="button" id="fab-timer-toggle" class="stopwatch-btn" title="Iniciar/Pausar">▶️</button>
       <span id="fab-timer-text">00:00:00</span>
       <button type="button" id="fab-timer-reset" class="stopwatch-btn" title="Zerar">↺</button>
@@ -3117,8 +3151,20 @@ function setupFabListeners() {
     }
   })
 
+  // Listener para os botões de Pin (Fixar)
+  fabContainer.addEventListener('click', e => {
+    const pinBtn = e.target.closest('.fab-pin-btn')
+    if (pinBtn) {
+      e.stopPropagation()
+      const targetId = pinBtn.dataset.target
+      toggleFabPin(targetId)
+    }
+  })
+
   // Initialize Stopwatch functionality
   initializeStopwatch()
+  // Inicializa o estado dos Pins
+  initializeFabPins()
 
   let isDragging = false,
     offsetX,
@@ -3177,6 +3223,62 @@ function setupFabListeners() {
     adjustGoToTopButtonPosition(finalPosition) // Ajusta o botão 'Ir ao Topo'
     dropZones.forEach(zone => zone.classList.remove('active'))
   })
+}
+
+/**
+ * Gerencia o estado de "Fixar" (Pin) dos menus do FAB.
+ */
+async function initializeFabPins() {
+  const data = await chrome.storage.local.get(['fabPinnedState'])
+  const pinnedState = data.fabPinnedState || {}
+
+  // Aplica o estado salvo
+  Object.keys(pinnedState).forEach(targetId => {
+    if (pinnedState[targetId]) {
+      const element = document.getElementById(targetId)
+      if (element) {
+        element.classList.add('is-pinned')
+        const pinBtn = element.querySelector('.fab-pin-btn')
+        if (pinBtn) pinBtn.classList.add('active')
+      }
+    }
+  })
+  
+  updateFabOptionsPinnedState()
+}
+
+async function toggleFabPin(targetId) {
+  const element = document.getElementById(targetId)
+  if (!element) return
+
+  const isPinned = element.classList.toggle('is-pinned')
+  
+  // Atualiza visual do botão
+  const pinBtn = element.querySelector('.fab-pin-btn')
+  if (pinBtn) pinBtn.classList.toggle('active', isPinned)
+
+  // Salva no storage
+  const data = await chrome.storage.local.get(['fabPinnedState'])
+  const pinnedState = data.fabPinnedState || {}
+  pinnedState[targetId] = isPinned
+  await chrome.storage.local.set({ fabPinnedState: pinnedState })
+  
+  // Se for uma ferramenta do menu de opções, atualiza o estado do container pai
+  if (targetId.startsWith('fab-wrapper-')) {
+    updateFabOptionsPinnedState()
+  }
+}
+
+/**
+ * Verifica se existem ferramentas fixadas dentro das opções rápidas
+ * e aplica a classe no container pai para mantê-lo visível.
+ */
+function updateFabOptionsPinnedState() {
+  const optionsContainer = document.getElementById('fab-options')
+  if (!optionsContainer) return
+  
+  const hasPinnedItems = optionsContainer.querySelector('.is-pinned') !== null
+  optionsContainer.classList.toggle('has-pinned-items', hasPinnedItems)
 }
 
 /**

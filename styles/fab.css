@@ -565,3 +565,120 @@
   flex-direction: row-reverse; /* Inverte a ordem interna dos botões */
 }
 
+
+/* --- FAB PIN BUTTON & BEHAVIOR --- */
+.fab-pin-btn {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0; /* Invisível por padrão */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 100;
+  color: #888; /* Cinza no estado desabilitado/normal */
+  padding: 0;
+}
+
+.fab-pin-btn svg {
+  width: 100%;
+  height: 100%;
+  fill: transparent;
+  stroke: currentColor;
+  stroke-width: 2px;
+  transition: all 0.3s ease;
+  opacity: 0.9;
+}
+
+/* Mostra o pin no hover do elemento pai */
+.fab-option-wrapper:hover .fab-pin-btn,
+.fab-stopwatch-wrapper:hover .fab-pin-btn,
+.fab-pin-btn.active {
+  opacity: 1;
+}
+
+.fab-pin-btn:hover svg {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* ESTADO FIXADO (PIN ATIVO) */
+.fab-pin-btn.active svg,
+.is-pinned .fab-pin-btn svg {
+  fill: currentColor;
+  stroke: none;
+  opacity: 1;
+  color: #3333339d; /* Cinza bem escuro no estado ativado */
+}
+
+/* ROTAÇÕES CONDICIONAIS NO MODO FIXADO */
+.is-pinned#fab-stopwatch-wrapper .fab-pin-btn svg {
+  transform: rotate(45deg);
+}
+
+.is-pinned.fab-option-wrapper .fab-pin-btn svg {
+  transform: rotate(-45deg);
+}
+
+.fab-pin-btn.active {
+  opacity: 1;
+}
+
+/* Posicionamento do Pin em .fab-option-wrapper (Ferramentas Individuais) */
+.fab-option-wrapper .fab-pin-btn {
+  top: -7px;
+  left: -7px;
+}
+
+/* Posicionamento do Pin em .fab-stopwatch-wrapper (Cronômetro) */
+.fab-stopwatch-wrapper .fab-pin-btn {
+  top: -8px;
+  right: -8px;
+}
+
+/* --- REGRAS DE VISIBILIDADE PARA ITENS FIXADOS --- */
+
+/* 1. O container de opções fica visível se estiver em HOVER ou se tiver itens fixados */
+.fab-container:hover .fab-options,
+.fab-options.has-pinned-items {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+}
+
+/* 2. Os wrappers individuais ficam visíveis se o container estiver em HOVER ou se o item estiver fixado */
+.fab-option-wrapper {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.fab-container:hover .fab-option-wrapper,
+.fab-option-wrapper.is-pinned {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* 3. Comportamento do Cronômetro (Mantém-se igual, pois é sibling) */
+.fab-stopwatch-wrapper.is-pinned,
+.fab-stopwatch-wrapper.is-running {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  transform: translateX(0) !important;
+  visibility: visible !important;
+}
+
+/* Ajuste específico para o transform do menu em diferentes posições quando fixado */
+.fab-container.bottom-left .fab-options.has-pinned-items,
+.fab-container.bottom-right .fab-options.has-pinned-items,
+.fab-container.top-left .fab-options.has-pinned-items,
+.fab-container.top-right .fab-options.has-pinned-items {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+}
+
