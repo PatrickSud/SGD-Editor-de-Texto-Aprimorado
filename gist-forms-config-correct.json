@@ -44,6 +44,20 @@
           "description": "Reportar inconsistencias no Padrão de Atendimento",
           "url": "https://forms.office.com.mcas.ms/pages/responsepage.aspx?id=ZLjMYhpqXUuOHDl97BqCWM59WIRDW35Lmh6MTWauMJxUN1ZRUU5OUEhXOUpHMlFKTEI1UkVPRk84Vy4u",
           "icon": "📋"
+        },
+        {
+          "type": "link",
+          "title": "Metas 2026",
+          "description": "Metas de atendimento - 2026",
+          "url": "https://app.powerbi.com/groups/me/apps/2aec974d-9cbd-4b35-825e-5c115d49e6ce/reports/7b0c10f0-f5fd-436d-aad3-8c3d8f83d322?ctid=62ccb864-6a1a-4b5d-8e1c-397dec1a8258&experience=power-bi",
+          "icon": "🎯"
+        },
+        {
+          "type": "link",
+          "title": "Processos do Time",
+          "description": "Central com relatórios e formulários úteis para técnicos",
+          "url": "https://app.powerbi.com/groups/me/apps/2aec974d-9cbd-4b35-825e-5c115d49e6ce/reports/d482aaa3-8c34-41c9-8af2-905fd2230e08/ReportSection58e02daa68a06633c20b?ctid=62ccb864-6a1a-4b5d-8e1c-397dec1a8258&experience=power-bi",
+          "icon": "📂"
         }
       ]
     },

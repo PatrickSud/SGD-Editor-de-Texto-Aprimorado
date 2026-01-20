@@ -421,3 +421,147 @@
 .clear-form-btn:hover {
   background-color: rgba(0, 0, 0, 0.3);
 }
+
+/* --- STOPWATCH LABEL --- */
+/* --- STOPWATCH LABEL (TIMER DISPLAY) --- */
+/* --- STOPWATCH WRAPPER (Lateral Display) --- */
+/* --- STOPWATCH WRAPPER (Lateral Display) --- */
+.fab-stopwatch-wrapper {
+  position: absolute;
+  /* top/bottom definido via classes .top-* / .bottom-* abaixo */
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px; /* Ajustado para ficar compacto */
+  height: 40px; /* Mesma altura do botão FAB para alinhamento perfeito */
+  border-radius: 20px; /* Borda arredondada (metade da altura) */
+  
+  /* Estilo Visual Refinado */
+  background-color: rgba(60, 60, 60, 0.700);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  color: #f0f0f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  
+  white-space: nowrap;
+  font-family: monospace;
+  font-weight: bold;
+  font-size: 14px;
+  
+  z-index: 1045;
+  /* Delay na saída para dar tempo de mover o mouse (estabilidade) */
+  transition: opacity 0.2s ease 0.2s, transform 0.2s ease 0.2s;
+  
+  /* Padrão: Oculto */
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-10px); /* Leve deslocamento inicial */
+}
+
+/* Ponte Invisível para estabilidade do Hover */
+.fab-stopwatch-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 20px; /* Largura suficiente para cobrir o gap */
+  z-index: -1;
+}
+
+/* Ajusta a posição da ponte conforme o lado */
+.fab-container.top-left .fab-stopwatch-wrapper::before,
+.fab-container.bottom-left .fab-stopwatch-wrapper::before {
+  right: 100%; /* Estende para a esquerda (em direção ao FAB) */
+}
+
+.fab-container.top-right .fab-stopwatch-wrapper::before,
+.fab-container.bottom-right .fab-stopwatch-wrapper::before {
+  left: 100%; /* Estende para a direita (em direção ao FAB) */
+}
+
+/* Mostra apenas no Hover do Container */
+.fab-container:hover .fab-stopwatch-wrapper {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+  /* Remove o delay na entrada para aparecer instantaneamente */
+  transition-delay: 0s;
+}
+
+/* Esconde labels e inputs do FAB quando arrastando para evitar poluição visual */
+.fab-container.dragging .fab-stopwatch-wrapper {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Botões Internos do Cronômetro */
+.stopwatch-btn {
+  background: transparent;
+  border: none;
+  color: #ccc;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.stopwatch-btn:hover {
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.15);
+  transform: scale(1.05);
+}
+
+.stopwatch-btn:active {
+  transform: scale(0.95);
+}
+
+/* #fab-timer-text ajustado */
+#fab-timer-text {
+  margin: 0 6px;
+  min-width: 60px; /* Largura fixa para evitar pulos nos números */
+  text-align: center;
+}
+
+/* --- POSICIONAMENTO LATERAL CONDICIONAL COM ALINHAMENTO VERTICAL --- */
+
+/* FAB no TOPO -> Alinha pelo topo */
+.fab-container.top-left .fab-stopwatch-wrapper,
+.fab-container.top-right .fab-stopwatch-wrapper {
+  top: 0;
+  bottom: auto;
+}
+
+/* FAB na BASE -> Alinha pela base (CORREÇÃO DE ALINHAMENTO) */
+.fab-container.bottom-left .fab-stopwatch-wrapper,
+.fab-container.bottom-right .fab-stopwatch-wrapper {
+  bottom: 0;
+  top: auto;
+}
+
+/* FAB na ESQUERDA -> Cronômetro à DIREITA */
+.fab-container.top-left .fab-stopwatch-wrapper,
+.fab-container.bottom-left .fab-stopwatch-wrapper {
+  left: 100%;
+  right: auto;
+  margin-left: 12px; /* Gap lateral */
+  transform-origin: left center;
+}
+
+/* FAB na DIREITA -> Cronômetro à ESQUERDA (Invertido) */
+.fab-container.top-right .fab-stopwatch-wrapper,
+.fab-container.bottom-right .fab-stopwatch-wrapper {
+  right: 100%;
+  left: auto;
+  margin-right: 12px;
+  transform-origin: right center;
+  flex-direction: row-reverse; /* Inverte a ordem interna dos botões */
+}
+

@@ -2849,6 +2849,174 @@ async function createInteractiveChangePopup(targetSpan) {
   })
 }
 
+
+
+// --- STOPWATCH LOGIC ---
+
+let stopwatchInterval = null
+let stopwatchState = {
+  startTime: null,
+  accumulatedTime: 0,
+  isRunning: false,
+  lastActiveDate: null
+}
+
+/**
+ * Inicializa o cronômetro lendo do storage e verificando reset diário.
+ */
+async function initializeStopwatch() {
+  const data = await chrome.storage.local.get(['stopwatchState'])
+  if (data.stopwatchState) {
+    stopwatchState = data.stopwatchState
+  }
+
+  const today = new Date().toISOString().split('T')[0]
+  
+  // Reset diário se a data mudou
+  if (stopwatchState.lastActiveDate !== today) {
+    resetStopwatch()
+  } else {
+    // Restaura o estado
+    if (stopwatchState.isRunning) {
+      startStopwatchTicker()
+    }
+    updateStopwatchDisplay()
+    updateStopwatchIcon()
+  }
+}
+
+function toggleStopwatch() {
+  if (stopwatchState.isRunning) {
+    pauseStopwatch()
+  } else {
+    startStopwatch()
+  }
+}
+
+function startStopwatch() {
+  stopwatchState.isRunning = true
+  stopwatchState.startTime = Date.now()
+  stopwatchState.lastActiveDate = new Date().toISOString().split('T')[0]
+  
+  saveStopwatchState()
+  startStopwatchTicker()
+  updateStopwatchIcon()
+}
+
+function pauseStopwatch() {
+  if (!stopwatchState.isRunning) return
+
+  // Acumula o tempo decorrido no segmento atual
+  const now = Date.now()
+  stopwatchState.accumulatedTime += (now - stopwatchState.startTime)
+  stopwatchState.startTime = null // Reseta o início do segmento
+  stopwatchState.isRunning = false
+  
+  saveStopwatchState()
+  stopStopwatchTicker()
+  updateStopwatchDisplay() // Garante que mostre o valor exato final
+  updateStopwatchIcon()
+}
+
+function resetStopwatch() {
+  stopwatchState = {
+    startTime: null,
+    accumulatedTime: 0,
+    isRunning: false,
+    lastActiveDate: new Date().toISOString().split('T')[0]
+  }
+  saveStopwatchState()
+  stopStopwatchTicker()
+  stopStopwatchTicker()
+  updateStopwatchDisplay()
+  updateStopwatchIcon()
+}
+
+function setStopwatchTime() {
+  // Pausa se estiver rodando para evitar inconsistências
+  if (stopwatchState.isRunning) {
+    pauseStopwatch()
+  }
+
+  const input = prompt('Definir tempo (HH:MM:SS):', formatTime(stopwatchState.accumulatedTime))
+  if (input !== null) {
+    const milliseconds = parseTimeString(input)
+    if (milliseconds !== null) {
+      stopwatchState.accumulatedTime = milliseconds
+      // startTime já é null pois foi pausado
+      stopwatchState.isRunning = false
+      saveStopwatchState()
+      updateStopwatchDisplay()
+      updateStopwatchIcon()
+    } else {
+      alert('Formato inválido! Use HH:MM:SS.')
+    }
+  }
+}
+
+function parseTimeString(timeString) {
+  const parts = timeString.split(':')
+  if (parts.length !== 3) return null
+
+  const hours = parseInt(parts[0], 10)
+  const minutes = parseInt(parts[1], 10)
+  const seconds = parseInt(parts[2], 10)
+
+  if (isNaN(hours) || isNaN(minutes) || isNaN(seconds)) return null
+
+  return ((hours * 3600) + (minutes * 60) + seconds) * 1000
+}
+
+function startStopwatchTicker() {
+  stopStopwatchTicker() // Evita múltiplos intervalos
+  stopwatchInterval = setInterval(updateStopwatchDisplay, 1000)
+  updateStopwatchDisplay() // Atualiza imediatamente
+}
+
+function stopStopwatchTicker() {
+  if (stopwatchInterval) {
+    clearInterval(stopwatchInterval)
+    stopwatchInterval = null
+  }
+}
+
+function updateStopwatchIcon() {
+  const btn = document.getElementById('fab-timer-toggle')
+  if (btn) {
+    btn.textContent = stopwatchState.isRunning ? '⏸️' : '▶️'
+    btn.title = stopwatchState.isRunning ? 'Pausar' : 'Iniciar'
+  }
+}
+
+function updateStopwatchDisplay() {
+  const timerText = document.getElementById('fab-timer-text')
+  if (!timerText) return
+
+  let totalMilliseconds = stopwatchState.accumulatedTime
+  
+  if (stopwatchState.isRunning && stopwatchState.startTime) {
+    totalMilliseconds += (Date.now() - stopwatchState.startTime)
+  }
+
+  timerText.textContent = formatTime(totalMilliseconds)
+}
+
+function formatTime(milliseconds) {
+  const totalSeconds = Math.floor(milliseconds / 1000)
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+
+  const pad = num => num.toString().padStart(2, '0')
+  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`
+}
+
+function saveStopwatchState() {
+  chrome.storage.local.set({ stopwatchState })
+}
+
+// ----------------------
+
 function createFloatingActionButtons() {
   if (document.getElementById('fab-container')) return
   const fabContainer = document.createElement('div')
@@ -2857,6 +3025,8 @@ function createFloatingActionButtons() {
 
   fabContainer.innerHTML = `
     <div class="fab-options">
+
+      
       <div class="fab-option-wrapper">
         <button type="button" class="fab-button fab-option shine-effect" data-action="fab-info-panel" data-tooltip="Central de Informações">ℹ️</button>
         <span class="fab-badge"></span>
@@ -2867,6 +3037,14 @@ function createFloatingActionButtons() {
       <button type="button" class="fab-button fab-option shine-effect" data-action="fab-manage-steps" data-tooltip="Configurações">⚙️</button>
     </div>
     <button type="button" class="fab-button main-fab" title="Ações Rápidas">+</button>
+    
+    <!-- WRAPPER DO CRONÔMETRO (SIBLING) -->
+    <div class="fab-stopwatch-wrapper">
+      <button type="button" id="fab-timer-toggle" class="stopwatch-btn" title="Iniciar/Pausar">▶️</button>
+      <span id="fab-timer-text">00:00:00</span>
+      <button type="button" id="fab-timer-reset" class="stopwatch-btn" title="Zerar">↺</button>
+      <button type="button" id="fab-timer-set" class="stopwatch-btn" title="Definir Tempo">✎</button>
+    </div>
   `
   document.body.appendChild(fabContainer)
 
@@ -2900,6 +3078,7 @@ function setupFabListeners() {
         handleInfoPanelOpen()
         openInfoPanel()
         break
+
       case 'fab-quick-steps':
         openQuickInserterPanel()
         break
@@ -2914,6 +3093,32 @@ function setupFabListeners() {
         break
     }
   })
+
+  // Listeners para os botões do cronômetro (Wrapper dedicado)
+  fabContainer.addEventListener('click', e => {
+    // Verifica se o clique foi no botão de Toggle (Play/Pause)
+    const toggleBtn = e.target.closest('#fab-timer-toggle')
+    if (toggleBtn) {
+      e.stopPropagation()
+      toggleStopwatch()
+      return
+    }
+
+    // Verifica botões de controle (Reset / Set)
+    const resetBtn = e.target.closest('#fab-timer-reset')
+    const setBtn = e.target.closest('#fab-timer-set')
+
+    if (resetBtn) {
+      e.stopPropagation()
+      resetStopwatch()
+    } else if (setBtn) {
+      e.stopPropagation()
+      setStopwatchTime()
+    }
+  })
+
+  // Initialize Stopwatch functionality
+  initializeStopwatch()
 
   let isDragging = false,
     offsetX,
