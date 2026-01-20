@@ -2955,6 +2955,10 @@ function setStopwatchTime() {
   timerText.style.display = 'none'
   timerInput.style.display = 'inline-block'
   
+  // Adiciona classe de edição para manter visível
+  const wrapper = document.getElementById('fab-stopwatch-wrapper')
+  if (wrapper) wrapper.classList.add('is-editing')
+  
   // Foca e seleciona tudo
   setTimeout(() => {
     timerInput.focus()
@@ -2983,6 +2987,11 @@ function handleStopwatchInputComplete(save = true) {
   // Volta ao estado normal
   timerInput.style.display = 'none'
   timerText.style.display = 'inline-block'
+  
+  // Remove classe de edição
+  const wrapper = document.getElementById('fab-stopwatch-wrapper')
+  if (wrapper) wrapper.classList.remove('is-editing')
+
   updateStopwatchDisplay()
   updateStopwatchIcon()
 }

@@ -697,7 +697,8 @@
 
 /* 3. Comportamento do Cronômetro (Mantém-se igual, pois é sibling) */
 .fab-stopwatch-wrapper.is-pinned,
-.fab-stopwatch-wrapper.is-running {
+.fab-stopwatch-wrapper.is-running,
+.fab-stopwatch-wrapper.is-editing {
   opacity: 1 !important;
   pointer-events: auto !important;
   transform: translateX(0) !important;
