@@ -535,10 +535,13 @@
 
 #fab-timer-text.timer-warning {
   color: #fbbf24; /* Amarelo/Dourado */
+  text-shadow: 0 0 8px rgba(252, 206, 89, 0.4);
 }
 
 #fab-timer-text.timer-danger {
-  color: #ef4444; /* Vermelho */
+  color: #970d06; /* Vermelho vibrante/Coral */
+  text-shadow: 0 0 10px rgba(255, 239, 239, 0.5);
+  font-weight: 800;
 }
 
 /* Input para definição manual no cronômetro */
