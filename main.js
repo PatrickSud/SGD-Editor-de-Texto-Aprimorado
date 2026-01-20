@@ -2933,25 +2933,58 @@ function resetStopwatch() {
 }
 
 function setStopwatchTime() {
+  const timerText = document.getElementById('fab-timer-text')
+  const timerInput = document.getElementById('fab-timer-input')
+  
+  if (!timerText || !timerInput) return
+
   // Pausa se estiver rodando para evitar inconsistências
   if (stopwatchState.isRunning) {
     pauseStopwatch()
   }
 
-  const input = prompt('Definir tempo (HH:MM:SS):', formatTime(stopwatchState.accumulatedTime))
-  if (input !== null) {
-    const milliseconds = parseTimeString(input)
+  // Prepara o input
+  let currentMs = stopwatchState.accumulatedTime
+  if (stopwatchState.isRunning && stopwatchState.startTime) {
+    currentMs += (Date.now() - stopwatchState.startTime)
+  }
+  
+  timerInput.value = formatTime(currentMs)
+  
+  // Alterna visibilidade
+  timerText.style.display = 'none'
+  timerInput.style.display = 'inline-block'
+  
+  // Foca e seleciona tudo
+  setTimeout(() => {
+    timerInput.focus()
+    timerInput.select()
+  }, 10)
+}
+
+function handleStopwatchInputComplete(save = true) {
+  const timerText = document.getElementById('fab-timer-text')
+  const timerInput = document.getElementById('fab-timer-input')
+  
+  if (!timerText || !timerInput) return
+  if (timerInput.style.display === 'none') return
+
+  if (save) {
+    const milliseconds = parseTimeString(timerInput.value)
     if (milliseconds !== null) {
       stopwatchState.accumulatedTime = milliseconds
-      // startTime já é null pois foi pausado
       stopwatchState.isRunning = false
       saveStopwatchState()
-      updateStopwatchDisplay()
-      updateStopwatchIcon()
     } else {
-      alert('Formato inválido! Use HH:MM:SS.')
+      // Opcional: mostrar erro discreto ou apenas não salvar
     }
   }
+
+  // Volta ao estado normal
+  timerInput.style.display = 'none'
+  timerText.style.display = 'inline-block'
+  updateStopwatchDisplay()
+  updateStopwatchIcon()
 }
 
 function parseTimeString(timeString) {
@@ -3076,6 +3109,7 @@ function createFloatingActionButtons() {
       </button>
       <button type="button" id="fab-timer-toggle" class="stopwatch-btn" title="Iniciar/Pausar">▶️</button>
       <span id="fab-timer-text">00:00:00</span>
+      <input type="text" id="fab-timer-input" class="fab-timer-input" style="display: none;" placeholder="00:00:00" />
       <button type="button" id="fab-timer-reset" class="stopwatch-btn" title="Zerar">↺</button>
       <button type="button" id="fab-timer-set" class="stopwatch-btn" title="Definir Tempo">✎</button>
     </div>
@@ -3148,6 +3182,25 @@ function setupFabListeners() {
     } else if (setBtn) {
       e.stopPropagation()
       setStopwatchTime()
+    }
+  })
+
+  // Listeners para o input do cronômetro
+  fabContainer.addEventListener('keydown', e => {
+    if (e.target.id === 'fab-timer-input') {
+      if (e.key === 'Enter') {
+        handleStopwatchInputComplete(true)
+      } else if (e.key === 'Escape') {
+        handleStopwatchInputComplete(false)
+      }
+    }
+  })
+
+  fabContainer.addEventListener('focusout', e => {
+    if (e.target.id === 'fab-timer-input') {
+      // Pequeno delay para permitir que o clique em botões de salvar (se existissem) ocorresse
+      // Mas aqui usamos focusout para completar a edição
+      handleStopwatchInputComplete(true)
     }
   })
 

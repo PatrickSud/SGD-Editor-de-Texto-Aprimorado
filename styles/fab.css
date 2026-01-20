@@ -530,6 +530,27 @@
   text-align: center;
 }
 
+/* Input para definição manual no cronômetro */
+.fab-timer-input {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  color: #fff;
+  font-family: monospace;
+  font-size: 14px;
+  font-weight: bold;
+  width: 80px;
+  margin: 0 6px;
+  text-align: center;
+  padding: 2px 0;
+  outline: none;
+}
+
+.fab-timer-input:focus {
+  border-color: var(--action-blue, #2563eb);
+  background: rgba(0, 0, 0, 0.2);
+}
+
 /* --- POSICIONAMENTO LATERAL CONDICIONAL COM ALINHAMENTO VERTICAL --- */
 
 /* FAB no TOPO -> Alinha pelo topo */
