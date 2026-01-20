@@ -3019,7 +3019,7 @@ function updateStopwatchIcon() {
   
   if (btn) {
     btn.textContent = stopwatchState.isRunning ? '⏸️' : '▶️'
-    btn.title = stopwatchState.isRunning ? 'Pausar' : 'Iniciar'
+    btn.title = stopwatchState.isRunning ? 'Pausar (Ctrl+Alt+T)' : 'Iniciar (Ctrl+Alt+T)'
   }
   
   if (wrapper) {
@@ -3036,6 +3036,15 @@ function updateStopwatchDisplay() {
   if (stopwatchState.isRunning && stopwatchState.startTime) {
     totalMilliseconds += (Date.now() - stopwatchState.startTime)
   }
+
+  // Atualiza as cores baseadas no tempo
+  // 1 hora = 3.600.000 ms
+  // 1 hora e 30 minutos = 5.400.000 ms
+  const isDanger = totalMilliseconds >= 5400000
+  const isWarning = totalMilliseconds >= 3600000 && !isDanger
+
+  timerText.classList.toggle('timer-warning', isWarning)
+  timerText.classList.toggle('timer-danger', isDanger)
 
   timerText.textContent = formatTime(totalMilliseconds)
 }
@@ -3201,6 +3210,21 @@ function setupFabListeners() {
       // Pequeno delay para permitir que o clique em botões de salvar (se existissem) ocorresse
       // Mas aqui usamos focusout para completar a edição
       handleStopwatchInputComplete(true)
+    }
+  })
+
+  // Atalho global para o cronômetro
+  document.addEventListener('keydown', e => {
+    // Ctrl + Alt + T
+    if (e.ctrlKey && e.altKey && e.code === 'KeyT') {
+      e.preventDefault()
+      toggleStopwatch()
+      
+      // Feedback visual via notificação
+      const status = stopwatchState.isRunning ? '⏱️ Cronômetro Iniciado' : '⏱️ Cronômetro Pausado'
+      if (typeof showNotification === 'function') {
+        showNotification(status)
+      }
     }
   })
 

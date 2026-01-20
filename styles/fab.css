@@ -528,6 +528,17 @@
   margin: 0 6px;
   min-width: 60px; /* Largura fixa para evitar pulos nos números */
   text-align: center;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.3s ease;
+}
+
+#fab-timer-text.timer-warning {
+  color: #fbbf24; /* Amarelo/Dourado */
+}
+
+#fab-timer-text.timer-danger {
+  color: #ef4444; /* Vermelho */
 }
 
 /* Input para definição manual no cronômetro */
@@ -536,7 +547,7 @@
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 4px;
   color: #fff;
-  font-family: monospace;
+  font-family: system-ui, -apple-system, sans-serif;
   font-size: 14px;
   font-weight: bold;
   width: 80px;
