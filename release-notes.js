@@ -104,8 +104,10 @@ const MINOR_RELEASE_NOTES = {
     {
       version: '2.9.9.8',
       features: [
-        '<b>🐛 Correção de Links em Avisos:</b> Corrigido problema onde links com formatação (cores, estilos) ficavam quebrados na exibição de avisos.',
-        '<b>🔗 Inserir Link em Avisos:</b> Adicionado botão "<b>Inserir Link</b>" na janela de criação e edição de avisos, padronizando a experiência com a gestão de status.'
+        '<b>⏱️ Cronômetro Integrado ao FAB:</b> Nova ferramenta para gestão de tempo com suporte a Pause, Reset e Edição Manual.',
+        '<b>📌 Fixação Individual (Pin):</b> Agora cada item do menu de Acesso Rápido pode ser fixado individualmente.',
+        '<b>🔍 Visibilidade & Persistência:</b> O cronômetro permanece visível enquanto estiver em execução e salva seu estado automaticamente entre as novas páginas.',
+        '<b>🐛 Correções Visuais:</b> Ajuste na formatação de links em Avisos e botão para Inserir Links.'
       ]
     },
     {
