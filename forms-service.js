@@ -54,6 +54,13 @@ const DEFAULT_FORMS_DATA = {
         },
         {
           type: 'link',
+          title: 'Accountability (N1) - Tipos de Account',
+          description: 'Tipos de Account e suas explicações',
+          url: 'https://app.powerbi.com/groups/me/apps/2aec974d-9cbd-4b35-825e-5c115d49e6ce/reports/8029b738-f1a6-413d-8bd0-ed1fe17891c6/7acf0c34f6fd5737d792?ctid=62ccb864-6a1a-4b5d-8e1c-397dec1a8258&experience=power-bi',
+          icon: '⚖️'
+        },
+        {
+          type: 'link',
           title: 'Metas 2026',
           description: 'Metas de atendimento - 2026',
           url: 'https://app.powerbi.com/groups/me/apps/2aec974d-9cbd-4b35-825e-5c115d49e6ce/reports/7b0c10f0-f5fd-436d-aad3-8c3d8f83d322?ctid=62ccb864-6a1a-4b5d-8e1c-397dec1a8258&experience=power-bi',

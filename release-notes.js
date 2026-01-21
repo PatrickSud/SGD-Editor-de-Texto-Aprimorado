@@ -4,10 +4,10 @@ const RELEASE_NOTES = {
     features: [
       '<b>🚀 Central de Informações SGD (Em Desenvolvimento):</b>',
       '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-        '<li><b>🤖 Nova Aba AI Chains:</b> Assistentes inteligentes e fluxos agora têm sua própria seção dedicada.</li>' +
-        '<li><b>🏷️ Gestão de TAGS:</b> Classifique pendências com Tags coloridas (<i>Em SS</i>, <i>Em SA/NE</i>, <i>Prioridade</i> e personalizadas).</li>' +
-        '<li><b>🔍 Filtro por Tags:</b> Visualize rapida\mente chamados por categoria na lista de pendências.</li>' +
-        '<li><b>🔔 Controle de Notificações:</b> Ative/desative alertas visuais na tela (verificação continua em background).</li>' +
+      '<li><b>🤖 Nova Aba AI Chains:</b> Assistentes inteligentes e fluxos agora têm sua própria seção dedicada.</li>' +
+      '<li><b>🏷️ Gestão de TAGS:</b> Classifique pendências com Tags coloridas (<i>Em SS</i>, <i>Em SA/NE</i>, <i>Prioridade</i> e personalizadas).</li>' +
+      '<li><b>🔍 Filtro por Tags:</b> Visualize rapida\mente chamados por categoria na lista de pendências.</li>' +
+      '<li><b>🔔 Controle de Notificações:</b> Ative/desative alertas visuais na tela (verificação continua em background).</li>' +
       '</ul>',
       '<b>⚡ Otimizações Gerais:</b> Ajustes de performance e correções visuais na extensão.'
     ]
@@ -108,6 +108,14 @@ const MINOR_RELEASE_NOTES = {
         '<b>📌 Fixação Individual (Pin):</b> Agora cada item do menu de Acesso Rápido pode ser fixado individualmente.',
         '<b>🔍 Visibilidade & Persistência:</b> O cronômetro permanece visível enquanto estiver em execução e salva seu estado automaticamente entre as novas páginas.',
         '<b>🐛 Correções Visuais:</b> Ajuste na formatação de links em Avisos e botão para Inserir Links.'
+      ]
+    },
+    {
+      version: '2.9.9.9',
+      features: [
+        '<b>👤 Persistência de Filtro por Responsável:</b> Agora sua escolha de responsável no painel de pendências é salva automaticamente e restaurada ao abrir a extensão.',
+        '<b>🔔 Notificações Inteligentes:</b> O monitor de segundo plano agora respeita seu filtro de responsável. Você receberá notificações apenas das novas pendências do responsável selecionado.',
+        '<b>🎯 Monitoramento Flexível:</b> Ao selecionar "Todos Responsáveis", a extensão volta a monitorar e notificar sobre toda a equipe.'
       ]
     },
     {

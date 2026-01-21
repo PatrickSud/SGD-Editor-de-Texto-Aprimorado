@@ -14,11 +14,11 @@ const PENDING_ITEMS_URL = 'https://sgd.dominiosistemas.com.br/sgpub/faces/filtro
  * @returns {string} Texto limpo.
  */
 function cleanDateText(cell) {
-    if (!cell) return ''
-    const clone = cell.cloneNode(true)
-    const spans = clone.querySelectorAll('span')
-    spans.forEach(span => span.remove())
-    return clone.innerText.trim().replace(/\s+/g, ' ')
+  if (!cell) return ''
+  const clone = cell.cloneNode(true)
+  const spans = clone.querySelectorAll('span')
+  spans.forEach(span => span.remove())
+  return clone.innerText.trim().replace(/\s+/g, ' ')
 }
 
 /**
@@ -28,8 +28,8 @@ function cleanDateText(cell) {
 async function fetchPendingItems() {
   try {
     const response = await fetch(PENDING_ITEMS_URL, {
-        credentials: 'include', // Envia cookies de sessão
-        cache: 'no-cache'
+      credentials: 'include', // Envia cookies de sessão
+      cache: 'no-cache'
     })
 
     if (!response.ok) {
@@ -45,105 +45,105 @@ async function fetchPendingItems() {
 
     // Verificação robusta de login
     const dataTable = doc.querySelector('table.tablesorter')
-    
+
     if (!dataTable) {
-        const passwordInput = doc.querySelector('input[type="password"]')
-        const loginForm = doc.querySelector('form[action*="login"]') || doc.querySelector('#login-form')
-        
-        if (passwordInput || loginForm) {
-             throw new Error('Você não está logado no SGD. Por favor, faça login.')
-        }
-        
-        const errorMsg = doc.querySelector('.ui-messages-error-summary, .erro')?.innerText
-        if (errorMsg) {
-            throw new Error(`Erro no SGD: ${errorMsg.trim()}`)
-        }
-        
-        console.warn('PendingService: Tabela não encontrada e não parece ser login. Layout pode ter mudado.')
-        return [] 
+      const passwordInput = doc.querySelector('input[type="password"]')
+      const loginForm = doc.querySelector('form[action*="login"]') || doc.querySelector('#login-form')
+
+      if (passwordInput || loginForm) {
+        throw new Error('Você não está logado no SGD. Por favor, faça login.')
+      }
+
+      const errorMsg = doc.querySelector('.ui-messages-error-summary, .erro')?.innerText
+      if (errorMsg) {
+        throw new Error(`Erro no SGD: ${errorMsg.trim()}`)
+      }
+
+      console.warn('PendingService: Tabela não encontrada e não parece ser login. Layout pode ter mudado.')
+      return []
     }
 
     // Identificar índice da coluna "Responsável"
     let responsibleColIndex = -1
     const headers = dataTable.querySelectorAll('thead th')
     headers.forEach((th, index) => {
-        if (th.innerText.toLowerCase().includes('responsável')) {
-            responsibleColIndex = index
-        }
+      if (th.innerText.toLowerCase().includes('responsável')) {
+        responsibleColIndex = index
+      }
     })
 
     // Detectar Filtro do Site Ativo (Session State)
     // Detectar Filtros do Site Ativos (Session State)
     const filterIds = [
-        { id: 'filtrosForm:responsavel', label: 'Responsável', default: '0' },
-        { id: 'filtrosForm:sistema', label: 'Sistema', default: '0' },
-        { id: 'filtrosForm:modulo', label: 'Módulo', default: '0' },
-        { id: 'filtrosForm:topicoSuporte', label: 'Tópico', default: '0' },
-        { id: 'filtrosForm:situacao', label: 'Situação', default: '0' },
-        { id: 'filtrosForm:classificacaoSSC', label: 'Classificação', default: '0' },
-        { id: 'filtrosForm:meioAcesso', label: 'Meio de Acesso', default: '0' },
-        { id: 'filtrosForm:origem', label: 'Subtópico', default: '0' },
-        { id: 'filtrosForm:palavraChave', label: 'Palavra-chave', type: 'text', default: '' }
+      { id: 'filtrosForm:responsavel', label: 'Responsável', default: '0' },
+      { id: 'filtrosForm:sistema', label: 'Sistema', default: '0' },
+      { id: 'filtrosForm:modulo', label: 'Módulo', default: '0' },
+      { id: 'filtrosForm:topicoSuporte', label: 'Tópico', default: '0' },
+      { id: 'filtrosForm:situacao', label: 'Situação', default: '0' },
+      { id: 'filtrosForm:classificacaoSSC', label: 'Classificação', default: '0' },
+      { id: 'filtrosForm:meioAcesso', label: 'Meio de Acesso', default: '0' },
+      { id: 'filtrosForm:origem', label: 'Subtópico', default: '0' },
+      { id: 'filtrosForm:palavraChave', label: 'Palavra-chave', type: 'text', default: '' }
     ]
 
     const siteFilter = {
-        active: false,
-        name: null
+      active: false,
+      name: null
     }
 
     const activeFilters = []
 
     filterIds.forEach(f => {
-        const el = doc.getElementById(f.id)
-        if (el) {
-            const val = el.value
-            // Verifica se o valor é diferente do padrão
-            if (val && val !== f.default) {
-                let isReallyActive = false
-                if (f.type === 'text') {
-                    isReallyActive = val.trim() !== ''
-                } else {
-                    // Para selects com "selected" explícito no HTML estático ou valor atual
-                    const selectedOption = el.querySelector(`option[value="${val}"]`)
-                    // Se tiver selected ou o valor for diferente do default (assumindo value do select correto)
-                    if ((selectedOption && selectedOption.hasAttribute('selected')) || val !== '0') {
-                         isReallyActive = true
-                    }
-                }
-
-                if (isReallyActive) {
-                    // Exceção para Responsável: Se houver apenas 1 opção (além de Todos), não considerar filtro ativo
-                    // Pois o usuário provavelmente não tem permissão para ver outros
-                    if (f.id === 'filtrosForm:responsavel') {
-                         const options = el.querySelectorAll('option')
-                         if (options.length <= 2) {
-                             isReallyActive = false
-                         }
-                    }
-                }
-
-                if (isReallyActive) {
-                    let label = f.label
-
-                    if (f.type === 'text') {
-                        if (val.trim()) label += `: "${val.trim()}"`
-                    } else {
-                         // Para selects, tenta pegar o texto da option selecionada
-                         const selectedOption = el.querySelector(`option[value="${val}"]`)
-                         if (selectedOption) {
-                             label += `: ${selectedOption.innerText.trim()}`
-                         }
-                    }
-
-                    activeFilters.push(label)
-                }
+      const el = doc.getElementById(f.id)
+      if (el) {
+        const val = el.value
+        // Verifica se o valor é diferente do padrão
+        if (val && val !== f.default) {
+          let isReallyActive = false
+          if (f.type === 'text') {
+            isReallyActive = val.trim() !== ''
+          } else {
+            // Para selects com "selected" explícito no HTML estático ou valor atual
+            const selectedOption = el.querySelector(`option[value="${val}"]`)
+            // Se tiver selected ou o valor for diferente do default (assumindo value do select correto)
+            if ((selectedOption && selectedOption.hasAttribute('selected')) || val !== '0') {
+              isReallyActive = true
             }
+          }
+
+          if (isReallyActive) {
+            // Exceção para Responsável: Se houver apenas 1 opção (além de Todos), não considerar filtro ativo
+            // Pois o usuário provavelmente não tem permissão para ver outros
+            if (f.id === 'filtrosForm:responsavel') {
+              const options = el.querySelectorAll('option')
+              if (options.length <= 2) {
+                isReallyActive = false
+              }
+            }
+          }
+
+          if (isReallyActive) {
+            let label = f.label
+
+            if (f.type === 'text') {
+              if (val.trim()) label += `: "${val.trim()}"`
+            } else {
+              // Para selects, tenta pegar o texto da option selecionada
+              const selectedOption = el.querySelector(`option[value="${val}"]`)
+              if (selectedOption) {
+                label += `: ${selectedOption.innerText.trim()}`
+              }
+            }
+
+            activeFilters.push(label)
+          }
         }
+      }
     })
 
     if (activeFilters.length > 0) {
-        siteFilter.active = true
-        siteFilter.name = activeFilters.length === 1 ? activeFilters[0] : `${activeFilters.length} filtros ativos`
+      siteFilter.active = true
+      siteFilter.name = activeFilters.length === 1 ? activeFilters[0] : `${activeFilters.length} filtros ativos`
     }
 
     const rows = dataTable.querySelectorAll('tbody > tr')
@@ -157,11 +157,11 @@ async function fetchPendingItems() {
       try {
         // ID: Coluna 0
         const id = cells[0].innerText.trim()
-        
+
         // Verifica se a pendência é prioritária 
         // Verifica classes tableListaRowWarningBlue (Prioridade Azul) e tableListaRowWarning (Prioridade Amarela)
-        const isPrioritaria = cells[0].classList.contains('tableListaRowWarningBlue') || 
-                              cells[0].classList.contains('tableListaRowWarning')
+        const isPrioritaria = cells[0].classList.contains('tableListaRowWarningBlue') ||
+          cells[0].classList.contains('tableListaRowWarning')
 
         // Data Abertura: Coluna 1 (Limpa spans ocultos)
         const dataAbertura = cleanDateText(cells[1])
@@ -184,16 +184,16 @@ async function fetchPendingItems() {
           subject = anchor.innerText.trim()
           const href = anchor.getAttribute('href')
           if (href) {
-            link = href.startsWith('http') 
-                ? href 
-                : `https://sgd.dominiosistemas.com.br${href.startsWith('/') ? '' : '/sgpub/faces/'}${href}`
+            link = href.startsWith('http')
+              ? href
+              : `https://sgd.dominiosistemas.com.br${href.startsWith('/') ? '' : '/sgpub/faces/'}${href}`
           }
         }
 
         // Responsável (Dinâmico)
         let responsible = 'Desconhecido'
         if (responsibleColIndex > -1 && cells[responsibleColIndex]) {
-            responsible = cells[responsibleColIndex].innerText.trim()
+          responsible = cells[responsibleColIndex].innerText.trim()
         }
 
         // Verifica se é "Em SS" (texto vermelho)
@@ -208,7 +208,7 @@ async function fetchPendingItems() {
         if (imgStatus) {
           status = imgStatus.getAttribute('title') || 'Status indefinido'
         } else {
-            status = cells[12].innerText.trim() || 'Sem status'
+          status = cells[12].innerText.trim() || 'Sem status'
         }
 
         pendingItems.push({
@@ -224,7 +224,7 @@ async function fetchPendingItems() {
           isPrioritaria,
           isEmSS
         })
-    
+
       } catch (err) {
       }
     })
@@ -234,79 +234,94 @@ async function fetchPendingItems() {
 }
 
 async function resetSiteFilter() {
-    const isOnFilterPage = window.location.href.includes('filtro-listas.html')
-    
-    if (isOnFilterPage) {
-        
-        const filterIds = [
-            'filtrosForm:responsavel',
-            'filtrosForm:sistema',
-            'filtrosForm:modulo',
-            'filtrosForm:topicoSuporte',
-            'filtrosForm:situacao',
-            'filtrosForm:classificacaoSSC',
-            'filtrosForm:meioAcesso',
-            'filtrosForm:origem'
-        ]
+  const isOnFilterPage = window.location.href.includes('filtro-listas.html')
 
-        // 1. Reseta Selects
-        filterIds.forEach(id => {
-            const select = document.getElementById(id)
-            if (select) {
-                select.value = '0'
-                select.selectedIndex = 0
-                select.dispatchEvent(new Event('change', { bubbles: true }))
-            }
-        })
+  if (isOnFilterPage) {
 
-        // 2. Reseta Input Texto
-        const textInput = document.getElementById('filtrosForm:palavraChave')
-        if (textInput) {
-            textInput.value = ''
-            textInput.dispatchEvent(new Event('input', { bubbles: true }))
-            textInput.dispatchEvent(new Event('change', { bubbles: true }))
-        }
+    const filterIds = [
+      'filtrosForm:responsavel',
+      'filtrosForm:sistema',
+      'filtrosForm:modulo',
+      'filtrosForm:topicoSuporte',
+      'filtrosForm:situacao',
+      'filtrosForm:classificacaoSSC',
+      'filtrosForm:meioAcesso',
+      'filtrosForm:origem'
+    ]
 
-        // 3. Clica em Pesquisar/Atualizar
-        const btn = document.getElementById('filtrosForm:atualizarBtn') || 
-                    document.querySelector('button[id*="pesquisar"]') || 
-                    document.querySelector('input[type="submit"][value*="Pesquisar"]') ||
-                    document.querySelector('a[onclick*="pesquisar"]') ||
-                    document.getElementById('filtrosForm:pesquisar')
+    // 1. Reseta Selects
+    filterIds.forEach(id => {
+      const select = document.getElementById(id)
+      if (select) {
+        select.value = '0'
+        select.selectedIndex = 0
+        select.dispatchEvent(new Event('change', { bubbles: true }))
+      }
+    })
 
-        if (btn) {
-            await new Promise(r => setTimeout(r, 150)) // Delay leve
-            btn.click()
-            return true
-        } else {
-             console.warn('Botão de pesquisar não encontrado.')
-        }
-
-    } else {
-        alert('Redirecionando para a página de Pendências para limpar os filtros...')
-        window.location.href = 'https://sgd.dominiosistemas.com.br/sgpub/faces/filtro-listas.html'
-        return true
+    // 2. Reseta Input Texto
+    const textInput = document.getElementById('filtrosForm:palavraChave')
+    if (textInput) {
+      textInput.value = ''
+      textInput.dispatchEvent(new Event('input', { bubbles: true }))
+      textInput.dispatchEvent(new Event('change', { bubbles: true }))
     }
-    
-    return false
+
+    // 3. Clica em Pesquisar/Atualizar
+    const btn = document.getElementById('filtrosForm:atualizarBtn') ||
+      document.querySelector('button[id*="pesquisar"]') ||
+      document.querySelector('input[type="submit"][value*="Pesquisar"]') ||
+      document.querySelector('a[onclick*="pesquisar"]') ||
+      document.getElementById('filtrosForm:pesquisar')
+
+    if (btn) {
+      await new Promise(r => setTimeout(r, 150)) // Delay leve
+      btn.click()
+      return true
+    } else {
+      console.warn('Botão de pesquisar não encontrado.')
+    }
+
+  } else {
+    alert('Redirecionando para a página de Pendências para limpar os filtros...')
+    window.location.href = 'https://sgd.dominiosistemas.com.br/sgpub/faces/filtro-listas.html'
+    return true
+  }
+
+  return false
 }
 
 /**
  * Verifica se há novas pendências comparando com as últimas visualizadas.
+ * Considera o filtro de responsável persistente definido pelo usuário.
  * @returns {Promise<{total: number, newCount: number, newItems: Array<object>}>}
  */
 async function checkNewPendings() {
   try {
     const { items: currentItems } = await fetchPendingItems()
-    const result = await chrome.storage.local.get(['lastSeenPendingIds'])
-    const lastSeenIds = result.lastSeenPendingIds || []
 
-    const newItems = currentItems.filter(item => !lastSeenIds.includes(item.id))
+    // Recupera IDs vistos e a preferência de filtro de responsável
+    const storage = await chrome.storage.local.get(['lastSeenPendingIds', 'preferredResponsible'])
+    const lastSeenIds = storage.lastSeenPendingIds || []
+    const preferredResponsible = storage.preferredResponsible || ''
 
+    // Filtra os itens monitorados com base na preferência
+    let monitoredItems = currentItems
+    if (preferredResponsible && preferredResponsible.trim() !== '') {
+      // Mantém apenas itens do responsável escolhido
+      monitoredItems = currentItems.filter(item => item.responsible === preferredResponsible)
+    }
+
+    // Verifica novos itens apenas dentro do conjunto monitorado
+    const newItems = monitoredItems.filter(item => !lastSeenIds.includes(item.id))
+
+    // O total exibido na notificação deve refletir o que o usuário escolheu ver
     const resultData = {
-      total: currentItems.length,
+      total: monitoredItems.length,
       newCount: newItems.length,
       newItems: newItems,
+      // Importante: salvamos TODOS os IDs atuais (currentItems) para evitar que,
+      // ao trocar de filtro, itens antigos de outros responsáveis apareçam como novos.
       currentIds: currentItems.map(i => i.id)
     }
 
@@ -357,32 +372,32 @@ const DEFAULT_TAGS = [
  */
 async function initializeTags() {
   const data = await chrome.storage.local.get(['pendingTags', 'pendingTagsMap'])
-  
+
   if (!data.pendingTags) {
     await chrome.storage.local.set({ pendingTags: DEFAULT_TAGS })
   } else {
     // Migração de nomes antigos para novos (apenas na inicialização)
     let tags = data.pendingTags
     let changed = false
-    
+
     // Migração de nomes
     tags = tags.map(t => {
-        if (t.name === 'Aguardando SS') { t.name = 'Em SS'; changed = true; }
-        if (t.name === 'Aguardando SA/NE') { t.name = 'Em SA/NE'; changed = true; }
-        return t
+      if (t.name === 'Aguardando SS') { t.name = 'Em SS'; changed = true; }
+      if (t.name === 'Aguardando SA/NE') { t.name = 'Em SA/NE'; changed = true; }
+      return t
     })
 
     // Adicionar tag "Prioridade" se não existir
     if (!tags.some(t => t.name === 'Prioridade')) {
-        tags.push({ id: 'tag-prioridade', name: 'Prioridade', color: '#f44336' })
-        changed = true
+      tags.push({ id: 'tag-prioridade', name: 'Prioridade', color: '#f44336' })
+      changed = true
     }
-    
+
     if (changed) {
-        await chrome.storage.local.set({ pendingTags: tags })
+      await chrome.storage.local.set({ pendingTags: tags })
     }
   }
-  
+
   if (!data.pendingTagsMap) {
     await chrome.storage.local.set({ pendingTagsMap: {} })
   }
@@ -428,15 +443,15 @@ async function deleteCustomTag(tagId) {
   // Remove referências nos itens
   const map = await getPendingTagsMap()
   let changed = false
-  
+
   for (const pendingId in map) {
     if (map[pendingId].includes(tagId)) {
-        map[pendingId] = map[pendingId].filter(t => t !== tagId)
-        if (map[pendingId].length === 0) delete map[pendingId]
-        changed = true
+      map[pendingId] = map[pendingId].filter(t => t !== tagId)
+      if (map[pendingId].length === 0) delete map[pendingId]
+      changed = true
     }
   }
-  
+
   if (changed) {
     await chrome.storage.local.set({ pendingTagsMap: map })
   }
@@ -460,20 +475,20 @@ async function getPendingTagsMap() {
 async function togglePendingTag(pendingId, tagId) {
   const map = await getPendingTagsMap()
   let currentTags = map[pendingId] || []
-  
+
   if (currentTags.includes(tagId)) {
     currentTags = currentTags.filter(t => t !== tagId)
   } else {
     currentTags.push(tagId)
   }
-  
+
   map[pendingId] = currentTags
-  
+
   // Limpeza básica: remove entradas vazias para não inflar o storage
   if (currentTags.length === 0) {
     delete map[pendingId]
   }
-  
+
   await chrome.storage.local.set({ pendingTagsMap: map })
   return currentTags
 }

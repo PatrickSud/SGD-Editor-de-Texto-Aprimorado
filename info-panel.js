@@ -292,7 +292,15 @@ async function openInfoPanel() {
     if (statusFilter) statusFilter.addEventListener('change', applyFiltersHandler)
     if (tagFilter) tagFilter.addEventListener('change', applyFiltersHandler)
     if (sortSelect) sortSelect.addEventListener('change', applyFiltersHandler)
-    if (responsibleFilter) responsibleFilter.addEventListener('change', applyFiltersHandler)
+    if (responsibleFilter) {
+      responsibleFilter.addEventListener('change', (e) => {
+        // NOVO: Salva a preferência sempre que o usuário mudar
+        const selectedValue = e.target.value;
+        chrome.storage.local.set({ 'preferredResponsible': selectedValue });
+
+        applyFiltersHandler();
+      })
+    }
   }
 
   // --- Lógica do Interruptor de Modo Dev (NOVO) ---
@@ -708,17 +716,31 @@ async function loadPendingItems(sectionElement) {
     // Atualiza o select de filtro de responsável
     const responsibleSelect = sectionElement.querySelector('#pending-responsible-filter')
     if (responsibleSelect) {
-      const currentVal = responsibleSelect.value
+      // 1. Tenta recuperar a preferência salva
+      const storage = await chrome.storage.local.get(['preferredResponsible'])
+      const savedResponsible = storage.preferredResponsible || ''
+
+      // Se a preferência não estiver na lista atual (ex: usuário saiu da lista), mantém o valor atual do select ou vazio
+      const currentVal = responsibleSelect.value || savedResponsible
+
       const responsibles = [...new Set(items.map(i => i.responsible).filter(Boolean))].sort()
 
       responsibleSelect.innerHTML = `
             <option value="">Todos Responsáveis</option>
             ${responsibles.map(r => `<option value="${escapeHTML(r)}">${escapeHTML(r)}</option>`).join('')}
         `
-      // Tenta restaurar a seleção se ainda existir
+
+      // 2. Restaura a seleção se ela existir na lista
       if (responsibles.includes(currentVal)) {
         responsibleSelect.value = currentVal
+      } else if (currentVal !== '' && responsibles.length > 0) {
+        // Se o filtro salvo não existe mais na lista (ex: férias), volta para Todos
+        responsibleSelect.value = ''
+        // Opcional: Limpar a preferência inválida
+        chrome.storage.local.remove('preferredResponsible')
       }
+
+      // 3. Adiciona Listener para SALVAR a preferência quando mudar (já feito no openInfoPanel para consistência)
 
       // Se houver apenas 1 ou nenhum responsável, esconde o filtro pois é desnecessário
       if (responsibles.length <= 1) {
@@ -2534,7 +2556,7 @@ function openSystemEditModal(system) {
 
             // Compor mensagem do aviso (sem o status, que vai no título)
             let warningMessage = newMessage;
-            
+
             if (newWorkaround) {
               warningMessage += `<br><strong>💡 Orientação:</strong> ${newWorkaround}`;
             }
