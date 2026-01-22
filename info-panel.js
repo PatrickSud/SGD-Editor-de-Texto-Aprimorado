@@ -229,7 +229,23 @@ async function openInfoPanel() {
         if (targetId === 'forms') loadForms(targetSection, 'forms')
         if (targetId === 'ai-chains') loadForms(targetSection, 'ai')
 
-        // CORREÇÃO: Passa false (usar cache) por padrão
+        // Lógica de Busca e Ordenação para Equipe AT (Team Status)
+        if (targetId === 'team-status') {
+          const teamSearchInput = targetSection.querySelector('#team-search');
+          const teamSortSelect = targetSection.querySelector('#team-sort-filter');
+
+          if (teamSearchInput && !teamSearchInput.dataset.listenerSet) {
+            teamSearchInput.addEventListener('input', debounce(() => loadTeamStatus(targetSection, false), 300));
+            teamSearchInput.dataset.listenerSet = 'true';
+          }
+          if (teamSortSelect && !teamSortSelect.dataset.listenerSet) {
+            teamSortSelect.addEventListener('change', () => loadTeamStatus(targetSection, false));
+            teamSortSelect.dataset.listenerSet = 'true';
+          }
+
+          loadTeamStatus(targetSection, false);
+        }
+
         if (targetId === 'instabilities') {
           loadSystemsStatus(targetSection, false)
           const refreshBtn = targetSection.querySelector('#refresh-systems-btn')
@@ -237,13 +253,12 @@ async function openInfoPanel() {
             const newBtn = refreshBtn.cloneNode(true);
             refreshBtn.parentNode.replaceChild(newBtn, refreshBtn);
             newBtn.addEventListener('click', () => {
-              // Clicar no botão força atualização (true)
               loadSystemsStatus(targetSection, true);
             });
           }
         }
+
         if (targetId === 'notices') loadWarnings(targetSection, false)
-        if (targetId === 'team-status') loadTeamStatus(targetSection, false)
       }
     })
   })
@@ -529,6 +544,7 @@ function injectDevSwitchStyles() {
       display: flex;
       gap: 2px;
       flex-shrink: 0;
+      margin-left: 4px;
     }
     .ip-action-icon-btn {
       background: none;
@@ -536,26 +552,31 @@ function injectDevSwitchStyles() {
       padding: 2px;
       cursor: pointer;
       font-size: 12px;
-      border-radius: 4px;
+      transition: all 0.2s;
+      color: var(--text-color-muted);
+      opacity: 0.2; /* Mesmo padrão sutil de pendências */
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.2s;
-      color: var(--text-color-muted);
+    }
+    .ip-team-member-card:hover .ip-action-icon-btn {
       opacity: 0.6;
     }
     .ip-action-icon-btn:hover {
-      background-color: var(--bg-secondary);
+      transform: scale(1.2);
+      opacity: 1 !important;
       color: var(--text-color-main);
-      opacity: 1;
     }
     .ip-action-icon-btn.active-pin {
       color: var(--primary-color);
-      opacity: 1;
+      opacity: 1 !important;
     }
     .ip-action-icon-btn.active-hide {
       color: var(--action-red);
-      opacity: 1;
+      opacity: 0.8;
+    }
+    .ip-action-icon-btn.active-hide:hover {
+       opacity: 1 !important;
     }
   `;
   document.head.appendChild(style);
@@ -1170,6 +1191,8 @@ async function loadWarnings(sectionElement, forceRefresh = false) {
 
 
 // #region Equipe AT (Team Status)
+let allTeamMembers = [];
+
 /**
  * Carrega e renderiza o status da equipe.
  * @param {HTMLElement} sectionElement - O elemento da seção.
@@ -1179,105 +1202,130 @@ async function loadTeamStatus(sectionElement, forceRefresh = false) {
   const container = sectionElement.querySelector('#team-status-container');
   const footer = sectionElement.querySelector('#team-status-footer');
   const refreshBtn = sectionElement.querySelector('#refresh-team-status-btn');
+  const searchInput = sectionElement.querySelector('#team-search');
+  const sortSelect = sectionElement.querySelector('#team-sort-filter');
 
   if (!container) return;
 
-  // Estado de Loading
-  container.innerHTML = `
-    <div class="ip-loading-container">
-      <div class="ip-spinner"></div>
-      <span>Carregando status da equipe...</span>
-    </div>
-  `;
+  // Se não for forceRefresh e já tivermos dados, não mostramos spinner completo para evitar flicker
+  const hasData = allTeamMembers.length > 0;
+  if (forceRefresh || !hasData) {
+    container.innerHTML = `
+      <div class="ip-loading-container">
+        <div class="ip-spinner"></div>
+        <span>Carregando status da equipe...</span>
+      </div>
+    `;
+  }
 
   if (refreshBtn) {
     refreshBtn.disabled = true;
-
-    // Garante que o listener só é adicionado uma vez
-    const newBtn = refreshBtn.cloneNode(true);
-    refreshBtn.parentNode.replaceChild(newBtn, refreshBtn);
-    newBtn.addEventListener('click', () => {
-      loadTeamStatus(sectionElement, true);
-    });
+    // Garante que o listener só é adicionado uma vez se for a primeira carga
+    if (!refreshBtn.dataset.listenerSet) {
+      refreshBtn.addEventListener('click', () => loadTeamStatus(sectionElement, true));
+      refreshBtn.dataset.listenerSet = 'true';
+    }
   }
 
   try {
-    // Verifica se o serviço está disponível
-    if (typeof window.teamService === 'undefined') {
-      throw new Error('Serviço de status da equipe não carregado.');
+    // Busca dados se for forceRefresh ou se o cache estiver vazio
+    if (forceRefresh || !hasData) {
+      if (typeof window.teamService === 'undefined') {
+        throw new Error('Serviço de status da equipe não carregado.');
+      }
+
+      let data;
+      if (forceRefresh) {
+        data = await window.teamService.refreshTeamStatus();
+      } else {
+        data = await window.teamService.getTeamStatus();
+      }
+
+      const rawMembers = data?.members || [];
+      const timestamp = data?.timestamp;
+
+      // Unificação e Deduplicação inicial
+      const seen = new Set();
+      allTeamMembers = rawMembers.filter(m => {
+        const key = m.name?.trim().toLowerCase().replace(/\s+/g, ' ') || '';
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
+      // Atualiza rodapé com timestamp
+      if (footer) {
+        if (timestamp) {
+          const formattedTime = window.teamService.formatTeamStatusTimestamp(timestamp);
+          footer.innerHTML = `🕐 Atualizado em: <strong>${formattedTime}</strong>`;
+          footer.style.color = 'var(--text-color-main)';
+        } else {
+          footer.innerHTML = '⚠️ Nenhum dado disponível. Aguardando atualização do Master PC.';
+          footer.style.color = 'var(--action-yellow)';
+        }
+      }
     }
 
-    // Busca dados (força atualização se solicitado)
-    let data;
-    if (forceRefresh) {
-      data = await window.teamService.refreshTeamStatus();
-    } else {
-      data = await window.teamService.getTeamStatus();
-    }
+    // --- APLICAÇÃO DE FILTROS E ORDENAÇÃO ---
 
-    // Busca preferências de destaque (PIN e HIDE)
+    // 1. Busca preferências de destaque (PIN e HIDE)
     const prefs = await chrome.storage.local.get(['pinnedTechnicians', 'hiddenTechnicians']);
     const pinnedList = Array.isArray(prefs.pinnedTechnicians) ? prefs.pinnedTechnicians : [];
     const hiddenList = Array.isArray(prefs.hiddenTechnicians) ? prefs.hiddenTechnicians : [];
 
-    const timestamp = data?.timestamp;
-    let members = data?.members || [];
-
-    // Unificação e Enriquecimento de dados
-    const seen = new Set();
-    members = members.filter(m => {
-      const key = m.name?.trim().toLowerCase().replace(/\s+/g, ' ') || '';
-      if (seen.has(key)) return false;
-      seen.add(key);
-
-      // Adiciona flags de preferência para sorting e render
-      m.isPinned = pinnedList.includes(key);
-      m.isHidden = hiddenList.includes(key);
-      return true;
+    // 2. Filtro de Busca
+    const searchTerm = searchInput?.value?.toLowerCase()?.trim() || '';
+    let filteredMembers = allTeamMembers.filter(m => {
+      const name = m.name?.toLowerCase() || '';
+      return name.includes(searchTerm);
     });
 
-    // Ordenação Inteligente: Pinned -> Normal (por % NotReady) -> Hidden
-    members.sort((a, b) => {
-      // 1. Pinned sempre primeiro
+    // 3. Enriquecer com flags de preferência
+    filteredMembers.forEach(m => {
+      const key = m.name?.trim().toLowerCase().replace(/\s+/g, ' ') || '';
+      m.isPinned = pinnedList.includes(key);
+      m.isHidden = hiddenList.includes(key);
+    });
+
+    // 4. Ordenação
+    const sortValue = sortSelect?.value || 'not-ready';
+
+    filteredMembers.sort((a, b) => {
+      // Prioridade global: Fixados (Pinned) -> Resto -> Ocultos (Hidden)
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
-
-      // 2. Hidden sempre por último
       if (a.isHidden && !b.isHidden) return 1;
       if (!a.isHidden && b.isHidden) return -1;
 
-      // 3. Dentro de cada categoria, ordena por % NotReady (maior primeiro)
-      return (b.percentNotReady || 0) - (a.percentNotReady || 0);
+      // Dentro de cada categoria, aplica a ordenação escolhida
+      if (sortValue === 'name') {
+        return a.name.localeCompare(b.name);
+      } else if (sortValue === 'time') {
+        // Assume formato HH:MM:SS para duração
+        const timeA = a.duration || '00:00:00';
+        const timeB = b.duration || '00:00:00';
+        return timeB.localeCompare(timeA);
+      } else {
+        // Padrão: Not Ready (%)
+        return (b.percentNotReady || 0) - (a.percentNotReady || 0);
+      }
     });
 
-    // Atualiza rodapé com timestamp
-    if (footer) {
-      if (timestamp) {
-        const formattedTime = window.teamService.formatTeamStatusTimestamp(timestamp);
-        footer.innerHTML = `🕐 Atualizado em: <strong>${formattedTime}</strong>`;
-        footer.style.color = 'var(--text-color-main)';
-      } else {
-        footer.innerHTML = '⚠️ Nenhum dado disponível. Aguardando atualização do Master PC.';
-        footer.style.color = 'var(--action-yellow)';
-      }
-    }
-
     // Renderiza lista
-    if (members.length === 0) {
+    if (filteredMembers.length === 0) {
       container.innerHTML = `
         <div class="ip-empty-state">
-          <span style="font-size: 24px;">✅</span>
-          <h4>Ninguém em Not Ready</h4>
-          <p>Todos os membros da equipe estão disponíveis no momento.</p>
+          <span style="font-size: 24px;">🔍</span>
+          <h4>Nenhum técnico encontrado</h4>
+          <p>${searchTerm ? 'Tente mudar o termo da busca.' : 'A lista está vazia.'}</p>
         </div>
       `;
       container.style.display = 'flex';
-      container.style.justifyContent = 'center';
     } else {
       container.style.display = 'grid';
       container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(220px, 1fr))';
       container.style.gap = '12px';
-      container.innerHTML = members.map(createTeamMemberCard).join('');
+      container.innerHTML = filteredMembers.map(createTeamMemberCard).join('');
     }
 
   } catch (error) {
@@ -1290,8 +1338,7 @@ async function loadTeamStatus(sectionElement, forceRefresh = false) {
       </div>
     `;
   } finally {
-    const currentRefreshBtn = sectionElement.querySelector('#refresh-team-status-btn');
-    if (currentRefreshBtn) currentRefreshBtn.disabled = false;
+    if (refreshBtn) refreshBtn.disabled = false;
   }
 }
 
@@ -1318,11 +1365,11 @@ function createTeamMemberCard(member) {
          data-name="${escapeHTML(member.name)}">
       <div style="display: flex; align-items: flex-start; gap: 8px;">
         <div style="flex: 1; min-width: 0;">
-          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-            <div style="font-weight: 600; font-size: 13px; color: var(--text-color-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;" title="${escapeHTML(member.name)}">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <div style="font-weight: 600; font-size: 13px; color: var(--text-color-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; line-height: 1.2;" title="${escapeHTML(member.name)}">
               ${escapeHTML(member.name)}
             </div>
-            <div class="ip-card-quick-actions">
+            <div class="ip-card-quick-actions" style="margin-left: auto;">
               <button class="ip-action-icon-btn pin-btn ${member.isPinned ? 'active-pin' : ''}" title="${member.isPinned ? 'Desafixar técnico' : 'Fixar técnico no topo'}">
                 📌
               </button>
@@ -2061,13 +2108,23 @@ function getSectionContent(sectionId) {
 
     case 'team-status':
       return `
-        <div class="ip-pending-header-row">
-          <p class="ip-section-desc" style="margin-bottom: 0;">Monitoramento de tempo em Not Ready por Agente (Dados consolidados do dia).</p>
-          <button id="refresh-team-status-btn" class="action-btn secondary-btn compact" title="Atualizar status">
-            <span>🔄</span>
-          </button>
+        <div class="ip-pending-controls">
+          <div class="ip-filter-group">
+            <div class="ip-search-wrapper" style="flex: 1.5;">
+              <span class="ip-search-icon">🔍</span>
+              <input type="text" id="team-search" placeholder="Buscar técnico..." class="ip-filter-input compact">
+            </div>
+            <select id="team-sort-filter" class="ip-filter-select compact" style="flex: 1;">
+              <option value="not-ready">📊 Indisponibilidade</option>
+              <option value="name">🔤 Alfabética</option>
+              <option value="time">⏱️ Tempo</option>
+            </select>
+            <button id="refresh-team-status-btn" class="action-btn secondary-btn compact" title="Atualizar status">
+              <span>🔄</span>
+            </button>
+          </div>
         </div>
-        <div id="team-status-container" class="ip-grid">
+        <div id="team-status-container" class="ip-grid" style="margin-top: 16px;">
           <div class="ip-loading-container">
             <div class="ip-spinner"></div>
             <span>Carregando dados da equipe...</span>
