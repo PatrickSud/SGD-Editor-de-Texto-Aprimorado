@@ -9,7 +9,8 @@
     "notifications"
   ],
   "host_permissions": [
-    "https://sgd.dominiosistemas.com.br/*"
+    "https://sgd.dominiosistemas.com.br/*",
+    "https://app.powerbi.com/*"
   ],
   "background": {
     "service_worker": "service-worker.js"
@@ -34,6 +35,7 @@
         "forms-service.js",
         "system-status-service.js",
         "warnings-service.js",
+        "team-service.js",
         "info-panel.js",
         "release-notes.js",
         "main.js"
@@ -47,6 +49,15 @@
         "styles/fab.css",
         "styles/info-panel.css",
         "styles/tags.css"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://app.powerbi.com/*"
+      ],
+      "js": [
+        "bi-scraper.js"
       ],
       "run_at": "document_idle"
     }

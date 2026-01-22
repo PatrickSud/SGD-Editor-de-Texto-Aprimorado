@@ -433,6 +433,64 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         })
 
         sendResponse({ success: true })
+      } else if (message.action === 'UPDATE_TEAM_STATUS') {
+        // Handler para receber dados do Power BI Scraper (Master PC)
+        try {
+          const { members, timestamp, source } = message.data || {};
+
+          if (!members || !Array.isArray(members)) {
+            throw new Error('Dados inválidos: members deve ser um array.');
+          }
+
+          // Configuração do Firestore (mesmas credenciais do projeto)
+          const TEAM_PROJECT_ID = 'sgd-extension';
+          const TEAM_API_KEY = 'AIzaSyBJgLpNfiycnIr-OybbfAOAuIa4ZU3nBbY';
+          const TEAM_STATUS_URL = `https://firestore.googleapis.com/v1/projects/${TEAM_PROJECT_ID}/databases/(default)/documents/team_status/current`;
+
+          // Converte para formato do Firestore
+          const firestoreData = {
+            fields: {
+              timestamp: { timestampValue: timestamp || new Date().toISOString() },
+              source: { stringValue: source || 'power_bi_scraper' },
+              members: {
+                arrayValue: {
+                  values: members.map(member => ({
+                    mapValue: {
+                      fields: {
+                        name: { stringValue: member.name || '' },
+                        percentNotReady: { doubleValue: member.percentNotReady || 0 },
+                        percentFormatted: { stringValue: member.percentFormatted || '0 %' },
+                        status: { stringValue: member.status || 'Normal' },
+                        presence: { stringValue: member.presence || '' },
+                        currentStatus: { stringValue: member.currentStatus || '' },
+                        duration: { stringValue: member.duration || '' }
+                      }
+                    }
+                  }))
+                }
+              }
+            }
+          };
+
+          // Salva no Firestore
+          const response = await fetch(`${TEAM_STATUS_URL}?key=${TEAM_API_KEY}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(firestoreData)
+          });
+
+          if (!response.ok) {
+            const errorDetail = await response.json();
+            throw new Error(`Erro ao salvar no Firestore: ${errorDetail.error?.message || response.statusText}`);
+          }
+
+          console.log(`Service Worker: Status da equipe atualizado com ${members.length} membros.`);
+          sendResponse({ success: true, membersCount: members.length });
+        } catch (error) {
+          console.error('Service Worker: Erro ao atualizar status da equipe:', error);
+          sendResponse({ success: false, error: error.message });
+        }
+        return true; // Resposta assíncrona
       } else if (message.action === 'FETCH_FORMS_DATA') {
         // Nova ação para buscar dados do Gist via Service Worker (evita CORS da página)
         try {

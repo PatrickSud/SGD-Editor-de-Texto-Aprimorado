@@ -42,7 +42,7 @@ function debounce(func, wait) {
 }
 
 /**
- * Manipula o clique para ativar o modo desenvolvedor
+ * Manipula o clique para ativar o modo desenvolvedor exclusivo do Painel SGD
  * @param {Event} event - Evento de clique
  */
 async function handleDeveloperModeClick(event) {
@@ -57,32 +57,36 @@ async function handleDeveloperModeClick(event) {
   lastClickTime = now
 
   // Ativar modo desenvolvedor após 5 cliques
-  if (clickCount >= 5 && !developerMode) {
-    // Persiste a ativação
-    await toggleDevMode();
+  if (clickCount >= 5) {
+    const currentState = await isInfoDevModeEnabled();
+    const newState = !currentState;
 
-    developerMode = true
+    await chrome.storage.local.set({ 'infoDevMode': newState });
+
     clickCount = 0
 
     // Mostrar mensagem de confirmação
     const toast = document.createElement('div')
     toast.style.cssText =
       'position: fixed; top: 20px; right: 20px; padding: 12px 16px; background-color: var(--action-green); color: white; border-radius: var(--border-radius-sm); z-index: 10000; font-size: 14px;'
-    toast.textContent = '✅ Modo desenvolvedor ativado e salvo!'
+    toast.textContent = newState ? '🚀 Modo Dev (Painel SGD) Ativado!' : '✅ Modo Dev (Painel SGD) Desativado!';
     document.body.appendChild(toast)
 
     setTimeout(() => {
-      if (document.body.contains(toast)) document.body.removeChild(toast)
+      toast.style.opacity = '0'
+      toast.style.transition = 'opacity 0.5s ease'
+      setTimeout(() => toast.remove(), 500)
     }, 3000)
 
-    // Recarregar o painel para mostrar todas as seções
-    const modal = document.querySelector('#info-panel-modal')
+    // Recarregar o painel para refletir a mudança
+    const modal = document.querySelector('.ip-modal')
     if (modal) {
       modal.remove()
+      openInfoPanel()
     }
-    openInfoPanel()
   }
 }
+
 
 /**
  * Abre o Painel de Informações e Alertas.
@@ -91,11 +95,15 @@ async function openInfoPanel() {
   // Injeta estilos necessários
   injectDevSwitchStyles();
 
-  // 1. Carregar estado persistente do modo desenvolvedor
-  developerMode = await isDevModeEnabled();
+  // 1. Carregar estados persistentes do modo desenvolvedor
+  const infoDevMode = await isInfoDevModeEnabled(); // Ativado via Cliques no Painel
+  developerMode = infoDevMode; // Para este painel, usamos o modo específico
+
+  const equipeATEnabled = await isEquipeATEnabled();
 
   const allSections = [
     { id: 'pending', icon: '⏳', label: 'Pendências' },
+    { id: 'team-status', icon: '👥', label: 'Equipe AT' },
     { id: 'instabilities', icon: '🚨', label: 'Instabilidades' },
     { id: 'notices', icon: '📢', label: 'Avisos' },
     { id: 'forms', icon: '📝', label: 'Formulários & Documentos' },
@@ -103,31 +111,42 @@ async function openInfoPanel() {
     { id: 'extensions', icon: '🧩', label: 'Extensões & Apps' }
   ]
 
-  // Filtrar seções baseado no modo desenvolvedor
-  const sections = developerMode
-    ? allSections
-    : allSections.filter(
-      section =>
-        section.id === 'pending' ||
-        section.id === 'ai-chains' ||
-        section.id === 'forms' ||
-        section.id === 'notices' ||
-        section.id === 'extensions' ||
-        section.id === 'instabilities'
-    )
+  // Filtrar seções baseado na chave Equipe AT e Modo Dev
+  const sections = allSections.filter(section => {
+    // Equipe AT aparece se estiver habilitada OU se estiver em modo desenvolvedor
+    if (section.id === 'team-status') {
+      return equipeATEnabled || developerMode;
+    }
 
-  // HTML do rodapé da sidebar (Interruptor Dev Mode)
-  const sidebarFooterHtml = developerMode ? `
+    // Outras abas aparecem se estiver em modo dev
+    if (developerMode) return true;
+
+    // Seções públicas
+    const publicSections = ['pending', 'instabilities', 'notices', 'forms', 'ai-chains', 'extensions'];
+    return publicSections.includes(section.id);
+  });
+
+  // HTML do rodapé da sidebar (Interruptores de Opções)
+  const sidebarFooterHtml = `
     <div class="ip-sidebar-footer">
+      ${infoDevMode ? `
+        <div class="ip-dev-toggle-wrapper" style="margin-bottom: 8px;">
+          <span>Modo Dev (Painel)</span>
+          <label class="ip-switch" title="Desativar Modo Desenvolvedor do Painel">
+            <input type="checkbox" id="ip-dev-mode-switch" checked>
+            <span class="ip-slider round"></span>
+          </label>
+        </div>
+      ` : ''}
       <div class="ip-dev-toggle-wrapper">
-        <span>Modo Dev</span>
-        <label class="ip-switch" title="Desativar Modo Desenvolvedor">
-          <input type="checkbox" id="ip-dev-mode-switch" checked>
+        <span>Equipe AT</span>
+        <label class="ip-switch" title="Mostrar/Ocultar aba Equipe AT">
+          <input type="checkbox" id="ip-equipe-at-switch" ${equipeATEnabled ? 'checked' : ''}>
           <span class="ip-slider round"></span>
         </label>
       </div>
     </div>
-  ` : '';
+  `;
 
   // Estrutura Base do Modal
   const sidebarHtml = `
@@ -224,6 +243,7 @@ async function openInfoPanel() {
           }
         }
         if (targetId === 'notices') loadWarnings(targetSection, false)
+        if (targetId === 'team-status') loadTeamStatus(targetSection, false)
       }
     })
   })
@@ -303,26 +323,39 @@ async function openInfoPanel() {
     }
   }
 
-  // --- Lógica do Interruptor de Modo Dev (NOVO) ---
-  const devSwitch = modal.querySelector('#ip-dev-mode-switch');
-  if (devSwitch) {
-    devSwitch.addEventListener('change', async (e) => {
-      if (!e.target.checked) {
-        await toggleDevMode(); // Persiste no storage
-        developerMode = false;
-
-        // Recarrega o painel para aplicar o layout de usuário comum
-        modal.remove();
-        openInfoPanel();
-      }
-    });
-  }
-
   // --- Lógica do Gatilho Secreto (5 cliques) ---
   const devTrigger = modal.querySelector('#developer-mode-trigger')
   if (devTrigger) {
     devTrigger.addEventListener('click', handleDeveloperModeClick)
   }
+
+  // --- Lógica dos Interruptores do Rodapé ---
+  const equipeATSwitch = modal.querySelector('#ip-equipe-at-switch');
+  if (equipeATSwitch) {
+    equipeATSwitch.addEventListener('change', async (e) => {
+      const enabled = e.target.checked;
+      // Salva no storage com Promise para garantir persistência
+      await new Promise(resolve => {
+        chrome.storage.local.set({ 'equipeATEnabled': enabled }, resolve);
+      });
+      // Recarrega o painel para refletir a mudança
+      modal.remove();
+      openInfoPanel();
+    });
+  }
+
+  const devModeSwitch = modal.querySelector('#ip-dev-mode-switch');
+  if (devModeSwitch) {
+    devModeSwitch.addEventListener('change', async () => {
+      // Desativa o modo dev específico do painel
+      await chrome.storage.local.set({ 'infoDevMode': false });
+
+      // Recarrega o painel para refletir a mudança
+      modal.remove();
+      openInfoPanel();
+    });
+  }
+
 
   // Mensagem de desenvolvimento no rodapé do conteúdo (apenas se dev)
   if (developerMode) {
@@ -361,9 +394,15 @@ let lastClickTime = 0
 /**
  * Verifica se o modo desenvolvedor está ativo no storage
  */
-async function isDevModeEnabled() {
-  const result = await chrome.storage.local.get(['developerMode'])
-  return result.developerMode === true
+/**
+ * Verifica se o modo desenvolvedor está ativo no storage
+ */
+function isDevModeEnabled() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['developerMode'], (result) => {
+      resolve(result.developerMode === true);
+    });
+  });
 }
 
 /**
@@ -374,6 +413,33 @@ async function toggleDevMode() {
   const newState = !currentState
   await chrome.storage.local.set({ developerMode: newState })
   return newState
+}
+
+/**
+ * Verifica se o modo desenvolvedor específico do painel está ativo
+ */
+function isInfoDevModeEnabled() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['infoDevMode'], (result) => {
+      resolve(result.infoDevMode === true);
+    });
+  });
+}
+
+/**
+ * Verifica se a aba Equipe AT está ativa no storage
+ */
+/**
+ * Verifica se a aba Equipe AT está ativa no storage
+ */
+function isEquipeATEnabled() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['equipeATEnabled'], (result) => {
+      // Se for a primeira vez e não houver valor, assume false (desabilitado por padrão)
+      const enabled = result.equipeATEnabled === true;
+      resolve(enabled);
+    });
+  });
 }
 
 /**
@@ -443,6 +509,53 @@ function injectDevSwitchStyles() {
     }
     input:checked + .ip-slider:before {
       transform: translateX(14px);
+    }
+    .ip-team-member-card.is-pinned {
+      border: 2px solid var(--primary-color) !important;
+      background-color: color-mix(in srgb, var(--primary-color) 5%, var(--bg-card)) !important;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15) !important;
+      transform: translateY(-2px);
+    }
+    .ip-team-member-card.is-dimmed {
+      opacity: 0.5;
+      filter: grayscale(0.5);
+      border-left: 4px solid var(--border-color) !important;
+    }
+    .ip-team-member-card.is-dimmed:hover {
+      opacity: 0.8;
+      filter: grayscale(0);
+    }
+    .ip-card-quick-actions {
+      display: flex;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+    .ip-action-icon-btn {
+      background: none;
+      border: none;
+      padding: 2px;
+      cursor: pointer;
+      font-size: 12px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      color: var(--text-color-muted);
+      opacity: 0.6;
+    }
+    .ip-action-icon-btn:hover {
+      background-color: var(--bg-secondary);
+      color: var(--text-color-main);
+      opacity: 1;
+    }
+    .ip-action-icon-btn.active-pin {
+      color: var(--primary-color);
+      opacity: 1;
+    }
+    .ip-action-icon-btn.active-hide {
+      color: var(--action-red);
+      opacity: 1;
     }
   `;
   document.head.appendChild(style);
@@ -1054,6 +1167,230 @@ async function loadWarnings(sectionElement, forceRefresh = false) {
     }
   }
 }
+
+
+// #region Equipe AT (Team Status)
+/**
+ * Carrega e renderiza o status da equipe.
+ * @param {HTMLElement} sectionElement - O elemento da seção.
+ * @param {boolean} forceRefresh - Se true, força atualização do servidor.
+ */
+async function loadTeamStatus(sectionElement, forceRefresh = false) {
+  const container = sectionElement.querySelector('#team-status-container');
+  const footer = sectionElement.querySelector('#team-status-footer');
+  const refreshBtn = sectionElement.querySelector('#refresh-team-status-btn');
+
+  if (!container) return;
+
+  // Estado de Loading
+  container.innerHTML = `
+    <div class="ip-loading-container">
+      <div class="ip-spinner"></div>
+      <span>Carregando status da equipe...</span>
+    </div>
+  `;
+
+  if (refreshBtn) {
+    refreshBtn.disabled = true;
+
+    // Garante que o listener só é adicionado uma vez
+    const newBtn = refreshBtn.cloneNode(true);
+    refreshBtn.parentNode.replaceChild(newBtn, refreshBtn);
+    newBtn.addEventListener('click', () => {
+      loadTeamStatus(sectionElement, true);
+    });
+  }
+
+  try {
+    // Verifica se o serviço está disponível
+    if (typeof window.teamService === 'undefined') {
+      throw new Error('Serviço de status da equipe não carregado.');
+    }
+
+    // Busca dados (força atualização se solicitado)
+    let data;
+    if (forceRefresh) {
+      data = await window.teamService.refreshTeamStatus();
+    } else {
+      data = await window.teamService.getTeamStatus();
+    }
+
+    // Busca preferências de destaque (PIN e HIDE)
+    const prefs = await chrome.storage.local.get(['pinnedTechnicians', 'hiddenTechnicians']);
+    const pinnedList = Array.isArray(prefs.pinnedTechnicians) ? prefs.pinnedTechnicians : [];
+    const hiddenList = Array.isArray(prefs.hiddenTechnicians) ? prefs.hiddenTechnicians : [];
+
+    const timestamp = data?.timestamp;
+    let members = data?.members || [];
+
+    // Unificação e Enriquecimento de dados
+    const seen = new Set();
+    members = members.filter(m => {
+      const key = m.name?.trim().toLowerCase().replace(/\s+/g, ' ') || '';
+      if (seen.has(key)) return false;
+      seen.add(key);
+
+      // Adiciona flags de preferência para sorting e render
+      m.isPinned = pinnedList.includes(key);
+      m.isHidden = hiddenList.includes(key);
+      return true;
+    });
+
+    // Ordenação Inteligente: Pinned -> Normal (por % NotReady) -> Hidden
+    members.sort((a, b) => {
+      // 1. Pinned sempre primeiro
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+
+      // 2. Hidden sempre por último
+      if (a.isHidden && !b.isHidden) return 1;
+      if (!a.isHidden && b.isHidden) return -1;
+
+      // 3. Dentro de cada categoria, ordena por % NotReady (maior primeiro)
+      return (b.percentNotReady || 0) - (a.percentNotReady || 0);
+    });
+
+    // Atualiza rodapé com timestamp
+    if (footer) {
+      if (timestamp) {
+        const formattedTime = window.teamService.formatTeamStatusTimestamp(timestamp);
+        footer.innerHTML = `🕐 Atualizado em: <strong>${formattedTime}</strong>`;
+        footer.style.color = 'var(--text-color-main)';
+      } else {
+        footer.innerHTML = '⚠️ Nenhum dado disponível. Aguardando atualização do Master PC.';
+        footer.style.color = 'var(--action-yellow)';
+      }
+    }
+
+    // Renderiza lista
+    if (members.length === 0) {
+      container.innerHTML = `
+        <div class="ip-empty-state">
+          <span style="font-size: 24px;">✅</span>
+          <h4>Ninguém em Not Ready</h4>
+          <p>Todos os membros da equipe estão disponíveis no momento.</p>
+        </div>
+      `;
+      container.style.display = 'flex';
+      container.style.justifyContent = 'center';
+    } else {
+      container.style.display = 'grid';
+      container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(220px, 1fr))';
+      container.style.gap = '12px';
+      container.innerHTML = members.map(createTeamMemberCard).join('');
+    }
+
+  } catch (error) {
+    console.error('[Team Status] Erro:', error);
+    container.innerHTML = `
+      <div class="ip-error-state">
+        <span class="ip-error-icon">⚠️</span>
+        <h4>Erro ao carregar status</h4>
+        <p>${escapeHTML(error.message)}</p>
+      </div>
+    `;
+  } finally {
+    const currentRefreshBtn = sectionElement.querySelector('#refresh-team-status-btn');
+    if (currentRefreshBtn) currentRefreshBtn.disabled = false;
+  }
+}
+
+/**
+ * Cria o HTML para um card de membro da equipe em Not Ready.
+ * @param {Object} member - Dados do membro { name, percentNotReady, percentFormatted, status }
+ * @returns {string} HTML do card
+ */
+function createTeamMemberCard(member) {
+  const badgeClass = window.teamService?.getTeamStatusBadgeClass(member.percentNotReady) || 'badge-success';
+  const statusEmoji = window.teamService?.getTeamStatusEmoji(member.status) || '⚪';
+
+  // Define a cor da porcentagem baseado na gravidade
+  let percentColor = 'var(--action-green)'; // Padrão: verde
+  if (member.percentNotReady > 20) {
+    percentColor = 'var(--action-red)';
+  } else if (member.percentNotReady > 16) {
+    percentColor = 'var(--action-yellow)';
+  }
+
+  return `
+    <div class="ip-card ip-team-member-card ${member.isPinned ? 'is-pinned' : ''} ${member.isHidden ? 'is-dimmed' : ''}" 
+         style="padding: 12px; border-left: 4px solid ${percentColor};"
+         data-name="${escapeHTML(member.name)}">
+      <div style="display: flex; align-items: flex-start; gap: 8px;">
+        <div style="flex: 1; min-width: 0;">
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+            <div style="font-weight: 600; font-size: 13px; color: var(--text-color-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;" title="${escapeHTML(member.name)}">
+              ${escapeHTML(member.name)}
+            </div>
+            <div class="ip-card-quick-actions">
+              <button class="ip-action-icon-btn pin-btn ${member.isPinned ? 'active-pin' : ''}" title="${member.isPinned ? 'Desafixar técnico' : 'Fixar técnico no topo'}">
+                📌
+              </button>
+              <button class="ip-action-icon-btn hide-btn ${member.isHidden ? 'active-hide' : ''}" title="${member.isHidden ? 'Mostrar técnico normalmente' : 'Ocultar técnico no final'}">
+                ${member.isHidden ? '👁️' : '🙈'}
+              </button>
+            </div>
+          </div>
+          <div style="font-size: 11px; color: var(--text-color-muted); display: flex; flex-direction: column; gap: 2px;">
+            <span style="font-weight: 600; color: ${percentColor};">📊 ${escapeHTML(member.percentFormatted)} Indisponível</span>
+            ${member.presence ? `<span>📍 Presença: <strong>${escapeHTML(member.presence)}</strong></span>` : ''}
+            ${member.currentStatus ? `<span>💬 Status: <strong>${escapeHTML(member.currentStatus)}</strong></span>` : ''}
+            ${member.duration && member.duration !== '00:00:00' ? `<span>⏱️ Tempo: <strong>${escapeHTML(member.duration)}</strong></span>` : ''}
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0;">
+          <span class="ip-card-badge ${badgeClass}" style="font-size: 10px; padding: 3px 6px;">
+            ${statusEmoji} ${escapeHTML(member.status)}
+          </span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Funções para gerenciar PIN e HIDE
+async function toggleTechnicianPreference(name, type) {
+  const key = name.trim().toLowerCase().replace(/\s+/g, ' ');
+  const storageKey = type === 'pin' ? 'pinnedTechnicians' : 'hiddenTechnicians';
+
+  const result = await chrome.storage.local.get([storageKey]);
+  let list = Array.isArray(result[storageKey]) ? result[storageKey] : [];
+
+  if (list.includes(key)) {
+    list = list.filter(item => item !== key);
+  } else {
+    list.push(key);
+    // Se fixar, remove do ocultar e vice-versa (comportamento mútuo exclusivo para clareza)
+    const otherKey = type === 'pin' ? 'hiddenTechnicians' : 'pinnedTechnicians';
+    const otherResult = await chrome.storage.local.get([otherKey]);
+    let otherList = Array.isArray(otherResult[otherKey]) ? otherResult[otherKey] : [];
+    if (otherList.includes(key)) {
+      otherList = otherList.filter(item => item !== key);
+      await chrome.storage.local.set({ [otherKey]: otherList });
+    }
+  }
+
+  await chrome.storage.local.set({ [storageKey]: list });
+
+  // Recarrega apenas a seção de status da equipe
+  const section = document.querySelector('#ip-section-team-status');
+  if (section) loadTeamStatus(section, false);
+}
+
+// Event delegation para os botões do card
+document.addEventListener('click', (e) => {
+  const pinBtn = e.target.closest('.pin-btn');
+  const hideBtn = e.target.closest('.hide-btn');
+
+  if (pinBtn || hideBtn) {
+    const card = e.target.closest('.ip-team-member-card');
+    const name = card?.dataset.name;
+    if (name) {
+      toggleTechnicianPreference(name, pinBtn ? 'pin' : 'hide');
+    }
+  }
+});
+// #endregion Status da Equipe
 
 
 /**
@@ -1719,6 +2056,25 @@ function getSectionContent(sectionId) {
             <div class="ip-spinner"></div>
             <span>Carregando status dos sistemas...</span>
           </div>
+        </div>
+      `
+
+    case 'team-status':
+      return `
+        <div class="ip-pending-header-row">
+          <p class="ip-section-desc" style="margin-bottom: 0;">Monitoramento de tempo em Not Ready por Agente (Dados consolidados do dia).</p>
+          <button id="refresh-team-status-btn" class="action-btn secondary-btn compact" title="Atualizar status">
+            <span>🔄</span>
+          </button>
+        </div>
+        <div id="team-status-container" class="ip-grid">
+          <div class="ip-loading-container">
+            <div class="ip-spinner"></div>
+            <span>Carregando dados da equipe...</span>
+          </div>
+        </div>
+        <div id="team-status-footer" class="ip-status-footer" style="margin-top: 16px; padding: 8px 12px; background: var(--bg-secondary); border-radius: var(--border-radius-sm); font-size: 11px; color: var(--text-color-muted); text-align: center;">
+          Aguardando dados...
         </div>
       `
 
@@ -2445,6 +2801,7 @@ function renderSystemsStatus(container, systems, userReports = {}) {
       });
     });
   }
+
 }
 
 /**

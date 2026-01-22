@@ -44,8 +44,8 @@ async function loadQuickMessages(editorContainer) {
     // Segurança: Escapar HTML.
     const shortcutDisplay = category.shortcut
       ? `<span class="category-shortcut-display">${escapeHTML(
-          category.shortcut
-        )}</span>`
+        category.shortcut
+      )}</span>`
       : ''
     categoryContainer.innerHTML = `
       <h5 class="category-title">
@@ -491,8 +491,7 @@ async function openMessageModal(data = null) {
   let categoryOptions = storedData.categories
     .map(
       c =>
-        `<option value="${c.id}" ${
-          data && c.id === data.categoryId ? 'selected' : ''
+        `<option value="${c.id}" ${data && c.id === data.categoryId ? 'selected' : ''
         }>${escapeHTML(c.name)}</option>`
     )
     .join('')
@@ -519,9 +518,8 @@ async function openMessageModal(data = null) {
         </div>
         <div class="form-group">
             <label for="modal-title-input">Título</label>
-            <input type="text" id="modal-title-input" placeholder="Título" value="${
-              isEditing && data ? escapeHTML(data.title) : ''
-            }">
+            <input type="text" id="modal-title-input" placeholder="Título" value="${isEditing && data ? escapeHTML(data.title) : ''
+    }">
         </div>
         <div class="form-group">
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
@@ -536,9 +534,8 @@ async function openMessageModal(data = null) {
                     </div>
                 </div>
             </div>
-            <textarea id="modal-message-input" placeholder="Conteúdo">${
-              isEditing && data ? escapeHTML(data.message) : ''
-            }</textarea>
+            <textarea id="modal-message-input" placeholder="Conteúdo">${isEditing && data ? escapeHTML(data.message) : ''
+    }</textarea>
         </div>
     `,
     async (modalContent, closeModal) => {
@@ -734,8 +731,8 @@ async function renderQuickStepsList(modal) {
           <div class="message-info">
             <strong>${escapeHTML(message.title)}</strong>
             <span class="message-preview">${escapeHTML(
-              message.message.substring(0, 50)
-            )}${message.message.length > 50 ? '...' : ''}</span>
+        message.message.substring(0, 50)
+      )}${message.message.length > 50 ? '...' : ''}</span>
           </div>
           <div class="message-actions">
             <button type="button" class="edit-message-btn" title="Editar">✏️</button>
@@ -831,8 +828,8 @@ async function openManagementModal() {
                   <label for="gemini-api-key-input">Chave da API Gemini</label>
                   <div class="category-form">
                       <input type="text" id="gemini-api-key-input" placeholder="AIzaSy..." value="${escapeHTML(
-                        currentApiKey
-                      )}">
+      currentApiKey
+    )}">
                        <button type="button" id="save-gemini-key-btn" class="action-btn save-cat-btn" title="Salvar Chave">💾</button>
                   </div>
                    <div class="category-form" style="margin-top: 10px; justify-content: space-between;">
@@ -932,27 +929,22 @@ async function openManagementModal() {
                 <p>Ajuste a aparência da extensão.</p>
                 <div class="slider-group">
                     <label for="icon-size-slider">Tamanho dos Ícones da Barra (${Math.round(
-                      uiSettings.iconSize * 100
-                    )}%)</label>
-                    <input type="range" id="icon-size-slider" min="0.8" max="1.3" step="0.05" value="${
-                      uiSettings.iconSize
-                    }">
+    uiSettings.iconSize * 100
+  )}%)</label>
+                    <input type="range" id="icon-size-slider" min="0.8" max="1.3" step="0.05" value="${uiSettings.iconSize
+    }">
                 </div>
                 <div class="slider-group">
-                    <label for="ui-font-size-slider">Fonte da Interface (${
-                      uiSettings.uiFontSize
-                    }px)</label>
-                    <input type="range" id="ui-font-size-slider" min="12" max="16" step="1" value="${
-                      uiSettings.uiFontSize
-                    }">
+                    <label for="ui-font-size-slider">Fonte da Interface (${uiSettings.uiFontSize
+    }px)</label>
+                    <input type="range" id="ui-font-size-slider" min="12" max="16" step="1" value="${uiSettings.uiFontSize
+    }">
                 </div>
                 <div class="slider-group">
-                    <label for="editor-font-size-slider">Fonte do Editor (${
-                      uiSettings.editorFontSize
-                    }px)</label>
-                    <input type="range" id="editor-font-size-slider" min="12" max="18" step="1" value="${
-                      uiSettings.editorFontSize
-                    }">
+                    <label for="editor-font-size-slider">Fonte do Editor (${uiSettings.editorFontSize
+    }px)</label>
+                    <input type="range" id="editor-font-size-slider" min="12" max="18" step="1" value="${uiSettings.editorFontSize
+    }">
                 </div>
                 
                 <div class="form-group" style="margin-top: 15px;">
@@ -1042,7 +1034,7 @@ async function openManagementModal() {
     // Aplica e salva as configurações
     applyUiSettings(currentSettings)
     await saveSettings(currentSettings)
-    
+
     // Se o tipo de rótulo mudou, atualiza a toolbar
     if (newSettings.buttonLabelType !== uiSettings.buttonLabelType) {
       await updateAllToolbarButtonLabels()
@@ -1078,9 +1070,9 @@ async function openManagementModal() {
         uiFontSizeSlider.value = defaultUiSettings.uiFontSize
         editorFontSizeSlider.value = defaultUiSettings.editorFontSize
         buttonLabelTypeSelect.value = defaultUiSettings.buttonLabelType
-        ;[iconSizeSlider, uiFontSizeSlider, editorFontSizeSlider].forEach(
-          slider => slider.dispatchEvent(new Event('input', { bubbles: true }))
-        )
+          ;[iconSizeSlider, uiFontSizeSlider, editorFontSizeSlider].forEach(
+            slider => slider.dispatchEvent(new Event('input', { bubbles: true }))
+          )
 
         applyUiSettings(currentSettings)
         await updateAllToolbarButtonLabels()
@@ -1095,7 +1087,7 @@ async function openManagementModal() {
   if (modalContentElement) {
     const watermarkTrigger = document.createElement('div')
     watermarkTrigger.id = 'dev-mode-trigger'
-    watermarkTrigger.textContent = 'Adaptado por Patrick Godoy'
+    watermarkTrigger.textContent = 'Adaptado po Patrick Godoy'
 
     // Aplica o estilo para posicionar no canto inferior esquerdo, como antes
     Object.assign(watermarkTrigger.style, {
@@ -1352,11 +1344,10 @@ async function renderCategoryManagementList(modal) {
             <span class="drag-handle" title="Arraste para reordenar">⠿</span>
             <button type="button" class="action-btn set-shortcut-btn" title="Definir Atalho">⌨️</button>
             <span class="category-name" contenteditable="true">${escapeHTML(
-              cat.name
-            )}</span>
-            <span class="shortcut-display">${
-              escapeHTML(cat.shortcut) || 'Nenhum'
-            }</span>
+      cat.name
+    )}</span>
+            <span class="shortcut-display">${escapeHTML(cat.shortcut) || 'Nenhum'
+      }</span>
             <button type="button" class="action-btn delete-cat-btn">Excluir</button>
         `
 
@@ -1645,9 +1636,8 @@ function openShortcutModal(category, itemElement) {
   const modal = createModal(
     `Definir Atalho para "${escapeHTML(category.name)}"`,
     `<p class="text-center">Pressione a combinação de teclas desejada (ex: <b>Alt + 1</b>) e clique em Salvar.</p>
-          <div id="shortcut-preview" class="shortcut-preview-box">${
-            escapeHTML(initialShortcut) || 'Aguardando...'
-          }</div>
+          <div id="shortcut-preview" class="shortcut-preview-box">${escapeHTML(initialShortcut) || 'Aguardando...'
+    }</div>
          <p class="shortcut-recommendation"><b>Nota</b>: Pressione <b>ESC</b> para limpar o atalho.</p>`,
     onSave
   )
@@ -1735,9 +1725,8 @@ function openShortcutModalForNewCategory(parentModal) {
   const modal = createModal(
     `Definir Atalho para Nova Categoria`,
     `<p class="text-center">Pressione a combinação de teclas desejada (ex: <b>Alt + 1</b>) e clique em Salvar.</p>
-         <div id="shortcut-preview" class="shortcut-preview-box">${
-           escapeHTML(initialShortcut) || 'Aguardando...'
-         }</div>
+         <div id="shortcut-preview" class="shortcut-preview-box">${escapeHTML(initialShortcut) || 'Aguardando...'
+    }</div>
          <p class="shortcut-recommendation"><b>Nota</b>: Pressione <b>ESC</b> para limpar o atalho.</p>`,
     onSave
   )
@@ -1934,10 +1923,9 @@ async function openImportSelectionModal(importedData, onCompleteCallback) {
     let destinationOptions = currentData.categories
       .map(
         cat =>
-          `<option value="${cat.id}" ${
-            existingCategoryMatch && cat.id === existingCategoryMatch.id
-              ? 'selected'
-              : ''
+          `<option value="${cat.id}" ${existingCategoryMatch && cat.id === existingCategoryMatch.id
+            ? 'selected'
+            : ''
           }>Mesclar com "${escapeHTML(cat.name)}"</option>`
       )
       .join('')
@@ -1952,15 +1940,15 @@ async function openImportSelectionModal(importedData, onCompleteCallback) {
 
     selectionHtml += `
       <div class="import-category" data-imported-category-name="${escapeHTML(
-        importedCategory.name
-      )}">
+      importedCategory.name
+    )}">
         <div class="import-category-header">
           <input type="checkbox" class="import-category-checkbox" id="import-cat-${escapeHTML(
-            importedCategory.id
-          )}">
+      importedCategory.id
+    )}">
           <label for="import-cat-${escapeHTML(
-            importedCategory.id
-          )}" style="font-weight: bold;">${escapeHTML(importedCategory.name)}</label>
+      importedCategory.id
+    )}" style="font-weight: bold;">${escapeHTML(importedCategory.name)}</label>
           <div class="import-category-destination">
             <span>→</span>
             <select class="destination-select">${destinationOptions}</select>
@@ -1968,16 +1956,16 @@ async function openImportSelectionModal(importedData, onCompleteCallback) {
         </div>
         <div class="import-messages-list">
           ${messagesInCategory
-            .map(
-              msg => `
+        .map(
+          msg => `
             <div class="import-item">
               <input type="checkbox" class="import-item-checkbox" data-message-content='${escapeHTML(
-                JSON.stringify(msg)
-              )}'>
+            JSON.stringify(msg)
+          )}'>
               <label>${escapeHTML(msg.title)}</label>
             </div>`
-            )
-            .join('')}
+        )
+        .join('')}
         </div>
       </div>`
   })
@@ -2434,28 +2422,26 @@ async function openQuickInserterPanel() {
   // --- FUNÇÕES DE RENDERIZAÇÃO ---
 
   const renderCategories = () => {
-    categoriesList.innerHTML = `<div class="qi-category-item ${
-      activeCategory === 'all' ? 'active' : ''
-    }" data-id="all"><span class="qi-category-name">Todas as Categorias</span></div>`
+    categoriesList.innerHTML = `<div class="qi-category-item ${activeCategory === 'all' ? 'active' : ''
+      }" data-id="all"><span class="qi-category-name">Todas as Categorias</span></div>`
 
     data.categories.forEach(cat => {
       const shortcutDisplay = cat.shortcut
         ? `<span class="qi-category-shortcut">${escapeHTML(
-            cat.shortcut
-          )}</span>`
+          cat.shortcut
+        )}</span>`
         : ''
 
       const categoryItem = document.createElement('div')
-      categoryItem.className = `qi-category-item ${
-        activeCategory === cat.id ? 'active' : ''
-      }`
+      categoryItem.className = `qi-category-item ${activeCategory === cat.id ? 'active' : ''
+        }`
       categoryItem.dataset.id = cat.id
       categoryItem.draggable = true
       categoryItem.innerHTML = `
         <span class="qi-drag-handle" title="Arraste para reordenar">⠿</span>
         <span class="qi-category-name" title="${escapeHTML(
-          cat.name
-        )}">${escapeHTML(cat.name)}</span>
+        cat.name
+      )}">${escapeHTML(cat.name)}</span>
         ${shortcutDisplay}
         <div class="qi-category-actions">
           <button type="button" class="qi-shortcut-btn" title="Definir Atalho">⌨️</button>
@@ -2567,9 +2553,9 @@ async function openQuickInserterPanel() {
       previewArea.innerHTML = `
         <h5>${escapeHTML(message.title)}</h5>
         <div class="qi-preview-content">${message.message.replace(
-          /\n/g,
-          '<br>'
-        )}</div>
+        /\n/g,
+        '<br>'
+      )}</div>
       `
     }
   }
@@ -2724,9 +2710,8 @@ async function renderButtonVisibilitySettings(modal) {
     const isChecked = buttons[key] !== false
     checkboxesHtml += `
       <div class="form-checkbox-group">
-        <input type="checkbox" id="visibility-toggle-${key}" data-key="${key}" ${
-      isChecked ? 'checked' : ''
-    }>
+        <input type="checkbox" id="visibility-toggle-${key}" data-key="${key}" ${isChecked ? 'checked' : ''
+      }>
         <label for="visibility-toggle-${key}">${buttonLabels[key]}</label>
       </div>
     `
@@ -2771,34 +2756,34 @@ async function saveButtonVisibilitySettings(modal) {
  * @returns {Promise<boolean>} Retorna true se salvou com sucesso.
  */
 async function savePreferencesSettings(modal) {
-    const container = modal.querySelector('#preferences-settings');
-    if (!container) return true;
+  const container = modal.querySelector('#preferences-settings');
+  if (!container) return true;
 
-    const settings = await getSettings();
-    const newPreferences = { ...(settings.preferences || DEFAULT_SETTINGS.preferences) };
+  const settings = await getSettings();
+  const newPreferences = { ...(settings.preferences || DEFAULT_SETTINGS.preferences) };
 
-    const windowsNotificationsCheckbox = container.querySelector('#enable-windows-notifications');
-    if (windowsNotificationsCheckbox) {
-        newPreferences.enableWindowsNotifications = windowsNotificationsCheckbox.checked;
+  const windowsNotificationsCheckbox = container.querySelector('#enable-windows-notifications');
+  if (windowsNotificationsCheckbox) {
+    newPreferences.enableWindowsNotifications = windowsNotificationsCheckbox.checked;
+  }
+
+  // NOVO: Ler comportamento do dropdown
+  const selectedBehavior = container.querySelector('input[name="dropdownBehavior"]:checked');
+  if (selectedBehavior) {
+    newPreferences.dropdownBehavior = selectedBehavior.value;
+  }
+
+  try {
+    await saveSettings({ preferences: newPreferences });
+    // Aplicar imediatamente
+    if (typeof applyDropdownBehaviorSetting === 'function') {
+      await applyDropdownBehaviorSetting();
     }
-
-    // NOVO: Ler comportamento do dropdown
-    const selectedBehavior = container.querySelector('input[name="dropdownBehavior"]:checked');
-    if (selectedBehavior) {
-        newPreferences.dropdownBehavior = selectedBehavior.value;
-    }
-
-    try {
-        await saveSettings({ preferences: newPreferences });
-        // Aplicar imediatamente
-        if (typeof applyDropdownBehaviorSetting === 'function') {
-            await applyDropdownBehaviorSetting();
-        }
-        return true;
-    } catch (error) {
-        showNotification('Erro ao salvar as preferências.', 'error');
-        return false;
-    }
+    return true;
+  } catch (error) {
+    showNotification('Erro ao salvar as preferências.', 'error');
+    return false;
+  }
 }
 
 // --- GERENCIAMENTO DE SAUDAÇÕES E ENCERRAMENTOS ---
@@ -2826,14 +2811,11 @@ async function renderGreetingsClosingsManagement(modal) {
         return `
                 <div class="gc-item" data-id="${item.id}" data-type="${type}">
                     <div class="form-checkbox-group" style="margin-right: 10px;">
-                        <input type="radio" name="default-${type}" class="default-item-selector" id="default-${
-          item.id
-        }" data-id="${item.id}" data-type="${type}" ${
-          isChecked ? 'checked' : ''
-        }>
-                        <label for="default-${
-                          item.id
-                        }" title="Marcar como padrão para preenchimento automático"></label>
+                        <input type="radio" name="default-${type}" class="default-item-selector" id="default-${item.id
+          }" data-id="${item.id}" data-type="${type}" ${isChecked ? 'checked' : ''
+          }>
+                        <label for="default-${item.id
+          }" title="Marcar como padrão para preenchimento automático"></label>
                     </div>
                     <span class="gc-item-name">${escapeHTML(item.title)}</span>
                     <span class="shortcut-display">${shortcutDisplay}</span>
@@ -2994,9 +2976,8 @@ async function openGreetingClosingModal(item, type, onComplete) {
   const modalContent = `
         <div class="form-group">
             <label for="item-title">Título (para identificação no menu)</label>
-            <input type="text" id="item-title" value="${
-              isEditing ? escapeHTML(item.title) : ''
-            }">
+            <input type="text" id="item-title" value="${isEditing ? escapeHTML(item.title) : ''
+    }">
         </div>
         <div class="form-group">
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
@@ -3011,9 +2992,8 @@ async function openGreetingClosingModal(item, type, onComplete) {
                     </div>
                 </div>
             </div>
-            <textarea id="item-content" rows="6" placeholder="Use as variáveis disponíveis no menu acima.">${
-              isEditing ? escapeHTML(item.content) : ''
-            }</textarea>
+            <textarea id="item-content" rows="6" placeholder="Use as variáveis disponíveis no menu acima.">${isEditing ? escapeHTML(item.content) : ''
+    }</textarea>
         </div>
     `
 
@@ -3114,7 +3094,7 @@ function startInlineCategoryRename(nameElement, categoryId, options = {}) {
     const width = Math.max(120, nameElement.offsetWidth || 0)
     input.style.minWidth = '120px'
     input.style.width = `${width}px`
-  } catch {}
+  } catch { }
 
   // Substitui o elemento pelo input
   nameElement.replaceWith(input)
@@ -3165,7 +3145,7 @@ function startInlineCategoryRename(nameElement, categoryId, options = {}) {
       // Recarrega outros dropdowns/painéis para refletir mudança
       try {
         reloadAllQuickMessagesInstances()
-      } catch {}
+      } catch { }
     }
   }
 
@@ -3246,9 +3226,8 @@ function openGreetingClosingShortcutModal(item, type, onComplete) {
   const modal = createModal(
     `Definir Atalho para "${escapeHTML(item.title)}"`,
     `<p class="text-center">Pressione a combinação de teclas desejada (ex: <b>Alt + 1</b>).</p>
-     <div id="shortcut-preview" class="shortcut-preview-box">${
-       escapeHTML(initialShortcut) || 'Aguardando...'
-     }</div>
+     <div id="shortcut-preview" class="shortcut-preview-box">${escapeHTML(initialShortcut) || 'Aguardando...'
+    }</div>
      <p class="shortcut-recommendation">Pressione <b>ESC</b> para limpar o atalho.</p>`,
     onSave
   )
