@@ -347,15 +347,66 @@ async function openInfoPanel() {
   // --- Lógica dos Interruptores do Rodapé ---
   const equipeATSwitch = modal.querySelector('#ip-equipe-at-switch');
   if (equipeATSwitch) {
-    equipeATSwitch.addEventListener('change', async (e) => {
-      const enabled = e.target.checked;
-      // Salva no storage com Promise para garantir persistência
-      await new Promise(resolve => {
-        chrome.storage.local.set({ 'equipeATEnabled': enabled }, resolve);
-      });
-      // Recarrega o painel para refletir a mudança
-      modal.remove();
-      openInfoPanel();
+    equipeATSwitch.addEventListener('click', async (e) => {
+      const isChecking = e.target.checked;
+
+      if (isChecking) {
+        // Previne a mudança imediata até a senha ser validada
+        e.preventDefault();
+
+        const passwordModalHtml = `
+          <div style="padding: 10px;">
+            <p style="margin-bottom: 12px; font-size: 13px; color: var(--text-color-main);">Esta seção é exclusiva para a Equipe AT. Por favor, insira a senha de acesso para continuar.</p>
+            <input type="password" id="at-password-input" 
+              style="display: block; width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); font-size: 14px;" 
+              placeholder="Digite a senha...">
+          </div>
+        `;
+
+        const passwordModal = createModal('Acesso Protegido', passwordModalHtml, async (content, closePasswordModal) => {
+          const input = content.querySelector('#at-password-input');
+          const password = input.value;
+
+          if (password === 'equipe.at123') {
+            await chrome.storage.local.set({ 'equipeATEnabled': true });
+            closePasswordModal();
+            modal.remove(); // Fecha o painel de info principal
+            openInfoPanel(); // Reabre para mostrar a nova aba
+            showNotification('Acesso concedido! Aba Equipe AT habilitada.', 'success');
+          } else {
+            showNotification('Senha incorreta', 'error');
+          }
+        }, {
+          isManagementModal: false,
+          modalId: 'at-password-modal'
+        });
+
+        // Personalizar botão de salvar
+        const confirmBtn = passwordModal.querySelector('#modal-save-btn');
+        if (confirmBtn) confirmBtn.textContent = 'Confirmar';
+
+        document.body.appendChild(passwordModal);
+
+        // Foco no input e suporte ao Enter
+        setTimeout(() => {
+          const input = passwordModal.querySelector('#at-password-input');
+          if (input) {
+            input.focus();
+            input.addEventListener('keypress', (event) => {
+              if (event.key === 'Enter') {
+                confirmBtn.click();
+              }
+            });
+          }
+        }, 100);
+
+      } else {
+        // Desativando (sem senha)
+        await chrome.storage.local.set({ 'equipeATEnabled': false });
+        // Recarrega o painel para refletir a mudança
+        modal.remove();
+        openInfoPanel();
+      }
     });
   }
 
