@@ -266,19 +266,25 @@ async function openInfoPanel() {
           const testNotifyBtn = targetSection.querySelector('#test-notification-btn');
           if (testNotifyBtn && !testNotifyBtn.dataset.listenerSet) {
             testNotifyBtn.addEventListener('click', () => {
-              if (chrome.notifications) {
-                chrome.runtime.sendMessage({
-                  action: 'show_notification',
-                  options: {
-                    type: 'basic',
-                    iconUrl: 'logo.png',
-                    title: 'Teste de Notificação',
-                    message: 'Esta é uma notificação de teste do Painel SGD.',
-                    priority: 2
+              if (!("Notification" in window)) {
+                alert("Este navegador não suporta notificações de desktop.");
+              } else if (Notification.permission === "granted") {
+                new Notification("Teste de Notificação", {
+                  body: "Esta é uma notificação de teste do Painel SGD.",
+                  icon: chrome.runtime.getURL("icons/icon128.png"), // Tenta ícone da extensão ou fallback
+                  requireInteraction: true
+                });
+              } else if (Notification.permission !== "denied") {
+                Notification.requestPermission().then((permission) => {
+                  if (permission === "granted") {
+                    new Notification("Teste de Notificação", {
+                      body: "Obrigado! As notificações agora estão ativas.",
+                      icon: chrome.runtime.getURL("icons/icon128.png")
+                    });
                   }
                 });
               } else {
-                alert('API de notificações não disponível neste contexto.');
+                alert("Permissão para notificações foi negada.");
               }
             });
             testNotifyBtn.dataset.listenerSet = 'true';
@@ -1346,15 +1352,25 @@ async function loadTeamStatus(sectionElement, forceRefresh = false) {
         return true;
       });
 
-      // Atualiza rodapé com timestamp
-      if (footer) {
+      // Atualiza timestamp no topo
+      const timestampSpan = sectionElement.querySelector('#team-status-timestamp');
+      if (timestampSpan) {
         if (timestamp) {
           const formattedTime = window.teamService.formatTeamStatusTimestamp(timestamp);
-          footer.innerHTML = `🕐 Atualizado em: <strong>${formattedTime}</strong>`;
-          footer.style.color = 'var(--text-color-main)';
+          timestampSpan.innerHTML = `🕐 <strong>${formattedTime}</strong>`;
+          timestampSpan.title = "Última atualização recebida do Master PC";
         } else {
-          footer.innerHTML = '⚠️ Nenhum dado disponível. Aguardando atualização do Master PC.';
-          footer.style.color = 'var(--action-yellow)';
+          timestampSpan.innerHTML = '';
+        }
+      }
+
+      // Oculta footer se tiver dados, mostra apenas se estiver aguardando inicialização
+      if (footer) {
+        if (!timestamp) {
+          footer.innerHTML = '⚠️ Aguardando dados...';
+          footer.style.display = 'block';
+        } else {
+          footer.style.display = 'none';
         }
       }
     }
@@ -1589,6 +1605,11 @@ async function toggleTechnicianPreference(name, type) {
         otherList = otherList.filter(item => item !== key);
         await chrome.storage.local.set({ [otherKey]: otherList });
       }
+    } else {
+      // Se ativou o monitoramento (watch), solicita permissão de notificação se necessário
+      if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+        Notification.requestPermission();
+      }
     }
   }
 
@@ -1609,21 +1630,21 @@ function checkTeamAlerts(members) {
 
         const message = `⚠️ ${m.name} atingiu ${m.percentFormatted} de indisponibilidade!`;
 
-        // Notificação Nativa do Chrome/Windows
-        if (chrome.notifications) {
-          chrome.runtime.sendMessage({
-            action: 'show_notification',
-            options: {
-              type: 'basic',
-              iconUrl: 'logo.png', // Assume que existe, senão o browser usa padrão
-              title: 'Alerta de Indisponibilidade',
-              message: message,
-              priority: 2,
-              requireInteraction: true // Botão dispensar implícito
-            }
+        // Notificação Nativa do Navegador (Web API)
+        if ("Notification" in window && Notification.permission === "granted") {
+          const notification = new Notification("Alerta de Indisponibilidade", {
+            body: message,
+            icon: chrome.runtime.getURL("icons/icon128.png"),
+            requireInteraction: true,
+            tag: alertKey // Evita duplicação nativa se suportado
           });
+
+          // Fecha automaticamente após 75 segundos (75000 ms)
+          setTimeout(() => {
+            notification.close();
+          }, 75000);
         } else {
-          // Fallback para toast interno se API não disponível
+          // Fallback para toast interno se permissão negada
           showNotification(message, 'warning');
         }
 
@@ -1650,6 +1671,83 @@ document.addEventListener('click', (e) => {
     }
   }
 });
+
+// --- MONITORAMENTO EM BACKGROUND ---
+let backgroundMonitorInterval = null;
+
+async function runBackgroundMonitoring() {
+  // Se o painel estiver aberto e visível, o loadTeamStatus já cuida disso (evita chamada dupla)
+  // Mas para garantir, podemos verificar se o painel existe no DOM
+  const panelExists = document.getElementById('info-panel-modal');
+  if (panelExists) return;
+
+  // --- VERIFICAÇÃO DE HORÁRIO ---
+  // Horários alvo: 09:30, 10:30, 11:30, 14:30, 15:30, 16:30
+  // Tolerância: +/- 1 minuto para garantir execução
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+
+  // Lista de horários permitidos (Hora, Minuto)
+  const allowedTimes = [
+    { h: 9, m: 30 }, { h: 10, m: 30 }, { h: 11, m: 30 },
+    { h: 14, m: 30 }, { h: 15, m: 30 }, { h: 16, m: 30 }
+  ];
+
+  const isTargetTime = allowedTimes.some(time => {
+    return currentHour === time.h && (currentMinute >= time.m && currentMinute <= time.m + 2);
+  });
+
+  if (!isTargetTime) {
+    // Se não for horário alvo, não executa nada pesado
+    return;
+  }
+
+  // Verifica se já rodou neste horário (evita spam no minuto de tolerância)
+  const lastRunKey = `monitor_last_run_${currentHour}_${Math.floor(currentMinute / 10)}`;
+  if (sessionStorage.getItem(lastRunKey)) return;
+  sessionStorage.setItem(lastRunKey, 'true');
+
+  try {
+    // Verifica se há técnicos monitorados antes de fazer requisição
+    const prefs = await chrome.storage.local.get(['monitoredTechnicians']);
+    const monitoredList = Array.isArray(prefs.monitoredTechnicians) ? prefs.monitoredTechnicians : [];
+
+    if (monitoredList.length === 0) return; // Ninguém pra monitorar, economiza recursos
+
+    if (typeof window.teamService === 'undefined') return;
+
+    // Busca dados silenciosamente
+    const data = await window.teamService.getTeamStatus(); // Usa cache se possível ou busca novo
+    // Para monitoramento real, talvez devêssemos forçar refresh se o cache for velho?
+    // O teamService.getTeamStatus() geralmente tem cache de 1min. Se quisermos background real, 
+    // podemos usar refreshTeamStatus se o lastUpdate for muito antigo.
+    // Por enquanto, vamos confiar na lógica padrão do serviço.
+
+    let members = data?.members || [];
+
+    // Filtra apenas os monitorados para checagem
+    const monitoredMembers = members.filter(m => {
+      const key = m.name?.trim().toLowerCase().replace(/\s+/g, ' ') || '';
+      return monitoredList.includes(key);
+    });
+
+    // Marca flag para o checkTeamAlerts funcionar
+    monitoredMembers.forEach(m => m.isMonitored = true);
+
+    checkTeamAlerts(monitoredMembers);
+
+  } catch (error) {
+    console.warn('[Background Monitor] Erro ao verificar status:', error);
+  }
+}
+
+// Inicia o monitoramento (executa a cada 60 segundos)
+if (!backgroundMonitorInterval) {
+  backgroundMonitorInterval = setInterval(runBackgroundMonitoring, 60000);
+  // Executa uma vez após 5s para garantir inicialização
+  setTimeout(runBackgroundMonitoring, 5000);
+}
 // #endregion Status da Equipe
 
 
@@ -2364,6 +2462,9 @@ function getSectionContent(sectionId) {
             <button id="test-notification-btn" class="action-btn secondary-btn compact" title="Testar Notificação" style="color: var(--action-blue);">
               <span>🔔</span>
             </button>` : ''}
+            
+            <!-- Timestamp movido para o topo -->
+            <span id="team-status-timestamp" style="font-size: 11px; color: var(--text-color-muted); margin-left: 6px; white-space: nowrap;"></span>
           </div>
         </div>
         <div id="team-status-container" class="ip-grid" style="margin-top: 16px;">
