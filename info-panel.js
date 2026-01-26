@@ -179,7 +179,7 @@ async function openInfoPanel() {
         (s, index) => `
         <div id="ip-section-${s.id}" class="ip-section ${index === 0 ? 'active' : ''
           }">
-          <h3 class="ip-section-title">${s.icon} ${s.label}</h3>
+          ${s.id === 'team-status' ? '' : `<h3 class="ip-section-title">${s.icon} ${s.label}</h3>`}
           ${getSectionContent(s.id)}
         </div>
       `
@@ -241,6 +241,47 @@ async function openInfoPanel() {
           if (teamSortSelect && !teamSortSelect.dataset.listenerSet) {
             teamSortSelect.addEventListener('change', () => loadTeamStatus(targetSection, false));
             teamSortSelect.dataset.listenerSet = 'true';
+          }
+
+          const teamStatusFilter = targetSection.querySelector('#team-status-filter');
+          if (teamStatusFilter && !teamStatusFilter.dataset.listenerSet) {
+            teamStatusFilter.addEventListener('change', () => loadTeamStatus(targetSection, false));
+            teamStatusFilter.dataset.listenerSet = 'true';
+          }
+
+          // Listener para o botão de visualização
+          const toggleViewBtn = targetSection.querySelector('#toggle-team-view-btn');
+          if (toggleViewBtn && !toggleViewBtn.dataset.listenerSet) {
+            toggleViewBtn.addEventListener('click', async () => {
+              const result = await chrome.storage.local.get(['teamViewMode']);
+              const currentMode = result.teamViewMode || 'normal';
+              const newMode = currentMode === 'normal' ? 'compact' : 'normal';
+              await chrome.storage.local.set({ 'teamViewMode': newMode });
+              loadTeamStatus(targetSection, false); // Recarrega com novo modo
+            });
+            toggleViewBtn.dataset.listenerSet = 'true';
+          }
+
+          // Listener para teste de notificação (apenas dev)
+          const testNotifyBtn = targetSection.querySelector('#test-notification-btn');
+          if (testNotifyBtn && !testNotifyBtn.dataset.listenerSet) {
+            testNotifyBtn.addEventListener('click', () => {
+              if (chrome.notifications) {
+                chrome.runtime.sendMessage({
+                  action: 'show_notification',
+                  options: {
+                    type: 'basic',
+                    iconUrl: 'logo.png',
+                    title: 'Teste de Notificação',
+                    message: 'Esta é uma notificação de teste do Painel SGD.',
+                    priority: 2
+                  }
+                });
+              } else {
+                alert('API de notificações não disponível neste contexto.');
+              }
+            });
+            testNotifyBtn.dataset.listenerSet = 'true';
           }
 
           loadTeamStatus(targetSection, false);
@@ -1255,6 +1296,7 @@ async function loadTeamStatus(sectionElement, forceRefresh = false) {
   const refreshBtn = sectionElement.querySelector('#refresh-team-status-btn');
   const searchInput = sectionElement.querySelector('#team-search');
   const sortSelect = sectionElement.querySelector('#team-sort-filter');
+  const statusSelect = sectionElement.querySelector('#team-status-filter');
 
   if (!container) return;
 
@@ -1319,10 +1361,19 @@ async function loadTeamStatus(sectionElement, forceRefresh = false) {
 
     // --- APLICAÇÃO DE FILTROS E ORDENAÇÃO ---
 
-    // 1. Busca preferências de destaque (PIN e HIDE)
-    const prefs = await chrome.storage.local.get(['pinnedTechnicians', 'hiddenTechnicians']);
+    // 1. Busca preferências (PIN, HIDE, WATCH, VIEW_MODE)
+    const prefs = await chrome.storage.local.get(['pinnedTechnicians', 'hiddenTechnicians', 'monitoredTechnicians', 'teamViewMode']);
     const pinnedList = Array.isArray(prefs.pinnedTechnicians) ? prefs.pinnedTechnicians : [];
     const hiddenList = Array.isArray(prefs.hiddenTechnicians) ? prefs.hiddenTechnicians : [];
+    const monitoredList = Array.isArray(prefs.monitoredTechnicians) ? prefs.monitoredTechnicians : [];
+    const isCompactMode = prefs.teamViewMode === 'compact';
+
+    // Aplica o modo de visualização no container
+    if (isCompactMode) {
+      container.classList.add('view-compact');
+    } else {
+      container.classList.remove('view-compact');
+    }
 
     // 2. Filtro de Busca
     const searchTerm = searchInput?.value?.toLowerCase()?.trim() || '';
@@ -1331,12 +1382,31 @@ async function loadTeamStatus(sectionElement, forceRefresh = false) {
       return name.includes(searchTerm);
     });
 
+    // 2a. Filtro de Status Específico
+    const statusFilterValue = statusSelect?.value || 'all';
+    if (statusFilterValue !== 'all') {
+      filteredMembers = filteredMembers.filter(m => {
+        const status = (m.currentStatus || '').trim().toLowerCase();
+        const isNaFila = status === 'conversando' || status === 'ocioso' || status.includes('na fila');
+        const isSemStatus = !status;
+
+        if (statusFilterValue === 'na-fila') return isNaFila;
+        if (statusFilterValue === 'sem-status') return isSemStatus;
+        if (statusFilterValue === 'fora-fila') return !isNaFila && !isSemStatus;
+        return true;
+      });
+    }
+
     // 3. Enriquecer com flags de preferência
     filteredMembers.forEach(m => {
       const key = m.name?.trim().toLowerCase().replace(/\s+/g, ' ') || '';
       m.isPinned = pinnedList.includes(key);
       m.isHidden = hiddenList.includes(key);
+      m.isMonitored = monitoredList.includes(key);
     });
+
+    // 3. Verifica alertas para técnicos monitorados
+    checkTeamAlerts(filteredMembers);
 
     // 4. Ordenação
     const sortValue = sortSelect?.value || 'not-ready';
@@ -1379,6 +1449,48 @@ async function loadTeamStatus(sectionElement, forceRefresh = false) {
       container.innerHTML = filteredMembers.map(createTeamMemberCard).join('');
     }
 
+    // --- CÁLCULO DE ESTATÍSTICAS (Baseado nos itens FILTRADOS, mas contagem global é melhor para resumo) ---
+    // O usuário pediu "Total de técnicos que estão sendo demonstrados na listagem", então usamos filteredMembers para o Total
+    // Mas Na Fila/Fora da Fila geralmente queremos do todo ou do filtro? Vamos assumir do filtro atual para ser consistente com "Total".
+
+    let countNaFila = 0;
+    let countForaFila = 0;
+    let countSemStatus = 0;
+
+    filteredMembers.forEach(m => {
+      const status = (m.currentStatus || '').trim();
+      const statusLower = status.toLowerCase();
+
+      if (!status) {
+        countSemStatus++;
+      } else if (statusLower === 'conversando' || statusLower === 'ocioso' || statusLower.includes('na fila')) {
+        countNaFila++;
+      } else {
+        countForaFila++;
+      }
+    });
+
+    const statsBar = sectionElement.querySelector('#team-stats-bar');
+    if (statsBar) {
+      statsBar.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 3px; color: var(--text-color-main);" title="Total de técnicos listados">
+          <span style="font-size: 10px;">👥</span> <strong>${filteredMembers.length}</strong> <span style="font-size: 9px;">Total</span>
+        </div>
+        <div style="width: 1px; height: 10px; background: var(--border-color); margin: 0 2px;"></div>
+        <div style="display: flex; align-items: center; gap: 3px; color: var(--action-green);" title="Técnicos Na Fila: Conversando, Ocioso ou Na Fila">
+          <span style="font-size: 8px;">🟢</span> <strong>${countNaFila}</strong> <span style="font-size: 9px;">Na Fila</span>
+        </div>
+        <div style="width: 1px; height: 10px; background: var(--border-color); margin: 0 2px;"></div>
+        <div style="display: flex; align-items: center; gap: 3px; color: var(--action-yellow-hover);" title="Técnicos Fora da Fila: Pausa, Refeição, etc">
+          <span style="font-size: 8px;">🔴</span> <strong>${countForaFila}</strong> <span style="font-size: 9px;">Fora</span>
+        </div>
+        <div style="width: 1px; height: 10px; background: var(--border-color); margin: 0 2px;"></div>
+        <div style="display: flex; align-items: center; gap: 3px; color: var(--text-color-muted);" title="Sem Status Definido: Vazio ou nulo">
+          <span style="font-size: 8px;">⚪</span> <strong>${countSemStatus}</strong> <span style="font-size: 9px;">N/A</span>
+        </div>
+      `;
+    }
+
   } catch (error) {
     console.error('[Team Status] Erro:', error);
     container.innerHTML = `
@@ -1409,41 +1521,56 @@ function createTeamMemberCard(member) {
     <div class="ip-card ip-team-member-card ${member.isPinned ? 'is-pinned' : ''} ${member.isHidden ? 'is-dimmed' : ''}" 
          style="padding: 12px; border-left: 4px solid ${percentColor};"
          data-name="${escapeHTML(member.name)}">
-      <div style="display: flex; align-items: flex-start; gap: 8px;">
-        <div style="flex: 1; min-width: 0;">
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-            <div style="font-weight: 600; font-size: 13px; color: var(--text-color-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; line-height: 1.2;" title="${escapeHTML(member.name)}">
+      
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        
+        <!-- Linha 1: Nome e Badge -->
+        <div style="display: flex; align-items: flex-start; justify-content: space-between;">
+           <div style="font-weight: 600; font-size: 13px; color: var(--text-color-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%;" title="${escapeHTML(member.name)}">
               ${escapeHTML(member.name)}
-            </div>
-            <div class="ip-card-quick-actions" style="margin-left: auto;">
-              <button class="ip-action-icon-btn pin-btn ${member.isPinned ? 'active-pin' : ''}" title="${member.isPinned ? 'Desafixar técnico' : 'Fixar técnico no topo'}">
-                📌
-              </button>
-              <button class="ip-action-icon-btn hide-btn ${member.isHidden ? 'active-hide' : ''}" title="${member.isHidden ? 'Mostrar técnico normalmente' : 'Ocultar técnico no final'}">
-                ${member.isHidden ? '👁️' : '🙈'}
-              </button>
-            </div>
-          </div>
-          <div style="font-size: 11px; color: var(--text-color-muted); display: flex; flex-direction: column; gap: 2px;">
-            <span style="font-weight: 600; color: ${percentColor};">📊 ${escapeHTML(member.percentFormatted)} Indisponível</span>
-            ${member.presence ? `<span>📍 Presença: <strong>${escapeHTML(member.presence)}</strong></span>` : ''}
-            ${member.currentStatus ? `<span>💬 Status: <strong>${escapeHTML(member.currentStatus)}</strong></span>` : ''}
-            ${member.duration && member.duration !== '00:00:00' ? `<span>⏱️ Tempo: <strong>${escapeHTML(member.duration)}</strong></span>` : ''}
-          </div>
+           </div>
+           <span class="ip-card-badge ${badgeClass}" style="font-size: 10px; padding: 2px 6px; flex-shrink: 0;">
+              ${statusEmoji} ${escapeHTML(member.status)}
+           </span>
         </div>
-        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0;">
-          <span class="ip-card-badge ${badgeClass}" style="font-size: 10px; padding: 3px 6px;">
-            ${statusEmoji} ${escapeHTML(member.status)}
-          </span>
+
+        <!-- Linha 2 e Detalhes -->
+        <div style="font-size: 11px; color: var(--text-color-muted); display: flex; flex-direction: column; gap: 2px;" class="ip-team-details">
+            
+            <!-- Linha de Indisponibilidade + Ações -->
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span style="font-weight: 600; color: ${percentColor};">📊 ${escapeHTML(member.percentFormatted)} Indisponível</span>
+              
+              <div class="ip-card-quick-actions">
+                <button class="ip-action-icon-btn watch-btn ${member.isMonitored ? 'active-watch' : ''}" title="${member.isMonitored ? 'Parar monitoramento' : 'Alertar se crítico'}" style="${member.isMonitored ? 'opacity: 1; color: var(--action-blue);' : ''}">
+                  ${member.isMonitored ? '🔔' : '🔕'}
+                </button>
+                <button class="ip-action-icon-btn pin-btn ${member.isPinned ? 'active-pin' : ''}" title="${member.isPinned ? 'Desafixar técnico' : 'Fixar técnico no topo'}">
+                  📌
+                </button>
+                <button class="ip-action-icon-btn hide-btn ${member.isHidden ? 'active-hide' : ''}" title="${member.isHidden ? 'Mostrar técnico normalmente' : 'Ocultar técnico no final'}">
+                  ${member.isHidden ? '🙈' : '👁️'}
+                </button>
+              </div>
+            </div>
+
+            <span class="ip-compact-hidden">${member.presence ? `📍 Presença: <strong>${escapeHTML(member.presence)}</strong>` : ''}</span>
+            <span class="ip-compact-hidden">${member.currentStatus ? `💬 Status: <strong>${escapeHTML(member.currentStatus)}</strong>` : ''}</span>
+            <span class="ip-compact-hidden">${member.duration && member.duration !== '00:00:00' ? `⏱️ Tempo: <strong>${escapeHTML(member.duration)}</strong>` : ''}</span>
         </div>
+
       </div>
     </div>
   `;
 }
 
+// Funções para gerenciar PIN, HIDE e WATCH
 async function toggleTechnicianPreference(name, type) {
   const key = name.trim().toLowerCase().replace(/\s+/g, ' ');
-  const storageKey = type === 'pin' ? 'pinnedTechnicians' : 'hiddenTechnicians';
+  let storageKey;
+  if (type === 'pin') storageKey = 'pinnedTechnicians';
+  else if (type === 'hide') storageKey = 'hiddenTechnicians';
+  else if (type === 'watch') storageKey = 'monitoredTechnicians';
 
   const result = await chrome.storage.local.get([storageKey]);
   let list = Array.isArray(result[storageKey]) ? result[storageKey] : [];
@@ -1452,13 +1579,16 @@ async function toggleTechnicianPreference(name, type) {
     list = list.filter(item => item !== key);
   } else {
     list.push(key);
-    // Se fixar, remove do ocultar e vice-versa (comportamento mútuo exclusivo para clareza)
-    const otherKey = type === 'pin' ? 'hiddenTechnicians' : 'pinnedTechnicians';
-    const otherResult = await chrome.storage.local.get([otherKey]);
-    let otherList = Array.isArray(otherResult[otherKey]) ? otherResult[otherKey] : [];
-    if (otherList.includes(key)) {
-      otherList = otherList.filter(item => item !== key);
-      await chrome.storage.local.set({ [otherKey]: otherList });
+
+    // Lógica exclusiva para pin/hide (watch é independente)
+    if (type !== 'watch') {
+      const otherKey = type === 'pin' ? 'hiddenTechnicians' : 'pinnedTechnicians';
+      const otherResult = await chrome.storage.local.get([otherKey]);
+      let otherList = Array.isArray(otherResult[otherKey]) ? otherResult[otherKey] : [];
+      if (otherList.includes(key)) {
+        otherList = otherList.filter(item => item !== key);
+        await chrome.storage.local.set({ [otherKey]: otherList });
+      }
     }
   }
 
@@ -1469,16 +1599,54 @@ async function toggleTechnicianPreference(name, type) {
   if (section) loadTeamStatus(section, false);
 }
 
+// Verifica alertas para técnicos monitorados
+function checkTeamAlerts(members) {
+  members.forEach(m => {
+    if (m.isMonitored && m.percentNotReady > 20) {
+      // Verifica se já notificou recentemente para evitar spam (cache em memória ou storage)
+      const alertKey = `alert_${m.name}_${new Date().getHours()}`;
+      if (!sessionStorage.getItem(alertKey)) {
+
+        const message = `⚠️ ${m.name} atingiu ${m.percentFormatted} de indisponibilidade!`;
+
+        // Notificação Nativa do Chrome/Windows
+        if (chrome.notifications) {
+          chrome.runtime.sendMessage({
+            action: 'show_notification',
+            options: {
+              type: 'basic',
+              iconUrl: 'logo.png', // Assume que existe, senão o browser usa padrão
+              title: 'Alerta de Indisponibilidade',
+              message: message,
+              priority: 2,
+              requireInteraction: true // Botão dispensar implícito
+            }
+          });
+        } else {
+          // Fallback para toast interno se API não disponível
+          showNotification(message, 'warning');
+        }
+
+        sessionStorage.setItem(alertKey, 'true');
+      }
+    }
+  });
+}
+
 // Event delegation para os botões do card
 document.addEventListener('click', (e) => {
   const pinBtn = e.target.closest('.pin-btn');
   const hideBtn = e.target.closest('.hide-btn');
+  const watchBtn = e.target.closest('.watch-btn');
 
-  if (pinBtn || hideBtn) {
+  if (pinBtn || hideBtn || watchBtn) {
     const card = e.target.closest('.ip-team-member-card');
     const name = card?.dataset.name;
     if (name) {
-      toggleTechnicianPreference(name, pinBtn ? 'pin' : 'hide');
+      let type = 'pin';
+      if (hideBtn) type = 'hide';
+      if (watchBtn) type = 'watch';
+      toggleTechnicianPreference(name, type);
     }
   }
 });
@@ -2153,20 +2321,49 @@ function getSectionContent(sectionId) {
 
     case 'team-status':
       return `
-        <div class="ip-pending-controls">
-          <div class="ip-filter-group">
-            <div class="ip-search-wrapper" style="flex: 1.5;">
+        <div class="ip-pending-controls" style="flex-wrap: wrap; gap: 12px;">
+          
+
+          <div class="ip-filter-group" style="flex: 1; min-width: 300px;">
+            <div class="ip-search-wrapper" style="flex: 1.5; display: flex; align-items: center; gap: 8px;">
               <span class="ip-search-icon">🔍</span>
-              <input type="text" id="team-search" placeholder="Buscar técnico..." class="ip-filter-input compact">
+              <input type="text" id="team-search" placeholder="Buscar técnico..." class="ip-filter-input compact" style="flex: 1;">
+              
+              <!-- Stats Bar movida para dentro da search wrapper, ao lado direito -->
+              <div id="team-stats-bar" class="ip-team-stats-bar" style="display: flex; gap: 8px; font-size: 10px; font-weight: 500; align-items: center; padding: 0 4px;">
+                 <span style="opacity: 0.7;">...</span>
+              </div>
             </div>
-            <select id="team-sort-filter" class="ip-filter-select compact" style="flex: 1;">
-              <option value="not-ready">📊 Indisponibilidade</option>
-              <option value="name">🔤 Alfabética</option>
-              <option value="time">⏱️ Tempo</option>
-            </select>
+            
+            <div style="display: flex; gap: 4px; align-items: center;">
+              <span style="font-size: 11px; color: var(--text-color-muted);">Filtrar:</span>
+              <select id="team-status-filter" class="ip-filter-select compact" style="width: 100px;">
+                <option value="all">Todos os Status</option>
+                <option value="na-fila">🟢 Na Fila</option>
+                <option value="fora-fila">🔴 Fora da Fila</option>
+                <option value="sem-status">⚪ Sem Status</option>
+              </select>
+            </div>
+
+            <div style="display: flex; gap: 4px; align-items: center;">
+              <span style="font-size: 11px; color: var(--text-color-muted);">Ordenar:</span>
+              <select id="team-sort-filter" class="ip-filter-select compact" style="width: 110px;">
+                <option value="not-ready">📊 Indisponibilidade</option>
+                <option value="name">🔤 Alfabética</option>
+                <option value="time">⏱️ Tempo</option>
+              </select>
+            </div>
+            <button id="toggle-team-view-btn" class="action-btn secondary-btn compact" title="Alternar Visualização (Compacta/Detalhada)">
+              <span>👁️</span>
+            </button>
             <button id="refresh-team-status-btn" class="action-btn secondary-btn compact" title="Atualizar status">
               <span>🔄</span>
             </button>
+            <!-- Botão de teste de notificação (apenas modo dev) -->
+            ${developerMode ? `
+            <button id="test-notification-btn" class="action-btn secondary-btn compact" title="Testar Notificação" style="color: var(--action-blue);">
+              <span>🔔</span>
+            </button>` : ''}
           </div>
         </div>
         <div id="team-status-container" class="ip-grid" style="margin-top: 16px;">
