@@ -1358,7 +1358,7 @@ async function loadTeamStatus(sectionElement, forceRefresh = false) {
         if (timestamp) {
           const formattedTime = window.teamService.formatTeamStatusTimestamp(timestamp);
           timestampSpan.innerHTML = `🕐 <strong>${formattedTime}</strong>`;
-          timestampSpan.title = "Última atualização recebida do Master PC";
+          timestampSpan.title = "Última atualização recebida";
         } else {
           timestampSpan.innerHTML = '';
         }
