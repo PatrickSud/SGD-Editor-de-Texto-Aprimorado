@@ -2,10 +2,10 @@
 
 /* Modal Content Override for Dashboard */
 #info-panel-modal .se-modal-content {
-  width: 1450px;
+  width: 1600px;
   max-width: 98vw;
-  height: 85vh;
-  max-height: 900px;
+  height: 92vh;
+  max-height: 980px;
   display: flex;
   flex-direction: column;
   padding: 0;
@@ -1109,4 +1109,40 @@
   font-weight: 800;
   text-shadow: 0 0 1px color-mix(in srgb, var(--primary-color) 20%, transparent);
   margin-left: 4px;
+}/* --- ESTILOS EQUIPE AT (NOVO) --- */
+.view-compact {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.view-compact .ip-team-member-card {
+  padding: 8px 10px !important;
+  min-height: auto !important;
+}
+
+.view-compact .ip-compact-hidden {
+  display: none !important;
+}
+
+.view-compact .ip-team-details span:first-child {
+  display: inline-block !important;
+  margin-bottom: 0 !important;
+}
+
+.ip-summary-card {
+  transition: transform 0.2s;
+  cursor: default;
+  box-shadow: var(--shadow-sm);
+}
+
+.ip-summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.active-watch {
+  color: var(--action-blue) !important;
+  text-shadow: 0 0 8px rgba(0, 123, 255, 0.6);
+  transform: scale(1.1);
 }

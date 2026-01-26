@@ -12,6 +12,12 @@ const STORAGE_KEY = 'quickMessagesData'
 const SUGGESTION_THRESHOLD = 5
 const MIN_SUGGESTION_LENGTH = 100
 
+// Configurações do Team Status (Firestore)
+const TEAM_PROJECT_ID = 'sgd-extension';
+const TEAM_API_KEY = 'AIzaSyBJgLpNfiycnIr-OybbfAOAuIa4ZU3nBbY';
+const TEAM_STATUS_URL = `https://firestore.googleapis.com/v1/projects/${TEAM_PROJECT_ID}/databases/(default)/documents/team_status/current`;
+const TEAM_STATUS_POLL_ALARM = 'team-status-poll';
+
 // --- FUNÇÕES DE ARMAZENAMENTO (STORAGE) ---
 
 /**
@@ -142,6 +148,75 @@ async function clearNotificationAndAlarm(notificationId) {
   }
 }
 
+/**
+ * Verifica o status da equipe e dispara notificações para técnicos vigiados.
+ * @param {Array} providedMembers - (Opcional) Array de membros já formatados
+ */
+async function checkTeamStatusAndNotify(providedMembers = null) {
+  try {
+    // 1. Busca preferências
+    const prefs = await chrome.storage.local.get(['watchedTechnicians', 'lastAlerts', 'equipeATEnabled']);
+    const watchedList = Array.isArray(prefs.watchedTechnicians) ? prefs.watchedTechnicians : [];
+    
+    // Se não houver ninguém vigiado, nem processa
+    if (watchedList.length === 0) return;
+
+    let members = providedMembers;
+
+    // 2. Se não foi fornecido, busca do Firestore
+    if (!members) {
+      const response = await fetch(`${TEAM_STATUS_URL}?key=${TEAM_API_KEY}`);
+      if (!response.ok) return;
+
+      const doc = await response.json();
+      const fields = doc.fields;
+      if (fields?.members?.arrayValue?.values) {
+        members = fields.members.arrayValue.values.map(v => {
+          const f = v.mapValue?.fields || {};
+          return {
+            name: f.name?.stringValue || '',
+            percentNotReady: parseFloat(f.percentNotReady?.doubleValue || f.percentNotReady?.integerValue || 0),
+            percentFormatted: f.percentFormatted?.stringValue || '0 %'
+          };
+        });
+      }
+    }
+
+    if (!members || !Array.isArray(members)) return;
+
+    // 3. Verifica limites e dispara notificações
+    const lastAlerts = prefs.lastAlerts || {};
+    let updatedAlerts = false;
+    const now = Date.now();
+
+    members.forEach(m => {
+      const key = m.name?.trim().toLowerCase().replace(/\s+/g, ' ') || '';
+      if (watchedList.includes(key) && m.percentNotReady > 20) {
+        const lastTime = lastAlerts[key] || 0;
+        // Anti-spam: 10 minutos
+        if (now - lastTime > 10 * 60 * 1000) {
+          chrome.notifications.create(`team-watch-${key}-${now}`, {
+            type: 'basic',
+            iconUrl: 'logo.png',
+            title: 'Alerta de Indisponibilidade',
+            message: `${m.name} ultrapassou o limite crítico (${m.percentFormatted})!`,
+            priority: 2
+          });
+          lastAlerts[key] = now;
+          updatedAlerts = true;
+          console.log(`[SW] Alerta disparado para: ${m.name}`);
+        }
+      }
+    });
+
+    if (updatedAlerts) {
+      await chrome.storage.local.set({ lastAlerts });
+    }
+  } catch (error) {
+    console.error('[SW] Erro ao verificar status da equipe:', error);
+  }
+}
+
 // --- INICIALIZAÇÃO E LISTENERS DE EVENTOS DO CHROME ---
 
 /**
@@ -151,16 +226,19 @@ async function clearNotificationAndAlarm(notificationId) {
 async function setupPendingPollAlarm() {
   const alarm = await chrome.alarms.get(PENDING_POLL_ALARM)
   if (!alarm) {
-    // Adiciona delay aleatório entre 0 e 15 minutos para distribuição de carga
     const delayInMinutes = Math.random() * 15
-    console.log(
-      `Service Worker: Agendando verificação de pendências para iniciar em ${delayInMinutes.toFixed(
-        2
-      )} minutos.`
-    )
     chrome.alarms.create(PENDING_POLL_ALARM, {
       delayInMinutes,
-      periodInMinutes: 15 // Repete a cada 15 minutos
+      periodInMinutes: 15
+    })
+  }
+
+  // Alarme para monitoramento da equipe (Team Status)
+  const teamAlarm = await chrome.alarms.get(TEAM_STATUS_POLL_ALARM)
+  if (!teamAlarm) {
+    chrome.alarms.create(TEAM_STATUS_POLL_ALARM, {
+      delayInMinutes: 2, // Começa em 2 min
+      periodInMinutes: 5  // Verifica a cada 5 min
     })
   }
 }
@@ -485,6 +563,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           }
 
           console.log(`Service Worker: Status da equipe atualizado com ${members.length} membros.`);
+          
+          // ALÉM DE SALVAR, verifica imediatamente se tem alertas para o Master PC
+          checkTeamStatusAndNotify(members);
+
           sendResponse({ success: true, membersCount: members.length });
         } catch (error) {
           console.error('Service Worker: Erro ao atualizar status da equipe:', error);
@@ -599,6 +681,12 @@ chrome.alarms.onAlarm.addListener(async alarm => {
     })
     console.log('Service Worker: Disparando verificação de pendências. Ciclo:', cycleId)
     broadcastToSgdTabs({ action: 'TRIGGER_PENDING_CHECK', cycleId: cycleId })
+    return
+  }
+
+  if (alarm.name === TEAM_STATUS_POLL_ALARM) {
+    // Monitoramento em segundo plano para todos os usuários
+    checkTeamStatusAndNotify();
     return
   }
 

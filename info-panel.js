@@ -1393,11 +1393,6 @@ async function loadTeamStatus(sectionElement, forceRefresh = false) {
   }
 }
 
-/**
- * Cria o HTML para um card de membro da equipe em Not Ready.
- * @param {Object} member - Dados do membro { name, percentNotReady, percentFormatted, status }
- * @returns {string} HTML do card
- */
 function createTeamMemberCard(member) {
   const badgeClass = window.teamService?.getTeamStatusBadgeClass(member.percentNotReady) || 'badge-success';
   const statusEmoji = window.teamService?.getTeamStatusEmoji(member.status) || '⚪';
@@ -1446,7 +1441,6 @@ function createTeamMemberCard(member) {
   `;
 }
 
-// Funções para gerenciar PIN e HIDE
 async function toggleTechnicianPreference(name, type) {
   const key = name.trim().toLowerCase().replace(/\s+/g, ' ');
   const storageKey = type === 'pin' ? 'pinnedTechnicians' : 'hiddenTechnicians';
