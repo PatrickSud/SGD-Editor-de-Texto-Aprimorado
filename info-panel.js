@@ -534,6 +534,7 @@ async function openInfoPanel() {
 
 // Variável global para armazenar os itens pendentes carregados
 let allPendingItems = []
+let filteredPendingItems = []
 
 // #region agent log
 // Global click listener to detect if clicks are happening but handler is missed
@@ -877,6 +878,7 @@ function applyPendingFilters(sectionElement) {
         return diasB - diasA
     }
   })
+  filteredPendingItems = filteredItems
 
   // Atualizar estatísticas
   if (statsContainer) {
@@ -915,6 +917,18 @@ function applyPendingFilters(sectionElement) {
       })
     })
   }
+  const openAllBtn = sectionElement.querySelector('#open-all-pending-btn')
+  if (openAllBtn) {
+    const uniqueResponsibleSet = new Set(
+      filteredItems.map(i => i.responsible).filter(Boolean)
+    )
+    const enable = !!responsibleFilter || uniqueResponsibleSet.size === 1
+    openAllBtn.disabled = !enable
+    openAllBtn.style.opacity = enable ? '1' : '0.5'
+    openAllBtn.title = enable
+      ? 'Abrir todos os chamados filtrados'
+      : 'Filtre por um único responsável para habilitar'
+  }
 }
 
 /**
@@ -927,6 +941,22 @@ async function loadPendingItems(sectionElement) {
   const statsContainer = sectionElement.querySelector('#pending-stats')
 
   if (!container) return
+  const openAllBtn = sectionElement.querySelector('#open-all-pending-btn')
+  if (openAllBtn && !openAllBtn.dataset.bound) {
+    openAllBtn.addEventListener('click', () => {
+      const itemsToOpen = filteredPendingItems || []
+      const count = itemsToOpen.length
+      if (count === 0) return
+      const proceed = confirm(
+        `Você está prestes a abrir ${count} abas. Deseja continuar?`
+      )
+      if (!proceed) return
+      itemsToOpen.forEach(item => {
+        if (item.link) window.open(item.link, '_blank')
+      })
+    })
+    openAllBtn.dataset.bound = '1'
+  }
 
   // Estado de Loading
   container.innerHTML = `
@@ -2971,6 +3001,7 @@ function getSectionContent(sectionId) {
                     <div class="ip-actions-group">
                         <button id="toggle-notification-btn" class="action-btn small-btn enhanced-btn" title="Carregando estado..." style="width: auto; height: 28px; padding: 0 10px; display: flex; align-items: center; justify-content: center; white-space: nowrap; font-size: 11px; line-height: 1;">🔔 <span style="margin-left: 4px;">Notificações</span></button>
                         <button id="refresh-pending-btn" class="action-btn small-btn enhanced-btn compact" title="Atualizar lista">🔄</button>
+                        <button id="open-all-pending-btn" class="action-btn small-btn enhanced-btn compact" title="Filtre por um único responsável para habilitar" disabled style="opacity: 0.5;">Abrir Todas</button>
                     </div>
                 </div>
             </div>

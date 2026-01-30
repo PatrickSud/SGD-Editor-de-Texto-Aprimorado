@@ -1,4 +1,32 @@
 const RELEASE_NOTES = {
+  '3.0.0': {
+    title: '🚀 Lançamento Oficial 3.0.0',
+    features: [
+      '<b>🧭 Central de Informações SGD & Produtividade</b>',
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+        '<li><b>Central de Informações SGD:</b> consolidação das abas e fluxos, incluindo <i>AI Chains</i> para assistentes inteligentes.</li>' +
+        '<li><b>Tags e Filtros:</b> gestão de TAGS, filtro por tags e <i>filtro por responsável</i> com persistência automática da escolha.</li>' +
+        '<li><b>SLA Inteligente:</b> cálculo por dias úteis, diferenciação entre tempo online (preciso) e offline (estimado), tooltip em <b>HH:MM</b> e exibição <b>~ XD</b> para estimados.</li>' +
+        '<li><b>Cronômetro no FAB:</b> ferramenta integrada com Pause/Reset/Edição, fixação individual (Pin) e persistência de estado.</li>' +
+        '<li><b>Layout & UX:</b> cards de pendência aprimorados e otimizações gerais de desempenho.</li>' +
+        '</ul>',
+      '<b>👥 Monitoramento & Equipe AT</b>',
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+        '<li><b>Monitor de Instabilidades:</b> acompanhamento em tempo real com histórico transparente, modelos inteligentes e hiperlinks nas orientações.</li>' +
+        '<li><b>Avisos Aprimorados:</b> identidade visual por tipo, ocultar avisos lidos, expiração automática em 7 dias e criação mais ágil.</li>' +
+        '<li><b>Publicação Automática:</b> geração de avisos ao alterar status de sistemas com títulos descritivos e autoria automática.</li>' +
+        '<li><b>Notificações Inteligentes:</b> monitor de segundo plano respeita o filtro de responsável e permite monitoramento flexível de toda a equipe.</li>' +
+        '<li><b>Detecção de Filtros:</b> alerta detalhado de filtros ativos e ocultação do seletor de responsável quando não necessário.</li>' +
+        '</ul>',
+      '<b>⚙️ Automações</b>',
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+        '<li><b>Detecção & Limpeza de Filtros:</b> integração com filtros do SGD para carregar todas as pendências com um clique.</li>' +
+        '<li><b>Abertura Automática de Anotações:</b> notas rápidas vinculadas a links abrem automaticamente ao acessar páginas relacionadas.</li>' +
+        '<li><b>Encerramentos:</b> ajustes em mensagens automáticas ao anexar SS duplicada para uma comunicação mais clara.</li>' +
+        '<li><b>Navegação & Notificações:</b> cliques mais flexíveis nas notificações e seleção confiável da aba de pendências via links.</li>' +
+        '</ul>'
+    ]
+  },
   '2.9.9': {
     title: '✨ Novidades da Versão 2.9.9',
     features: [
@@ -8,15 +36,7 @@ const RELEASE_NOTES = {
         '<li><b>🏷️ Gestão de TAGS:</b> Classifique pendências com Tags coloridas (<i>Em SS</i>, <i>Em SA/NE</i>, <i>Prioridade</i> e personalizadas).</li>' +
         '<li><b>🔍 Filtro por Tags:</b> Visualize rapida\mente chamados por categoria na lista de pendências.</li>' +
         '<li><b>🔔 Controle de Notificações:</b> Ative/desative alertas visuais na tela (verificação continua em background).</li>' +
-        '</ul>',
-      '<b>⏱️ SLA Inteligente e Dias Úteis:</b>',
-      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-        '<li><b>🧠 Adoção Inteligente:</b> Diferencia automaticamente chamados <u>precisos</u> (online) e <u>estimados</u> (offline) com base na chegada.</li>' +
-        '<li><b>⌚ Tooltip em HH:MM:</b> Exibição de tempo exato em <b>HH:MM</b> nos casos precisos diretamente no badge de SLA.</li>' +
-        '<li><b>📅 Dias Úteis:</b> Cálculo de SLA considera apenas dias úteis, com feriados recorrentes (01-01, 04-21, 05-01, 09-07, 10-12, 11-02, 11-15, 11-20, 12-25).</li>' +
-        '<li><b>~ XD para Offline:</b> Chamados estimados exibem <b>~ 1D, ~ 2D</b> com opacidade reduzida e tooltip explicativo.</li>' +
-        '</ul>',
-      '<b>⚡ Otimizações Gerais:</b> Ajustes de performance e correções visuais na extensão.'
+        '</ul>'
     ]
   },
   '2.9.8': {
@@ -91,7 +111,7 @@ const MINOR_RELEASE_NOTES = {
       features: [
         '<b>🚨 Monitor de Instabilidades:</b> Lançamento oficial da aba para acompanhamento do status dos sistemas em tempo real.',
         '<b>✏️ Gestão de Status Aprimorada:</b> Interface de edição redesenhada com maior espaço lateral (700px) e foco no conteúdo.',
-        '<b>🤖 Modelos Inteligentes:</b> Preenchimento automático de mensagens padrão ao selecionar um status (Operacional, Instabilidade, Fora do Ar), com seleção automática de campos para preenchimento rápido.',
+        '<b>📢 Avisos Inteligentes:</b> Preenchimento automático de mensagens padrão ao selecionar um status (Operacional, Instabilidade, Fora do Ar), com seleção automática de campos para preenchimento rápido.',
         '<b>🔗 Hiperlinks em Orientações:</b> Agora é possível inserir links clicáveis nas orientações através do modal padrão de hiperlinks da extensão.',
         '<b>🕒 Histórico Transparente:</b> Exibição da data e hora exata da última atualização diretamente nos cards e no modal de edição.',
         '<b>🎨 UX Refinada:</b> Títulos unificados, destaque visual para o nome do sistema em edição e fluxo de salvamento otimizado sem interrupções.'
@@ -122,7 +142,15 @@ const MINOR_RELEASE_NOTES = {
       features: [
         '<b>👤 Persistência de Filtro por Responsável:</b> Agora sua escolha de responsável no painel de pendências é salva automaticamente e restaurada ao abrir a extensão.',
         '<b>🔔 Notificações Inteligentes:</b> O monitor de segundo plano agora respeita seu filtro de responsável. Você receberá notificações apenas das novas pendências do responsável selecionado.',
-        '<b>🎯 Monitoramento Flexível:</b> Ao selecionar "Todos Responsáveis", a extensão volta a monitorar e notificar sobre toda a equipe.'
+        '<b>🎯 Monitoramento Flexível:</b> Ao selecionar "Todos Responsáveis", a extensão volta a monitorar e notificar sobre toda a equipe.',
+        '<b>⏱️ SLA Inteligente e Dias Úteis:</b>',
+        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+          '<li><b>🧠 Adoção Inteligente:</b> Diferencia automaticamente chamados <u>precisos</u> (online) e <u>estimados</u> (offline) com base na chegada.</li>' +
+          '<li><b>⌚ Tooltip em HH:MM:</b> Exibição de tempo exato em <b>HH:MM</b> nos casos precisos diretamente no badge de SLA.</li>' +
+          '<li><b>📅 Dias Úteis:</b> Cálculo de SLA considera apenas dias úteis, com feriados recorrentes (01-01, 04-21, 05-01, 09-07, 10-12, 11-02, 11-15, 11-20, 12-25).</li>' +
+          '<li><b>~ XD para Offline:</b> Chamados estimados exibem <b>~ 1D, ~ 2D</b> com opacidade reduzida e tooltip explicativo.</li>' +
+          '</ul>',
+        '<b>⚡ Otimizações Gerais:</b> Ajustes de performance e correções visuais na extensão.'
       ]
     },
     {
