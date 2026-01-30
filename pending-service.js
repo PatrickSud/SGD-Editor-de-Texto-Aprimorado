@@ -22,6 +22,25 @@ function cleanDateText(cell) {
 }
 
 /**
+ * Converte o formato de data do SGD "dd/mm/yyyy HH:mm" para um objeto Date.
+ * @param {string} dateString
+ * @returns {Date|null}
+ */
+function parseDataSGD(dateString) {
+  if (!dateString) return null
+  const parts = dateString.split(' ')
+  const datePart = parts[0]
+  const timePart = parts[1]
+
+  if (!datePart) return null
+
+  const [day, month, year] = datePart.split('/').map(Number)
+  const [hour, minute] = timePart ? timePart.split(':').map(Number) : [0, 0]
+
+  return new Date(year, month - 1, day, hour, minute)
+}
+
+/**
  * Busca e processa a lista de pendências.
  * @returns {Promise<Array<object>>} Uma promessa que resolve com um array de objetos de pendência.
  */
@@ -172,6 +191,14 @@ async function fetchPendingItems() {
         // Último Trâmite: Coluna 3 (Limpa spans ocultos)
         const dataUltimoTramite = cleanDateText(cells[3])
 
+        // Cálculo de horas desde o último trâmite
+        const lastUpdateDate = parseDataSGD(dataUltimoTramite);
+        let hoursSinceUpdate = 0;
+        if (lastUpdateDate) {
+          const diffMs = new Date() - lastUpdateDate;
+          hoursSinceUpdate = Math.max(0, diffMs / (1000 * 60 * 60));
+        }
+
         // Qtd Trâmites: Coluna 4
         const qtdTramites = cells[4].innerText.trim()
 
@@ -222,7 +249,8 @@ async function fetchPendingItems() {
           status,
           responsible,
           isPrioritaria,
-          isEmSS
+          isEmSS,
+          hoursSinceUpdate: hoursSinceUpdate
         })
 
       } catch (err) {

@@ -529,9 +529,25 @@ function getInitialNotesData() {
  */
 async function getSavedNotes() {
   try {
-    const result = await chrome.storage.sync.get(NOTES_STORAGE_KEY)
+    // 1. Tenta ler do novo local de armazenamento (local)
+    const localResult = await chrome.storage.local.get(NOTES_STORAGE_KEY)
+    let notesData = localResult[NOTES_STORAGE_KEY]
 
-    const notesData = result[NOTES_STORAGE_KEY]
+    // 2. Se não encontrou dados no local, verifica o local antigo (sync)
+    if (!notesData) {
+      const syncResult = await chrome.storage.sync.get(NOTES_STORAGE_KEY)
+      const syncData = syncResult[NOTES_STORAGE_KEY]
+
+      // 3. Se encontrou dados no sync, migra para o local
+      if (syncData) {
+        console.log(
+          'Editor SGD: Migrando anotações do storage.sync para storage.local.'
+        )
+        await chrome.storage.local.set({ [NOTES_STORAGE_KEY]: syncData })
+        await chrome.storage.sync.remove(NOTES_STORAGE_KEY)
+        notesData = syncData
+      }
+    }
 
     // Se não houver dados, inicializa com a nova estrutura.
     if (!notesData) {
@@ -566,7 +582,7 @@ async function getSavedNotes() {
  */
 async function saveNotes(data) {
   try {
-    await chrome.storage.sync.set({ [NOTES_STORAGE_KEY]: data })
+    await chrome.storage.local.set({ [NOTES_STORAGE_KEY]: data })
   } catch (error) {
     console.error('Editor SGD: Erro ao salvar anotações.', error)
   }
@@ -609,9 +625,26 @@ async function getReminders() {
     // Limpa lembretes antigos/disparados antes de retornar os ativos.
     await cleanupOldReminders()
 
-    const result = await chrome.storage.sync.get(REMINDERS_STORAGE_KEY)
-    // Usamos um objeto (dicionário) para facilitar a busca por ID.
-    return result[REMINDERS_STORAGE_KEY] || {}
+    // 1. Tenta ler do novo local de armazenamento (local)
+    const localResult = await chrome.storage.local.get(REMINDERS_STORAGE_KEY)
+    let reminders = localResult[REMINDERS_STORAGE_KEY]
+
+    // 2. Se não encontrou dados no local, verifica o local antigo (sync)
+    if (!reminders) {
+      const syncResult = await chrome.storage.sync.get(REMINDERS_STORAGE_KEY)
+      const syncData = syncResult[REMINDERS_STORAGE_KEY]
+
+      // 3. Se encontrou dados no sync, migra para o local
+      if (syncData) {
+        console.log(
+          'Editor SGD: Migrando lembretes do storage.sync para storage.local.'
+        )
+        await chrome.storage.local.set({ [REMINDERS_STORAGE_KEY]: syncData })
+        await chrome.storage.sync.remove(REMINDERS_STORAGE_KEY)
+        reminders = syncData
+      }
+    }
+    return reminders || {}
   } catch (error) {
     console.error('Editor SGD: Erro ao carregar lembretes.', error)
     return {}
@@ -629,7 +662,7 @@ async function cleanupOldReminders() {
     const FIVE_MINUTES_MS = 5 * 60 * 1000
 
     // 2. Carrega os lembretes
-    const result = await chrome.storage.sync.get(REMINDERS_STORAGE_KEY)
+    const result = await chrome.storage.local.get(REMINDERS_STORAGE_KEY)
     const reminders = result[REMINDERS_STORAGE_KEY] || {}
     const now = Date.now()
     let changed = false
@@ -666,7 +699,7 @@ async function cleanupOldReminders() {
     }
 
     if (changed) {
-      await chrome.storage.sync.set({ [REMINDERS_STORAGE_KEY]: reminders })
+      await chrome.storage.local.set({ [REMINDERS_STORAGE_KEY]: reminders })
     }
   } catch (error) {
     console.error('Editor SGD: Erro ao limpar lembretes antigos.', error)
@@ -709,11 +742,11 @@ async function saveReminder(reminderData) {
   try {
     // 1. Salva no storage
     // Buscamos diretamente para garantir consistência.
-    const storageResult = await chrome.storage.sync.get(REMINDERS_STORAGE_KEY)
+    const storageResult = await chrome.storage.local.get(REMINDERS_STORAGE_KEY)
     const reminders = storageResult[REMINDERS_STORAGE_KEY] || {}
 
     reminders[reminderId] = reminder
-    await chrome.storage.sync.set({ [REMINDERS_STORAGE_KEY]: reminders })
+    await chrome.storage.local.set({ [REMINDERS_STORAGE_KEY]: reminders })
 
     // 2. Agenda o alarme via mensagem para o Service Worker
     await sendBackgroundMessage({
@@ -739,14 +772,14 @@ async function saveReminder(reminderData) {
     // Tentativa de rollback (apenas para novos lembretes)
     if (!reminderData.id) {
       try {
-        const currentRemindersResult = await chrome.storage.sync.get(
+        const currentRemindersResult = await chrome.storage.local.get(
           REMINDERS_STORAGE_KEY
         )
         const currentReminders =
           currentRemindersResult[REMINDERS_STORAGE_KEY] || {}
         if (currentReminders[reminderId]) {
           delete currentReminders[reminderId]
-          await chrome.storage.sync.set({
+          await chrome.storage.local.set({
             [REMINDERS_STORAGE_KEY]: currentReminders
           })
         }
@@ -779,12 +812,12 @@ async function deleteReminder(reminderId) {
     })
 
     // 2. Remove do storage
-    const result = await chrome.storage.sync.get(REMINDERS_STORAGE_KEY)
+    const result = await chrome.storage.local.get(REMINDERS_STORAGE_KEY)
     const reminders = result[REMINDERS_STORAGE_KEY] || {}
 
     if (reminders[reminderId]) {
       delete reminders[reminderId]
-      await chrome.storage.sync.set({ [REMINDERS_STORAGE_KEY]: reminders })
+      await chrome.storage.local.set({ [REMINDERS_STORAGE_KEY]: reminders })
 
       // 3. Notifica o service worker sobre a exclusão do lembrete para atualizar o badge
       sendBackgroundMessage({
@@ -807,7 +840,7 @@ async function deleteMultipleReminders(reminderIds) {
   if (!reminderIds || reminderIds.length === 0) return
 
   try {
-    const result = await chrome.storage.sync.get(REMINDERS_STORAGE_KEY)
+    const result = await chrome.storage.local.get(REMINDERS_STORAGE_KEY)
     const reminders = result[REMINDERS_STORAGE_KEY] || {}
     let changed = false
 
@@ -828,7 +861,7 @@ async function deleteMultipleReminders(reminderIds) {
     }
 
     if (changed) {
-      await chrome.storage.sync.set({ [REMINDERS_STORAGE_KEY]: reminders })
+      await chrome.storage.local.set({ [REMINDERS_STORAGE_KEY]: reminders })
 
       // Notifica o service worker sobre as exclusões para atualizar o badge
       sendBackgroundMessage({
@@ -1029,7 +1062,7 @@ async function toggleDevMode() {
  */
 async function saveAllReminders(reminders) {
   try {
-    await chrome.storage.sync.set({ [REMINDERS_STORAGE_KEY]: reminders })
+    await chrome.storage.local.set({ [REMINDERS_STORAGE_KEY]: reminders })
   } catch (error) {
     console.error('Editor SGD: Erro ao salvar todos os lembretes.', error)
     throw error // Propaga o erro para a UI
@@ -1044,8 +1077,25 @@ async function saveAllReminders(reminders) {
  */
 async function getGreetingsAndClosings() {
   try {
-    const result = await chrome.storage.sync.get(GREETINGS_CLOSINGS_KEY)
-    let data = result[GREETINGS_CLOSINGS_KEY]
+    // 1. Tenta ler do novo local de armazenamento (local)
+    const localResult = await chrome.storage.local.get(GREETINGS_CLOSINGS_KEY)
+    let data = localResult[GREETINGS_CLOSINGS_KEY]
+
+    // 2. Se não encontrou dados no local, verifica o local antigo (sync)
+    if (!data) {
+      const syncResult = await chrome.storage.sync.get(GREETINGS_CLOSINGS_KEY)
+      const syncData = syncResult[GREETINGS_CLOSINGS_KEY]
+
+      // 3. Se encontrou dados no sync, migra para o local
+      if (syncData) {
+        console.log(
+          'Editor SGD: Migrando saudações e encerramentos do storage.sync para storage.local.'
+        )
+        await chrome.storage.local.set({ [GREETINGS_CLOSINGS_KEY]: syncData }) // Salva no local
+        await chrome.storage.sync.remove(GREETINGS_CLOSINGS_KEY) // Limpa o local antigo
+        data = syncData // Usa os dados migrados para continuar
+      }
+    }
 
     // Se não houver dados, inicializa com exemplos e define o primeiro de cada lista como padrão
     if (!data || !data.greetings || !data.closings) {
@@ -1174,7 +1224,7 @@ async function saveGreetingsAndClosings(data) {
       })
     }
 
-    await chrome.storage.sync.set({ [GREETINGS_CLOSINGS_KEY]: data })
+    await chrome.storage.local.set({ [GREETINGS_CLOSINGS_KEY]: data })
   } catch (error) {
     console.error(
       'Editor SGD: Erro ao salvar saudações e encerramentos.',
@@ -1192,8 +1242,26 @@ async function saveGreetingsAndClosings(data) {
  */
 async function getFollowedAttendances() {
   try {
-    const result = await chrome.storage.sync.get(FOLLOWED_ATTENDANCES_KEY)
-    return result[FOLLOWED_ATTENDANCES_KEY] || {}
+    // 1. Tenta ler do novo local de armazenamento (local)
+    const localResult = await chrome.storage.local.get(FOLLOWED_ATTENDANCES_KEY)
+    let followed = localResult[FOLLOWED_ATTENDANCES_KEY]
+
+    // 2. Se não encontrou dados no local, verifica o local antigo (sync)
+    if (!followed) {
+      const syncResult = await chrome.storage.sync.get(FOLLOWED_ATTENDANCES_KEY)
+      const syncData = syncResult[FOLLOWED_ATTENDANCES_KEY]
+
+      // 3. Se encontrou dados no sync, migra para o local
+      if (syncData) {
+        console.log(
+          'Editor SGD: Migrando atendimentos seguidos do storage.sync para storage.local.'
+        )
+        await chrome.storage.local.set({ [FOLLOWED_ATTENDANCES_KEY]: syncData })
+        await chrome.storage.sync.remove(FOLLOWED_ATTENDANCES_KEY)
+        followed = syncData
+      }
+    }
+    return followed || {}
   } catch (error) {
     console.error('Editor SGD: Erro ao carregar atendimentos seguidos.', error)
     return {}
@@ -1206,7 +1274,7 @@ async function getFollowedAttendances() {
  */
 async function saveFollowedAttendances(attendances) {
   try {
-    await chrome.storage.sync.set({ [FOLLOWED_ATTENDANCES_KEY]: attendances })
+    await chrome.storage.local.set({ [FOLLOWED_ATTENDANCES_KEY]: attendances })
   } catch (error) {
     console.error('Editor SGD: Erro ao salvar atendimentos seguidos.', error)
     throw error

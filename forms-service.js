@@ -157,6 +157,22 @@ const DEFAULT_FORMS_DATA = {
  <img src="https://www.dropbox.com/scl/fi/byeq2k2diaqq9wqv2sk3r/acesso_icon.png?rlkey=qky0l9byalcwojsi04xpq7o88&st=ybvth8cw&raw=1"  width="250" height="118" border="0" alt="acesso_remoto"></a>
  [finalizacao]! <nobr style='font-size:18px;'>&#10024;</nobr>`
           }
+        },
+        {
+          type: 'action-closing',
+          title: 'Encerramento - NE + AT',
+          description: 'Encerramento para atendimentos com encaminhamento para Área Técnica vinculados a NE.',
+          icon: '💡',
+          closingData: {
+            title: 'NE + AT',
+            content: `Caso não haja mais dúvidas, pedimos a gentileza de <a href="https://suporte.dominioatendimento.com/central/faces/solucao.html?codigo=6671&palavraChave=Concluir%20atendimento&modulosSelecionados=0&intencaoID=0" target="_blank" style="color: rgb(255, 101, 0); position: relative; display: inline-block; background: linear-gradient(90deg, rgb(255, 101, 0) 0%, rgb(255, 150, 50) 50%, rgb(255, 101, 0) 100%); background-size: 200% 100%; animation: fadeSlide 2s ease-in-out infinite; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"><b>concluir este atendimento</b></a> para que o mesmo fique no status <b>"Pendente - Domínio Sistemas"</b>. Dessa forma, vocês poderão acompanhar a evolução da correção diretamente pelo sistema e serão notificados assim que a atualização com a solução estiver disponível.
+    
+Se surgir alguma dúvida sobre o atendimento ou sobre o andamento da correção, estamos aqui para ajudar!
+    
+Conheça mais sobre como funciona a <img src="https://suporte.dominioatendimento.com/central/imagens/modulos/modulo_25.png" style="width: 20px; height: 20px; vertical-align: middle;"> <b><span style="color:#fa6400">Área Técnica</span></b> do sistema Domínio, <a href="https://suporte.dominioatendimento.com/central/faces/solucao.html?codigo=8811&palavraChave=treinamento%20%C3%A1rea%20tecnica&modulosSelecionados=0&intencaoID=0" target="_blank" style="color: rgb(255, 101, 0); position: relative; display: inline-block; background: linear-gradient(90deg, rgb(255, 101, 0) 0%, rgb(255, 150, 50) 50%, rgb(255, 101, 0) 100%); background-size: 200% 100%; animation: fadeSlide 2s ease-in-out infinite; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"><b>clique aqui</b></a>.<style>  @keyframes fadeSlide {    0% { background-position: 200% 0; }    100% { background-position: -200% 0; }  }  </style>
+
+Desejamos a todos uma ótima semana! <nobr style='font-size:19px;'>&#127775;</nobr> <nobr style='font-size:18px;'>&#128075;</nobr>`
+          }
         }
       ]
     }

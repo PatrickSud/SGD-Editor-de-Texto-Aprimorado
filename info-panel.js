@@ -363,6 +363,7 @@ async function openInfoPanel() {
     const tagFilter = pendingSection.querySelector('#pending-tag-filter')
     const sortSelect = pendingSection.querySelector('#pending-sort')
     const responsibleFilter = pendingSection.querySelector('#pending-responsible-filter')
+    const criticalFilter = pendingSection.querySelector('#pending-critical-filter')
 
     const applyFiltersHandler = () => {
       if (allPendingItems.length > 0) {
@@ -374,6 +375,7 @@ async function openInfoPanel() {
     if (statusFilter) statusFilter.addEventListener('change', applyFiltersHandler)
     if (tagFilter) tagFilter.addEventListener('change', applyFiltersHandler)
     if (sortSelect) sortSelect.addEventListener('change', applyFiltersHandler)
+    if (criticalFilter) criticalFilter.addEventListener('change', applyFiltersHandler)
     if (responsibleFilter) {
       responsibleFilter.addEventListener('change', (e) => {
         // NOVO: Salva a preferência sempre que o usuário mudar
@@ -720,6 +722,8 @@ function applyPendingFilters(sectionElement) {
   const responsibleFilter =
     sectionElement.querySelector('#pending-responsible-filter')?.value || ''
 
+  const criticalFilter = sectionElement.querySelector('#pending-critical-filter')?.checked;
+
   const sortOption =
     sectionElement.querySelector('#pending-sort')?.value || 'dias-desc'
 
@@ -770,6 +774,11 @@ function applyPendingFilters(sectionElement) {
       if (item.responsible !== responsibleFilter) {
         return false
       }
+    }
+
+    // Filtro de Críticos (>40h)
+    if (criticalFilter && item.hoursSinceUpdate < 40) {
+      return false
     }
 
     return true
@@ -1085,12 +1094,61 @@ function createPendingCard(item, showResponsible = false) {
        </div>`
     : ''
 
+  const hours = Math.floor(item.hoursSinceUpdate || 0);
+  let slaBadgeHtml = '';
+  let slaClass = '';
+  let icon = '';
+  let styleClass = '';
+  let tooltip = '';
+
+  if (hours >= 72) {
+    // Fatal (72h+)
+    icon = '☠️';
+    styleClass = 'fatal';
+    slaClass = 'border-fatal-time';
+    tooltip = `Atraso crítico extremo (${hours - 48}h além do prazo)`;
+  } else if (hours >= 48) {
+    // Crítico (48h - 71h)
+    icon = '💣';
+    styleClass = 'critical';
+    slaClass = 'border-critical-time';
+    tooltip = `Estourado há ${hours - 48} horas`;
+  } else if (hours >= 44) {
+    // Urgente
+    icon = '🔥';
+    styleClass = 'urgent';
+    slaClass = 'border-urgent-time';
+    tooltip = `Faltam ${48 - hours} horas para o prazo`;
+  } else if (hours >= 40) {
+    // Atenção
+    icon = '⏳';
+    styleClass = 'warning';
+    slaClass = 'border-warning-time';
+    tooltip = `Atenção: ${hours} horas corridas`;
+  } else if (hours >= 30) {
+    // Atenção leve
+    icon = '👀';
+    styleClass = 'notice';
+    slaClass = 'border-notice-time';
+    tooltip = `Fique atento (${hours}h)`;
+  } else {
+    // Normal
+    icon = '✅';
+    styleClass = 'normal';
+    slaClass = 'border-normal-time';
+    tooltip = `Dentro do prazo (${hours}h)`;
+  }
+
+  // Badge com contagem de horas
+  slaBadgeHtml = `<span class="ip-time-badge ${styleClass}" title="${tooltip}">${icon} ${hours}h</span>`;
+
   return `
-        <div class="ip-pending-card ${statusClass}" data-id="${item.id}">
+        <div class="ip-pending-card ${statusClass} ${slaClass}" data-id="${item.id}">
             <div class="ip-pending-header">
                 <div class="ip-pending-id-row" style="width: 100%; justify-content: space-between;">
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <span class="ip-pending-id" title="N.º da Solicitação: ${escapeHTML(item.id)}">${escapeHTML(item.id)}</span>
+                        ${slaBadgeHtml}
                         <span class="ip-meta-item" title="Dias em aberto">📅 ${escapeHTML(item.dias)}d</span>
                         <span class="ip-meta-item" title="Quantidade de trâmites">🔄 ${escapeHTML(item.qtdTramites)}</span>
                     </div>
@@ -2667,6 +2725,11 @@ function getSectionContent(sectionId) {
                             <option value="">Todas as Tags</option>
                             ${availableTagsCache.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
                         </select>
+
+                        <div class="form-checkbox-group" style="display:flex; align-items:center; margin-left:8px;" title="Mostrar apenas chamados com mais de 40h sem interação">
+                            <input type="checkbox" id="pending-critical-filter" style="width:16px; height:16px;">
+                            <label for="pending-critical-filter" style="color:#dc2626; font-weight:bold; font-size:12px; margin-left:4px; cursor:pointer;">⚠️ Críticos (>40h)</label>
+                        </div>
 
                         <select id="pending-sort" class="ip-filter-select compact" title="Ordenar por">
                             <option value="dias-desc">Dias ▼</option>
