@@ -13,13 +13,13 @@ function escapeHTML(str) {
   return str.replace(
     /[&<>"']/g,
     m =>
-    ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;'
-    }[m])
+      ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[m]
   )
 }
 
@@ -58,10 +58,10 @@ async function handleDeveloperModeClick(event) {
 
   // Ativar modo desenvolvedor após 5 cliques
   if (clickCount >= 5) {
-    const currentState = await isInfoDevModeEnabled();
-    const newState = !currentState;
+    const currentState = await isInfoDevModeEnabled()
+    const newState = !currentState
 
-    await chrome.storage.local.set({ 'infoDevMode': newState });
+    await chrome.storage.local.set({ infoDevMode: newState })
 
     clickCount = 0
 
@@ -69,7 +69,9 @@ async function handleDeveloperModeClick(event) {
     const toast = document.createElement('div')
     toast.style.cssText =
       'position: fixed; top: 20px; right: 20px; padding: 12px 16px; background-color: var(--action-green); color: white; border-radius: var(--border-radius-sm); z-index: 10000; font-size: 14px;'
-    toast.textContent = newState ? '🚀 Modo Dev (Painel SGD) Ativado!' : '✅ Modo Dev (Painel SGD) Desativado!';
+    toast.textContent = newState
+      ? '🚀 Modo Dev (Painel SGD) Ativado!'
+      : '✅ Modo Dev (Painel SGD) Desativado!'
     document.body.appendChild(toast)
 
     setTimeout(() => {
@@ -87,19 +89,18 @@ async function handleDeveloperModeClick(event) {
   }
 }
 
-
 /**
  * Abre o Painel de Informações e Alertas.
  */
 async function openInfoPanel() {
   // Injeta estilos necessários
-  injectDevSwitchStyles();
+  injectDevSwitchStyles()
 
   // 1. Carregar estados persistentes do modo desenvolvedor
-  const infoDevMode = await isInfoDevModeEnabled(); // Ativado via Cliques no Painel
-  developerMode = infoDevMode; // Para este painel, usamos o modo específico
+  const infoDevMode = await isInfoDevModeEnabled() // Ativado via Cliques no Painel
+  developerMode = infoDevMode // Para este painel, usamos o modo específico
 
-  const equipeATEnabled = await isEquipeATEnabled();
+  const equipeATEnabled = await isEquipeATEnabled()
 
   const allSections = [
     { id: 'pending', icon: '⏳', label: 'Pendências' },
@@ -115,21 +116,30 @@ async function openInfoPanel() {
   const sections = allSections.filter(section => {
     // Equipe AT aparece se estiver habilitada OU se estiver em modo desenvolvedor
     if (section.id === 'team-status') {
-      return equipeATEnabled || developerMode;
+      return equipeATEnabled || developerMode
     }
 
     // Outras abas aparecem se estiver em modo dev
-    if (developerMode) return true;
+    if (developerMode) return true
 
     // Seções públicas
-    const publicSections = ['pending', 'instabilities', 'notices', 'forms', 'ai-chains', 'extensions'];
-    return publicSections.includes(section.id);
-  });
+    const publicSections = [
+      'pending',
+      'instabilities',
+      'notices',
+      'forms',
+      'ai-chains',
+      'extensions'
+    ]
+    return publicSections.includes(section.id)
+  })
 
   // HTML do rodapé da sidebar (Interruptores de Opções)
   const sidebarFooterHtml = `
     <div class="ip-sidebar-footer">
-      ${infoDevMode ? `
+      ${
+        infoDevMode
+          ? `
         <div class="ip-dev-toggle-wrapper" style="margin-bottom: 8px;">
           <span>Modo Dev (Painel)</span>
           <label class="ip-switch" title="Desativar Modo Desenvolvedor do Painel">
@@ -137,7 +147,9 @@ async function openInfoPanel() {
             <span class="ip-slider round"></span>
           </label>
         </div>
-      ` : ''}
+      `
+          : ''
+      }
       <div class="ip-dev-toggle-wrapper">
         <span>Equipe AT</span>
         <label class="ip-switch" title="Mostrar/Ocultar aba Equipe AT">
@@ -146,7 +158,7 @@ async function openInfoPanel() {
         </label>
       </div>
     </div>
-  `;
+  `
 
   // Estrutura Base do Modal
   const sidebarHtml = `
@@ -156,16 +168,17 @@ async function openInfoPanel() {
       </div>
       <div style="flex: 1; overflow-y: auto;">
         ${sections
-      .map(
-        (s, index) => `
-          <div id="ip-nav-${s.id}" class="ip-nav-item ${index === 0 ? 'active' : ''}" data-target="${s.id
+          .map(
+            (s, index) => `
+          <div id="ip-nav-${s.id}" class="ip-nav-item ${index === 0 ? 'active' : ''}" data-target="${
+            s.id
           }">
             <span class="ip-nav-icon">${s.icon}</span>
             <span class="ip-nav-label">${s.label}</span>
           </div>
         `
-      )
-      .join('')}
+          )
+          .join('')}
       </div>
       ${sidebarFooterHtml}
     </div>
@@ -175,16 +188,17 @@ async function openInfoPanel() {
   const contentHtml = `
     <div class="ip-content-area">
       ${sections
-      .map(
-        (s, index) => `
-        <div id="ip-section-${s.id}" class="ip-section ${index === 0 ? 'active' : ''
-          }">
+        .map(
+          (s, index) => `
+        <div id="ip-section-${s.id}" class="ip-section ${
+          index === 0 ? 'active' : ''
+        }">
           ${s.id === 'team-status' ? '' : `<h3 class="ip-section-title">${s.icon} ${s.label}</h3>`}
           ${getSectionContent(s.id)}
         </div>
       `
-      )
-      .join('')}
+        )
+        .join('')}
     </div>
   `
 
@@ -216,9 +230,9 @@ async function openInfoPanel() {
 
       // Indicador de lido/não lido para Avisos
       if (targetId === 'notices') {
-        const noticeIcon = item.querySelector('.ip-nav-icon');
-        if (noticeIcon) noticeIcon.classList.remove('has-unread-warnings');
-        chrome.storage.local.set({ 'warningsLastReadTime': Date.now() });
+        const noticeIcon = item.querySelector('.ip-nav-icon')
+        if (noticeIcon) noticeIcon.classList.remove('has-unread-warnings')
+        chrome.storage.local.set({ warningsLastReadTime: Date.now() })
       }
 
       const targetSection = modal.querySelector(`#ip-section-${targetId}`)
@@ -231,77 +245,91 @@ async function openInfoPanel() {
 
         // Lógica de Busca e Ordenação para Equipe AT (Team Status)
         if (targetId === 'team-status') {
-          const teamSearchInput = targetSection.querySelector('#team-search');
-          const teamSortSelect = targetSection.querySelector('#team-sort-filter');
+          const teamSearchInput = targetSection.querySelector('#team-search')
+          const teamSortSelect =
+            targetSection.querySelector('#team-sort-filter')
 
           if (teamSearchInput && !teamSearchInput.dataset.listenerSet) {
-            teamSearchInput.addEventListener('input', debounce(() => loadTeamStatus(targetSection, false), 300));
-            teamSearchInput.dataset.listenerSet = 'true';
+            teamSearchInput.addEventListener(
+              'input',
+              debounce(() => loadTeamStatus(targetSection, false), 300)
+            )
+            teamSearchInput.dataset.listenerSet = 'true'
           }
           if (teamSortSelect && !teamSortSelect.dataset.listenerSet) {
-            teamSortSelect.addEventListener('change', () => loadTeamStatus(targetSection, false));
-            teamSortSelect.dataset.listenerSet = 'true';
+            teamSortSelect.addEventListener('change', () =>
+              loadTeamStatus(targetSection, false)
+            )
+            teamSortSelect.dataset.listenerSet = 'true'
           }
 
-          const teamStatusFilter = targetSection.querySelector('#team-status-filter');
+          const teamStatusFilter = targetSection.querySelector(
+            '#team-status-filter'
+          )
           if (teamStatusFilter && !teamStatusFilter.dataset.listenerSet) {
-            teamStatusFilter.addEventListener('change', () => loadTeamStatus(targetSection, false));
-            teamStatusFilter.dataset.listenerSet = 'true';
+            teamStatusFilter.addEventListener('change', () =>
+              loadTeamStatus(targetSection, false)
+            )
+            teamStatusFilter.dataset.listenerSet = 'true'
           }
 
           // Listener para o botão de visualização
-          const toggleViewBtn = targetSection.querySelector('#toggle-team-view-btn');
+          const toggleViewBtn = targetSection.querySelector(
+            '#toggle-team-view-btn'
+          )
           if (toggleViewBtn && !toggleViewBtn.dataset.listenerSet) {
             toggleViewBtn.addEventListener('click', async () => {
-              const result = await chrome.storage.local.get(['teamViewMode']);
-              const currentMode = result.teamViewMode || 'normal';
-              const newMode = currentMode === 'normal' ? 'compact' : 'normal';
-              await chrome.storage.local.set({ 'teamViewMode': newMode });
-              loadTeamStatus(targetSection, false); // Recarrega com novo modo
-            });
-            toggleViewBtn.dataset.listenerSet = 'true';
+              const result = await chrome.storage.local.get(['teamViewMode'])
+              const currentMode = result.teamViewMode || 'normal'
+              const newMode = currentMode === 'normal' ? 'compact' : 'normal'
+              await chrome.storage.local.set({ teamViewMode: newMode })
+              loadTeamStatus(targetSection, false) // Recarrega com novo modo
+            })
+            toggleViewBtn.dataset.listenerSet = 'true'
           }
 
           // Listener para teste de notificação (apenas dev)
-          const testNotifyBtn = targetSection.querySelector('#test-notification-btn');
+          const testNotifyBtn = targetSection.querySelector(
+            '#test-notification-btn'
+          )
           if (testNotifyBtn && !testNotifyBtn.dataset.listenerSet) {
             testNotifyBtn.addEventListener('click', () => {
-              if (!("Notification" in window)) {
-                alert("Este navegador não suporta notificações de desktop.");
-              } else if (Notification.permission === "granted") {
-                new Notification("Teste de Notificação", {
-                  body: "Esta é uma notificação de teste do Painel SGD.",
-                  icon: chrome.runtime.getURL("icons/icon128.png"), // Tenta ícone da extensão ou fallback
+              if (!('Notification' in window)) {
+                alert('Este navegador não suporta notificações de desktop.')
+              } else if (Notification.permission === 'granted') {
+                new Notification('Teste de Notificação', {
+                  body: 'Esta é uma notificação de teste do Painel SGD.',
+                  icon: chrome.runtime.getURL('icons/icon128.png'), // Tenta ícone da extensão ou fallback
                   requireInteraction: true
-                });
-              } else if (Notification.permission !== "denied") {
-                Notification.requestPermission().then((permission) => {
-                  if (permission === "granted") {
-                    new Notification("Teste de Notificação", {
-                      body: "Obrigado! As notificações agora estão ativas.",
-                      icon: chrome.runtime.getURL("icons/icon128.png")
-                    });
+                })
+              } else if (Notification.permission !== 'denied') {
+                Notification.requestPermission().then(permission => {
+                  if (permission === 'granted') {
+                    new Notification('Teste de Notificação', {
+                      body: 'Obrigado! As notificações agora estão ativas.',
+                      icon: chrome.runtime.getURL('icons/icon128.png')
+                    })
                   }
-                });
+                })
               } else {
-                alert("Permissão para notificações foi negada.");
+                alert('Permissão para notificações foi negada.')
               }
-            });
-            testNotifyBtn.dataset.listenerSet = 'true';
+            })
+            testNotifyBtn.dataset.listenerSet = 'true'
           }
 
-          loadTeamStatus(targetSection, false);
+          loadTeamStatus(targetSection, false)
         }
 
         if (targetId === 'instabilities') {
           loadSystemsStatus(targetSection, false)
           const refreshBtn = targetSection.querySelector('#refresh-systems-btn')
           if (refreshBtn) {
-            const newBtn = refreshBtn.cloneNode(true);
-            refreshBtn.parentNode.replaceChild(newBtn, refreshBtn);
+            const newBtn = refreshBtn.cloneNode(true)
+            refreshBtn.parentNode.replaceChild(newBtn, refreshBtn)
             newBtn.addEventListener('click', () => {
-              loadSystemsStatus(targetSection, true);
-            });
+              loadSystemsStatus(targetSection, true)
+            })
           }
         }
 
@@ -315,26 +343,30 @@ async function openInfoPanel() {
   if (pendingSection) {
     const refreshBtn = pendingSection.querySelector('#refresh-pending-btn')
     if (refreshBtn) {
-      refreshBtn.addEventListener('click', () => loadPendingItems(pendingSection))
+      refreshBtn.addEventListener('click', () =>
+        loadPendingItems(pendingSection)
+      )
     }
 
     const notifyBtn = pendingSection.querySelector('#toggle-notification-btn')
     if (notifyBtn) {
-      const updateNotifyBtnState = (enabled) => {
+      const updateNotifyBtnState = enabled => {
         if (enabled) {
-          notifyBtn.innerHTML = '🔔 <span style="margin-left: 4px;">Notificações Ativas</span>'
+          notifyBtn.innerHTML =
+            '🔔 <span style="margin-left: 4px;">Notificações Ativas</span>'
           notifyBtn.classList.add('active-notification')
           notifyBtn.title = 'Notificações Ativadas'
           notifyBtn.style.opacity = '1'
         } else {
-          notifyBtn.innerHTML = '🔕 <span style="margin-left: 4px;">Notificações Inativas</span>'
+          notifyBtn.innerHTML =
+            '🔕 <span style="margin-left: 4px;">Notificações Inativas</span>'
           notifyBtn.classList.remove('active-notification')
           notifyBtn.title = 'Notificações Desativadas'
           notifyBtn.style.opacity = '0.7'
         }
       }
 
-      chrome.storage.sync.get(['extensionSettingsData'], (result) => {
+      chrome.storage.sync.get(['extensionSettingsData'], result => {
         const settings = result.extensionSettingsData || {}
         const prefs = settings.preferences || {}
         updateNotifyBtnState(prefs.enablePendingNotifications === true)
@@ -345,7 +377,9 @@ async function openInfoPanel() {
         let settings = result.extensionSettingsData || { preferences: {} }
         if (!settings.preferences) settings.preferences = {}
 
-        const newState = !(settings.preferences.enablePendingNotifications === true)
+        const newState = !(
+          settings.preferences.enablePendingNotifications === true
+        )
         settings.preferences.enablePendingNotifications = newState
 
         await chrome.storage.sync.set({ extensionSettingsData: settings })
@@ -362,8 +396,12 @@ async function openInfoPanel() {
     const statusFilter = pendingSection.querySelector('#pending-status-filter')
     const tagFilter = pendingSection.querySelector('#pending-tag-filter')
     const sortSelect = pendingSection.querySelector('#pending-sort')
-    const responsibleFilter = pendingSection.querySelector('#pending-responsible-filter')
-    const criticalFilter = pendingSection.querySelector('#pending-critical-filter')
+    const responsibleFilter = pendingSection.querySelector(
+      '#pending-responsible-filter'
+    )
+    const criticalFilter = pendingSection.querySelector(
+      '#pending-critical-filter'
+    )
 
     const applyFiltersHandler = () => {
       if (allPendingItems.length > 0) {
@@ -371,18 +409,21 @@ async function openInfoPanel() {
       }
     }
 
-    if (searchInput) searchInput.addEventListener('input', debounce(applyFiltersHandler, 300))
-    if (statusFilter) statusFilter.addEventListener('change', applyFiltersHandler)
+    if (searchInput)
+      searchInput.addEventListener('input', debounce(applyFiltersHandler, 300))
+    if (statusFilter)
+      statusFilter.addEventListener('change', applyFiltersHandler)
     if (tagFilter) tagFilter.addEventListener('change', applyFiltersHandler)
     if (sortSelect) sortSelect.addEventListener('change', applyFiltersHandler)
-    if (criticalFilter) criticalFilter.addEventListener('change', applyFiltersHandler)
+    if (criticalFilter)
+      criticalFilter.addEventListener('change', applyFiltersHandler)
     if (responsibleFilter) {
-      responsibleFilter.addEventListener('change', (e) => {
+      responsibleFilter.addEventListener('change', e => {
         // NOVO: Salva a preferência sempre que o usuário mudar
-        const selectedValue = e.target.value;
-        chrome.storage.local.set({ 'preferredResponsible': selectedValue });
+        const selectedValue = e.target.value
+        chrome.storage.local.set({ preferredResponsible: selectedValue })
 
-        applyFiltersHandler();
+        applyFiltersHandler()
       })
     }
   }
@@ -394,14 +435,14 @@ async function openInfoPanel() {
   }
 
   // --- Lógica dos Interruptores do Rodapé ---
-  const equipeATSwitch = modal.querySelector('#ip-equipe-at-switch');
+  const equipeATSwitch = modal.querySelector('#ip-equipe-at-switch')
   if (equipeATSwitch) {
-    equipeATSwitch.addEventListener('click', async (e) => {
-      const isChecking = e.target.checked;
+    equipeATSwitch.addEventListener('click', async e => {
+      const isChecking = e.target.checked
 
       if (isChecking) {
         // Previne a mudança imediata até a senha ser validada
-        e.preventDefault();
+        e.preventDefault()
 
         const passwordModalHtml = `
           <div style="padding: 10px;">
@@ -410,67 +451,73 @@ async function openInfoPanel() {
               style="display: block; width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); font-size: 14px;" 
               placeholder="Digite a senha...">
           </div>
-        `;
+        `
 
-        const passwordModal = createModal('Acesso Protegido', passwordModalHtml, async (content, closePasswordModal) => {
-          const input = content.querySelector('#at-password-input');
-          const password = input.value;
+        const passwordModal = createModal(
+          'Acesso Protegido',
+          passwordModalHtml,
+          async (content, closePasswordModal) => {
+            const input = content.querySelector('#at-password-input')
+            const password = input.value
 
-          if (password === 'equipe.at123') {
-            await chrome.storage.local.set({ 'equipeATEnabled': true });
-            closePasswordModal();
-            modal.remove(); // Fecha o painel de info principal
-            openInfoPanel(); // Reabre para mostrar a nova aba
-            showNotification('Acesso concedido! Aba Equipe AT habilitada.', 'success');
-          } else {
-            showNotification('Senha incorreta', 'error');
+            if (password === 'equipe.at123') {
+              await chrome.storage.local.set({ equipeATEnabled: true })
+              closePasswordModal()
+              modal.remove() // Fecha o painel de info principal
+              openInfoPanel() // Reabre para mostrar a nova aba
+              showNotification(
+                'Acesso concedido! Aba Equipe AT habilitada.',
+                'success'
+              )
+            } else {
+              showNotification('Senha incorreta', 'error')
+            }
+          },
+          {
+            isManagementModal: false,
+            modalId: 'at-password-modal'
           }
-        }, {
-          isManagementModal: false,
-          modalId: 'at-password-modal'
-        });
+        )
 
         // Personalizar botão de salvar
-        const confirmBtn = passwordModal.querySelector('#modal-save-btn');
-        if (confirmBtn) confirmBtn.textContent = 'Confirmar';
+        const confirmBtn = passwordModal.querySelector('#modal-save-btn')
+        if (confirmBtn) confirmBtn.textContent = 'Confirmar'
 
-        document.body.appendChild(passwordModal);
+        document.body.appendChild(passwordModal)
 
         // Foco no input e suporte ao Enter
         setTimeout(() => {
-          const input = passwordModal.querySelector('#at-password-input');
+          const input = passwordModal.querySelector('#at-password-input')
           if (input) {
-            input.focus();
-            input.addEventListener('keypress', (event) => {
+            input.focus()
+            input.addEventListener('keypress', event => {
               if (event.key === 'Enter') {
-                confirmBtn.click();
+                confirmBtn.click()
               }
-            });
+            })
           }
-        }, 100);
-
+        }, 100)
       } else {
         // Desativando (sem senha)
-        await chrome.storage.local.set({ 'equipeATEnabled': false });
+        await chrome.storage.local.set({ equipeATEnabled: false })
         // Recarrega o painel para refletir a mudança
-        modal.remove();
-        openInfoPanel();
+        modal.remove()
+        openInfoPanel()
       }
-    });
+    })
   }
 
-  const devModeSwitch = modal.querySelector('#ip-dev-mode-switch');
+  const devModeSwitch = modal.querySelector('#ip-dev-mode-switch')
   if (devModeSwitch) {
     devModeSwitch.addEventListener('change', async () => {
       // Desativa o modo dev específico do painel
-      await chrome.storage.local.set({ 'infoDevMode': false });
+      await chrome.storage.local.set({ infoDevMode: false })
 
       // Recarrega o painel para refletir a mudança
-      modal.remove();
-      openInfoPanel();
-    });
+      modal.remove()
+      openInfoPanel()
+    })
   }
-
 
   // Mensagem de desenvolvimento no rodapé do conteúdo (apenas se dev)
   if (developerMode) {
@@ -490,11 +537,29 @@ let allPendingItems = []
 
 // #region agent log
 // Global click listener to detect if clicks are happening but handler is missed
-document.addEventListener('click', (e) => {
-  if (e.target.matches('.ip-add-tag-btn') || e.target.closest('.ip-add-tag-btn')) {
-    fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'info-panel.js:globalClick', message: 'Click detected on tag button', data: { target: e.target.className, isWindowOpenTagManagerDefined: typeof window.openTagManager !== 'undefined' }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'A' }) }).catch(() => { });
+document.addEventListener('click', e => {
+  if (
+    e.target.matches('.ip-add-tag-btn') ||
+    e.target.closest('.ip-add-tag-btn')
+  ) {
+    fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'info-panel.js:globalClick',
+        message: 'Click detected on tag button',
+        data: {
+          target: e.target.className,
+          isWindowOpenTagManagerDefined:
+            typeof window.openTagManager !== 'undefined'
+        },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        hypothesisId: 'A'
+      })
+    }).catch(() => {})
   }
-});
+})
 // #endregion
 
 // Cache para tags
@@ -513,11 +578,11 @@ let lastClickTime = 0
  * Verifica se o modo desenvolvedor está ativo no storage
  */
 function isDevModeEnabled() {
-  return new Promise((resolve) => {
-    chrome.storage.local.get(['developerMode'], (result) => {
-      resolve(result.developerMode === true);
-    });
-  });
+  return new Promise(resolve => {
+    chrome.storage.local.get(['developerMode'], result => {
+      resolve(result.developerMode === true)
+    })
+  })
 }
 
 /**
@@ -534,11 +599,11 @@ async function toggleDevMode() {
  * Verifica se o modo desenvolvedor específico do painel está ativo
  */
 function isInfoDevModeEnabled() {
-  return new Promise((resolve) => {
-    chrome.storage.local.get(['infoDevMode'], (result) => {
-      resolve(result.infoDevMode === true);
-    });
-  });
+  return new Promise(resolve => {
+    chrome.storage.local.get(['infoDevMode'], result => {
+      resolve(result.infoDevMode === true)
+    })
+  })
 }
 
 /**
@@ -548,23 +613,23 @@ function isInfoDevModeEnabled() {
  * Verifica se a aba Equipe AT está ativa no storage
  */
 function isEquipeATEnabled() {
-  return new Promise((resolve) => {
-    chrome.storage.local.get(['equipeATEnabled'], (result) => {
+  return new Promise(resolve => {
+    chrome.storage.local.get(['equipeATEnabled'], result => {
       // Se for a primeira vez e não houver valor, assume false (desabilitado por padrão)
-      const enabled = result.equipeATEnabled === true;
-      resolve(enabled);
-    });
-  });
+      const enabled = result.equipeATEnabled === true
+      resolve(enabled)
+    })
+  })
 }
 
 /**
  * Injeta os estilos CSS para o interruptor do modo desenvolvedor
  */
 function injectDevSwitchStyles() {
-  if (document.getElementById('ip-dev-switch-styles')) return;
+  if (document.getElementById('ip-dev-switch-styles')) return
 
-  const style = document.createElement('style');
-  style.id = 'ip-dev-switch-styles';
+  const style = document.createElement('style')
+  style.id = 'ip-dev-switch-styles'
   style.textContent = `
     .ip-sidebar-footer {
       margin-top: auto;
@@ -678,8 +743,8 @@ function injectDevSwitchStyles() {
     .ip-action-icon-btn.active-hide:hover {
        opacity: 1 !important;
     }
-  `;
-  document.head.appendChild(style);
+  `
+  document.head.appendChild(style)
 }
 
 /**
@@ -688,16 +753,16 @@ function injectDevSwitchStyles() {
  */
 function getCurrentUserName() {
   // Tenta obter o nome do usuário do elemento do topo do SGD (navbar-link b)
-  const userNameElement = document.querySelector('.navbar-link b');
+  const userNameElement = document.querySelector('.navbar-link b')
 
   if (userNameElement) {
     // Remove os &nbsp; (no JS aparecem como \u00A0)
-    return userNameElement.textContent.replace(/\u00A0/g, ' ').trim();
+    return userNameElement.textContent.replace(/\u00A0/g, ' ').trim()
   }
 
   // Fallback para outros elementos se mudar
-  const fallbackElement = document.querySelector('.user-info, .usuario-nome');
-  return fallbackElement ? fallbackElement.textContent.trim() : 'Usuário SGD';
+  const fallbackElement = document.querySelector('.user-info, .usuario-nome')
+  return fallbackElement ? fallbackElement.textContent.trim() : 'Usuário SGD'
 }
 
 /**
@@ -722,7 +787,9 @@ function applyPendingFilters(sectionElement) {
   const responsibleFilter =
     sectionElement.querySelector('#pending-responsible-filter')?.value || ''
 
-  const criticalFilter = sectionElement.querySelector('#pending-critical-filter')?.checked;
+  const criticalFilter = sectionElement.querySelector(
+    '#pending-critical-filter'
+  )?.checked
 
   const sortOption =
     sectionElement.querySelector('#pending-sort')?.value || 'dias-desc'
@@ -829,11 +896,12 @@ function applyPendingFilters(sectionElement) {
             </div>
         `
   } else {
-
     // Lógica para mostrar o responsável:
     // Mostrar apenas se o filtro de responsável estiver vazio (Todos)
     // E se houver mais de um responsável distinto na lista filtrada.
-    const uniqueResponsibles = new Set(filteredItems.map(i => i.responsible).filter(Boolean))
+    const uniqueResponsibles = new Set(
+      filteredItems.map(i => i.responsible).filter(Boolean)
+    )
     const showResponsible = !responsibleFilter && uniqueResponsibles.size > 1
 
     container.innerHTML = filteredItems
@@ -886,7 +954,9 @@ async function loadPendingItems(sectionElement) {
     allPendingItems = items
 
     // Gerenciar Aviso de Filtro do Site
-    const existingWarning = sectionElement.querySelector('.ip-site-filter-warning')
+    const existingWarning = sectionElement.querySelector(
+      '.ip-site-filter-warning'
+    )
     if (existingWarning) existingWarning.remove()
 
     if (siteFilter && siteFilter.active) {
@@ -894,7 +964,8 @@ async function loadPendingItems(sectionElement) {
       if (headerRow) {
         const warningDiv = document.createElement('div')
         warningDiv.className = 'ip-site-filter-warning'
-        warningDiv.style.cssText = 'background: #fff3cd; color: #856404; padding: 8px 12px; margin: 0 10px 10px 10px; border-radius: 4px; border: 1px solid #ffeeba; display: flex; align-items: center; justify-content: space-between; font-size: 12px;'
+        warningDiv.style.cssText =
+          'background: #fff3cd; color: #856404; padding: 8px 12px; margin: 0 10px 10px 10px; border-radius: 4px; border: 1px solid #ffeeba; display: flex; align-items: center; justify-content: space-between; font-size: 12px;'
         warningDiv.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 6px;">
                     <span style="font-size: 14px;">⚠️</span>
@@ -906,8 +977,14 @@ async function loadPendingItems(sectionElement) {
 
         // Bind click
         const resetBtn = warningDiv.querySelector('#reset-site-filter-btn')
-        resetBtn.addEventListener('mouseenter', () => { resetBtn.style.background = '#856404'; resetBtn.style.color = '#fff'; })
-        resetBtn.addEventListener('mouseleave', () => { resetBtn.style.background = 'transparent'; resetBtn.style.color = '#856404'; })
+        resetBtn.addEventListener('mouseenter', () => {
+          resetBtn.style.background = '#856404'
+          resetBtn.style.color = '#fff'
+        })
+        resetBtn.addEventListener('mouseleave', () => {
+          resetBtn.style.background = 'transparent'
+          resetBtn.style.color = '#856404'
+        })
 
         resetBtn.addEventListener('click', async () => {
           resetBtn.disabled = true
@@ -921,7 +998,9 @@ async function loadPendingItems(sectionElement) {
               const success = await resetSiteFilter()
 
               if (!success) {
-                throw new Error('Não foi possível encontrar o botão de pesquisar ou limpar o filtro automaticamente.')
+                throw new Error(
+                  'Não foi possível encontrar o botão de pesquisar ou limpar o filtro automaticamente.'
+                )
               }
               // Se sucesso, a página deve recarregar ou atualizar, então não restauramos o estado imediatamente
             } else {
@@ -929,7 +1008,9 @@ async function loadPendingItems(sectionElement) {
             }
           } catch (err) {
             console.error(err)
-            alert('Não conseguimos limpar o filtro automaticamente. Por favor, limpe manualmente no site de pendências.')
+            alert(
+              'Não conseguimos limpar o filtro automaticamente. Por favor, limpe manualmente no site de pendências.'
+            )
             // Restaura estado
             resetBtn.disabled = false
             resetBtn.innerText = originalText
@@ -955,7 +1036,9 @@ async function loadPendingItems(sectionElement) {
     }
 
     // Atualiza o select de filtro de responsável
-    const responsibleSelect = sectionElement.querySelector('#pending-responsible-filter')
+    const responsibleSelect = sectionElement.querySelector(
+      '#pending-responsible-filter'
+    )
     if (responsibleSelect) {
       // 1. Tenta recuperar a preferência salva
       const storage = await chrome.storage.local.get(['preferredResponsible'])
@@ -964,7 +1047,9 @@ async function loadPendingItems(sectionElement) {
       // Se a preferência não estiver na lista atual (ex: usuário saiu da lista), mantém o valor atual do select ou vazio
       const currentVal = responsibleSelect.value || savedResponsible
 
-      const responsibles = [...new Set(items.map(i => i.responsible).filter(Boolean))].sort()
+      const responsibles = [
+        ...new Set(items.map(i => i.responsible).filter(Boolean))
+      ].sort()
 
       responsibleSelect.innerHTML = `
             <option value="">Todos Responsáveis</option>
@@ -1038,31 +1123,36 @@ function getStatusClass(status) {
 }
 
 /**
+ * Converte horas decimais para formato HH:MM
+ * @param {number} decimalHours - Horas em formato decimal (ex: 40.5)
+ * @returns {string} Tempo formatado como HH:MM
+ */
+function formatHoursToHHMM(decimalHours) {
+  const hours = Math.floor(decimalHours)
+  const minutes = Math.round((decimalHours - hours) * 60)
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+}
+
+/**
  * Cria o HTML para um card de pendência.
- * @param {object} item - Objeto da pendência.
- * @param {boolean} showResponsible - Se deve mostrar o nome do responsável.
- * @returns {string} HTML do card.
+ * ATUALIZADO: Suporte a SLA nulo (traço).
  */
 function createPendingCard(item, showResponsible = false) {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'info-panel.js:createPendingCard', message: 'Creating card v3', data: { id: item.id }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'A' }) }).catch(() => { });
-  // #endregion
   const statusClass = getStatusClass(item.status)
 
   // Tags
   let tagsRenderList = []
   const renderedTagIds = new Set()
 
-  // 1. Tag de Prioridade (Automática - baseada em nome)
   if (item.isPrioritaria) {
-    const priorityTag = availableTagsCache.find(t => t.name.toLowerCase() === 'prioridade')
+    const priorityTag = availableTagsCache.find(
+      t => t.name.toLowerCase() === 'prioridade'
+    )
     if (priorityTag) {
       tagsRenderList.push(priorityTag)
       renderedTagIds.add(priorityTag.id)
     }
   }
-
-  // 2. Tag de Em SS (Automática - baseada em nome)
   if (item.isEmSS) {
     const ssTag = availableTagsCache.find(t => t.name.toLowerCase() === 'em ss')
     if (ssTag) {
@@ -1071,12 +1161,9 @@ function createPendingCard(item, showResponsible = false) {
     }
   }
 
-  // 3. Tags do Usuário (Persistidas)
   const storedTagIds = pendingTagsMapCache[item.id] || []
   storedTagIds.forEach(id => {
-    // Evita duplicatas se a tag automática já foi adicionada
     if (renderedTagIds.has(id)) return
-
     const def = availableTagsCache.find(t => t.id === id)
     if (def) {
       tagsRenderList.push(def)
@@ -1084,66 +1171,87 @@ function createPendingCard(item, showResponsible = false) {
     }
   })
 
-  const tagsHtml = tagsRenderList.map(tagDef => {
-    return `<span class="ip-tag-badge" style="background-color: ${tagDef.color}20; color: ${tagDef.color}; border-color: ${tagDef.color}40;">${escapeHTML(tagDef.name)}</span>`
-  }).join('')
+  const tagsHtml = tagsRenderList
+    .map(tagDef => {
+      return `<span class="ip-tag-badge" style="background-color: ${tagDef.color}20; color: ${tagDef.color}; border-color: ${tagDef.color}40;">${escapeHTML(tagDef.name)}</span>`
+    })
+    .join('')
 
-  const responsibleHtml = showResponsible && item.responsible
-    ? `<div class="ip-pending-responsible-item" title="Responsável: ${escapeHTML(item.responsible)}" style="margin-left: 8px; font-weight: 600; font-size: 12px; color: var(--text-color-muted); display: flex; align-items: center; gap: 4px; border-left: 1px solid var(--border-color); padding-left: 8px;">
+  const responsibleHtml =
+    showResponsible && item.responsible
+      ? `<div class="ip-pending-responsible-item" title="Responsável: ${escapeHTML(item.responsible)}" style="margin-left: 8px; font-weight: 600; font-size: 12px; color: var(--text-color-muted); display: flex; align-items: center; gap: 4px; border-left: 1px solid var(--border-color); padding-left: 8px;">
          <span style="font-size: 14px;">👤</span>${escapeHTML(item.responsible)}
        </div>`
-    : ''
+      : ''
 
-  const hours = Math.floor(item.hoursSinceUpdate || 0);
-  let slaBadgeHtml = '';
-  let slaClass = '';
-  let icon = '';
-  let styleClass = '';
-  let tooltip = '';
+  // --- LÓGICA DE SLA VISUAL ---
+  let slaBadgeHtml = ''
+  let slaClass = ''
+  let icon = ''
+  let styleClass = ''
+  let tooltip = ''
 
-  if (hours >= 72) {
-    // Fatal (72h+)
-    icon = '☠️';
-    styleClass = 'fatal';
-    slaClass = 'border-fatal-time';
-    tooltip = `Atraso crítico extremo (${hours - 48}h além do prazo)`;
-  } else if (hours >= 48) {
-    // Crítico (48h - 71h)
-    icon = '💣';
-    styleClass = 'critical';
-    slaClass = 'border-critical-time';
-    tooltip = `Estourado há ${hours - 48} horas`;
-  } else if (hours >= 44) {
-    // Urgente
-    icon = '🔥';
-    styleClass = 'urgent';
-    slaClass = 'border-urgent-time';
-    tooltip = `Faltam ${48 - hours} horas para o prazo`;
-  } else if (hours >= 40) {
-    // Atenção
-    icon = '⏳';
-    styleClass = 'warning';
-    slaClass = 'border-warning-time';
-    tooltip = `Atenção: ${hours} horas corridas`;
-  } else if (hours >= 30) {
-    // Atenção leve
-    icon = '👀';
-    styleClass = 'notice';
-    slaClass = 'border-notice-time';
-    tooltip = `Fique atento (${hours}h)`;
+  // Visualização baseada na precisão do tempo
+  if (
+    item.timePrecision === 'estimado' &&
+    typeof item.estimatedDaysSinceUpdate === 'number'
+  ) {
+    const days = Math.max(0, item.estimatedDaysSinceUpdate)
+    icon = '≈'
+    styleClass = 'notice'
+    tooltip = 'Estimativa baseada na data do último trâmite (Offline)'
+    slaBadgeHtml = `<span class="ip-time-badge ${styleClass}" title="${tooltip}" style="opacity: 0.6;">~ ${days}D</span>`
+  } else if (
+    item.hoursSinceUpdate !== null &&
+    item.hoursSinceUpdate !== undefined
+  ) {
+    const hours = Math.floor(item.hoursSinceUpdate)
+
+    const exactTime = formatHoursToHHMM(item.hoursSinceUpdate)
+
+    if (hours >= 72) {
+      icon = '☠️'
+      styleClass = 'fatal'
+      slaClass = 'border-fatal-time'
+      tooltip = `Atrasado (${hours - 48}h além do prazo) | Tempo: ${exactTime}`
+    } else if (hours >= 48) {
+      icon = '💣'
+      styleClass = 'critical'
+      slaClass = 'border-critical-time'
+      tooltip = `Estourado há ${hours - 48} horas | Tempo: ${exactTime}`
+    } else if (hours >= 44) {
+      icon = '🔥'
+      styleClass = 'urgent'
+      slaClass = 'border-urgent-time'
+      tooltip = `Faltam ${48 - hours} horas para o prazo | Tempo: ${exactTime}`
+    } else if (hours >= 40) {
+      icon = '⏳'
+      styleClass = 'warning'
+      slaClass = 'border-warning-time'
+      tooltip = `Atenção: ${hours} horas corridas | Tempo: ${exactTime}`
+    } else if (hours >= 30) {
+      icon = '👀'
+      styleClass = 'notice'
+      slaClass = 'border-notice-time'
+      tooltip = `Fique atento (${hours}h) | Tempo: ${exactTime}`
+    } else {
+      icon = '✅'
+      styleClass = 'normal'
+      slaClass = 'border-normal-time'
+      tooltip = `Dentro do prazo (${hours}h) | Tempo: ${exactTime}`
+    }
+
+    slaBadgeHtml = `<span class="ip-time-badge ${styleClass}" title="${tooltip}">${icon} ${hours}h</span>`
   } else {
-    // Normal
-    icon = '✅';
-    styleClass = 'normal';
-    slaClass = 'border-normal-time';
-    tooltip = `Dentro do prazo (${hours}h)`;
+    // Caso SLA Indefinido (Solicitação Antiga)
+    // Exibe traço e remove borda colorida de urgência
+    slaClass = ''
+    tooltip = 'Solicitação antiga: cronômetro preciso não iniciado.'
+    slaBadgeHtml = `<span class="ip-time-badge normal" title="${tooltip}" style="opacity: 0.6; filter: grayscale(1);">⏱️ -</span>`
   }
 
-  // Badge com contagem de horas
-  slaBadgeHtml = `<span class="ip-time-badge ${styleClass}" title="${tooltip}">${icon} ${hours}h</span>`;
-
   return `
-        <div class="ip-pending-card ${statusClass} ${slaClass}" data-id="${item.id}">
+        <div class="ip-pending-card ${statusClass}" data-id="${item.id}">
             <div class="ip-pending-header">
                 <div class="ip-pending-id-row" style="width: 100%; justify-content: space-between;">
                     <div style="display: flex; align-items: center; gap: 8px;">
@@ -1188,7 +1296,7 @@ function createPendingCard(item, showResponsible = false) {
  * ATUALIZADO: Suporta forceRefresh
  */
 async function loadWarnings(sectionElement, forceRefresh = false) {
-  let listContainer = sectionElement.querySelector('#warnings-list');
+  let listContainer = sectionElement.querySelector('#warnings-list')
 
   // Se não existir o listContainer, cria a estrutura inicial
   if (!listContainer) {
@@ -1204,15 +1312,15 @@ async function loadWarnings(sectionElement, forceRefresh = false) {
                     <span>Carregando avisos...</span>
                 </div>
             </div>
-        `;
+        `
 
-    sectionElement.innerHTML = headerHtml;
-    listContainer = sectionElement.querySelector('#warnings-list');
+    sectionElement.innerHTML = headerHtml
+    listContainer = sectionElement.querySelector('#warnings-list')
 
     // Listener do botão de criar
-    const newBtn = sectionElement.querySelector('#new-warning-btn');
+    const newBtn = sectionElement.querySelector('#new-warning-btn')
     if (newBtn) {
-      newBtn.addEventListener('click', () => openCreateWarningModal(null));
+      newBtn.addEventListener('click', () => openCreateWarningModal(null))
     }
   } else if (forceRefresh) {
     // Mostra loading se for refresh forçado
@@ -1221,39 +1329,41 @@ async function loadWarnings(sectionElement, forceRefresh = false) {
                 <div class="ip-spinner"></div>
                 <span>Atualizando...</span>
             </div>
-        `;
+        `
   }
 
   try {
     if (typeof window.warningsService === 'undefined') {
-      throw new Error('Serviço de avisos não carregado.');
+      throw new Error('Serviço de avisos não carregado.')
     }
 
     // Passa o parâmetro forceRefresh
-    let warnings = await window.warningsService.getWarnings(forceRefresh);
+    let warnings = await window.warningsService.getWarnings(forceRefresh)
 
     // --- 1. Filtro de Expiração (7 dias) ---
-    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
-    const now = Date.now();
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
+    const now = Date.now()
     warnings = warnings.filter(w => {
-      if (!w.date) return true; // Se não tem data, mantém
-      const warnDate = new Date(w.date).getTime();
-      return (now - warnDate) < SEVEN_DAYS_MS;
-    });
+      if (!w.date) return true // Se não tem data, mantém
+      const warnDate = new Date(w.date).getTime()
+      return now - warnDate < SEVEN_DAYS_MS
+    })
 
     // [NOVO] --- 1.5 Filtro de Teste/Desenvolvedor ---
     // Se NÃO estiver em modo desenvolvedor, remove avisos marcados como isTest
     if (!developerMode) {
-      warnings = warnings.filter(w => !w.isTest);
+      warnings = warnings.filter(w => !w.isTest)
     }
 
     // --- 2. Filtro de Ignorados (Storage) ---
-    const storage = await new Promise(resolve => chrome.storage.local.get(['ignoredWarnings'], resolve));
-    const ignoredIds = storage.ignoredWarnings || [];
-    warnings = warnings.filter(w => !ignoredIds.includes(w.id));
+    const storage = await new Promise(resolve =>
+      chrome.storage.local.get(['ignoredWarnings'], resolve)
+    )
+    const ignoredIds = storage.ignoredWarnings || []
+    warnings = warnings.filter(w => !ignoredIds.includes(w.id))
 
-    const listContainer = sectionElement.querySelector('#warnings-list');
-    if (!listContainer) return;
+    const listContainer = sectionElement.querySelector('#warnings-list')
+    if (!listContainer) return
 
     if (warnings.length === 0) {
       listContainer.innerHTML = `
@@ -1262,92 +1372,92 @@ async function loadWarnings(sectionElement, forceRefresh = false) {
                     <h4>Nenhum aviso no momento</h4>
                     <p>Tudo tranquilo por aqui.</p>
                 </div>
-            `;
-      listContainer.style.display = 'flex';
-      listContainer.style.justifyContent = 'center';
+            `
+      listContainer.style.display = 'flex'
+      listContainer.style.justifyContent = 'center'
     } else {
-      listContainer.style.display = 'flex';
-      listContainer.style.flexDirection = 'column';
-      listContainer.style.gap = '16px';
-      listContainer.innerHTML = warnings.map(createWarningCard).join('');
+      listContainer.style.display = 'flex'
+      listContainer.style.flexDirection = 'column'
+      listContainer.style.gap = '16px'
+      listContainer.innerHTML = warnings.map(createWarningCard).join('')
 
       // Adicionar listeners para botões de edição/exclusão (apenas se dev)
       if (developerMode) {
         listContainer.querySelectorAll('.ip-warn-edit-btn').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            const card = e.target.closest('.ip-card');
-            const warnId = card.dataset.id;
+          btn.addEventListener('click', e => {
+            const card = e.target.closest('.ip-card')
+            const warnId = card.dataset.id
             // Encontra o objeto completo do array (não temos aqui, mas podemos pegar dos atributos ou recarregar)
             // Melhor: ao renderizar, já colocar os dados no dataset ou buscar do array 'warnings' que está no escopo
-            const warning = warnings.find(w => w.id === warnId);
-            if (warning) openCreateWarningModal(warning);
-          });
-        });
+            const warning = warnings.find(w => w.id === warnId)
+            if (warning) openCreateWarningModal(warning)
+          })
+        })
 
         listContainer.querySelectorAll('.ip-warn-delete-btn').forEach(btn => {
-          btn.addEventListener('click', async (e) => {
+          btn.addEventListener('click', async e => {
             if (confirm('Tem certeza que deseja excluir este aviso?')) {
-              const card = e.target.closest('.ip-card');
-              const warnId = card.dataset.id;
+              const card = e.target.closest('.ip-card')
+              const warnId = card.dataset.id
               try {
-                await window.warningsService.deleteWarning(warnId);
-                card.remove();
+                await window.warningsService.deleteWarning(warnId)
+                card.remove()
                 // Se não sobrar nada, reload para mostrar empty state
-                if (listContainer.children.length === 0) loadWarnings(sectionElement);
+                if (listContainer.children.length === 0)
+                  loadWarnings(sectionElement)
               } catch (err) {
-                alert('Erro ao excluir: ' + err.message);
+                alert('Erro ao excluir: ' + err.message)
               }
             }
-          });
-        });
+          })
+        })
       }
 
       // Adicionar listeners para botões de ignorar (para todos)
       listContainer.querySelectorAll('.ip-warn-ignore-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-          const card = e.target.closest('.ip-card');
-          const warnId = card.dataset.id;
+        btn.addEventListener('click', async e => {
+          const card = e.target.closest('.ip-card')
+          const warnId = card.dataset.id
 
           // Salvar no storage
-          chrome.storage.local.get(['ignoredWarnings'], (result) => {
-            const ignored = result.ignoredWarnings || [];
+          chrome.storage.local.get(['ignoredWarnings'], result => {
+            const ignored = result.ignoredWarnings || []
             if (!ignored.includes(warnId)) {
-              ignored.push(warnId);
-              chrome.storage.local.set({ 'ignoredWarnings': ignored }, () => {
-                card.style.opacity = '0';
-                card.style.transform = 'translateX(20px)';
-                card.style.transition = 'all 0.3s ease';
+              ignored.push(warnId)
+              chrome.storage.local.set({ ignoredWarnings: ignored }, () => {
+                card.style.opacity = '0'
+                card.style.transform = 'translateX(20px)'
+                card.style.transition = 'all 0.3s ease'
                 setTimeout(() => {
-                  card.remove();
-                  if (listContainer.children.length === 0) loadWarnings(sectionElement);
-                }, 300);
-              });
+                  card.remove()
+                  if (listContainer.children.length === 0)
+                    loadWarnings(sectionElement)
+                }, 300)
+              })
             }
-          });
-        });
-      });
+          })
+        })
+      })
 
       // Verificar indicadores de não lido
-      checkUnreadWarnings(warnings);
+      checkUnreadWarnings(warnings)
     }
-
   } catch (error) {
-    console.error(error);
-    const listContainer = sectionElement.querySelector('#warnings-list');
+    console.error(error)
+    const listContainer = sectionElement.querySelector('#warnings-list')
     if (listContainer) {
       listContainer.innerHTML = `
                 <div class="ip-error-state">
                     <span>⚠️</span>
                     <p>Erro ao carregar avisos.</p>
                 </div>
-            `;
+            `
     }
   }
 }
 
-
 // #region Equipe AT (Team Status)
-let allTeamMembers = [];
+let allTeamMembers = []
 
 /**
  * Carrega e renderiza o status da equipe.
@@ -1355,32 +1465,34 @@ let allTeamMembers = [];
  * @param {boolean} forceRefresh - Se true, força atualização do servidor.
  */
 async function loadTeamStatus(sectionElement, forceRefresh = false) {
-  const container = sectionElement.querySelector('#team-status-container');
-  const footer = sectionElement.querySelector('#team-status-footer');
-  const refreshBtn = sectionElement.querySelector('#refresh-team-status-btn');
-  const searchInput = sectionElement.querySelector('#team-search');
-  const sortSelect = sectionElement.querySelector('#team-sort-filter');
-  const statusSelect = sectionElement.querySelector('#team-status-filter');
+  const container = sectionElement.querySelector('#team-status-container')
+  const footer = sectionElement.querySelector('#team-status-footer')
+  const refreshBtn = sectionElement.querySelector('#refresh-team-status-btn')
+  const searchInput = sectionElement.querySelector('#team-search')
+  const sortSelect = sectionElement.querySelector('#team-sort-filter')
+  const statusSelect = sectionElement.querySelector('#team-status-filter')
 
-  if (!container) return;
+  if (!container) return
 
   // Se não for forceRefresh e já tivermos dados, não mostramos spinner completo para evitar flicker
-  const hasData = allTeamMembers.length > 0;
+  const hasData = allTeamMembers.length > 0
   if (forceRefresh || !hasData) {
     container.innerHTML = `
       <div class="ip-loading-container">
         <div class="ip-spinner"></div>
         <span>Carregando status da equipe...</span>
       </div>
-    `;
+    `
   }
 
   if (refreshBtn) {
-    refreshBtn.disabled = true;
+    refreshBtn.disabled = true
     // Garante que o listener só é adicionado uma vez se for a primeira carga
     if (!refreshBtn.dataset.listenerSet) {
-      refreshBtn.addEventListener('click', () => loadTeamStatus(sectionElement, true));
-      refreshBtn.dataset.listenerSet = 'true';
+      refreshBtn.addEventListener('click', () =>
+        loadTeamStatus(sectionElement, true)
+      )
+      refreshBtn.dataset.listenerSet = 'true'
     }
   }
 
@@ -1388,47 +1500,50 @@ async function loadTeamStatus(sectionElement, forceRefresh = false) {
     // Busca dados se for forceRefresh ou se o cache estiver vazio
     if (forceRefresh || !hasData) {
       if (typeof window.teamService === 'undefined') {
-        throw new Error('Serviço de status da equipe não carregado.');
+        throw new Error('Serviço de status da equipe não carregado.')
       }
 
-      let data;
+      let data
       if (forceRefresh) {
-        data = await window.teamService.refreshTeamStatus();
+        data = await window.teamService.refreshTeamStatus()
       } else {
-        data = await window.teamService.getTeamStatus();
+        data = await window.teamService.getTeamStatus()
       }
 
-      const rawMembers = data?.members || [];
-      const timestamp = data?.timestamp;
+      const rawMembers = data?.members || []
+      const timestamp = data?.timestamp
 
       // Unificação e Deduplicação inicial
-      const seen = new Set();
+      const seen = new Set()
       allTeamMembers = rawMembers.filter(m => {
-        const key = m.name?.trim().toLowerCase().replace(/\s+/g, ' ') || '';
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
+        const key = m.name?.trim().toLowerCase().replace(/\s+/g, ' ') || ''
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+      })
 
       // Atualiza timestamp no topo
-      const timestampSpan = sectionElement.querySelector('#team-status-timestamp');
+      const timestampSpan = sectionElement.querySelector(
+        '#team-status-timestamp'
+      )
       if (timestampSpan) {
         if (timestamp) {
-          const formattedTime = window.teamService.formatTeamStatusTimestamp(timestamp);
-          timestampSpan.innerHTML = `🕐 <strong>${formattedTime}</strong>`;
-          timestampSpan.title = "Última atualização recebida";
+          const formattedTime =
+            window.teamService.formatTeamStatusTimestamp(timestamp)
+          timestampSpan.innerHTML = `🕐 <strong>${formattedTime}</strong>`
+          timestampSpan.title = 'Última atualização recebida'
         } else {
-          timestampSpan.innerHTML = '';
+          timestampSpan.innerHTML = ''
         }
       }
 
       // Oculta footer se tiver dados, mostra apenas se estiver aguardando inicialização
       if (footer) {
         if (!timestamp) {
-          footer.innerHTML = '⚠️ Aguardando dados...';
-          footer.style.display = 'block';
+          footer.innerHTML = '⚠️ Aguardando dados...'
+          footer.style.display = 'block'
         } else {
-          footer.style.display = 'none';
+          footer.style.display = 'none'
         }
       }
     }
@@ -1436,75 +1551,89 @@ async function loadTeamStatus(sectionElement, forceRefresh = false) {
     // --- APLICAÇÃO DE FILTROS E ORDENAÇÃO ---
 
     // 1. Busca preferências (PIN, HIDE, WATCH, VIEW_MODE)
-    const prefs = await chrome.storage.local.get(['pinnedTechnicians', 'hiddenTechnicians', 'monitoredTechnicians', 'teamViewMode']);
-    const pinnedList = Array.isArray(prefs.pinnedTechnicians) ? prefs.pinnedTechnicians : [];
-    const hiddenList = Array.isArray(prefs.hiddenTechnicians) ? prefs.hiddenTechnicians : [];
-    const monitoredList = Array.isArray(prefs.monitoredTechnicians) ? prefs.monitoredTechnicians : [];
-    const isCompactMode = prefs.teamViewMode === 'compact';
+    const prefs = await chrome.storage.local.get([
+      'pinnedTechnicians',
+      'hiddenTechnicians',
+      'monitoredTechnicians',
+      'teamViewMode'
+    ])
+    const pinnedList = Array.isArray(prefs.pinnedTechnicians)
+      ? prefs.pinnedTechnicians
+      : []
+    const hiddenList = Array.isArray(prefs.hiddenTechnicians)
+      ? prefs.hiddenTechnicians
+      : []
+    const monitoredList = Array.isArray(prefs.monitoredTechnicians)
+      ? prefs.monitoredTechnicians
+      : []
+    const isCompactMode = prefs.teamViewMode === 'compact'
 
     // Aplica o modo de visualização no container
     if (isCompactMode) {
-      container.classList.add('view-compact');
+      container.classList.add('view-compact')
     } else {
-      container.classList.remove('view-compact');
+      container.classList.remove('view-compact')
     }
 
     // 2. Filtro de Busca
-    const searchTerm = searchInput?.value?.toLowerCase()?.trim() || '';
+    const searchTerm = searchInput?.value?.toLowerCase()?.trim() || ''
     let filteredMembers = allTeamMembers.filter(m => {
-      const name = m.name?.toLowerCase() || '';
-      return name.includes(searchTerm);
-    });
+      const name = m.name?.toLowerCase() || ''
+      return name.includes(searchTerm)
+    })
 
     // 2a. Filtro de Status Específico
-    const statusFilterValue = statusSelect?.value || 'all';
+    const statusFilterValue = statusSelect?.value || 'all'
     if (statusFilterValue !== 'all') {
       filteredMembers = filteredMembers.filter(m => {
-        const status = (m.currentStatus || '').trim().toLowerCase();
-        const isNaFila = status === 'conversando' || status === 'ocioso' || status.includes('na fila');
-        const isSemStatus = !status;
+        const status = (m.currentStatus || '').trim().toLowerCase()
+        const isNaFila =
+          status === 'conversando' ||
+          status === 'ocioso' ||
+          status.includes('na fila')
+        const isSemStatus = !status
 
-        if (statusFilterValue === 'na-fila') return isNaFila;
-        if (statusFilterValue === 'sem-status') return isSemStatus;
-        if (statusFilterValue === 'fora-fila') return !isNaFila && !isSemStatus;
-        return true;
-      });
+        if (statusFilterValue === 'na-fila') return isNaFila
+        if (statusFilterValue === 'sem-status') return isSemStatus
+        if (statusFilterValue === 'fora-fila') return !isNaFila && !isSemStatus
+        return true
+      })
     }
 
     // 3. Enriquecer com flags de preferência
     filteredMembers.forEach(m => {
-      const key = m.name?.trim().toLowerCase().replace(/\s+/g, ' ') || '';
-      m.isPinned = pinnedList.includes(key);
-      m.isHidden = hiddenList.includes(key);
-      m.isMonitored = monitoredList.includes(key);
-    });
+      const key = m.name?.trim().toLowerCase().replace(/\s+/g, ' ') || ''
+      m.isPinned = pinnedList.includes(key)
+      m.isHidden = hiddenList.includes(key)
+      m.isMonitored = monitoredList.includes(key)
+    })
 
     // 3. Verifica alertas para técnicos monitorados
-    checkTeamAlerts(filteredMembers);
+    checkTeamAlerts(filteredMembers)
 
     // 4. Ordenação
-    const sortValue = sortSelect?.value || 'not-ready';
+    const sortValue = sortSelect?.value || 'not-ready'
 
     filteredMembers.sort((a, b) => {
       // Prioridade global: Fixados (Pinned) -> Resto -> Ocultos (Hidden)
-      if (a.isPinned && !b.isPinned) return -1;
-      if (!a.isPinned && b.isPinned) return 1;
-      if (a.isHidden && !b.isHidden) return 1;
-      if (!a.isHidden && b.isHidden) return -1;
+      if (a.isPinned && !b.isPinned) return -1
+      if (!a.isPinned && b.isPinned) return 1
+      if (a.isHidden && !b.isHidden) return 1
+      if (!a.isHidden && b.isHidden) return -1
 
       // Dentro de cada categoria, aplica a ordenação escolhida
       if (sortValue === 'name') {
-        return a.name.localeCompare(b.name);
+        return a.name.localeCompare(b.name)
       } else if (sortValue === 'time') {
         // Assume formato HH:MM:SS para duração
-        const timeA = a.duration || '00:00:00';
-        const timeB = b.duration || '00:00:00';
-        return timeB.localeCompare(timeA);
+        const timeA = a.duration || '00:00:00'
+        const timeB = b.duration || '00:00:00'
+        return timeB.localeCompare(timeA)
       } else {
         // Padrão: Not Ready (%)
-        return (b.percentNotReady || 0) - (a.percentNotReady || 0);
+        return (b.percentNotReady || 0) - (a.percentNotReady || 0)
       }
-    });
+    })
 
     // Renderiza lista
     if (filteredMembers.length === 0) {
@@ -1514,37 +1643,42 @@ async function loadTeamStatus(sectionElement, forceRefresh = false) {
           <h4>Nenhum técnico encontrado</h4>
           <p>${searchTerm ? 'Tente mudar o termo da busca.' : 'A lista está vazia.'}</p>
         </div>
-      `;
-      container.style.display = 'flex';
+      `
+      container.style.display = 'flex'
     } else {
-      container.style.display = 'grid';
-      container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(220px, 1fr))';
-      container.style.gap = '12px';
-      container.innerHTML = filteredMembers.map(createTeamMemberCard).join('');
+      container.style.display = 'grid'
+      container.style.gridTemplateColumns =
+        'repeat(auto-fill, minmax(220px, 1fr))'
+      container.style.gap = '12px'
+      container.innerHTML = filteredMembers.map(createTeamMemberCard).join('')
     }
 
     // --- CÁLCULO DE ESTATÍSTICAS (Baseado nos itens FILTRADOS, mas contagem global é melhor para resumo) ---
     // O usuário pediu "Total de técnicos que estão sendo demonstrados na listagem", então usamos filteredMembers para o Total
     // Mas Na Fila/Fora da Fila geralmente queremos do todo ou do filtro? Vamos assumir do filtro atual para ser consistente com "Total".
 
-    let countNaFila = 0;
-    let countForaFila = 0;
-    let countSemStatus = 0;
+    let countNaFila = 0
+    let countForaFila = 0
+    let countSemStatus = 0
 
     filteredMembers.forEach(m => {
-      const status = (m.currentStatus || '').trim();
-      const statusLower = status.toLowerCase();
+      const status = (m.currentStatus || '').trim()
+      const statusLower = status.toLowerCase()
 
       if (!status) {
-        countSemStatus++;
-      } else if (statusLower === 'conversando' || statusLower === 'ocioso' || statusLower.includes('na fila')) {
-        countNaFila++;
+        countSemStatus++
+      } else if (
+        statusLower === 'conversando' ||
+        statusLower === 'ocioso' ||
+        statusLower.includes('na fila')
+      ) {
+        countNaFila++
       } else {
-        countForaFila++;
+        countForaFila++
       }
-    });
+    })
 
-    const statsBar = sectionElement.querySelector('#team-stats-bar');
+    const statsBar = sectionElement.querySelector('#team-stats-bar')
     if (statsBar) {
       statsBar.innerHTML = `
         <div style="display: flex; align-items: center; gap: 3px; color: var(--text-color-main);" title="Total de técnicos listados">
@@ -1562,33 +1696,35 @@ async function loadTeamStatus(sectionElement, forceRefresh = false) {
         <div style="display: flex; align-items: center; gap: 3px; color: var(--text-color-muted);" title="Sem Status Definido: Vazio ou nulo">
           <span style="font-size: 8px;">⚪</span> <strong>${countSemStatus}</strong> <span style="font-size: 9px;">N/A</span>
         </div>
-      `;
+      `
     }
-
   } catch (error) {
-    console.error('[Team Status] Erro:', error);
+    console.error('[Team Status] Erro:', error)
     container.innerHTML = `
       <div class="ip-error-state">
         <span class="ip-error-icon">⚠️</span>
         <h4>Erro ao carregar status</h4>
         <p>${escapeHTML(error.message)}</p>
       </div>
-    `;
+    `
   } finally {
-    if (refreshBtn) refreshBtn.disabled = false;
+    if (refreshBtn) refreshBtn.disabled = false
   }
 }
 
 function createTeamMemberCard(member) {
-  const badgeClass = window.teamService?.getTeamStatusBadgeClass(member.percentNotReady) || 'badge-success';
-  const statusEmoji = window.teamService?.getTeamStatusEmoji(member.status) || '⚪';
+  const badgeClass =
+    window.teamService?.getTeamStatusBadgeClass(member.percentNotReady) ||
+    'badge-success'
+  const statusEmoji =
+    window.teamService?.getTeamStatusEmoji(member.status) || '⚪'
 
   // Define a cor da porcentagem baseado na gravidade
-  let percentColor = 'var(--action-green)'; // Padrão: verde
+  let percentColor = 'var(--action-green)' // Padrão: verde
   if (member.percentNotReady > 20) {
-    percentColor = 'var(--action-red)';
+    percentColor = 'var(--action-red)'
   } else if (member.percentNotReady > 16) {
-    percentColor = 'var(--action-yellow)';
+    percentColor = 'var(--action-yellow)'
   }
 
   return `
@@ -1635,47 +1771,54 @@ function createTeamMemberCard(member) {
 
       </div>
     </div>
-  `;
+  `
 }
 
 // Funções para gerenciar PIN, HIDE e WATCH
 async function toggleTechnicianPreference(name, type) {
-  const key = name.trim().toLowerCase().replace(/\s+/g, ' ');
-  let storageKey;
-  if (type === 'pin') storageKey = 'pinnedTechnicians';
-  else if (type === 'hide') storageKey = 'hiddenTechnicians';
-  else if (type === 'watch') storageKey = 'monitoredTechnicians';
+  const key = name.trim().toLowerCase().replace(/\s+/g, ' ')
+  let storageKey
+  if (type === 'pin') storageKey = 'pinnedTechnicians'
+  else if (type === 'hide') storageKey = 'hiddenTechnicians'
+  else if (type === 'watch') storageKey = 'monitoredTechnicians'
 
-  const result = await chrome.storage.local.get([storageKey]);
-  let list = Array.isArray(result[storageKey]) ? result[storageKey] : [];
+  const result = await chrome.storage.local.get([storageKey])
+  let list = Array.isArray(result[storageKey]) ? result[storageKey] : []
 
   if (list.includes(key)) {
-    list = list.filter(item => item !== key);
+    list = list.filter(item => item !== key)
   } else {
-    list.push(key);
+    list.push(key)
 
     // Lógica exclusiva para pin/hide (watch é independente)
     if (type !== 'watch') {
-      const otherKey = type === 'pin' ? 'hiddenTechnicians' : 'pinnedTechnicians';
-      const otherResult = await chrome.storage.local.get([otherKey]);
-      let otherList = Array.isArray(otherResult[otherKey]) ? otherResult[otherKey] : [];
+      const otherKey =
+        type === 'pin' ? 'hiddenTechnicians' : 'pinnedTechnicians'
+      const otherResult = await chrome.storage.local.get([otherKey])
+      let otherList = Array.isArray(otherResult[otherKey])
+        ? otherResult[otherKey]
+        : []
       if (otherList.includes(key)) {
-        otherList = otherList.filter(item => item !== key);
-        await chrome.storage.local.set({ [otherKey]: otherList });
+        otherList = otherList.filter(item => item !== key)
+        await chrome.storage.local.set({ [otherKey]: otherList })
       }
     } else {
       // Se ativou o monitoramento (watch), solicita permissão de notificação se necessário
-      if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
-        Notification.requestPermission();
+      if (
+        'Notification' in window &&
+        Notification.permission !== 'granted' &&
+        Notification.permission !== 'denied'
+      ) {
+        Notification.requestPermission()
       }
     }
   }
 
-  await chrome.storage.local.set({ [storageKey]: list });
+  await chrome.storage.local.set({ [storageKey]: list })
 
   // Recarrega apenas a seção de status da equipe
-  const section = document.querySelector('#ip-section-team-status');
-  if (section) loadTeamStatus(section, false);
+  const section = document.querySelector('#ip-section-team-status')
+  if (section) loadTeamStatus(section, false)
 }
 
 // Verifica alertas para técnicos monitorados
@@ -1683,180 +1826,190 @@ function checkTeamAlerts(members) {
   members.forEach(m => {
     if (m.isMonitored && m.percentNotReady > 20) {
       // Verifica se já notificou recentemente para evitar spam (cache em memória ou storage)
-      const alertKey = `alert_${m.name}_${new Date().getHours()}`;
+      const alertKey = `alert_${m.name}_${new Date().getHours()}`
       if (!sessionStorage.getItem(alertKey)) {
-
-        const message = `⚠️ ${m.name} atingiu ${m.percentFormatted} de indisponibilidade!`;
+        const message = `⚠️ ${m.name} atingiu ${m.percentFormatted} de indisponibilidade!`
 
         // Notificação Nativa do Navegador (Web API)
-        if ("Notification" in window && Notification.permission === "granted") {
-          const notification = new Notification("Alerta de Indisponibilidade", {
+        if ('Notification' in window && Notification.permission === 'granted') {
+          const notification = new Notification('Alerta de Indisponibilidade', {
             body: message,
-            icon: chrome.runtime.getURL("icons/icon128.png"),
+            icon: chrome.runtime.getURL('icons/icon128.png'),
             requireInteraction: true,
             tag: alertKey // Evita duplicação nativa se suportado
-          });
+          })
 
           // Fecha automaticamente após 75 segundos (75000 ms)
           setTimeout(() => {
-            notification.close();
-          }, 75000);
+            notification.close()
+          }, 75000)
         } else {
           // Fallback para toast interno se permissão negada
-          showNotification(message, 'warning');
+          showNotification(message, 'warning')
         }
 
-        sessionStorage.setItem(alertKey, 'true');
+        sessionStorage.setItem(alertKey, 'true')
       }
     }
-  });
+  })
 }
 
 // Event delegation para os botões do card
-document.addEventListener('click', (e) => {
-  const pinBtn = e.target.closest('.pin-btn');
-  const hideBtn = e.target.closest('.hide-btn');
-  const watchBtn = e.target.closest('.watch-btn');
+document.addEventListener('click', e => {
+  const pinBtn = e.target.closest('.pin-btn')
+  const hideBtn = e.target.closest('.hide-btn')
+  const watchBtn = e.target.closest('.watch-btn')
 
   if (pinBtn || hideBtn || watchBtn) {
-    const card = e.target.closest('.ip-team-member-card');
-    const name = card?.dataset.name;
+    const card = e.target.closest('.ip-team-member-card')
+    const name = card?.dataset.name
     if (name) {
-      let type = 'pin';
-      if (hideBtn) type = 'hide';
-      if (watchBtn) type = 'watch';
-      toggleTechnicianPreference(name, type);
+      let type = 'pin'
+      if (hideBtn) type = 'hide'
+      if (watchBtn) type = 'watch'
+      toggleTechnicianPreference(name, type)
     }
   }
-});
+})
 
 // --- MONITORAMENTO EM BACKGROUND ---
-let backgroundMonitorInterval = null;
+let backgroundMonitorInterval = null
 
 async function runBackgroundMonitoring() {
   // Se o painel estiver aberto e visível, o loadTeamStatus já cuida disso (evita chamada dupla)
   // Mas para garantir, podemos verificar se o painel existe no DOM
-  const panelExists = document.getElementById('info-panel-modal');
-  if (panelExists) return;
+  const panelExists = document.getElementById('info-panel-modal')
+  if (panelExists) return
 
   // --- VERIFICAÇÃO DE HORÁRIO ---
   // Horários alvo: 09:30, 10:30, 11:30, 14:30, 15:30, 16:30
   // Tolerância: +/- 1 minuto para garantir execução
-  const now = new Date();
-  const currentHour = now.getHours();
-  const currentMinute = now.getMinutes();
+  const now = new Date()
+  const currentHour = now.getHours()
+  const currentMinute = now.getMinutes()
 
   // Lista de horários permitidos (Hora, Minuto)
   const allowedTimes = [
-    { h: 9, m: 30 }, { h: 10, m: 30 }, { h: 11, m: 30 },
-    { h: 14, m: 30 }, { h: 15, m: 30 }, { h: 16, m: 30 }
-  ];
+    { h: 9, m: 30 },
+    { h: 10, m: 30 },
+    { h: 11, m: 30 },
+    { h: 14, m: 30 },
+    { h: 15, m: 30 },
+    { h: 16, m: 30 }
+  ]
 
   const isTargetTime = allowedTimes.some(time => {
-    return currentHour === time.h && (currentMinute >= time.m && currentMinute <= time.m + 2);
-  });
+    return (
+      currentHour === time.h &&
+      currentMinute >= time.m &&
+      currentMinute <= time.m + 2
+    )
+  })
 
   if (!isTargetTime) {
     // Se não for horário alvo, não executa nada pesado
-    return;
+    return
   }
 
   // Verifica se já rodou neste horário (evita spam no minuto de tolerância)
-  const lastRunKey = `monitor_last_run_${currentHour}_${Math.floor(currentMinute / 10)}`;
-  if (sessionStorage.getItem(lastRunKey)) return;
-  sessionStorage.setItem(lastRunKey, 'true');
+  const lastRunKey = `monitor_last_run_${currentHour}_${Math.floor(currentMinute / 10)}`
+  if (sessionStorage.getItem(lastRunKey)) return
+  sessionStorage.setItem(lastRunKey, 'true')
 
   try {
     // Verifica se há técnicos monitorados antes de fazer requisição
-    const prefs = await chrome.storage.local.get(['monitoredTechnicians']);
-    const monitoredList = Array.isArray(prefs.monitoredTechnicians) ? prefs.monitoredTechnicians : [];
+    const prefs = await chrome.storage.local.get(['monitoredTechnicians'])
+    const monitoredList = Array.isArray(prefs.monitoredTechnicians)
+      ? prefs.monitoredTechnicians
+      : []
 
-    if (monitoredList.length === 0) return; // Ninguém pra monitorar, economiza recursos
+    if (monitoredList.length === 0) return // Ninguém pra monitorar, economiza recursos
 
-    if (typeof window.teamService === 'undefined') return;
+    if (typeof window.teamService === 'undefined') return
 
     // Busca dados silenciosamente
-    const data = await window.teamService.getTeamStatus(); // Usa cache se possível ou busca novo
+    const data = await window.teamService.getTeamStatus() // Usa cache se possível ou busca novo
     // Para monitoramento real, talvez devêssemos forçar refresh se o cache for velho?
-    // O teamService.getTeamStatus() geralmente tem cache de 1min. Se quisermos background real, 
+    // O teamService.getTeamStatus() geralmente tem cache de 1min. Se quisermos background real,
     // podemos usar refreshTeamStatus se o lastUpdate for muito antigo.
     // Por enquanto, vamos confiar na lógica padrão do serviço.
 
-    let members = data?.members || [];
+    let members = data?.members || []
 
     // Filtra apenas os monitorados para checagem
     const monitoredMembers = members.filter(m => {
-      const key = m.name?.trim().toLowerCase().replace(/\s+/g, ' ') || '';
-      return monitoredList.includes(key);
-    });
+      const key = m.name?.trim().toLowerCase().replace(/\s+/g, ' ') || ''
+      return monitoredList.includes(key)
+    })
 
     // Marca flag para o checkTeamAlerts funcionar
-    monitoredMembers.forEach(m => m.isMonitored = true);
+    monitoredMembers.forEach(m => (m.isMonitored = true))
 
-    checkTeamAlerts(monitoredMembers);
-
+    checkTeamAlerts(monitoredMembers)
   } catch (error) {
-    console.warn('[Background Monitor] Erro ao verificar status:', error);
+    console.warn('[Background Monitor] Erro ao verificar status:', error)
   }
 }
 
 // Inicia o monitoramento (executa a cada 60 segundos)
 if (!backgroundMonitorInterval) {
-  backgroundMonitorInterval = setInterval(runBackgroundMonitoring, 60000);
+  backgroundMonitorInterval = setInterval(runBackgroundMonitoring, 60000)
   // Executa uma vez após 5s para garantir inicialização
-  setTimeout(runBackgroundMonitoring, 5000);
+  setTimeout(runBackgroundMonitoring, 5000)
 }
 // #endregion Status da Equipe
-
 
 /**
  * Processa HTML seguro (White-list simples)
  * Permite: b, strong, i, em, u, br, p, ul, ol, li, a (com href)
  */
 function processSafeHTML(text) {
-  if (!text) return '';
+  if (!text) return ''
 
   // 1. Escapa tudo para neutralizar scripts e tags não permitidas
-  let safe = escapeHTML(text);
+  let safe = escapeHTML(text)
 
   // 2. Des-escapa tags permitidas (sem atributos, exceto A)
   // Tags simples: <b>, </b>, <strong>, </strong>, etc.
-  const tags = ['b', 'strong', 'i', 'em', 'u', 'br', 'p', 'ul', 'ol', 'li'];
+  const tags = ['b', 'strong', 'i', 'em', 'u', 'br', 'p', 'ul', 'ol', 'li']
   tags.forEach(tag => {
     // Regex para abrir e fechar
     // <tag> -> &lt;tag&gt;
-    const regexOpen = new RegExp(`&lt;${tag}&gt;`, 'gi');
-    safe = safe.replace(regexOpen, `<${tag}>`);
+    const regexOpen = new RegExp(`&lt;${tag}&gt;`, 'gi')
+    safe = safe.replace(regexOpen, `<${tag}>`)
 
     // </tag> -> &lt;/tag&gt;
-    const regexClose = new RegExp(`&lt;/${tag}&gt;`, 'gi');
-    safe = safe.replace(regexClose, `</${tag}>`);
-  });
+    const regexClose = new RegExp(`&lt;/${tag}&gt;`, 'gi')
+    safe = safe.replace(regexClose, `</${tag}>`)
+  })
 
   // 3. Trata tag <a href="..."> especificamente
   // Formato escapado: &lt;a\s+href=&quot;(.*?)&quot;&gt;
-  safe = safe.replace(/&lt;a\s+href=&quot;(.*?)&quot;.*?&gt;/gi, (match, url) => {
-    let fixedUrl = url.trim();
-    // Se não começa com protocolo ou barra (link relativo ao site), adiciona https://
-    if (fixedUrl && !/^(https?:\/\/|mailto:|tel:|\/|#)/i.test(fixedUrl)) {
-      fixedUrl = 'https://' + fixedUrl;
+  safe = safe.replace(
+    /&lt;a\s+href=&quot;(.*?)&quot;.*?&gt;/gi,
+    (match, url) => {
+      let fixedUrl = url.trim()
+      // Se não começa com protocolo ou barra (link relativo ao site), adiciona https://
+      if (fixedUrl && !/^(https?:\/\/|mailto:|tel:|\/|#)/i.test(fixedUrl)) {
+        fixedUrl = 'https://' + fixedUrl
+      }
+      return `<a href="${fixedUrl}" target="_blank">`
     }
-    return `<a href="${fixedUrl}" target="_blank">`;
-  });
-  safe = safe.replace(/&lt;\/a&gt;/gi, '</a>');
+  )
+  safe = safe.replace(/&lt;\/a&gt;/gi, '</a>')
 
   // 4. Trata tag <img ...> especificamente
   // Permitir src, alt e style.
   // Regex generosa para capturar atributos comuns escapados
   safe = safe.replace(/&lt;img\s+(.*?)&gt;/gi, (match, attrs) => {
     // Des-escapar aspas para os atributos funcionarem
-    let fixedAttrs = attrs.replace(/&quot;/g, '"');
+    let fixedAttrs = attrs.replace(/&quot;/g, '"')
     // Limpeza de segurança básica: garantir que não tenha eventos on...
     if (/on\w+\s*=/i.test(fixedAttrs) || /javascript:/i.test(fixedAttrs)) {
-      return ''; // Recusa se tiver script
+      return '' // Recusa se tiver script
     }
-    return `<img ${fixedAttrs}>`;
-  });
+    return `<img ${fixedAttrs}>`
+  })
 
   // Mantém quebras de linha normais como <br> se não estiverem dentro de tags que já dão bloco?
   // O usuário pode usar <br> explícito agora. Mas para compatibilidade com texto plano antigo:
@@ -1864,58 +2017,80 @@ function processSafeHTML(text) {
   // Mas o usuário pediu suporte a HTML, então <br> é esperado.
   // Vamos converter \n apenas se não houver tags de bloco detectadas para evitar duplicação ou quebra de layout?
   // Simples: converte \n para <br> E deixa os <br> explícitos.
-  safe = safe.replace(/\n/g, '<br>');
+  safe = safe.replace(/\n/g, '<br>')
 
-  return safe;
+  return safe
 }
 
 /**
  * Cria o HTML do card de aviso
  */
 function createWarningCard(warning) {
-  const typeClass = warning.type === 'danger' ? 'badge-danger' :
-    warning.type === 'warning' ? 'badge-warning' :
-      warning.type === 'success' ? 'badge-success' : 'badge-info';
+  const typeClass =
+    warning.type === 'danger'
+      ? 'badge-danger'
+      : warning.type === 'warning'
+        ? 'badge-warning'
+        : warning.type === 'success'
+          ? 'badge-success'
+          : 'badge-info'
 
-  const typeLabel = warning.type === 'danger' ? 'Importante' :
-    warning.type === 'warning' ? 'Alerta' :
-      warning.type === 'success' ? 'Novidade' : 'Informativo';
+  const typeLabel =
+    warning.type === 'danger'
+      ? 'Importante'
+      : warning.type === 'warning'
+        ? 'Alerta'
+        : warning.type === 'success'
+          ? 'Novidade'
+          : 'Informativo'
 
   // Formata a data (timestamp string do Firestore ISO)
-  let dateStr = 'Data desconhecida';
+  let dateStr = 'Data desconhecida'
   if (warning.date) {
     try {
-      const date = new Date(warning.date);
-      dateStr = date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
-    } catch (e) { }
+      const date = new Date(warning.date)
+      dateStr = date.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    } catch (e) {}
   }
 
-  const messageHtml = processSafeHTML(warning.message || '');
+  const messageHtml = processSafeHTML(warning.message || '')
 
   // Autor só aparece no modo desenvolvedor
-  const authorHtml = developerMode ? `
+  const authorHtml = developerMode
+    ? `
         <div style="font-size: 11px; color: var(--text-color-muted); display: flex; align-items: center; gap: 4px;">
             ✍️ ${escapeHTML(warning.author || 'Usuário')}
         </div>
-    ` : '';
+    `
+    : ''
 
-  const ignoreBtn = `<button class="ip-warn-ignore-btn" style="background:none; border:none; cursor:pointer; font-size:11px; color: var(--text-color-muted); text-decoration: underline; padding: 0; margin-right: 4px;" title="Não mostrar novamente">Ocultar</button>`;
+  const ignoreBtn = `<button class="ip-warn-ignore-btn" style="background:none; border:none; cursor:pointer; font-size:11px; color: var(--text-color-muted); text-decoration: underline; padding: 0; margin-right: 4px;" title="Não mostrar novamente">Ocultar</button>`
 
   // [NOVO] Badge de Teste
   const testBadge = warning.isTest
     ? `<span style="background-color: #607d8b; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-right: 6px; border: 1px dashed white;">TESTE / DEV</span>`
-    : '';
+    : ''
 
   const actionsHtml = `
         <div style="display:flex; gap:10px; align-items:center;">
             ${testBadge} ${ignoreBtn}
-            ${developerMode ? `
+            ${
+              developerMode
+                ? `
                 <button class="ip-warn-edit-btn" style="background:none; border:none; cursor:pointer; font-size:14px; padding:0; line-height:1;" title="Editar">✏️</button>
                 <button class="ip-warn-delete-btn" style="background:none; border:none; cursor:pointer; font-size:14px; padding:0; line-height:1;" title="Excluir">🗑️</button>
-            ` : ''}
+            `
+                : ''
+            }
             <span class="ip-card-badge ${typeClass}">${escapeHTML(typeLabel)}</span>
         </div>
-    `;
+    `
 
   return `
         <div class="ip-card ip-card-${warning.type || 'info'}" data-id="${warning.id}" ${warning.isTest ? 'style="border-style: dashed;"' : ''}>
@@ -1929,34 +2104,34 @@ function createWarningCard(warning) {
                 ${authorHtml}
             </div>
         </div>
-    `;
+    `
 }
 
 /**
  * Verifica avisos não lidos e atualiza indicador visual no sidebar
  */
 function checkUnreadWarnings(warnings) {
-  if (!warnings || warnings.length === 0) return;
+  if (!warnings || warnings.length === 0) return
 
-  chrome.storage.local.get(['warningsLastReadTime'], (result) => {
-    const lastRead = result.warningsLastReadTime || 0;
-    const newestWarning = warnings[0]; // Assumindo ordenação por data desc
+  chrome.storage.local.get(['warningsLastReadTime'], result => {
+    const lastRead = result.warningsLastReadTime || 0
+    const newestWarning = warnings[0] // Assumindo ordenação por data desc
 
     if (newestWarning && newestWarning.date) {
-      const newestDate = new Date(newestWarning.date).getTime();
+      const newestDate = new Date(newestWarning.date).getTime()
       if (newestDate > lastRead) {
         // Tem aviso novo!
         // Achar o ícone na sidebar e colocar a bolinha (via classe CSS)
         // Como o modal pode ser recriado, precisamos garantir que o seletor funcione
-        const navItem = document.querySelector('#ip-nav-notices .ip-nav-icon');
+        const navItem = document.querySelector('#ip-nav-notices .ip-nav-icon')
         // Mas espere, o seletor #ip-nav-notices precisa existir. Vamos adicionar ID no ip-nav-item
         if (navItem) {
-          navItem.classList.add('has-unread-warnings');
+          navItem.classList.add('has-unread-warnings')
 
           // Adicionar estilo inline se CSS não tiver carregado (fallback)
           if (!document.getElementById('unread-style-inject')) {
-            const style = document.createElement('style');
-            style.id = 'unread-style-inject';
+            const style = document.createElement('style')
+            style.id = 'unread-style-inject'
             style.textContent = `
                             .has-unread-warnings { position: relative; }
                             .has-unread-warnings::after {
@@ -1970,13 +2145,13 @@ function checkUnreadWarnings(warnings) {
                                 border-radius: 50%;
                                 border: 1px solid var(--background-secondary);
                             }
-                         `;
-            document.head.appendChild(style);
+                         `
+            document.head.appendChild(style)
           }
         }
       }
     }
-  });
+  })
 }
 
 /**
@@ -1985,18 +2160,19 @@ function checkUnreadWarnings(warnings) {
  */
 function openCreateWarningModal(existingWarning = null) {
   // Remover modal anterior se existir
-  const existing = document.getElementById('create-warning-modal');
-  if (existing) existing.remove();
+  const existing = document.getElementById('create-warning-modal')
+  if (existing) existing.remove()
 
-  const isEdit = !!existingWarning;
-  const titleVal = isEdit ? escapeHTML(existingWarning.title) : '';
-  const msgVal = isEdit ? escapeHTML(existingWarning.message) : '';
-  const typeVal = isEdit ? existingWarning.type : 'info';
-  const isTestVal = isEdit ? existingWarning.isTest : false;
+  const isEdit = !!existingWarning
+  const titleVal = isEdit ? escapeHTML(existingWarning.title) : ''
+  const msgVal = isEdit ? escapeHTML(existingWarning.message) : ''
+  const typeVal = isEdit ? existingWarning.type : 'info'
+  const isTestVal = isEdit ? existingWarning.isTest : false
   // Verifica se já estava marcado para notificar (em caso de edição)
-  const notifyVal = isEdit && existingWarning.notify ? 'checked' : '';
+  const notifyVal = isEdit && existingWarning.notify ? 'checked' : ''
 
-  const fieldStyle = "display: block; width: 100%; margin-bottom: 12px; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main);";
+  const fieldStyle =
+    'display: block; width: 100%; margin-bottom: 12px; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main);'
 
   const modalHtml = `
         <div style="padding: 10px;">
@@ -2050,65 +2226,73 @@ function openCreateWarningModal(existingWarning = null) {
                 <button id="save-warn-btn" class="ip-add-closing-btn" style="width: auto;">${isEdit ? 'Atualizar Aviso' : 'Publicar Aviso'}</button>
             </div>
         </div>
-    `;
+    `
 
-  const modal = createModal(isEdit ? 'Editar Aviso' : 'Novo Aviso', modalHtml, null, {
-    isManagementModal: false, // Modal menor central
-    modalId: 'create-warning-modal',
-    showShareButton: false
-  });
+  const modal = createModal(
+    isEdit ? 'Editar Aviso' : 'Novo Aviso',
+    modalHtml,
+    null,
+    {
+      isManagementModal: false, // Modal menor central
+      modalId: 'create-warning-modal',
+      showShareButton: false
+    }
+  )
 
   // Remover o rodapé padrão do createModal para não duplicar botões
-  const defaultActions = modal.querySelector('.se-modal-actions');
-  if (defaultActions) defaultActions.remove();
+  const defaultActions = modal.querySelector('.se-modal-actions')
+  if (defaultActions) defaultActions.remove()
 
-  modal.style.zIndex = '10002'; // Painel costuma ser alto
+  modal.style.zIndex = '10002' // Painel costuma ser alto
 
-  document.body.appendChild(modal);
+  document.body.appendChild(modal)
 
   // Handlers
-  const saveBtn = modal.querySelector('#save-warn-btn');
-  const cancelBtn = modal.querySelector('#cancel-warn-btn');
-  const addLinkBtn = modal.querySelector('#warn-add-link-btn');
-  const messageTextarea = modal.querySelector('#warn-message');
+  const saveBtn = modal.querySelector('#save-warn-btn')
+  const cancelBtn = modal.querySelector('#cancel-warn-btn')
+  const addLinkBtn = modal.querySelector('#warn-add-link-btn')
+  const messageTextarea = modal.querySelector('#warn-message')
 
   if (addLinkBtn && messageTextarea) {
     addLinkBtn.addEventListener('click', () => {
       if (typeof openLinkModal === 'function') {
-        openLinkModal(messageTextarea, { hideButtonOption: true, zIndex: 10005 });
+        openLinkModal(messageTextarea, {
+          hideButtonOption: true,
+          zIndex: 10005
+        })
       } else {
-        const url = prompt('URL:', 'https://');
+        const url = prompt('URL:', 'https://')
         if (url) {
-          const text = prompt('Texto:', 'Clique aqui');
-          const linkHtml = `<a href="${url}" target="_blank">${text}</a>`;
+          const text = prompt('Texto:', 'Clique aqui')
+          const linkHtml = `<a href="${url}" target="_blank">${text}</a>`
           // Tenta usar insertAtCursor se existir, senão append
           if (typeof insertAtCursor === 'function') {
-            insertAtCursor(messageTextarea, linkHtml);
+            insertAtCursor(messageTextarea, linkHtml)
           } else {
-            messageTextarea.value += linkHtml;
+            messageTextarea.value += linkHtml
           }
         }
       }
-    });
+    })
   }
 
-  cancelBtn.addEventListener('click', () => modal.remove());
+  cancelBtn.addEventListener('click', () => modal.remove())
 
   saveBtn.addEventListener('click', async () => {
-    const title = modal.querySelector('#warn-title').value.trim();
-    const message = modal.querySelector('#warn-message').value.trim();
-    const type = modal.querySelector('#warn-type').value;
-    const isTest = modal.querySelector('#warn-is-test').checked;
-    const notify = modal.querySelector('#warn-notify').checked; // Captura o estado do checkbox
-    const author = getCurrentUserName();
+    const title = modal.querySelector('#warn-title').value.trim()
+    const message = modal.querySelector('#warn-message').value.trim()
+    const type = modal.querySelector('#warn-type').value
+    const isTest = modal.querySelector('#warn-is-test').checked
+    const notify = modal.querySelector('#warn-notify').checked // Captura o estado do checkbox
+    const author = getCurrentUserName()
 
     if (!title || !message) {
-      alert('Preencha título e mensagem.');
-      return;
+      alert('Preencha título e mensagem.')
+      return
     }
 
-    saveBtn.disabled = true;
-    saveBtn.textContent = 'Salvando...';
+    saveBtn.disabled = true
+    saveBtn.textContent = 'Salvando...'
 
     try {
       if (isEdit) {
@@ -2119,7 +2303,7 @@ function openCreateWarningModal(existingWarning = null) {
           author,
           isTest,
           notify // Atualiza a flag de notificação
-        });
+        })
       } else {
         await window.warningsService.createWarning({
           title,
@@ -2129,7 +2313,7 @@ function openCreateWarningModal(existingWarning = null) {
           isTest,
           notify, // Salva a flag de notificação
           date: new Date().toISOString()
-        });
+        })
       }
 
       // Dispara notificação de teste para o próprio criador se a opção foi marcada
@@ -2138,33 +2322,43 @@ function openCreateWarningModal(existingWarning = null) {
           action: 'SHOW_GENERIC_NOTIFICATION',
           title: `📢 ${title}`,
           message: message.replace(/<[^>]*>?/gm, '').substring(0, 100) // Remove HTML simples para notificação
-        });
+        })
       }
 
-      modal.remove();
+      modal.remove()
 
       // Recarregar lista se o painel de avisos estiver aberto no DOM
-      const warningsSection = document.querySelector('#ip-section-notices');
+      const warningsSection = document.querySelector('#ip-section-notices')
       if (warningsSection) {
-        loadWarnings(warningsSection);
+        loadWarnings(warningsSection)
       }
 
       // Feedback omitido conforme solicitado
       // alert(isEdit ? 'Aviso atualizado!' : 'Aviso publicado!');
-
     } catch (err) {
-      console.error(err);
-      alert('Erro ao salvar: ' + err.message);
-      saveBtn.disabled = false;
-      saveBtn.textContent = isEdit ? 'Atualizar Aviso' : 'Publicar Aviso';
+      console.error(err)
+      alert('Erro ao salvar: ' + err.message)
+      saveBtn.disabled = false
+      saveBtn.textContent = isEdit ? 'Atualizar Aviso' : 'Publicar Aviso'
     }
-  });
+  })
 }
 // #endregion
 
 // #region agent log
 // Verify if window.openTagManager is set
-fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'info-panel.js:init', message: 'Exposing functions to window', data: { before: typeof window.openTagManager }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'C' }) }).catch(() => { });
+fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    location: 'info-panel.js:init',
+    message: 'Exposing functions to window',
+    data: { before: typeof window.openTagManager },
+    timestamp: Date.now(),
+    sessionId: 'debug-session',
+    hypothesisId: 'C'
+  })
+}).catch(() => {})
 // #endregion
 
 /**
@@ -2174,7 +2368,18 @@ fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { met
  */
 async function openTagManager(btnElement, pendingId) {
   // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'info-panel.js:window.openTagManager', message: 'Function called from window', data: { pendingId }, timestamp: Date.now(), sessionId: 'debug-session', hypothesisId: 'C' }) }).catch(() => { });
+  fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      location: 'info-panel.js:window.openTagManager',
+      message: 'Function called from window',
+      data: { pendingId },
+      timestamp: Date.now(),
+      sessionId: 'debug-session',
+      hypothesisId: 'C'
+    })
+  }).catch(() => {})
   // #endregion
 
   // Remove qualquer popup existente
@@ -2192,23 +2397,30 @@ async function openTagManager(btnElement, pendingId) {
 
   if (item) {
     if (item.isPrioritaria) {
-      const priorityTag = availableTagsCache.find(t => t.name.toLowerCase() === 'prioridade')
+      const priorityTag = availableTagsCache.find(
+        t => t.name.toLowerCase() === 'prioridade'
+      )
       if (priorityTag) autoTagIds.add(priorityTag.id)
     }
     if (item.isEmSS) {
-      const ssTag = availableTagsCache.find(t => t.name.toLowerCase() === 'em ss')
+      const ssTag = availableTagsCache.find(
+        t => t.name.toLowerCase() === 'em ss'
+      )
       if (ssTag) autoTagIds.add(ssTag.id)
     }
   }
 
-  let tagsListHtml = availableTagsCache.map(tag => {
-    const isAuto = autoTagIds.has(tag.id)
-    const isChecked = currentTags.includes(tag.id) || isAuto ? 'checked' : ''
-    const isDisabled = isAuto ? 'disabled' : ''
-    const tooltip = isAuto ? ' title="Esta tag é automática baseada no status da SSC e não pode ser removida." ' : ''
-    const opacityStyle = isAuto ? ' opacity: 0.7; cursor: not-allowed; ' : ''
+  let tagsListHtml = availableTagsCache
+    .map(tag => {
+      const isAuto = autoTagIds.has(tag.id)
+      const isChecked = currentTags.includes(tag.id) || isAuto ? 'checked' : ''
+      const isDisabled = isAuto ? 'disabled' : ''
+      const tooltip = isAuto
+        ? ' title="Esta tag é automática baseada no status da SSC e não pode ser removida." '
+        : ''
+      const opacityStyle = isAuto ? ' opacity: 0.7; cursor: not-allowed; ' : ''
 
-    return `
+      return `
             <div class="ip-tag-row" ${tooltip} style="${opacityStyle}">
                 <label class="ip-tag-option" style="flex: 1; ${isAuto ? 'cursor: not-allowed;' : ''}">
                     <input type="checkbox" value="${tag.id}" ${isChecked} ${isDisabled}>
@@ -2219,7 +2431,8 @@ async function openTagManager(btnElement, pendingId) {
                 <button class="ip-tag-delete-btn" data-tag-id="${tag.id}" title="Excluir Tag" ${isDisabled}>🗑️</button>
             </div>
         `
-  }).join('')
+    })
+    .join('')
 
   popup.innerHTML = `
         <div class="ip-tag-popup-header">Gerenciar Tags</div>
@@ -2240,14 +2453,14 @@ async function openTagManager(btnElement, pendingId) {
   const newTagBtn = popup.querySelector('.ip-tag-new-btn')
   if (newTagBtn) {
     newTagBtn.addEventListener('click', function (e) {
-      e.stopPropagation();
+      e.stopPropagation()
       if (window.showNewTagInput) {
         window.showNewTagInput(this, pendingId)
       } else {
-        console.error('Função showNewTagInput não encontrada no window');
+        console.error('Função showNewTagInput não encontrada no window')
         // Fallback
         if (typeof showNewTagInput === 'function') {
-          showNewTagInput(this, pendingId);
+          showNewTagInput(this, pendingId)
         }
       }
     })
@@ -2264,7 +2477,7 @@ async function openTagManager(btnElement, pendingId) {
   const deleteBtns = popup.querySelectorAll('.ip-tag-delete-btn')
   deleteBtns.forEach(btn => {
     btn.addEventListener('click', async function (e) {
-      e.stopPropagation(); // Impede fechar ou marcar checkbox
+      e.stopPropagation() // Impede fechar ou marcar checkbox
       if (confirm('Tem certeza que deseja excluir esta tag?')) {
         const tagId = this.dataset.tagId
         if (window.deleteTag) {
@@ -2277,7 +2490,9 @@ async function openTagManager(btnElement, pendingId) {
           // Atualiza filtros
           const pendingSection = document.querySelector('#ip-section-pending')
           if (pendingSection) {
-            const tagFilterSelect = pendingSection.querySelector('#pending-tag-filter')
+            const tagFilterSelect = pendingSection.querySelector(
+              '#pending-tag-filter'
+            )
             if (tagFilterSelect) {
               tagFilterSelect.innerHTML = `
                                 <option value="">Todas as Tags</option>
@@ -2293,7 +2508,7 @@ async function openTagManager(btnElement, pendingId) {
   })
 
   // Fechar ao clicar fora
-  const closeHandler = (e) => {
+  const closeHandler = e => {
     if (!popup.contains(e.target) && e.target !== btnElement) {
       popup.remove()
       document.removeEventListener('click', closeHandler)
@@ -2318,8 +2533,9 @@ async function toggleTag(pendingId, tagId) {
  */
 window.showNewTagInput = function (btnElement, pendingId) {
   // Tenta encontrar o container correto (footer do popup)
-  const container = btnElement.closest('.ip-tag-popup-footer') || btnElement.parentElement
-  if (!container) return;
+  const container =
+    btnElement.closest('.ip-tag-popup-footer') || btnElement.parentElement
+  if (!container) return
 
   container.innerHTML = `
         <div style="display: flex; align-items: center; gap: 4px;">
@@ -2331,21 +2547,21 @@ window.showNewTagInput = function (btnElement, pendingId) {
   // Attach listener for the new button
   const saveBtn = container.querySelector('#save-tag-btn')
   if (saveBtn) {
-    saveBtn.addEventListener('click', (e) => {
-      e.stopPropagation(); // Prevent closing popup
+    saveBtn.addEventListener('click', e => {
+      e.stopPropagation() // Prevent closing popup
       if (window.saveNewTag) {
-        window.saveNewTag(pendingId);
+        window.saveNewTag(pendingId)
       } else {
-        console.error('Função saveNewTag não encontrada');
+        console.error('Função saveNewTag não encontrada')
       }
     })
   }
 
   // Prevent closing when clicking inputs
-  const inputs = container.querySelectorAll('input');
+  const inputs = container.querySelectorAll('input')
   inputs.forEach(input => {
-    input.addEventListener('click', (e) => e.stopPropagation());
-  });
+    input.addEventListener('click', e => e.stopPropagation())
+  })
 }
 
 /**
@@ -2404,7 +2620,9 @@ function refreshPendingCardUI(pendingId) {
     applyPendingFilters(pendingSection)
   } else {
     // Atualização local para performance
-    const card = document.querySelector(`.ip-pending-card[data-id="${pendingId}"]`)
+    const card = document.querySelector(
+      `.ip-pending-card[data-id="${pendingId}"]`
+    )
     if (card) {
       const tagsContainer = card.querySelector('.ip-tags-container')
 
@@ -2416,7 +2634,9 @@ function refreshPendingCardUI(pendingId) {
       if (item) {
         // 1. Tag de Prioridade (Automática)
         if (item.isPrioritaria) {
-          const priorityTag = availableTagsCache.find(t => t.name.toLowerCase() === 'prioridade')
+          const priorityTag = availableTagsCache.find(
+            t => t.name.toLowerCase() === 'prioridade'
+          )
           if (priorityTag) {
             tagsRenderList.push(priorityTag)
             renderedTagIds.add(priorityTag.id)
@@ -2425,7 +2645,9 @@ function refreshPendingCardUI(pendingId) {
 
         // 2. Tag de Em SS (Automática)
         if (item.isEmSS) {
-          const ssTag = availableTagsCache.find(t => t.name.toLowerCase() === 'em ss')
+          const ssTag = availableTagsCache.find(
+            t => t.name.toLowerCase() === 'em ss'
+          )
           if (ssTag) {
             tagsRenderList.push(ssTag)
             renderedTagIds.add(ssTag.id)
@@ -2445,9 +2667,11 @@ function refreshPendingCardUI(pendingId) {
         }
       })
 
-      const tagsHtml = tagsRenderList.map(tagDef => {
-        return `<span class="ip-tag-badge" style="background-color: ${tagDef.color}20; color: ${tagDef.color}; border-color: ${tagDef.color}40;">${escapeHTML(tagDef.name)}</span>`
-      }).join('')
+      const tagsHtml = tagsRenderList
+        .map(tagDef => {
+          return `<span class="ip-tag-badge" style="background-color: ${tagDef.color}20; color: ${tagDef.color}; border-color: ${tagDef.color}40;">${escapeHTML(tagDef.name)}</span>`
+        })
+        .join('')
 
       tagsContainer.innerHTML = tagsHtml
     }
@@ -2516,10 +2740,14 @@ function getSectionContent(sectionId) {
               <span>🔄</span>
             </button>
             <!-- Botão de teste de notificação (apenas modo dev) -->
-            ${developerMode ? `
+            ${
+              developerMode
+                ? `
             <button id="test-notification-btn" class="action-btn secondary-btn compact" title="Testar Notificação" style="color: var(--action-blue);">
               <span>🔔</span>
-            </button>` : ''}
+            </button>`
+                : ''
+            }
             
             <!-- Timestamp movido para o topo -->
             <span id="team-status-timestamp" style="font-size: 11px; color: var(--text-color-muted); margin-left: 6px; white-space: nowrap;"></span>
@@ -2791,25 +3019,73 @@ function getSectionContent(sectionId) {
  */
 async function loadForms(sectionElement, filterType = 'forms') {
   // Define o seletor do container baseado no filtro/seção
-  const containerId = filterType === 'ai' ? '#ai-chains-container' : '#forms-container'
+  const containerId =
+    filterType === 'ai' ? '#ai-chains-container' : '#forms-container'
   const container = sectionElement.querySelector(containerId)
   if (!container) return
 
   try {
     // Buscar dados dos formulários
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'info-panel.js:loadForms', message: 'Function entry', data: { filterType, containerId }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
+    fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'info-panel.js:loadForms',
+        message: 'Function entry',
+        data: { filterType, containerId },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'A'
+      })
+    }).catch(() => {})
     // #endregion
 
     const formsData = await fetchFormsData()
 
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'info-panel.js:loadForms', message: 'Forms data received', data: { hasData: !!formsData, hasCategories: !!formsData?.categories, categoriesCount: formsData?.categories?.length, isArray: Array.isArray(formsData) }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
+    fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: 'info-panel.js:loadForms',
+        message: 'Forms data received',
+        data: {
+          hasData: !!formsData,
+          hasCategories: !!formsData?.categories,
+          categoriesCount: formsData?.categories?.length,
+          isArray: Array.isArray(formsData)
+        },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'A'
+      })
+    }).catch(() => {})
     // #endregion
 
     if (!formsData || !formsData.categories) {
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'info-panel.js:loadForms', message: 'Invalid forms data', data: { hasData: !!formsData, hasCategories: !!formsData?.categories }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'A' }) }).catch(() => { });
+      fetch(
+        'http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            location: 'info-panel.js:loadForms',
+            message: 'Invalid forms data',
+            data: {
+              hasData: !!formsData,
+              hasCategories: !!formsData?.categories
+            },
+            timestamp: Date.now(),
+            sessionId: 'debug-session',
+            runId: 'run1',
+            hypothesisId: 'A'
+          })
+        }
+      ).catch(() => {})
       // #endregion
       throw new Error('Dados de formulários inválidos')
     }
@@ -2819,7 +3095,12 @@ async function loadForms(sectionElement, filterType = 'forms') {
     // Se for 'forms', pega o resto.
     const filteredCategories = formsData.categories.filter(cat => {
       const title = cat.category.toLowerCase()
-      const isAiCategory = title.includes('ai') || title.includes('chain') || title.includes('assistente') || title === 'outros' || title === 'at'
+      const isAiCategory =
+        title.includes('ai') ||
+        title.includes('chain') ||
+        title.includes('assistente') ||
+        title === 'outros' ||
+        title === 'at'
 
       return filterType === 'ai' ? isAiCategory : !isAiCategory
     })
@@ -2838,21 +3119,42 @@ async function loadForms(sectionElement, filterType = 'forms') {
         html += `
             <div class="ip-forms-category">
               <h4 class="ip-forms-category-title">${escapeHTML(
-          category.category
-        )}</h4>
+                category.category
+              )}</h4>
               <div class="ip-forms-grid">
           `
 
         category.items.forEach((item, itemIndex) => {
           // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'info-panel.js:loadForms', message: 'Processing item', data: { category: category.category, itemIndex, itemType: item.type, hasTitle: !!item.title, hasClosingData: !!item.closingData }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'C' }) }).catch(() => { });
+          fetch(
+            'http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                location: 'info-panel.js:loadForms',
+                message: 'Processing item',
+                data: {
+                  category: category.category,
+                  itemIndex,
+                  itemType: item.type,
+                  hasTitle: !!item.title,
+                  hasClosingData: !!item.closingData
+                },
+                timestamp: Date.now(),
+                sessionId: 'debug-session',
+                runId: 'run1',
+                hypothesisId: 'C'
+              })
+            }
+          ).catch(() => {})
           // #endregion
 
           if (item.type === 'link') {
             html += `
                 <a href="${escapeHTML(
-              item.url
-            )}" target="_blank" class="ip-form-card">
+                  item.url
+                )}" target="_blank" class="ip-form-card">
                   <div class="ip-form-icon">${item.icon}</div>
                   <div class="ip-form-content">
                     <h5 class="ip-form-title">${escapeHTML(item.title)}</h5>
@@ -2864,8 +3166,8 @@ async function loadForms(sectionElement, filterType = 'forms') {
           } else if (item.type === 'document') {
             html += `
                 <div class="ip-form-card ip-form-document" data-content="${escapeHTML(
-              item.content
-            )}">
+                  item.content
+                )}">
                   <div class="ip-form-icon">${item.icon}</div>
                   <div class="ip-form-content">
                     <h5 class="ip-form-title">${escapeHTML(item.title)}</h5>
@@ -2878,17 +3180,72 @@ async function loadForms(sectionElement, filterType = 'forms') {
             // #region agent log
             try {
               const hasClosingData = !!item.closingData
-              const closingDataKeys = item.closingData ? Object.keys(item.closingData) : []
-              fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'info-panel.js:loadForms', message: 'Processing action-closing item', data: { hasClosingData, closingDataKeys, hasTitle: !!item.closingData?.title, hasContent: !!item.closingData?.content }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'C' }) }).catch(() => { });
+              const closingDataKeys = item.closingData
+                ? Object.keys(item.closingData)
+                : []
+              fetch(
+                'http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',
+                {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    location: 'info-panel.js:loadForms',
+                    message: 'Processing action-closing item',
+                    data: {
+                      hasClosingData,
+                      closingDataKeys,
+                      hasTitle: !!item.closingData?.title,
+                      hasContent: !!item.closingData?.content
+                    },
+                    timestamp: Date.now(),
+                    sessionId: 'debug-session',
+                    runId: 'run1',
+                    hypothesisId: 'C'
+                  })
+                }
+              ).catch(() => {})
 
               if (!item.closingData) {
                 throw new Error('closingData is missing')
               }
               const jsonString = JSON.stringify(item.closingData)
               const encoded = encodeURIComponent(jsonString)
-              fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'info-panel.js:loadForms', message: 'action-closing encoding success', data: { jsonLength: jsonString.length, encodedLength: encoded.length }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'E' }) }).catch(() => { });
+              fetch(
+                'http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',
+                {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    location: 'info-panel.js:loadForms',
+                    message: 'action-closing encoding success',
+                    data: {
+                      jsonLength: jsonString.length,
+                      encodedLength: encoded.length
+                    },
+                    timestamp: Date.now(),
+                    sessionId: 'debug-session',
+                    runId: 'run1',
+                    hypothesisId: 'E'
+                  })
+                }
+              ).catch(() => {})
             } catch (error) {
-              fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'info-panel.js:loadForms', message: 'action-closing encoding error', data: { error: error.message, stack: error.stack }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'E' }) }).catch(() => { });
+              fetch(
+                'http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',
+                {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    location: 'info-panel.js:loadForms',
+                    message: 'action-closing encoding error',
+                    data: { error: error.message, stack: error.stack },
+                    timestamp: Date.now(),
+                    sessionId: 'debug-session',
+                    runId: 'run1',
+                    hypothesisId: 'E'
+                  })
+                }
+              ).catch(() => {})
               throw error
             }
             // #endregion
@@ -2946,7 +3303,9 @@ async function loadForms(sectionElement, filterType = 'forms') {
             btnText.textContent = 'Adicionando...'
             btn.disabled = true
 
-            const closingData = JSON.parse(decodeURIComponent(card.dataset.closing))
+            const closingData = JSON.parse(
+              decodeURIComponent(card.dataset.closing)
+            )
             await addClosingToPersonal(closingData)
 
             // Estado de sucesso
@@ -2965,7 +3324,8 @@ async function loadForms(sectionElement, filterType = 'forms') {
             // Estado de erro
             btnIcon.textContent = '⚠️'
             btnText.textContent = 'Erro ao adicionar'
-            btn.style.background = 'linear-gradient(135deg, #dc3545, #c82333) !important'
+            btn.style.background =
+              'linear-gradient(135deg, #dc3545, #c82333) !important'
 
             setTimeout(() => {
               btnIcon.textContent = originalIcon
@@ -3061,9 +3421,8 @@ async function addClosingToPersonal(closingData) {
   }
 }
 
-
 /**
- * @file system-status-ui.js  
+ * @file system-status-ui.js
  * Funções de UI para gerenciar status dos sistemas com Firestore
  * Adicionar essas funções ao final do info-panel.js
  */
@@ -3073,17 +3432,21 @@ async function addClosingToPersonal(closingData) {
  * ATUALIZADO: Suporta forceRefresh
  */
 async function loadSystemsStatus(sectionElement, forceRefresh = false) {
-  const container = sectionElement.querySelector('#systems-status-container');
-  if (!container) return;
+  const container = sectionElement.querySelector('#systems-status-container')
+  if (!container) return
 
   // Mostra loading se for refresh forçado ou estiver vazio
-  if (forceRefresh || !container.innerHTML.trim() || container.innerHTML.includes('ip-empty-state')) {
+  if (
+    forceRefresh ||
+    !container.innerHTML.trim() ||
+    container.innerHTML.includes('ip-empty-state')
+  ) {
     container.innerHTML = `
         <div class="ip-loading-container">
           <div class="ip-spinner"></div>
           <span>Carregando status dos sistemas...</span>
         </div>
-      `;
+      `
   }
 
   try {
@@ -3092,20 +3455,19 @@ async function loadSystemsStatus(sectionElement, forceRefresh = false) {
     const [systems, userReports] = await Promise.all([
       getSystemsStatus(forceRefresh),
       window.systemStatusService.getRecentReportsStats()
-    ]);
+    ])
 
     // 2. Renderiza combinando os dados (Incluindo Relatos)
-    renderSystemsStatus(container, systems, userReports);
-
+    renderSystemsStatus(container, systems, userReports)
   } catch (error) {
-    console.error('Erro ao carregar status dos sistemas:', error);
+    console.error('Erro ao carregar status dos sistemas:', error)
     container.innerHTML = `
       <div class="ip-error-state">
         <span class="ip-error-icon">⚠️</span>
         <h4>Erro ao carregar status</h4>
         <p>${escapeHTML(error.message)}</p>
       </div>
-    `;
+    `
   }
 }
 
@@ -3120,39 +3482,43 @@ function renderSystemsStatus(container, systems, userReports = {}) {
         <h4>Nenhum sistema configurado</h4>
         <p>Configure os sistemas no Firebase Firestore.</p>
       </div>
-    `;
-    return;
+    `
+    return
   }
 
-  let html = '';
+  let html = ''
 
   systems.forEach(system => {
-    const badgeClass = getStatusBadgeClass(system.status);
-    const statusLabel = getStatusLabel(system.status);
+    const badgeClass = getStatusBadgeClass(system.status)
+    const statusLabel = getStatusLabel(system.status)
 
     // Dados de reportes de usuários
-    const reportCount = userReports[system.id] || 0;
+    const reportCount = userReports[system.id] || 0
 
     // Lógica visual do Downdetector (Barra de intensidade)
-    const maxReportsReference = 20;
-    const intensityPct = Math.min((reportCount / maxReportsReference) * 100, 100);
+    const maxReportsReference = 20
+    const intensityPct = Math.min(
+      (reportCount / maxReportsReference) * 100,
+      100
+    )
 
-    let intensityColor = 'var(--action-green)';
-    let intensityLabel = 'Poucos Relatos';
+    let intensityColor = 'var(--action-green)'
+    let intensityLabel = 'Poucos Relatos'
 
     if (reportCount > 2) {
-      intensityColor = 'var(--action-yellow)';
-      intensityLabel = 'Possível Instabilidade';
+      intensityColor = 'var(--action-yellow)'
+      intensityLabel = 'Possível Instabilidade'
     }
     if (reportCount > 5) {
-      intensityColor = 'var(--action-red)';
-      intensityLabel = 'Muitos Relatos';
+      intensityColor = 'var(--action-red)'
+      intensityLabel = 'Muitos Relatos'
     }
 
     // Verifica se o usuário já reportou recentemente
-    const lastReportTime = localStorage.getItem(`last_report_${system.id}`);
-    const COOLDOWN = 30 * 60 * 1000;
-    const canReport = !lastReportTime || (Date.now() - parseInt(lastReportTime) > COOLDOWN);
+    const lastReportTime = localStorage.getItem(`last_report_${system.id}`)
+    const COOLDOWN = 30 * 60 * 1000
+    const canReport =
+      !lastReportTime || Date.now() - parseInt(lastReportTime) > COOLDOWN
 
     const reportBtnHtml = `
         <button class="ip-report-btn ${canReport ? '' : 'disabled'}" 
@@ -3160,17 +3526,17 @@ function renderSystemsStatus(container, systems, userReports = {}) {
                 title="${canReport ? 'Reportar que estou com problemas neste sistema' : 'Você já reportou recentemente'}">
             ${canReport ? '✋ Tenho Problemas' : '✅ Reportado'}
         </button>
-    `;
+    `
 
     // Permitimos HTML no workaround para suportar links inseridos pelo botão de hiperlink
     const workaroundHtml = system.workaround
       ? `<div class="ip-system-workaround"><strong>💡 Orientação:</strong> ${system.workaround}</div>`
-      : '';
+      : ''
 
     // Botão de edição (modo dev)
     const editButtonHtml = developerMode
       ? `<button class="ip-edit-system-btn" data-system-id="${escapeHTML(system.id)}" title="Editar status">✏️</button>`
-      : '';
+      : ''
 
     html += `
       <div class="ip-card system-status-card" data-system-id="${escapeHTML(system.id)}">
@@ -3202,69 +3568,77 @@ function renderSystemsStatus(container, systems, userReports = {}) {
 
         <div class="ip-system-footer">
             <div class="ip-footer-left">
-                ${system.updatedAt ? `<div class="ip-card-updated" title="Última Atualização Oficial"><span>🕒</span> ${new Date(system.updatedAt).toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    })}</div>` : ''}
+                ${
+                  system.updatedAt
+                    ? `<div class="ip-card-updated" title="Última Atualização Oficial"><span>🕒</span> ${new Date(
+                        system.updatedAt
+                      ).toLocaleString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}</div>`
+                    : ''
+                }
             </div>
             <div class="ip-reports-actions">
                 ${reportBtnHtml}
             </div>
         </div>
       </div>
-    `;
-  });
+    `
+  })
 
-  container.innerHTML = html;
+  container.innerHTML = html
 
   // Listeners dos botões de Reportar
   container.querySelectorAll('.ip-report-btn').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      if (btn.classList.contains('disabled')) return;
+    btn.addEventListener('click', async e => {
+      if (btn.classList.contains('disabled')) return
 
-      const sysId = btn.dataset.systemId;
-      const originalText = btn.textContent;
-      btn.textContent = 'Enviando...';
-      btn.classList.add('disabled');
+      const sysId = btn.dataset.systemId
+      const originalText = btn.textContent
+      btn.textContent = 'Enviando...'
+      btn.classList.add('disabled')
 
       try {
-        await window.systemStatusService.reportUserInstability(sysId);
-        localStorage.setItem(`last_report_${sysId}`, Date.now());
-        btn.textContent = '✅ Reportado';
+        await window.systemStatusService.reportUserInstability(sysId)
+        localStorage.setItem(`last_report_${sysId}`, Date.now())
+        btn.textContent = '✅ Reportado'
         if (typeof showNotification === 'function') {
-          showNotification('Obrigado! Seu relato ajuda outros usuários.', 'success');
+          showNotification(
+            'Obrigado! Seu relato ajuda outros usuários.',
+            'success'
+          )
         } else {
-          alert('Obrigado! Seu relato ajuda outros usuários.');
+          alert('Obrigado! Seu relato ajuda outros usuários.')
         }
         setTimeout(() => {
-          const section = document.querySelector('#ip-section-instabilities');
-          if (section) loadSystemsStatus(section, false);
-        }, 1200);
+          const section = document.querySelector('#ip-section-instabilities')
+          if (section) loadSystemsStatus(section, false)
+        }, 1200)
       } catch (err) {
-        console.error(err);
-        btn.textContent = originalText;
-        btn.classList.remove('disabled');
+        console.error(err)
+        btn.textContent = originalText
+        btn.classList.remove('disabled')
         if (typeof showNotification === 'function') {
-          showNotification('Erro ao enviar relato.', 'error');
+          showNotification('Erro ao enviar relato.', 'error')
         }
       }
-    });
-  });
+    })
+  })
 
   // Listeners de Edição (Dev)
   if (developerMode) {
     container.querySelectorAll('.ip-edit-system-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const systemId = btn.dataset.systemId;
-        const system = systems.find(s => s.id === systemId);
-        if (system) openSystemEditModal(system);
-      });
-    });
+      btn.addEventListener('click', e => {
+        e.stopPropagation()
+        const systemId = btn.dataset.systemId
+        const system = systems.find(s => s.id === systemId)
+        if (system) openSystemEditModal(system)
+      })
+    })
   }
-
 }
 
 /**
@@ -3324,61 +3698,67 @@ function openSystemEditModal(system) {
         ${system.updatedAt ? `Última atualização: ${new Date(system.updatedAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}` : ''}
       </div>
     </div>
-  `;
+  `
 
   // Título padrão para o modal (será sobrescrito com HTML abaixo)
-  const modalTitle = `Editar Status: ${system.name}`;
+  const modalTitle = `Editar Status: ${system.name}`
 
   const modal = createModal(
     modalTitle,
     modalContent,
     async (modalBody, closeModal) => {
-      const saveBtn = modal.querySelector('#modal-save-btn');
-      const newStatus = modal.querySelector('#edit-system-status').value;
-      const newMessage = modal.querySelector('#edit-system-message').value.trim();
-      const newWorkaround = modal.querySelector('#edit-system-workaround').value.trim();
-      const autoPublishWarning = modal.querySelector('#auto-publish-warning').checked;
+      const saveBtn = modal.querySelector('#modal-save-btn')
+      const newStatus = modal.querySelector('#edit-system-status').value
+      const newMessage = modal
+        .querySelector('#edit-system-message')
+        .value.trim()
+      const newWorkaround = modal
+        .querySelector('#edit-system-workaround')
+        .value.trim()
+      const autoPublishWarning = modal.querySelector(
+        '#auto-publish-warning'
+      ).checked
 
       if (!newMessage) {
-        alert('Por favor, insira uma mensagem de status.');
-        return;
+        alert('Por favor, insira uma mensagem de status.')
+        return
       }
 
       if (saveBtn) {
-        saveBtn.disabled = true;
-        saveBtn.textContent = 'Salvando...';
+        saveBtn.disabled = true
+        saveBtn.textContent = 'Salvando...'
       }
 
       try {
-        const now = new Date().toISOString();
+        const now = new Date().toISOString()
         await updateSystemStatus(system.id, {
           status: newStatus,
           message: newMessage,
           workaround: newWorkaround,
           updatedAt: now
-        });
+        })
 
         // Se checkbox marcado, criar aviso automaticamente
         if (autoPublishWarning) {
           try {
             // Mapear status para tipo de aviso
-            let warningType = 'info';
+            let warningType = 'info'
             if (newStatus === 'down' || newStatus === 'error') {
-              warningType = 'danger';
+              warningType = 'danger'
             } else if (newStatus === 'warning') {
-              warningType = 'warning';
+              warningType = 'warning'
             } else if (newStatus === 'operational') {
-              warningType = 'success';
+              warningType = 'success'
             }
 
             // Formatar o status para exibição
-            const statusLabel = getStatusLabel(newStatus);
+            const statusLabel = getStatusLabel(newStatus)
 
             // Compor mensagem do aviso (sem o status, que vai no título)
-            let warningMessage = newMessage;
+            let warningMessage = newMessage
 
             if (newWorkaround) {
-              warningMessage += `<br><strong>💡 Orientação:</strong> ${newWorkaround}`;
+              warningMessage += `<br><strong>💡 Orientação:</strong> ${newWorkaround}`
             }
 
             // Criar aviso
@@ -3389,26 +3769,27 @@ function openSystemEditModal(system) {
               author: getCurrentUserName(),
               isTest: false,
               date: now
-            });
-
+            })
           } catch (warningError) {
-            console.error('Erro ao criar aviso automático:', warningError);
+            console.error('Erro ao criar aviso automático:', warningError)
             // Não bloqueia o salvamento do status mesmo se o aviso falhar
           }
         }
 
-        const sectionElement = document.querySelector('#ip-section-instabilities');
+        const sectionElement = document.querySelector(
+          '#ip-section-instabilities'
+        )
         if (sectionElement) {
-          loadSystemsStatus(sectionElement);
+          loadSystemsStatus(sectionElement)
         }
 
-        closeModal();
+        closeModal()
       } catch (error) {
-        console.error('Erro ao salvar:', error);
-        alert('❌ Erro ao salvar alterações.');
+        console.error('Erro ao salvar:', error)
+        alert('❌ Erro ao salvar alterações.')
         if (saveBtn) {
-          saveBtn.disabled = false;
-          saveBtn.textContent = 'Salvar Alterações';
+          saveBtn.disabled = false
+          saveBtn.textContent = 'Salvar Alterações'
         }
       }
     },
@@ -3417,73 +3798,77 @@ function openSystemEditModal(system) {
       modalId: 'edit-system-modal',
       showShareButton: false
     }
-  );
+  )
 
   // Injetar o título estilizado diretamente no cabeçalho do modal para aceitar HTML
-  const headerTitle = modal.querySelector('.se-modal-header h3');
+  const headerTitle = modal.querySelector('.se-modal-header h3')
   if (headerTitle) {
-    headerTitle.innerHTML = `<span>✏️</span> Editar Status: <span class="ip-system-name-highlight">${escapeHTML(system.name)}</span>`;
+    headerTitle.innerHTML = `<span>✏️</span> Editar Status: <span class="ip-system-name-highlight">${escapeHTML(system.name)}</span>`
   }
 
   // Adicionar funcionalidade ao botão de link
-  const addLinkBtn = modal.querySelector('#add-link-btn');
-  const workaroundTextarea = modal.querySelector('#edit-system-workaround');
-  const statusSelect = modal.querySelector('#edit-system-status');
-  const messageTextarea = modal.querySelector('#edit-system-message');
+  const addLinkBtn = modal.querySelector('#add-link-btn')
+  const workaroundTextarea = modal.querySelector('#edit-system-workaround')
+  const statusSelect = modal.querySelector('#edit-system-status')
+  const messageTextarea = modal.querySelector('#edit-system-message')
 
   // Modelos de mensagens padrão por status
   const statusTemplates = {
-    'operational': 'Todos os serviços operando normalmente.',
-    'warning': 'Lentidão intermitente ou comportamento inesperado em XXXXX. Equipe técnica monitorando.',
-    'error': 'Indisponibilidade momentânea no XXXXX devido a XXXXX.',
-    'down': 'Serviço fora do ar devido a XXXXX.'
-  };
+    operational: 'Todos os serviços operando normalmente.',
+    warning:
+      'Lentidão intermitente ou comportamento inesperado em XXXXX. Equipe técnica monitorando.',
+    error: 'Indisponibilidade momentânea no XXXXX devido a XXXXX.',
+    down: 'Serviço fora do ar devido a XXXXX.'
+  }
 
   if (statusSelect && messageTextarea) {
     statusSelect.addEventListener('change', () => {
-      const selectedStatus = statusSelect.value;
-      const currentMessage = messageTextarea.value.trim();
+      const selectedStatus = statusSelect.value
+      const currentMessage = messageTextarea.value.trim()
 
       // Só preenche se a mensagem estiver vazia ou for um dos templates antigos
-      const isDefault = Object.values(statusTemplates).some(t => currentMessage === t) || currentMessage === '';
+      const isDefault =
+        Object.values(statusTemplates).some(t => currentMessage === t) ||
+        currentMessage === ''
 
       if (isDefault && statusTemplates[selectedStatus]) {
-        messageTextarea.value = statusTemplates[selectedStatus];
-        messageTextarea.focus();
+        messageTextarea.value = statusTemplates[selectedStatus]
+        messageTextarea.focus()
 
         // Se houver XXXXX, seleciona para facilitar a substituição
-        const index = messageTextarea.value.indexOf('XXXXX');
+        const index = messageTextarea.value.indexOf('XXXXX')
         if (index !== -1) {
-          messageTextarea.setSelectionRange(index, index + 5);
+          messageTextarea.setSelectionRange(index, index + 5)
         }
       }
-    });
+    })
   }
 
   if (addLinkBtn && workaroundTextarea) {
     addLinkBtn.addEventListener('click', () => {
       if (typeof openLinkModal === 'function') {
-        openLinkModal(workaroundTextarea, { hideButtonOption: true, zIndex: 10005 });
+        openLinkModal(workaroundTextarea, {
+          hideButtonOption: true,
+          zIndex: 10005
+        })
       } else {
         // Fallback redundante
-        const url = prompt('URL:', 'https://');
+        const url = prompt('URL:', 'https://')
         if (url) {
-          const text = prompt('Texto:', 'Clique aqui');
-          const linkHtml = `<a href="${url}" target="_blank" style="color: var(--primary-color); text-decoration: underline;">${text}</a>`;
-          insertAtCursor(workaroundTextarea, linkHtml);
+          const text = prompt('Texto:', 'Clique aqui')
+          const linkHtml = `<a href="${url}" target="_blank" style="color: var(--primary-color); text-decoration: underline;">${text}</a>`
+          insertAtCursor(workaroundTextarea, linkHtml)
         }
       }
-    });
+    })
   }
 
   // Ajustar labels dos botões padrão do createModal
-  const saveBtn = modal.querySelector('#modal-save-btn');
-  const cancelBtn = modal.querySelector('#modal-cancel-btn');
+  const saveBtn = modal.querySelector('#modal-save-btn')
+  const cancelBtn = modal.querySelector('#modal-cancel-btn')
 
-  if (saveBtn) saveBtn.innerHTML = '<span>💾</span> Salvar';
-  if (cancelBtn) cancelBtn.textContent = 'Fechar';
+  if (saveBtn) saveBtn.innerHTML = '<span>💾</span> Salvar'
+  if (cancelBtn) cancelBtn.textContent = 'Fechar'
 
-  document.body.appendChild(modal);
+  document.body.appendChild(modal)
 }
-
-

@@ -4,11 +4,18 @@ const RELEASE_NOTES = {
     features: [
       '<b>🚀 Central de Informações SGD (Em Desenvolvimento):</b>',
       '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-      '<li><b>🤖 Nova Aba AI Chains:</b> Assistentes inteligentes e fluxos agora têm sua própria seção dedicada.</li>' +
-      '<li><b>🏷️ Gestão de TAGS:</b> Classifique pendências com Tags coloridas (<i>Em SS</i>, <i>Em SA/NE</i>, <i>Prioridade</i> e personalizadas).</li>' +
-      '<li><b>🔍 Filtro por Tags:</b> Visualize rapida\mente chamados por categoria na lista de pendências.</li>' +
-      '<li><b>🔔 Controle de Notificações:</b> Ative/desative alertas visuais na tela (verificação continua em background).</li>' +
-      '</ul>',
+        '<li><b>🤖 Nova Aba AI Chains:</b> Assistentes inteligentes e fluxos agora têm sua própria seção dedicada.</li>' +
+        '<li><b>🏷️ Gestão de TAGS:</b> Classifique pendências com Tags coloridas (<i>Em SS</i>, <i>Em SA/NE</i>, <i>Prioridade</i> e personalizadas).</li>' +
+        '<li><b>🔍 Filtro por Tags:</b> Visualize rapida\mente chamados por categoria na lista de pendências.</li>' +
+        '<li><b>🔔 Controle de Notificações:</b> Ative/desative alertas visuais na tela (verificação continua em background).</li>' +
+        '</ul>',
+      '<b>⏱️ SLA Inteligente e Dias Úteis:</b>',
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+        '<li><b>🧠 Adoção Inteligente:</b> Diferencia automaticamente chamados <u>precisos</u> (online) e <u>estimados</u> (offline) com base na chegada.</li>' +
+        '<li><b>⌚ Tooltip em HH:MM:</b> Exibição de tempo exato em <b>HH:MM</b> nos casos precisos diretamente no badge de SLA.</li>' +
+        '<li><b>📅 Dias Úteis:</b> Cálculo de SLA considera apenas dias úteis, com feriados recorrentes (01-01, 04-21, 05-01, 09-07, 10-12, 11-02, 11-15, 11-20, 12-25).</li>' +
+        '<li><b>~ XD para Offline:</b> Chamados estimados exibem <b>~ 1D, ~ 2D</b> com opacidade reduzida e tooltip explicativo.</li>' +
+        '</ul>',
       '<b>⚡ Otimizações Gerais:</b> Ajustes de performance e correções visuais na extensão.'
     ]
   },

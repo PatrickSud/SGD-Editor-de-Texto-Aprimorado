@@ -6,7 +6,51 @@
 /**
  * URL da página de filtro de listas do SGD.
  */
-const PENDING_ITEMS_URL = 'https://sgd.dominiosistemas.com.br/sgpub/faces/filtro-listas.html'
+const PENDING_ITEMS_URL =
+  'https://sgd.dominiosistemas.com.br/sgpub/faces/filtro-listas.html'
+
+const HOLIDAYS = new Set([
+  '01-01',
+  '04-21',
+  '05-01',
+  '09-07',
+  '10-12',
+  '11-02',
+  '11-15',
+  '11-20',
+  '12-25'
+])
+
+function isBusinessDay(date) {
+  const d = new Date(date)
+  const day = d.getDay()
+  if (day === 0 || day === 6) return false
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  const key = `${mm}-${dd}`
+  return !HOLIDAYS.has(key)
+}
+
+function calculateBusinessTimeMs(startTs, endTs) {
+  if (!Number.isFinite(startTs) || !Number.isFinite(endTs)) return 0
+  if (endTs <= startTs) return 0
+  const dayMs = 24 * 60 * 60 * 1000
+  let sum = 0
+  const startDay = new Date(startTs)
+  startDay.setHours(0, 0, 0, 0)
+  let cur = startDay.getTime()
+  while (cur < endTs) {
+    const dayStart = cur
+    const dayEnd = dayStart + dayMs
+    const overlapStart = Math.max(startTs, dayStart)
+    const overlapEnd = Math.min(endTs, dayEnd)
+    if (overlapEnd > overlapStart && isBusinessDay(dayStart)) {
+      sum += overlapEnd - overlapStart
+    }
+    cur = dayEnd
+  }
+  return sum
+}
 
 /**
  * Remove elementos span ocultos e retorna o texto limpo.
@@ -22,22 +66,18 @@ function cleanDateText(cell) {
 }
 
 /**
- * Converte o formato de data do SGD "dd/mm/yyyy HH:mm" para um objeto Date.
- * @param {string} dateString
- * @returns {Date|null}
+ * Recupera o mapa de tempos de chegada do storage.
  */
-function parseDataSGD(dateString) {
-  if (!dateString) return null
-  const parts = dateString.split(' ')
-  const datePart = parts[0]
-  const timePart = parts[1]
+async function getPendingArrivalTimes() {
+  const result = await chrome.storage.local.get(['pendingArrivalTimes'])
+  return result.pendingArrivalTimes || {}
+}
 
-  if (!datePart) return null
-
-  const [day, month, year] = datePart.split('/').map(Number)
-  const [hour, minute] = timePart ? timePart.split(':').map(Number) : [0, 0]
-
-  return new Date(year, month - 1, day, hour, minute)
+/**
+ * Salva o mapa de tempos de chegada.
+ */
+async function savePendingArrivalTimes(timesMap) {
+  await chrome.storage.local.set({ pendingArrivalTimes: timesMap })
 }
 
 /**
@@ -46,6 +86,8 @@ function parseDataSGD(dateString) {
  */
 async function fetchPendingItems() {
   try {
+    // 1. Carrega os tempos precisos salvos
+    const arrivalTimes = await getPendingArrivalTimes()
     const response = await fetch(PENDING_ITEMS_URL, {
       credentials: 'include', // Envia cookies de sessão
       cache: 'no-cache'
@@ -53,7 +95,9 @@ async function fetchPendingItems() {
 
     if (!response.ok) {
       if (response.status === 401 || response.status === 403) {
-        throw new Error('Sessão expirada. Por favor, faça login novamente no SGD.')
+        throw new Error(
+          'Sessão expirada. Por favor, faça login novamente no SGD.'
+        )
       }
       throw new Error(`Erro ao acessar o SGD: ${response.status}`)
     }
@@ -67,18 +111,24 @@ async function fetchPendingItems() {
 
     if (!dataTable) {
       const passwordInput = doc.querySelector('input[type="password"]')
-      const loginForm = doc.querySelector('form[action*="login"]') || doc.querySelector('#login-form')
+      const loginForm =
+        doc.querySelector('form[action*="login"]') ||
+        doc.querySelector('#login-form')
 
       if (passwordInput || loginForm) {
         throw new Error('Você não está logado no SGD. Por favor, faça login.')
       }
 
-      const errorMsg = doc.querySelector('.ui-messages-error-summary, .erro')?.innerText
+      const errorMsg = doc.querySelector(
+        '.ui-messages-error-summary, .erro'
+      )?.innerText
       if (errorMsg) {
         throw new Error(`Erro no SGD: ${errorMsg.trim()}`)
       }
 
-      console.warn('PendingService: Tabela não encontrada e não parece ser login. Layout pode ter mudado.')
+      console.warn(
+        'PendingService: Tabela não encontrada e não parece ser login. Layout pode ter mudado.'
+      )
       return []
     }
 
@@ -99,10 +149,19 @@ async function fetchPendingItems() {
       { id: 'filtrosForm:modulo', label: 'Módulo', default: '0' },
       { id: 'filtrosForm:topicoSuporte', label: 'Tópico', default: '0' },
       { id: 'filtrosForm:situacao', label: 'Situação', default: '0' },
-      { id: 'filtrosForm:classificacaoSSC', label: 'Classificação', default: '0' },
+      {
+        id: 'filtrosForm:classificacaoSSC',
+        label: 'Classificação',
+        default: '0'
+      },
       { id: 'filtrosForm:meioAcesso', label: 'Meio de Acesso', default: '0' },
       { id: 'filtrosForm:origem', label: 'Subtópico', default: '0' },
-      { id: 'filtrosForm:palavraChave', label: 'Palavra-chave', type: 'text', default: '' }
+      {
+        id: 'filtrosForm:palavraChave',
+        label: 'Palavra-chave',
+        type: 'text',
+        default: ''
+      }
     ]
 
     const siteFilter = {
@@ -125,7 +184,10 @@ async function fetchPendingItems() {
             // Para selects com "selected" explícito no HTML estático ou valor atual
             const selectedOption = el.querySelector(`option[value="${val}"]`)
             // Se tiver selected ou o valor for diferente do default (assumindo value do select correto)
-            if ((selectedOption && selectedOption.hasAttribute('selected')) || val !== '0') {
+            if (
+              (selectedOption && selectedOption.hasAttribute('selected')) ||
+              val !== '0'
+            ) {
               isReallyActive = true
             }
           }
@@ -162,11 +224,15 @@ async function fetchPendingItems() {
 
     if (activeFilters.length > 0) {
       siteFilter.active = true
-      siteFilter.name = activeFilters.length === 1 ? activeFilters[0] : `${activeFilters.length} filtros ativos`
+      siteFilter.name =
+        activeFilters.length === 1
+          ? activeFilters[0]
+          : `${activeFilters.length} filtros ativos`
     }
 
     const rows = dataTable.querySelectorAll('tbody > tr')
     const pendingItems = []
+    const now = Date.now()
 
     rows.forEach(row => {
       const cells = row.cells
@@ -177,9 +243,10 @@ async function fetchPendingItems() {
         // ID: Coluna 0
         const id = cells[0].innerText.trim()
 
-        // Verifica se a pendência é prioritária 
+        // Verifica se a pendência é prioritária
         // Verifica classes tableListaRowWarningBlue (Prioridade Azul) e tableListaRowWarning (Prioridade Amarela)
-        const isPrioritaria = cells[0].classList.contains('tableListaRowWarningBlue') ||
+        const isPrioritaria =
+          cells[0].classList.contains('tableListaRowWarningBlue') ||
           cells[0].classList.contains('tableListaRowWarning')
 
         // Data Abertura: Coluna 1 (Limpa spans ocultos)
@@ -191,12 +258,44 @@ async function fetchPendingItems() {
         // Último Trâmite: Coluna 3 (Limpa spans ocultos)
         const dataUltimoTramite = cleanDateText(cells[3])
 
-        // Cálculo de horas desde o último trâmite
-        const lastUpdateDate = parseDataSGD(dataUltimoTramite);
-        let hoursSinceUpdate = 0;
-        if (lastUpdateDate) {
-          const diffMs = new Date() - lastUpdateDate;
-          hoursSinceUpdate = Math.max(0, diffMs / (1000 * 60 * 60));
+        // --- CÁLCULO DE SLA APRIMORADO COM PRECISÃO ---
+        let hoursSinceUpdate = null // Padrão: Sem informação de tempo
+        let timePrecision = null // 'preciso' | 'estimado' | null
+        let estimatedDaysSinceUpdate = null // Apenas para estimativas (offline)
+
+        if (arrivalTimes[id]) {
+          const record = arrivalTimes[id]
+          const arrivalTs =
+            typeof record === 'object' && record?.ts ? record.ts : record
+          const isPrecise = typeof record === 'object' ? !!record.precise : true
+          const businessMs = calculateBusinessTimeMs(arrivalTs, now)
+
+          if (isPrecise) {
+            hoursSinceUpdate = Math.max(0, businessMs / (1000 * 60 * 60))
+            timePrecision = 'preciso'
+          } else {
+            estimatedDaysSinceUpdate = Math.max(
+              0,
+              Math.floor(businessMs / (1000 * 60 * 60 * 24))
+            )
+            timePrecision = 'estimado'
+          }
+        } else {
+          // Solicitação antiga: cronômetro preciso não iniciado
+          // Considera dias úteis desde a data do último trâmite apresentada
+          const m = (dataUltimoTramite || '').match(/(\d{2})\/(\d{2})\/(\d{4})/)
+          if (m) {
+            const d = parseInt(m[1], 10)
+            const mo = parseInt(m[2], 10) - 1
+            const y = parseInt(m[3], 10)
+            const tramiteTs = new Date(y, mo, d).getTime()
+            const businessMs = calculateBusinessTimeMs(tramiteTs, now)
+            estimatedDaysSinceUpdate = Math.max(
+              0,
+              Math.floor(businessMs / (1000 * 60 * 60 * 24))
+            )
+            timePrecision = 'estimado'
+          }
         }
 
         // Qtd Trâmites: Coluna 4
@@ -226,8 +325,11 @@ async function fetchPendingItems() {
         // Verifica se é "Em SS" (texto vermelho)
         // O SGD coloca style="color: red;" no TR ou no A quando há retorno de SS
         const rowStyle = (row.getAttribute('style') || '').toLowerCase()
-        const anchorStyle = anchor ? (anchor.getAttribute('style') || '').toLowerCase() : ''
-        const isEmSS = rowStyle.includes('color: red') || anchorStyle.includes('color: red')
+        const anchorStyle = anchor
+          ? (anchor.getAttribute('style') || '').toLowerCase()
+          : ''
+        const isEmSS =
+          rowStyle.includes('color: red') || anchorStyle.includes('color: red')
 
         // Status: Coluna 12
         let status = 'Desconhecido'
@@ -250,22 +352,23 @@ async function fetchPendingItems() {
           responsible,
           isPrioritaria,
           isEmSS,
-          hoursSinceUpdate: hoursSinceUpdate
+          hoursSinceUpdate, // Pode ser null
+          timePrecision,
+          estimatedDaysSinceUpdate
         })
-
-      } catch (err) {
-      }
+      } catch (err) {}
     })
 
     return { items: pendingItems, siteFilter }
-  } catch (error) { throw error }
+  } catch (error) {
+    throw error
+  }
 }
 
 async function resetSiteFilter() {
   const isOnFilterPage = window.location.href.includes('filtro-listas.html')
 
   if (isOnFilterPage) {
-
     const filterIds = [
       'filtrosForm:responsavel',
       'filtrosForm:sistema',
@@ -296,7 +399,8 @@ async function resetSiteFilter() {
     }
 
     // 3. Clica em Pesquisar/Atualizar
-    const btn = document.getElementById('filtrosForm:atualizarBtn') ||
+    const btn =
+      document.getElementById('filtrosForm:atualizarBtn') ||
       document.querySelector('button[id*="pesquisar"]') ||
       document.querySelector('input[type="submit"][value*="Pesquisar"]') ||
       document.querySelector('a[onclick*="pesquisar"]') ||
@@ -309,10 +413,12 @@ async function resetSiteFilter() {
     } else {
       console.warn('Botão de pesquisar não encontrado.')
     }
-
   } else {
-    alert('Redirecionando para a página de Pendências para limpar os filtros...')
-    window.location.href = 'https://sgd.dominiosistemas.com.br/sgpub/faces/filtro-listas.html'
+    alert(
+      'Redirecionando para a página de Pendências para limpar os filtros...'
+    )
+    window.location.href =
+      'https://sgd.dominiosistemas.com.br/sgpub/faces/filtro-listas.html'
     return true
   }
 
@@ -329,19 +435,77 @@ async function checkNewPendings() {
     const { items: currentItems } = await fetchPendingItems()
 
     // Recupera IDs vistos e a preferência de filtro de responsável
-    const storage = await chrome.storage.local.get(['lastSeenPendingIds', 'preferredResponsible'])
+    const storage = await chrome.storage.local.get([
+      'lastSeenPendingIds',
+      'preferredResponsible',
+      'pendingArrivalTimes'
+    ])
     const lastSeenIds = storage.lastSeenPendingIds || []
     const preferredResponsible = storage.preferredResponsible || ''
+    const arrivalTimes = storage.pendingArrivalTimes || {}
+    let arrivalTimesChanged = false
 
     // Filtra os itens monitorados com base na preferência
     let monitoredItems = currentItems
     if (preferredResponsible && preferredResponsible.trim() !== '') {
       // Mantém apenas itens do responsável escolhido
-      monitoredItems = currentItems.filter(item => item.responsible === preferredResponsible)
+      monitoredItems = currentItems.filter(
+        item => item.responsible === preferredResponsible
+      )
     }
 
     // Verifica novos itens apenas dentro do conjunto monitorado
-    const newItems = monitoredItems.filter(item => !lastSeenIds.includes(item.id))
+    const newItems = monitoredItems.filter(
+      item => !lastSeenIds.includes(item.id)
+    )
+
+    // REGISTRO DE TIMESTAMP COM ADOÇÃO INTELIGENTE (Preciso/Estimado)
+    const now = Date.now()
+    const parseDMY = str => {
+      const m = (str || '').match(/(\d{2})\/(\d{2})\/(\d{4})/)
+      if (!m) return null
+      const d = parseInt(m[1], 10)
+      const mo = parseInt(m[2], 10) - 1
+      const y = parseInt(m[3], 10)
+      const dt = new Date(y, mo, d)
+      return dt.getTime()
+    }
+
+    currentItems.forEach(item => {
+      // Se é um item novo (nunca visto antes), salvamos o timestamp de chegada com a regra de adoção inteligente
+      if (!arrivalTimes[item.id] && !lastSeenIds.includes(item.id)) {
+        const tramiteTs = parseDMY(item.dataUltimoTramite)
+        if (tramiteTs) {
+          const diffMs = now - tramiteTs
+          if (diffMs < 60 * 60 * 1000) {
+            // Cenário Recente: preciso
+            arrivalTimes[item.id] = { ts: now, precise: true }
+          } else {
+            // Cenário Retroativo: estimado (offline)
+            arrivalTimes[item.id] = { ts: tramiteTs, precise: false }
+          }
+        } else {
+          // Fallback: quando não foi possível extrair a data, considera preciso no momento
+          arrivalTimes[item.id] = { ts: now, precise: true }
+        }
+        arrivalTimesChanged = true
+      }
+    })
+
+    // Limpeza de IDs antigos
+    if (currentItems.length > 0) {
+      const currentIdsSet = new Set(currentItems.map(i => i.id))
+      Object.keys(arrivalTimes).forEach(storedId => {
+        if (!currentIdsSet.has(storedId)) {
+          delete arrivalTimes[storedId]
+          arrivalTimesChanged = true
+        }
+      })
+    }
+
+    if (arrivalTimesChanged) {
+      await savePendingArrivalTimes(arrivalTimes)
+    }
 
     // O total exibido na notificação deve refletir o que o usuário escolheu ver
     const resultData = {
@@ -410,8 +574,14 @@ async function initializeTags() {
 
     // Migração de nomes
     tags = tags.map(t => {
-      if (t.name === 'Aguardando SS') { t.name = 'Em SS'; changed = true; }
-      if (t.name === 'Aguardando SA/NE') { t.name = 'Em SA/NE'; changed = true; }
+      if (t.name === 'Aguardando SS') {
+        t.name = 'Em SS'
+        changed = true
+      }
+      if (t.name === 'Aguardando SA/NE') {
+        t.name = 'Em SA/NE'
+        changed = true
+      }
       return t
     })
 
