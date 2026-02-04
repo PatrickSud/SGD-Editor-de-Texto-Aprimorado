@@ -88,6 +88,7 @@ async function fetchPendingItems() {
   try {
     // 1. Carrega os tempos precisos salvos
     const arrivalTimes = await getPendingArrivalTimes()
+    let arrivalTimesChanged = false
     const response = await fetch(PENDING_ITEMS_URL, {
       credentials: 'include', // Envia cookies de sessão
       cache: 'no-cache'
@@ -258,6 +259,41 @@ async function fetchPendingItems() {
         // Último Trâmite: Coluna 3 (Limpa spans ocultos)
         const dataUltimoTramite = cleanDateText(cells[3])
 
+        // Qtd Trâmites: Coluna 4
+        const qtdTramites = cells[4].innerText.trim()
+
+        // --- DETECÇÃO DE NOVO TRÂMITE PARA RESET DE TEMPO ---
+        if (arrivalTimes[id]) {
+          let record = arrivalTimes[id]
+
+          // Migração de legado (se for apenas número) ou inicialização de objeto
+          if (typeof record !== 'object') {
+            record = {
+              ts: record,
+              precise: true,
+              lastTramiteDate: dataUltimoTramite
+            }
+            arrivalTimes[id] = record
+            arrivalTimesChanged = true
+          } else {
+            // Verifica se houve alteração na Data do Último Trâmite
+            const storedDate = record.lastTramiteDate || ''
+            const currentDate = dataUltimoTramite
+
+            if (storedDate !== currentDate) {
+              // Data do trâmite mudou! Reseta o tempo para AGORA.
+              record.ts = now
+              record.precise = true
+              record.lastTramiteDate = currentDate
+              arrivalTimesChanged = true
+            } else if (record.lastTramiteDate === undefined) {
+              // Apenas migração: adiciona campo se não existir
+              record.lastTramiteDate = currentDate
+              arrivalTimesChanged = true
+            }
+          }
+        }
+
         // --- CÁLCULO DE SLA APRIMORADO COM PRECISÃO ---
         let hoursSinceUpdate = null // Padrão: Sem informação de tempo
         let timePrecision = null // 'preciso' | 'estimado' | null
@@ -298,8 +334,7 @@ async function fetchPendingItems() {
           }
         }
 
-        // Qtd Trâmites: Coluna 4
-        const qtdTramites = cells[4].innerText.trim()
+
 
         // Assunto e Link: Coluna 5
         const anchor = cells[5].querySelector('a')
@@ -358,6 +393,10 @@ async function fetchPendingItems() {
         })
       } catch (err) {}
     })
+
+    if (arrivalTimesChanged) {
+      await savePendingArrivalTimes(arrivalTimes)
+    }
 
     return { items: pendingItems, siteFilter }
   } catch (error) {
@@ -479,14 +518,26 @@ async function checkNewPendings() {
           const diffMs = now - tramiteTs
           if (diffMs < 60 * 60 * 1000) {
             // Cenário Recente: preciso
-            arrivalTimes[item.id] = { ts: now, precise: true }
+            arrivalTimes[item.id] = {
+              ts: now,
+              precise: true,
+              lastTramiteDate: item.dataUltimoTramite
+            }
           } else {
             // Cenário Retroativo: estimado (offline)
-            arrivalTimes[item.id] = { ts: tramiteTs, precise: false }
+            arrivalTimes[item.id] = {
+              ts: tramiteTs,
+              precise: false,
+              lastTramiteDate: item.dataUltimoTramite
+            }
           }
         } else {
           // Fallback: quando não foi possível extrair a data, considera preciso no momento
-          arrivalTimes[item.id] = { ts: now, precise: true }
+          arrivalTimes[item.id] = {
+            ts: now,
+            precise: true,
+            lastTramiteDate: item.dataUltimoTramite
+          }
         }
         arrivalTimesChanged = true
       }
