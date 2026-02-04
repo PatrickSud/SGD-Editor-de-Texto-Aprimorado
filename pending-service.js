@@ -280,18 +280,28 @@ async function fetchPendingItems() {
             // Se o item foi marcado como preciso recentemente (bug da versão anterior),
             // mas a data do trâmite é antiga, reverte para estimado.
             if (record.precise && now - record.ts < 1000 * 60 * 60) {
-              const m = (record.lastTramiteDate || '').match(
-                /(\d{2})\/(\d{2})\/(\d{4})/
-              )
-              if (m) {
-                const d = parseInt(m[1], 10)
-                const mo = parseInt(m[2], 10) - 1
-                const y = parseInt(m[3], 10)
-                const tramTs = new Date(y, mo, d).getTime()
+              // Busca TODAS as datas encontradas na string (ex: "28/01/2026 | 02/02/2026")
+              const matches = [
+                ...(record.lastTramiteDate || '').matchAll(
+                  /(\d{2})\/(\d{2})\/(\d{4})/g
+                )
+              ]
 
-                // Se a data do trâmite é de mais de 24h atrás, não deveria ter resetado para "agora"
-                if (now - tramTs > 24 * 60 * 60 * 1000) {
-                  record.ts = tramTs
+              if (matches.length > 0) {
+                // Encontra a data mais recente
+                let maxTramTs = 0
+                for (const m of matches) {
+                  const d = parseInt(m[1], 10)
+                  const mo = parseInt(m[2], 10) - 1
+                  const y = parseInt(m[3], 10)
+                  const t = new Date(y, mo, d).getTime()
+                  if (t > maxTramTs) maxTramTs = t
+                }
+
+                // Se a data MAIS RECENTE do trâmite é de mais de 24h atrás,
+                // então realmente é antigo e não deveria ter resetado.
+                if (now - maxTramTs > 24 * 60 * 60 * 1000) {
+                  record.ts = maxTramTs
                   record.precise = false
                   arrivalTimesChanged = true
                 }
@@ -330,6 +340,11 @@ async function fetchPendingItems() {
           if (isPrecise) {
             hoursSinceUpdate = Math.max(0, businessMs / (1000 * 60 * 60))
             timePrecision = 'preciso'
+            // Também calcula dias estimados para fallback/visualização simplificada
+            estimatedDaysSinceUpdate = Math.max(
+              0,
+              Math.floor(businessMs / (1000 * 60 * 60 * 24))
+            )
           } else {
             estimatedDaysSinceUpdate = Math.max(
               0,

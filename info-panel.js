@@ -1230,21 +1230,17 @@ function createPendingCard(item, showResponsible = false) {
   let tooltip = ''
 
   // Visualização baseada na precisão do tempo
-  if (
-    item.timePrecision === 'estimado' &&
-    typeof item.estimatedDaysSinceUpdate === 'number'
-  ) {
-    const days = Math.max(0, item.estimatedDaysSinceUpdate)
-    icon = '≈'
-    styleClass = 'notice'
-    tooltip = 'Estimativa baseada na data do último trâmite (Offline)'
-    slaBadgeHtml = `<span class="ip-time-badge ${styleClass}" title="${tooltip}" style="opacity: 0.6;">~ ${days}D</span>`
-  } else if (
+  const showHours =
+    developerMode &&
     item.hoursSinceUpdate !== null &&
     item.hoursSinceUpdate !== undefined
-  ) {
-    const hours = Math.floor(item.hoursSinceUpdate)
 
+  // Mostrar dias se não mostrar horas e tiver dias calculados (para usuários comuns OU fallback dev)
+  const showDays =
+    !showHours && typeof item.estimatedDaysSinceUpdate === 'number'
+
+  if (showHours) {
+    const hours = Math.floor(item.hoursSinceUpdate)
     const exactTime = formatHoursToHHMM(item.hoursSinceUpdate)
 
     if (hours >= 72) {
@@ -1280,9 +1276,16 @@ function createPendingCard(item, showResponsible = false) {
     }
 
     slaBadgeHtml = `<span class="ip-time-badge ${styleClass}" title="${tooltip}">${icon} ${hours}h</span>`
-  } else {
+  } else if (showDays) {
+    // Estimativa em DIAS (Visão para Usuário Comum)
+    const days = Math.max(0, item.estimatedDaysSinceUpdate)
+    icon = '≈'
+    styleClass = 'notice'
+    tooltip = 'Dias corridos desde o último trâmite'
+    slaBadgeHtml = `<span class="ip-time-badge ${styleClass}" title="${tooltip}" style="opacity: 0.6;">${days}D</span>`
+  } else if (developerMode) {
     // Caso SLA Indefinido (Solicitação Antiga)
-    // Exibe traço e remove borda colorida de urgência
+    // Exibe traço e remove borda colorida de urgência (Somente em DEV)
     slaClass = ''
     tooltip = 'Solicitação antiga: cronômetro preciso não iniciado.'
     slaBadgeHtml = `<span class="ip-time-badge normal" title="${tooltip}" style="opacity: 0.6; filter: grayscale(1);">⏱️ -</span>`
