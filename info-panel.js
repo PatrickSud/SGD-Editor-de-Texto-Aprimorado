@@ -844,9 +844,17 @@ function applyPendingFilters(sectionElement) {
       }
     }
 
-    // Filtro de Críticos (>40h)
-    if (criticalFilter && item.hoursSinceUpdate < 40) {
-      return false
+    // Filtro de Críticos (>40h ou >2 dias estimados)
+    if (criticalFilter) {
+      const isCriticalPrecise =
+        item.hoursSinceUpdate !== null && item.hoursSinceUpdate >= 40
+      const isCriticalEstimated =
+        item.estimatedDaysSinceUpdate !== null &&
+        item.estimatedDaysSinceUpdate > 2
+
+      if (!isCriticalPrecise && !isCriticalEstimated) {
+        return false
+      }
     }
 
     return true

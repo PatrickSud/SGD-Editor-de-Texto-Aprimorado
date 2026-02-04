@@ -276,18 +276,39 @@ async function fetchPendingItems() {
             arrivalTimes[id] = record
             arrivalTimesChanged = true
           } else {
+            // FIX: Recuperação de Desastre (Healer)
+            // Se o item foi marcado como preciso recentemente (bug da versão anterior),
+            // mas a data do trâmite é antiga, reverte para estimado.
+            if (record.precise && now - record.ts < 1000 * 60 * 60) {
+              const m = (record.lastTramiteDate || '').match(
+                /(\d{2})\/(\d{2})\/(\d{4})/
+              )
+              if (m) {
+                const d = parseInt(m[1], 10)
+                const mo = parseInt(m[2], 10) - 1
+                const y = parseInt(m[3], 10)
+                const tramTs = new Date(y, mo, d).getTime()
+
+                // Se a data do trâmite é de mais de 24h atrás, não deveria ter resetado para "agora"
+                if (now - tramTs > 24 * 60 * 60 * 1000) {
+                  record.ts = tramTs
+                  record.precise = false
+                  arrivalTimesChanged = true
+                }
+              }
+            }
+
             // Verifica se houve alteração na Data do Último Trâmite
-            const storedDate = record.lastTramiteDate || ''
             const currentDate = dataUltimoTramite
 
-            if (storedDate !== currentDate) {
+            if (record.lastTramiteDate === undefined) {
+              // Apenas migração: adiciona campo se não existir
+              record.lastTramiteDate = currentDate
+              arrivalTimesChanged = true
+            } else if (record.lastTramiteDate !== currentDate) {
               // Data do trâmite mudou! Reseta o tempo para AGORA.
               record.ts = now
               record.precise = true
-              record.lastTramiteDate = currentDate
-              arrivalTimesChanged = true
-            } else if (record.lastTramiteDate === undefined) {
-              // Apenas migração: adiciona campo se não existir
               record.lastTramiteDate = currentDate
               arrivalTimesChanged = true
             }
