@@ -754,6 +754,16 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
       ? '<div class="toolbar-separator" data-id="separator6"></div>'
       : ''
 
+  // ── Sugestor SS ──────────────────────────────────────────────────────────
+  // O botão só é gerado quando a página atual é a SSC (ssc.html).
+  // A função window.iniciarSugestao() é definida pelo sugestor-ss.js,
+  // que também é injetado nessa página pelo manifest — ambos compartilham o window.
+  const isSscPage = window.location.pathname.includes('/sgsc/faces/ssc.html')
+  const sugestorSSHtml = isSscPage
+    ? `<div class="toolbar-separator" data-id="separator-sugestor-ss"></div>
+       <button type="button" data-action="sugerir-ss" class="shine-effect sugestor-ss-toolbar-btn" title="Sugerir SS com IA">✨ Sugerir SS</button>`
+    : ''
+
   return `
     <div class="editor-toolbar">
       ${aiButtonsHtml}
@@ -771,6 +781,7 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
       ${separator6}
       ${togglePreviewHtml}
       ${themeToggleHtml}
+      ${sugestorSSHtml}
     </div>
     
     <div id="emoji-picker-${instanceId}" class="picker"></div>
@@ -1572,6 +1583,15 @@ function setupEditorInstanceListeners(
       }
       case 'manage-steps':
         openManagementModal()
+        break
+      case 'sugerir-ss':
+        // Chama a função exposta pelo sugestor-ss.js via window.
+        // Ambos os scripts rodam na ssc.html — o window é compartilhado.
+        if (typeof window.iniciarSugestao === 'function') {
+          window.iniciarSugestao()
+        } else {
+          showNotification('Sugestor SS não disponível. Recarregue a página.', 'error')
+        }
         break
     }
   })

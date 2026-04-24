@@ -2099,7 +2099,7 @@ function showWhatsNewModal(notes) {
       <p>Confira as principais novidades do <strong>SGD - Editor de Texto Aprimorado</strong>:</p>
       <ul style="margin-top: 8px;">${featuresHtml}</ul>
       <p>Espero que goste das melhorias! Para reportar bugs ou sugerir melhorias, entre em contato comigo no Teams.</p>
-      <p>- Patrick Godoy</p>
+      <p>- Luiza Moro</p>
       <div style="margin-top: 12px; text-align: center;">
         <a href="#" id="latest-updates-link" class="action-btn" style="display:inline-block;">Últimas Atualizações</a>
         <div id="latest-updates-container" style="display:none; margin-top: 10px; text-align: left;">${previousHtml || '<p>Sem atualizações anteriores.</p>'}</div>

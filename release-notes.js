@@ -1,4 +1,16 @@
 const RELEASE_NOTES = {
+  '3.0.1': {
+    title: '✨ Novidades da Versão 3.0.1',
+    features: [
+      '<b>🤖 Sugestor de SS integrado ao Editor</b>' +
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+        '<li>Plugin que lê uma SSC no SGD, envia o conteúdo para uma chain de IA e preenche automaticamente o formulário de cadastro de SS — eliminando trabalho manual repetitivo.</li>' +
+        '<li>O botão <b>✨ Sugerir SS</b> agora aparece diretamente na <b>toolbar do editor</b>, disponível apenas nas páginas de SSC.</li>' +
+        '<li>Abaixo deixo um site sobre o manual de uso da nova funcionalidade.</li>' +
+        '<li><a href="https://sugestorss.netlify.app" target="_blank" style="color:#1565c0;">📖 Manual de uso</a></li>' +
+      '</ul>'
+    ]
+  },
   '3.0.0': {
     title: '🚀 Lançamento Oficial 3.0.0',
     features: [

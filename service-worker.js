@@ -1,7 +1,195 @@
 /**
  * @file service-worker.js
- * Service worker de segundo plano para gerenciar alarmes, notificações e outras tarefas assíncronas
+ * Service worker de segundo plano para gerenciar alarmes, notificações e outras tarefas assíncronas.
+ * Também contém a lógica de backend do Sugestor SS (autenticação e WebSocket com a Thomson Reuters).
  */
+
+// ─────────────────────────────────────────
+// SUGESTOR SS — Constantes e funções de autenticação/WebSocket
+// Absorvidas do background.js do Sugestor SS (agora unificado neste plugin)
+// ─────────────────────────────────────────
+
+const CHAIN_SS_WORKFLOW_ID = '27921542-92d4-408a-a3cb-bb4372553e43'
+const AI_PLATFORM_LOGIN_URL = 'https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/' + CHAIN_SS_WORKFLOW_ID
+const WS_BASE_URL = 'wss://wymocw0zke.execute-api.us-east-1.amazonaws.com/prod'
+
+/**
+ * Verifica se um token JWT está expirado.
+ * @param {string} token - O token JWT.
+ * @returns {boolean} True se expirado ou inválido.
+ */
+function isTokenExpired(token) {
+  if (!token) return true
+  try {
+    const decoded = JSON.parse(atob(token.split('.')[1]))
+    return decoded.exp < Date.now() / 1000
+  } catch {
+    return true
+  }
+}
+
+/**
+ * Abre uma aba de login na plataforma Thomson Reuters e aguarda o token
+ * ser extraído pelo token-extractor.js (injetado programaticamente pelo scripting API).
+ * @returns {Promise<string>} O token de acesso extraído.
+ */
+function acquireTokenInteractively() {
+  return new Promise((resolve, reject) => {
+    let loginTabId = null
+
+    console.log('[Sugestor SS] acquireTokenInteractively() iniciado.')
+
+    const cleanup = () => {
+      chrome.runtime.onMessage.removeListener(onMessage)
+      chrome.tabs.onUpdated.removeListener(onTabUpdated)
+      chrome.tabs.onRemoved.removeListener(onTabRemoved)
+    }
+
+    const onMessage = (message, sender) => {
+      if (sender.tab?.id !== loginTabId) return
+      cleanup()
+      chrome.tabs.remove(loginTabId)
+      if (message.action === 'tokenExtracted') {
+        console.log('[Sugestor SS] Token extraído com sucesso!')
+        resolve(message.token)
+      } else {
+        reject(new Error('Não foi possível extrair o token. Faça login novamente.'))
+      }
+    }
+
+    const onTabUpdated = (tabId, changeInfo) => {
+      if (tabId === loginTabId && changeInfo.status === 'complete') {
+        console.log('[Sugestor SS] Aba de login carregou. Injetando token-extractor.js...')
+        chrome.scripting.executeScript({
+          target: { tabId: loginTabId },
+          files: ['sugestor-ss/token-extractor.js']
+        }).catch(err => {
+          console.error('[Sugestor SS] Erro ao injetar token-extractor.js:', err.message)
+          cleanup()
+          reject(err)
+        })
+        chrome.tabs.onUpdated.removeListener(onTabUpdated)
+      }
+    }
+
+    const onTabRemoved = (tabId) => {
+      if (tabId === loginTabId) {
+        cleanup()
+        reject(new Error('Login cancelado pelo usuário.'))
+      }
+    }
+
+    chrome.runtime.onMessage.addListener(onMessage)
+    chrome.tabs.onUpdated.addListener(onTabUpdated)
+    chrome.tabs.onRemoved.addListener(onTabRemoved)
+
+    chrome.tabs.create({ url: AI_PLATFORM_LOGIN_URL, active: true }, (tab) => {
+      loginTabId = tab.id
+      console.log('[Sugestor SS] Aba de login criada. ID:', loginTabId)
+    })
+  })
+}
+
+/**
+ * Garante que existe um token válido, renovando-o interativamente se necessário.
+ * @returns {Promise<string>} O token de acesso válido.
+ */
+async function ensureValidToken() {
+  const data = await chrome.storage.local.get('essoToken')
+  let token = data.essoToken
+
+  if (token && !isTokenExpired(token)) {
+    console.log('[Sugestor SS] Reutilizando token salvo.')
+    return token
+  }
+
+  console.log('[Sugestor SS] Token inválido ou expirado. Solicitando novo...')
+  token = await acquireTokenInteractively()
+  await chrome.storage.local.set({ essoToken: token })
+  return token
+}
+
+/**
+ * Executa a chamada à IA da Thomson Reuters via WebSocket e retorna o resultado
+ * para a aba da SSC que iniciou a requisição.
+ * @param {string} markdownSSC - O prompt montado pelo sugestor-ss.js.
+ * @param {number} tabId - ID da aba que deve receber a resposta.
+ */
+async function handleGerarSugestao(markdownSSC, tabId) {
+  try {
+    const essoToken = await ensureValidToken()
+    const API_URL = `${WS_BASE_URL}/?Authorization=${essoToken}`
+
+    console.log('[Sugestor SS] Conectando via WebSocket...')
+    const ws = new WebSocket(API_URL)
+    let fullResponse = ''
+    const startTime = Date.now()
+
+    ws.onopen = () => {
+      console.log('[Sugestor SS] WebSocket aberto. Enviando consulta...')
+      ws.send(JSON.stringify({
+        action: 'SendMessage',
+        workflow_id: CHAIN_SS_WORKFLOW_ID,
+        query: markdownSSC,
+        is_persistence_allowed: false
+      }))
+    }
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        for (const modelKey in data) {
+          const modelValue = data[modelKey]
+          if (typeof modelValue !== 'object' || modelValue === null) continue
+          if ('answer' in modelValue && modelValue.answer) {
+            fullResponse += modelValue.answer
+          }
+          if ('cost_track' in modelValue) {
+            const tempo = Math.round((Date.now() - startTime) / 1000)
+            console.log(`[Sugestor SS] ✅ Completo em ${tempo}s. Tamanho: ${fullResponse.length} chars`)
+            chrome.tabs.sendMessage(tabId, { action: 'sugestaoCompleta', data: fullResponse })
+            ws.close()
+          }
+        }
+      } catch (err) {
+        chrome.tabs.sendMessage(tabId, {
+          action: 'sugestaoErro',
+          data: `Erro ao processar resposta: ${err.message}`
+        })
+        ws.close()
+      }
+    }
+
+    ws.onerror = () => {
+      chrome.tabs.sendMessage(tabId, {
+        action: 'sugestaoErro',
+        data: 'Erro na conexão WebSocket. Verifique o console do Service Worker.'
+      })
+    }
+
+    ws.onclose = (event) => {
+      if (!event.wasClean && fullResponse === '') {
+        let msg = `Conexão encerrada inesperadamente (Código: ${event.code}).`
+        if (event.code === 1006) {
+          chrome.storage.local.remove('essoToken')
+          msg += '\n\nToken expirado. Clique novamente para renovar o login.'
+        }
+        chrome.tabs.sendMessage(tabId, { action: 'sugestaoErro', data: msg })
+      }
+    }
+
+  } catch (err) {
+    console.error('[Sugestor SS] Erro:', err)
+    chrome.tabs.sendMessage(tabId, {
+      action: 'sugestaoErro',
+      data: `Erro de autenticação: ${err.message}`
+    })
+  }
+}
+
+// ─────────────────────────────────────────
+// FIM DO BLOCO SUGESTOR SS
+// ─────────────────────────────────────────
 
 const REMINDERS_STORAGE_KEY = 'remindersData'
 const GREETINGS_CLOSINGS_KEY = 'greetingsClosingsData'
@@ -654,6 +842,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse({ success: false, error: error.message })
         }
         return true // Resposta assíncrona
+      } else if (message.action === 'gerarSugestaoSS' && sender.tab?.id) {
+        // ── Sugestor SS ──────────────────────────────────────────────────
+        // Disparado quando o analista clica no botão da toolbar na ssc.html.
+        // A resposta vai diretamente para a aba via chrome.tabs.sendMessage
+        // (ações: sugestaoCompleta / sugestaoErro) — não usa sendResponse.
+        handleGerarSugestao(message.markdownSSC, sender.tab.id)
       }
     } catch (error) {
       console.error(`Erro ao processar ação '${message.action}':`, error)

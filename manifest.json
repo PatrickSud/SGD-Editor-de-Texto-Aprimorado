@@ -1,16 +1,20 @@
 {
   "manifest_version": 3,
   "name": "SGD - Editor de Texto Aprimorado",
-  "version": "3.0.0.1",
+  "version": "3.0.1",
   "description": "Adiciona um editor de texto avançado ao site https://sgd.dominiosistemas.com.br/",
   "permissions": [
     "storage",
     "alarms",
-    "notifications"
+    "notifications",
+    "scripting",
+    "tabs"
   ],
   "host_permissions": [
     "https://sgd.dominiosistemas.com.br/*",
-    "https://app.powerbi.com/*"
+    "https://app.powerbi.com/*",
+    "wss://wymocw0zke.execute-api.us-east-1.amazonaws.com/*",
+    "https://aiplatform.thomsonreuters.com/*"
   ],
   "background": {
     "service_worker": "service-worker.js"
@@ -58,6 +62,27 @@
       ],
       "js": [
         "bi-scraper.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://sgd.dominiosistemas.com.br/sgsc/faces/ssc.html*"
+      ],
+      "js": [
+        "sugestor-ss/sugestor-ss.js"
+      ],
+      "css": [
+        "sugestor-ss/sugestor-ss.css"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://sgd.dominiosistemas.com.br/sgsa/faces/cad-ss.html*"
+      ],
+      "js": [
+        "sugestor-ss/sugestor-ss-filler.js"
       ],
       "run_at": "document_idle"
     }
