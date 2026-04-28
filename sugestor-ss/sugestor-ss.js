@@ -42,6 +42,8 @@ function extrairCabecalho() {
   const clienteNome = clienteLink ? clienteLink.textContent.trim() : 'N/A';
   const clienteUrl = clienteLink ? clienteLink.href : '';
   const clienteId = clienteUrl ? new URLSearchParams(clienteUrl.split('?')[1]).get('clienteID') : 'N/A';
+  const transcricaoLink = document.querySelector('#transcricaoLigacao a');
+  const transcricaoUrl = transcricaoLink ? transcricaoLink.href : null;
   const temBackupNuvem = !!document.querySelector('#acao option[value="21"]');
   return {
     numero: getText('#td\\:numero'),
@@ -55,7 +57,8 @@ function extrairCabecalho() {
     assunto: getText('#td\\:assunto'),
     classificacao: getText('#sscForm\\:classificacao option:checked'),
     descricao: htmlToText(getInnerHtml('#td\\:descricao > div')),
-    backupNuvem: temBackupNuvem
+    backupNuvem: temBackupNuvem,
+    transcricaoUrl: transcricaoUrl
   };
 }
 
@@ -112,10 +115,43 @@ async function extrairAnexosChat() {
 }
 
 // ─────────────────────────────────────────
+// 2b. TRANSCRIÇÃO TELEFÔNICA
+// ─────────────────────────────────────────
+
+/**
+ * Busca o arquivo de transcrição telefônica do campo #transcricaoLigacao.
+ * Limita o conteúdo para não sobrecarregar a chain:
+ * - Primeiras 6000 chars: onde o cliente relata o problema
+ * - Últimas 2000 chars: conclusão/encerramento do atendimento
+ * - Meio omitido: geralmente navegação no sistema, menos relevante para a SS
+ */
+async function extrairTranscricao() {
+  const link = document.querySelector('#transcricaoLigacao a');
+  if (!link) return null;
+  try {
+    const resp = await fetch(link.href);
+    if (!resp.ok) return null;
+    const texto = await resp.text();
+
+    const INICIO = 6000;
+    const FIM = 2000;
+    if (texto.length <= INICIO + FIM) return texto;
+
+    return (
+      texto.slice(0, INICIO) +
+      '\n\n[... trecho central omitido ...]\n\n' +
+      texto.slice(-FIM)
+    );
+  } catch {
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────
 // 3. MONTAGEM DO PROMPT
 // ─────────────────────────────────────────
 
-function montarPrompt(cabecalho, tramites, anexosChat = []) {
+function montarPrompt(cabecalho, tramites, anexosChat = [], transcricao = null) {
   let contexto = `# SSC ${cabecalho.numero}\n`;
   contexto += `**Data Entrada**: ${cabecalho.dataEntrada}\n`;
   contexto += `**Unidade**: ${cabecalho.unidade}\n`;
@@ -146,6 +182,11 @@ function montarPrompt(cabecalho, tramites, anexosChat = []) {
       if (anexosChat.length > 1) contexto += `### Arquivo ${i + 1}\n`;
       contexto += conteudo + '\n\n';
     });
+  }
+
+  if (transcricao) {
+    contexto += `## Transcrição do Atendimento Telefônico\n\n`;
+    contexto += transcricao + '\n\n';
   }
 
   return `Crie um modelo de sugestão de cadastro de SS com base nas informações enviadas abaixo.
@@ -292,8 +333,12 @@ window.iniciarSugestao = async function iniciarSugestao() {
   atualizarMsgLoading('Lendo conteúdo da SSC...');
 
   const tramites = extrairTramites();
-  const anexosChat = await extrairAnexosChat();
-  const prompt = montarPrompt(cabecalho, tramites, anexosChat);
+  const [anexosChat, transcricao] = await Promise.all([
+    extrairAnexosChat(),
+    extrairTranscricao()
+  ]);
+
+  const prompt = montarPrompt(cabecalho, tramites, anexosChat, transcricao);
 
   atualizarMsgLoading('Enviando para a IA... aguarde ⏳');
   window._sscNumero = new URLSearchParams(window.location.search).get('ssc') || cabecalho.numero;

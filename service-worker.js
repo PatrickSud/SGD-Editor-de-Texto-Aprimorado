@@ -10,8 +10,50 @@
 // ─────────────────────────────────────────
 
 const CHAIN_SS_WORKFLOW_ID = '27921542-92d4-408a-a3cb-bb4372553e43'
-const AI_PLATFORM_LOGIN_URL = 'https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/' + CHAIN_SS_WORKFLOW_ID
 const WS_BASE_URL = 'wss://wymocw0zke.execute-api.us-east-1.amazonaws.com/prod'
+const AI_PLATFORM_LOGIN_URL = 'https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/' + CHAIN_SS_WORKFLOW_ID
+
+/**
+ * Mapa de chains da plataforma de IA Thomson Reuters.
+ * Chave: string exibida no select para o usuário.
+ * Valor: workflow_id enviado ao WebSocket.
+ *
+ * Para adicionar uma nova chain: inclua uma nova entrada neste objeto.
+ * Para remover: apague a entrada. A UI do select é gerada automaticamente.
+ */
+const AI_CHAINS = {
+  'SGD Interno - Dúvidas gerais':                                                               '1cea8592-8748-47bd-8c4b-5318d6599045',
+  'ÁREA TÉCNICA (Instalação, Atualização, Backup) - Dúvidas gerais':                           'db7162a0-ad9b-4c19-85c4-315169a1ef43',
+  'FISCONT - Buscador de Soluções e SA/NE':                                                     'a84ee410-18f0-4f99-bc65-566b8340e6f8',
+  'FISCONT - Assistente':                                                                        'f4e61162-241e-477b-851e-c28e1470b519',
+  'FISCONT - Dúvidas sobre reforma tributária':                                                  'dbc04d2e-4157-4369-b8af-2877a798dba1',
+  'FISCONT - Kolossus Auditor':                                                                  '0f1088b3-b410-468c-9039-00932d4c13df',
+  'FOLHA - Dúvidas gerais (sem anexos)':                                                         '0a365547-b3e1-4008-bbbd-afee1596dcf6',
+  'FOLHA - Rubricas com Fórmulas':                                                               'b653d9c8-da78-4880-9347-e08a8c97c145',
+  'FOLHA - Rubricas com Fórmulas (GPT 5.2)':                                                    '9692b101-98e8-4d62-9948-918e90904e31',
+  'FOLHA - Consulta SA/NE Extrator DIRF':                                                        'e68e988c-403d-4917-91e3-2b5344ac5e8a',
+  'FOLHA - Analisador de arquivo de INSS':                                                       'efb4ae5e-191c-4cbe-9a68-8ef4ed3497af',
+  'CONTABILIDADE DIGITAL - Dúvidas gerais':                                                      'af573701-d00c-4fac-89c8-0e7ea6af3434',
+  'CONTABILIDADE - Análise erro ECF P200/P400':                                                   'd66d4161-c01a-498a-95d8-229a4a884e26',
+  'ESCRITA, CONTABILIDADE, LALUR E PATRIMÔNIO - Embasamento legal':                              '7e04fbb6-cdef-450f-89b5-d83c392583ab',
+  'HONORÁRIOS, REGISTRO, PROTOCOLO, ADMINISTRAR, ATUALIZAR e CUSTOS - Dúvidas gerais e fórmulas': '01138fe4-aecd-48bc-a958-e8ef1006f487',
+  'DOMÍNIO PROCESSOS - Dúvidas gerais':                                                          '98d8e94a-f795-44fe-aa86-ab8b4471e202',
+  'DOMÍNIO MESSENGER - Dúvidas gerais':                                                          'b787e0c7-2608-4ae6-97e5-b128c205c194',
+  'DOMÍNIO COBRANÇAS - Dúvidas gerais':                                                          '26858ea4-9ffd-479a-8125-5f127341d34d',
+  'ONVIO GESTÃO/PORTAL DO CLIENTE - Dúvidas gerais':                                            'ec6d18b1-955b-426a-a34d-622065fd982a',
+  'ONBALANCE, CCT, BUSCA, SEFAZ, API - Dúvidas gerais':                                         'bdcf2679-98c5-4201-98bd-2c53ee07e63e',
+  'NOVO PORTAL DO EMPREGADO (Domínio Para Você) - Dúvidas Gerais':                              '9631a5ff-16d7-4f9b-b3f4-28f5562b8749',
+  'PERFORMANCE - Dúvidas Gerais':                                                                'b2a13bb9-d13a-42d8-ad98-a77cd2a8eb10',
+  'ASSISTENTE - Dúvidas conceituais':                                                            '32b16228-9d6f-4bf6-b9ce-18ea59c2095d',
+  'ASSISTENTE SUPORTE - Padrões e assuntos por fila':                                            'bf79bed3-d1f2-4b9c-b08a-a7c0551eb4dc',
+  'ASSISTENTE - Manual Cadastro de SSs':                                                         '27921542-92d4-408a-a3cb-bb4372553e43',
+  'ASSISTENTE: Cadastro de SA/NE':                                                               '3ef5f8c0-721e-4ee1-bf3a-48e37ec9f9e2',
+  'LISTAGEM DE SANES E SAILS - GERAL':                                                           'bcda651a-1518-4808-97b1-439ad9ca1306',
+  'Analisador - Consultar SSCs recentes do mesmo cliente':                                       '1c742809-5c60-4e38-9432-cd350906de7c',
+  'APOIO AO SUPORTE - Boas práticas telefone/laptop':                                            '4f0e3f37-e63f-4188-8c15-373eb75c77c8',
+  'GERADOR DE RELATÓRIOS - Criar arquivo BGR com consultas SQL':                                 'c5c03c64-1577-4e1d-bf7a-61723a450449',
+  'GERADOR DE RELATÓRIOS - Criação de Computados':                                               '7459b824-1a6b-4548-9a3a-6716e1dc5a79',
+}
 
 /**
  * Verifica se um token JWT está expirado.
@@ -110,27 +152,30 @@ async function ensureValidToken() {
 }
 
 /**
- * Executa a chamada à IA da Thomson Reuters via WebSocket e retorna o resultado
- * para a aba da SSC que iniciou a requisição.
- * @param {string} markdownSSC - O prompt montado pelo sugestor-ss.js.
- * @param {number} tabId - ID da aba que deve receber a resposta.
+ * Executa a chamada à IA da Thomson Reuters via WebSocket.
+ *
+ * @param {string} prompt      - O conteúdo a enviar para a chain.
+ * @param {number} tabId       - ID da aba que deve receber a resposta.
+ * @param {string} workflowId  - O workflow_id da chain a ser acionada.
+ * @param {string} successAction - Nome da action enviada de volta em caso de sucesso.
+ * @param {string} errorAction   - Nome da action enviada de volta em caso de erro.
  */
-async function handleGerarSugestao(markdownSSC, tabId) {
+async function handleGerarSugestao(prompt, tabId, workflowId, successAction = 'sugestaoCompleta', errorAction = 'sugestaoErro') {
   try {
     const essoToken = await ensureValidToken()
     const API_URL = `${WS_BASE_URL}/?Authorization=${essoToken}`
 
-    console.log('[Sugestor SS] Conectando via WebSocket...')
+    console.log(`[AI WS] Conectando via WebSocket. workflow_id: ${workflowId}`)
     const ws = new WebSocket(API_URL)
     let fullResponse = ''
     const startTime = Date.now()
 
     ws.onopen = () => {
-      console.log('[Sugestor SS] WebSocket aberto. Enviando consulta...')
+      console.log('[AI WS] WebSocket aberto. Enviando consulta...')
       ws.send(JSON.stringify({
         action: 'SendMessage',
-        workflow_id: CHAIN_SS_WORKFLOW_ID,
-        query: markdownSSC,
+        workflow_id: workflowId,
+        query: prompt,
         is_persistence_allowed: false
       }))
     }
@@ -146,14 +191,14 @@ async function handleGerarSugestao(markdownSSC, tabId) {
           }
           if ('cost_track' in modelValue) {
             const tempo = Math.round((Date.now() - startTime) / 1000)
-            console.log(`[Sugestor SS] ✅ Completo em ${tempo}s. Tamanho: ${fullResponse.length} chars`)
-            chrome.tabs.sendMessage(tabId, { action: 'sugestaoCompleta', data: fullResponse })
+            console.log(`[AI WS] ✅ Completo em ${tempo}s. Tamanho: ${fullResponse.length} chars`)
+            chrome.tabs.sendMessage(tabId, { action: successAction, data: fullResponse })
             ws.close()
           }
         }
       } catch (err) {
         chrome.tabs.sendMessage(tabId, {
-          action: 'sugestaoErro',
+          action: errorAction,
           data: `Erro ao processar resposta: ${err.message}`
         })
         ws.close()
@@ -162,7 +207,7 @@ async function handleGerarSugestao(markdownSSC, tabId) {
 
     ws.onerror = () => {
       chrome.tabs.sendMessage(tabId, {
-        action: 'sugestaoErro',
+        action: errorAction,
         data: 'Erro na conexão WebSocket. Verifique o console do Service Worker.'
       })
     }
@@ -174,14 +219,14 @@ async function handleGerarSugestao(markdownSSC, tabId) {
           chrome.storage.local.remove('essoToken')
           msg += '\n\nToken expirado. Clique novamente para renovar o login.'
         }
-        chrome.tabs.sendMessage(tabId, { action: 'sugestaoErro', data: msg })
+        chrome.tabs.sendMessage(tabId, { action: errorAction, data: msg })
       }
     }
 
   } catch (err) {
-    console.error('[Sugestor SS] Erro:', err)
+    console.error('[AI WS] Erro:', err)
     chrome.tabs.sendMessage(tabId, {
-      action: 'sugestaoErro',
+      action: errorAction,
       data: `Erro de autenticação: ${err.message}`
     })
   }
@@ -190,7 +235,6 @@ async function handleGerarSugestao(markdownSSC, tabId) {
 // ─────────────────────────────────────────
 // FIM DO BLOCO SUGESTOR SS
 // ─────────────────────────────────────────
-
 const REMINDERS_STORAGE_KEY = 'remindersData'
 const GREETINGS_CLOSINGS_KEY = 'greetingsClosingsData'
 const PENDING_POLL_ALARM = 'pending-poll'
@@ -842,12 +886,44 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse({ success: false, error: error.message })
         }
         return true // Resposta assíncrona
+      } else if (message.action === 'getAiChains') {
+        // ── Retorna a lista de chains disponíveis para o modal de seleção ─
+        // O ui-components.js chama isso para montar os botões de fila.
+        sendResponse(AI_CHAINS)
+
       } else if (message.action === 'gerarSugestaoSS' && sender.tab?.id) {
-        // ── Sugestor SS ──────────────────────────────────────────────────
+        // ── Sugestor SS (Assistente: Manual Cadastro de SSs) ─────────────
         // Disparado quando o analista clica no botão da toolbar na ssc.html.
-        // A resposta vai diretamente para a aba via chrome.tabs.sendMessage
-        // (ações: sugestaoCompleta / sugestaoErro) — não usa sendResponse.
-        handleGerarSugestao(message.markdownSSC, sender.tab.id)
+        // Sempre usa a chain fixa do Sugestor SS. Não usa sendResponse.
+        handleGerarSugestao(message.markdownSSC, sender.tab.id, CHAIN_SS_WORKFLOW_ID, 'sugestaoCompleta', 'sugestaoErro')
+
+      } else if (message.action === 'resumirSolicitacao' && sender.tab?.id) {
+        // ── Resumir Solicitação via chain da fila selecionada ────────────
+        // message.chainKey: chave do objeto AI_CHAINS selecionada pelo usuário
+        // message.prompt:   conteúdo extraído da página montado pelo features.js
+        const workflowId = AI_CHAINS[message.chainKey]
+        if (!workflowId) {
+          chrome.tabs.sendMessage(sender.tab.id, {
+            action: 'resumoErro',
+            data: `Chain não encontrada para a fila: "${message.chainKey}"`
+          })
+        } else {
+          handleGerarSugestao(message.prompt, sender.tab.id, workflowId, 'resumoCompleto', 'resumoErro')
+        }
+
+      } else if (message.action === 'completarRascunho' && sender.tab?.id) {
+        // ── Completar Rascunho via chain da fila selecionada ────────────
+        // message.chainKey: chave do objeto AI_CHAINS selecionada pelo usuário
+        // message.prompt:   histórico + rascunho montados pelo features.js
+        const workflowId = AI_CHAINS[message.chainKey]
+        if (!workflowId) {
+          chrome.tabs.sendMessage(sender.tab.id, {
+            action: 'rascunhoErro',
+            data: `Chain não encontrada para a fila: "${message.chainKey}"`
+          })
+        } else {
+          handleGerarSugestao(message.prompt, sender.tab.id, workflowId, 'rascunhoCompleto', 'rascunhoErro')
+        }
       }
     } catch (error) {
       console.error(`Erro ao processar ação '${message.action}':`, error)

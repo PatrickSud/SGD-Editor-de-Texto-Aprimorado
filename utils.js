@@ -201,14 +201,17 @@ function extractPageContentForAI() {
     }
   })
 
-  // Nova lógica para encontrar dados de acesso dentro dos trâmites
-  const credentialRegex =
-    /(?:usu[áa]rio|login|email|senha|acesso|user|password)[\s:]*[\w\.\-@]+/gi
+  // Extração de credenciais dos trâmites: pega a LINHA INTEIRA que contém
+  // palavra-chave de acesso — evita fragmentos como 'senha para' ou 'acesso ao'.
+  const credentialKeywords = /usu\u00e1rio|usu\u00e0rio|login|e-?mail|senha|acesso|user|password|gerente|banco de dados|ftp|caminho|s\u00e9rie|serial/i
   const allTramitesText = fullTramiteTextForCredentialScan.join('\n')
-  const matches = allTramitesText.match(credentialRegex)
-  if (matches) {
-    matches.forEach(match => relevantData.accessData.add(match.trim()))
-  }
+  allTramitesText.split('\n').forEach(linha => {
+    const linhaLimpa = linha.trim()
+    if (linhaLimpa.length < 5) return // ignora ruído
+    if (credentialKeywords.test(linhaLimpa)) {
+      relevantData.accessData.add(linhaLimpa)
+    }
+  })
 
   if (tramites.length > 0) {
     rawContent += 'Trâmites Anteriores:\n' + tramites.join('\n---\n')

@@ -1446,100 +1446,129 @@ async function initializeNotesPanel() {
  * @param {object} relevantData - Dados extraídos da página.
  * @param {function(string): void} onInsert - Callback para inserir o conteúdo no editor.
  */
-function showSummaryModal(summaryText, nextActionText, relevantData, onInsert) {
+/**
+ * Exibe o modal de análise do chamado com 3 seções separadas.
+ *
+ * @param {string}   resumoTexto      - "RESUMO DO PROBLEMA" extraído da resposta da IA.
+ * @param {string}   fatosTexto       - "FATOS RELEVANTES" extraído da resposta da IA.
+ * @param {string}   proximaAcaoTexto - "PRÓXIMA AÇÃO SUGERIDA" extraído da resposta da IA.
+ * @param {object}   relevantData     - Dados estruturados da página (data, anexos, acesso).
+ * @param {Function} onInsert         - Callback chamado com o texto ao clicar em "Inserir".
+ */
+function showSummaryModal(resumoTexto, fatosTexto, proximaAcaoTexto, relevantData, onInsert) {
+  // ── Utilitários ────────────────────────────────────────────────────────
   const formatTimeAgo = timestamp => {
     if (!timestamp) return 'Data não encontrada'
-    const now = new Date()
+    const now  = new Date()
     const past = new Date(timestamp)
     const diffInSeconds = Math.floor((now - past) / 1000)
     const minutes = Math.floor(diffInSeconds / 60)
-    const hours = Math.floor(minutes / 60)
-    const days = Math.floor(hours / 24)
-
-    if (days > 1) return `Há ${days} dias`
-    if (days === 1) return `Há 1 dia`
-    if (hours > 1) return `Há ${hours} horas`
-    if (hours === 1) return `Há 1 hora`
+    const hours   = Math.floor(minutes / 60)
+    const days    = Math.floor(hours / 24)
+    if (days > 1)    return `Há ${days} dias`
+    if (days === 1)  return 'Há 1 dia'
+    if (hours > 1)   return `Há ${hours} horas`
+    if (hours === 1) return 'Há 1 hora'
     if (minutes > 1) return `Há ${minutes} minutos`
     return 'Há poucos instantes'
   }
 
-  // Função para transformar texto com asteriscos em HTML de lista
-  const formatSummaryToHtml = text => {
+  // Converte texto simples com linhas em HTML legível.
+  // Linhas que começam com - ou * viram <li>; o resto vira <p>.
+  const textoParaHtml = texto => {
+    if (!texto) return '<p>Não disponível.</p>'
     let html = ''
-    const lines = text.split('\n').filter(line => line.trim() !== '')
-    let inList = false
-
-    lines.forEach(line => {
-      line = line.trim()
-      if (line.startsWith('*')) {
-        if (!inList) {
-          html += '<ul>'
-          inList = true
-        }
-        html += `<li>${escapeHTML(line.substring(1).trim())}</li>`
+    let emLista = false
+    texto.split('\n').forEach(linha => {
+      linha = linha.trim()
+      if (!linha) return
+      // Remove marcadores de negrito em markdown (**texto**) e converte para <b>
+      linha = escapeHTML(linha).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+      if (linha.startsWith('- ') || linha.startsWith('* ')) {
+        if (!emLista) { html += '<ul>'; emLista = true }
+        html += `<li>${linha.slice(2)}</li>`
       } else {
-        if (inList) {
-          html += '</ul>'
-          inList = false
-        }
-        html += `<p>${escapeHTML(line)}</p>`
+        if (emLista) { html += '</ul>'; emLista = false }
+        html += `<p>${linha}</p>`
       }
     })
-
-    if (inList) {
-      html += '</ul>'
-    }
-    return html.replace(/<p><\/p>/g, '') // Limpa parágrafos vazios
+    if (emLista) html += '</ul>'
+    return html
   }
 
+  // ── Dados Relevantes ───────────────────────────────────────────────────
   const openingDate = relevantData.openingDate
     ? new Date(relevantData.openingDate).toLocaleString('pt-BR')
     : 'Não encontrada'
   const timeAgo = formatTimeAgo(relevantData.openingDate)
 
-  let relevantDataHtml = `<div class="data-item"><span class="data-label">Abertura:</span><span class="data-value">${openingDate} (${timeAgo})</span></div>`
-
+  // Anexos — deduplica por nome de arquivo
+  let anexosHtml = '<p class="dados-vazio">Nenhum anexo encontrado.</p>'
   if (relevantData.attachments && relevantData.attachments.length > 0) {
-    const attachmentList = relevantData.attachments
+    const vistos = new Set()
+    const itens = relevantData.attachments
+      .filter(att => {
+        if (vistos.has(att.fileName)) return false
+        vistos.add(att.fileName)
+        return true
+      })
       .map(att => {
-        // Validação de segurança para garantir que a URL é segura
         if (isValidUrl(att.fileUrl)) {
-          return `<li><a href="${escapeHTML(
-            att.fileUrl
-          )}" target="_blank" title="Abrir anexo em nova guia">${escapeHTML(
-            att.fileName
-          )}</a></li>`
+          return `<li><a href="${escapeHTML(att.fileUrl)}" target="_blank">${escapeHTML(att.fileName)}</a></li>`
         }
-        return `<li>${escapeHTML(att.fileName)} (Link inválido)</li>`
+        return `<li>${escapeHTML(att.fileName)}</li>`
       })
       .join('')
-    relevantDataHtml += `<div class="data-item attachments"><span class="data-label">Anexos:</span><ul class="data-value">${attachmentList}</ul></div>`
+    anexosHtml = `<ul class="dados-lista">${itens}</ul>`
   }
 
+  // Acesso — exibe cada credencial como item limpo
+  let acessoHtml = '<p class="dados-vazio">Nenhum dado de acesso identificado.</p>'
   if (relevantData.accessData && relevantData.accessData.length > 0) {
-    const accessList = relevantData.accessData
-      .map(data => `<li>${escapeHTML(data)}</li>`)
+    const itens = relevantData.accessData
+      .map(d => `<li><code>${escapeHTML(d)}</code></li>`)
       .join('')
-    relevantDataHtml += `<div class="data-item attachments"><span class="data-label">Acesso:</span><ul class="data-value">${accessList}</ul></div>`
+    acessoHtml = `<ul class="dados-lista">${itens}</ul>`
   }
 
-  const summaryHtml = formatSummaryToHtml(summaryText)
-
+  // ── HTML do modal ──────────────────────────────────────────────────────
   const modalContentHtml = `
     <div class="summary-modal-content">
+
       <div class="summary-card resume">
-        <h5><span class="section-icon">📄</span>Resumo</h5>
-        <div class="summary-card-content">${summaryHtml}</div>
+        <h5><span class="section-icon">📄</span> Resumo do Problema</h5>
+        <div class="summary-card-content">${textoParaHtml(resumoTexto)}</div>
       </div>
+
+      <div class="summary-card facts">
+        <h5><span class="section-icon">🔍</span> Fatos Relevantes</h5>
+        <div class="summary-card-content">${textoParaHtml(fatosTexto)}</div>
+      </div>
+
       <div class="summary-card action">
-        <h5><span class="section-icon">🚀</span>Próxima Ação Sugerida</h5>
-        <p>${nextActionText.replace(/\n/g, '<br>')}</p>
+        <h5><span class="section-icon">🚀</span> Próxima Ação Sugerida</h5>
+        <div class="summary-card-content">${textoParaHtml(proximaAcaoTexto)}</div>
       </div>
+
       <div class="summary-section relevant-data-section">
         <h4><span class="section-icon">📊</span> Dados Relevantes</h4>
-        ${relevantDataHtml}
+
+        <div class="dados-grupo">
+          <span class="dados-label">Abertura</span>
+          <span class="dados-valor">${openingDate} <span class="dados-ago">(${timeAgo})</span></span>
+        </div>
+
+        <div class="dados-grupo">
+          <span class="dados-label">Anexos</span>
+          <div class="dados-valor">${anexosHtml}</div>
+        </div>
+
+        <div class="dados-grupo">
+          <span class="dados-label">Acesso</span>
+          <div class="dados-valor">${acessoHtml}</div>
+        </div>
       </div>
+
       <div class="ai-disclaimer">
         Conteúdo gerado por IA. Verifique as informações antes de usar.
       </div>
@@ -1550,8 +1579,12 @@ function showSummaryModal(summaryText, nextActionText, relevantData, onInsert) {
     'Análise do Chamado',
     modalContentHtml,
     (modalBody, closeModal) => {
-      const contentToInsert = `<b>Resumo:</b><br>${summaryText}`
-      onInsert(contentToInsert)
+      const conteudo = [
+        resumoTexto    ? `Resumo do Problema:\n${resumoTexto}`         : '',
+        fatosTexto     ? `\nFatos Relevantes:\n${fatosTexto}`          : '',
+        proximaAcaoTexto ? `\nPróxima Ação Sugerida:\n${proximaAcaoTexto}` : ''
+      ].filter(Boolean).join('\n')
+      onInsert(conteudo)
       closeModal()
     }
   )
@@ -2129,4 +2162,55 @@ function showWhatsNewModal(notes) {
       link.textContent = isHidden ? 'Ocultar Atualizações' : 'Últimas Atualizações'
     })
   }
+}
+
+/**
+ * Exibe um modal para o analista selecionar qual chain (fila) deve ser usada.
+ *
+ * A lista de filas é gerada automaticamente a partir do objeto AI_CHAINS
+ * definido no service-worker.js. Para adicionar ou remover filas, edite
+ * apenas aquele objeto — este modal não precisa de nenhuma alteração.
+ *
+ * @param {string}   title    - Título exibido no cabeçalho do modal.
+ * @param {Function} onSelect - Callback chamado com a chainKey escolhida.
+ */
+function openChainSelectorModal(title, onSelect) {
+  // Pede ao service-worker a lista de chains disponíveis
+  chrome.runtime.sendMessage({ action: 'getAiChains' }, (chains) => {
+    if (chrome.runtime.lastError || !chains || Object.keys(chains).length === 0) {
+      showNotification('Não foi possível carregar as filas disponíveis.', 'error')
+      return
+    }
+
+    // Monta os botões de fila — um por entrada do objeto AI_CHAINS
+    const botoesHtml = Object.keys(chains)
+      .map(chainKey => {
+        const label = escapeHTML(chainKey)
+        return `<button type="button" class="chain-selector-btn" data-chain-key="${label}">${label}</button>`
+      })
+      .join('')
+
+    const contentHtml = `
+      <p class="chain-selector-hint">Selecione a fila correspondente ao atendimento em curso:</p>
+      <div class="chain-selector-grid">${botoesHtml}</div>
+    `
+
+    // Usa o createModal padrão do sistema (sem botão de salvar — a ação acontece no clique do botão)
+    const modal = createModal(title, contentHtml, null, { isManagementModal: true, showShareButton: false })
+
+    // Remove o botão "Salvar Alterações" que o isManagementModal gera (não faz sentido aqui)
+    const saveBtn = modal.querySelector('#modal-save-btn')
+    if (saveBtn) saveBtn.remove()
+
+    // Ao clicar em uma fila: fecha o modal e dispara o callback
+    modal.querySelectorAll('.chain-selector-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const chainKey = btn.dataset.chainKey
+        if (document.body.contains(modal)) document.body.removeChild(modal)
+        onSelect(chainKey)
+      })
+    })
+
+    document.body.appendChild(modal)
+  })
 }

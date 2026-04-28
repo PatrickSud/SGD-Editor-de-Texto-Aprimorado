@@ -1512,15 +1512,17 @@ function setupEditorInstanceListeners(
         break
       case 'ai-summarize':
         if (instanceId === 'main') {
-          startAILoading()
-          await handleAISummary(textArea)
-          stopAILoading()
+          // O fluxo agora é assíncrono via WebSocket:
+          // handleAISummary abre o modal de seleção de fila e retorna imediatamente.
+          // O resultado chega via chrome.runtime.onMessage (resumoCompleto/resumoErro).
+          // Por isso não há await nem startAILoading aqui — o loading é gerenciado
+          // pela notificação "Enviando para a IA... aguarde ⏳" disparada internamente.
+          handleAISummary(textArea)
         }
         break
       case 'ai-complete-draft':
-        startAILoading()
-        await handleAICompleteDraft(textArea)
-        stopAILoading()
+        // Mesmo motivo acima: fluxo assíncrono via WebSocket.
+        handleAICompleteDraft(textArea)
         break
       case 'link':
         openLinkModal(textArea)

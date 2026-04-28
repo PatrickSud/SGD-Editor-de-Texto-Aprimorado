@@ -498,8 +498,111 @@ function openAIGenerationModal(textArea) {
   modal.querySelector('#modal-ai-topics').focus()
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// MONTAGEM DE PROMPTS — IA via WebSocket (chains Thomson Reuters)
+//
+// Padrão idêntico ao sugestor-ss.js: instrução fixa no topo + conteúdo extraído
+// da página embaixo. Tudo numa string só que vai direto ao WebSocket.
+//
+// Para alterar o comportamento da IA, edite apenas estas duas funções.
+// O restante do fluxo (seleção de fila, envio, recebimento) não precisa mudar.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Monta o prompt completo para "Resumir Solicitação".
+ * @param {string} conteudoPagina - Texto extraído da página pelo extractPageContentForAI().
+ * @returns {string} Prompt pronto para enviar ao WebSocket.
+ */
+function montarPromptResumo(conteudoPagina) {
+  const instrucao = `Você é um assistente virtual de comunicação e suporte técnico que auxilia os profissionais de suporte da Thomson Reuters a prover respostas precisas e assertivas sobre o comportamento e resolução de problemas dos sistemas das Soluções Domínio da Thomson Reuters.
+
+Especificamente, você auxilia profissionais que atendem chamados via tickets web. Que enviam trâmites contendo soluções para clientes, que por sua vez, respondem com dúvidas aos técnicos. Se trata de um meio assíncrono baseado em pergunta e resposta.
+
+# SUA TAREFA
+Resuma o atendimento abaixo para o técnico de forma assertiva.
+
+Retorne SOMENTE as seções abaixo, nesta ordem, usando exatamente estes títulos:
+
+RESUMO DO PROBLEMA:
+[Descreva o problema central em 2-3 frases: o que o cliente relatou, em qual sistema ocorre e qual é o estado atual do atendimento.]
+
+FATOS RELEVANTES:
+[Liste em bullet points os eventos, testes e informações mais importantes do histórico. Sem repetir o que já foi dito no resumo. Use - para cada item.]
+
+PRÓXIMA AÇÃO SUGERIDA:
+[Recomende a próxima ação mais lógica com base no histórico. Seja objetivo. Use tom de sugestão: "Sugerimos...", "Considerar...", "Verificar se...". Baseie-se apenas no que está no atendimento — não invente soluções sem evidência.]
+
+# REGRAS ESTRITAS
+- Não invente informações que não estão no atendimento
+- Não sugira escalação para N2 se o problema ocorre em apenas uma máquina
+- Não use termos internos como SAM, SAI, NE, SS — use "solicitação interna" ou similar
+- Não inclua saudações ou encerramentos
+
+# ATENDIMENTO PARA ANALISAR:`
+
+  return `${instrucao}\n\n${conteudoPagina}`
+}
+
+/**
+ * Monta o prompt completo para "Completar Rascunho".
+ * @param {string} conteudoPagina - Texto extraído da página pelo extractPageContentForAI().
+ * @param {string} rascunho       - O que o técnico digitou no editor até agora.
+ * @returns {string} Prompt pronto para enviar ao WebSocket.
+ */
+function montarPromptRascunho(conteudoPagina, rascunho) {
+  const instrucao = `Você é um assistente virtual de comunicação e suporte técnico que auxilia os profissionais de suporte da Thomson Reuters a prover respostas precisas e assertivas sobre o comportamento e resolução de problemas dos sistemas das Soluções Domínio da Thomson Reuters.
+
+Especificamente, você auxilia profissionais que atendem chamados via tickets web. Que enviam trâmites contendo soluções para clientes, que por sua vez, respondem com dúvidas aos técnicos.
+
+# SUA TAREFA
+Complete ou formate o rascunho do técnico abaixo, usando o histórico do atendimento como contexto.
+
+O técnico pode usar duas palavras-chave no rascunho para indicar o que deseja:
+
+## FORMATE
+Se o rascunho contiver a palavra "formate": apenas formate o trâmite no estilo padrão de resposta técnica. Não adicione informações novas. Preserve o conteúdo exato do rascunho, apenas melhore a estrutura, clareza e formatação.
+
+## REFORMULE
+Se o rascunho contiver a palavra "reformule": reformule totalmente a resposta. Incremente com informações novas baseadas no histórico do atendimento, mas siga a linha que o técnico estava seguindo. Adicione itens complementares se necessário.
+
+## SEM PALAVRA-CHAVE
+Se o rascunho não contiver nenhuma das palavras acima: complete o rascunho de forma natural, desenvolvendo a ideia iniciada pelo técnico.
+
+# ESTRUTURA OBRIGATÓRIA DA RESPOSTA
+Toda resposta deve conter:
+
+1. **Contextualização**: causa ou comportamento do sistema neste cenário
+2. **Solução**: passo a passo enumerado com caminhos, telas e botões específicos
+3. **Contrapartida**: "Caso o problema persista mesmo após a execução de todas as indicações expostas acima, por gentileza nos retornar com:" seguido dos itens necessários para diagnóstico (imagens, credenciais, logs, etc.)
+
+# REGRAS ESTRITAS
+- Não forneça respostas sem evidência concreta sem sinalizar que é hipótese
+- Não indique formatação de máquina ou reinstalação sem evidências conclusivas
+- Não use linguagem rude ou que possa gerar má interpretação
+- Não indique escalação para N2 de problemas que ocorrem em apenas uma máquina
+- Não use termos internos como SAM, SAI, NE, SS — use "solicitação interna" ou similar
+- Não inclua saudações ou encerramentos
+- Inclua links da Central de Soluções (https://suporte.dominioatendimento.com) se aplicável
+
+# HISTÓRICO DO ATENDIMENTO (contexto):
+{HISTORICO}
+
+# RASCUNHO DO TÉCNICO (para completar/formatar):
+{RASCUNHO}`
+
+  return instrucao
+    .replace('{HISTORICO}', conteudoPagina)
+    .replace('{RASCUNHO}', rascunho)
+}
+
 /**
  * Manipula a ação de resumir a solicitação de suporte via IA.
+ *
+ * Fluxo:
+ *  1. Extrai o conteúdo da página (assunto, descrição, trâmites)
+ *  2. Exibe modal de seleção de fila (chain)
+ *  3. Envia ao service-worker via chrome.runtime.sendMessage
+ *  4. Recebe a resposta via chrome.runtime.onMessage e exibe o resumo
  */
 async function handleAISummary(textArea) {
   const { rawContent, relevantData } = extractPageContentForAI()
@@ -512,40 +615,74 @@ async function handleAISummary(textArea) {
     return
   }
 
-  try {
-    const apiKey = await getGeminiApiKey()
-    const rawApiResponse = await summarizeSupportRequest(apiKey, rawContent)
+  // Abre o seletor de fila. O callback recebe a chainKey escolhida.
+  openChainSelectorModal('Resumir Solicitação — Selecione a Fila', (chainKey) => {
+    // Registra um listener de UMA SÓ VEZ para receber a resposta do service-worker
+    const onResponse = (message) => {
+      if (message.action === 'resumoCompleto') {
+        chrome.runtime.onMessage.removeListener(onResponse)
 
-    if (rawApiResponse) {
-      // Processa a resposta da IA com 2 seções
-      const sections = rawApiResponse.split('---')
-      const summaryText = (sections[0] || '').replace('[RESUMO]', '').trim()
-      const nextActionText = (sections[1] || '')
-        .replace('[PRÓXIMA AÇÃO]', '')
-        .trim()
+        const rawApiResponse = message.data
 
-      // Chama o modal com os novos dados
-      showSummaryModal(
-        summaryText,
-        nextActionText,
-        relevantData,
-        contentToInsert => {
-          const formattedContent = `${contentToInsert.replace(
-            /\n/g,
-            '<br>'
-          )}<br><br>--<br><br>`
-          insertAtCursor(textArea, formattedContent, { prefixNewLine: true })
-          showNotification('Resumo inserido com sucesso!', 'success')
+        // O prompt pede 3 seções com títulos fixos:
+        // RESUMO DO PROBLEMA: / FATOS RELEVANTES: / PRÓXIMA AÇÃO SUGERIDA:
+        // Extraímos cada uma pela posição dos títulos no texto.
+        const extrairSecao = (texto, tituloAtual, tituloProximo) => {
+          const regexAtual = new RegExp(`${tituloAtual}[:\\s]*`, 'i')
+          const inicioMatch = texto.match(regexAtual)
+          if (!inicioMatch) return ''
+          const inicio = texto.indexOf(inicioMatch[0]) + inicioMatch[0].length
+          if (tituloProximo) {
+            const regexProximo = new RegExp(`${tituloProximo}[:\\s]*`, 'i')
+            const proximoMatch = texto.match(regexProximo)
+            const fim = proximoMatch ? texto.indexOf(proximoMatch[0]) : texto.length
+            return texto.slice(inicio, fim).trim()
+          }
+          return texto.slice(inicio).trim()
         }
-      )
+
+        const resumoTexto      = extrairSecao(rawApiResponse, 'RESUMO DO PROBLEMA',     'FATOS RELEVANTES').replace(/^[-–—]+\s*$/gm, '').trim()
+        const fatosTexto       = extrairSecao(rawApiResponse, 'FATOS RELEVANTES',       'PRÓXIMA AÇÃO SUGERIDA').replace(/^[-–—]+\s*$/gm, '').trim()
+        const proximaAcaoTexto = extrairSecao(rawApiResponse, 'PRÓXIMA AÇÃO SUGERIDA',  null).replace(/^[-–—]+\s*$/gm, '').trim()
+
+        showSummaryModal(
+          resumoTexto,
+          fatosTexto,
+          proximaAcaoTexto,
+          relevantData,
+          contentToInsert => {
+            const formattedContent = `${contentToInsert.replace(/\n/g, '<br>')}<br><br>--<br><br>`
+            insertAtCursor(textArea, formattedContent, { prefixNewLine: true })
+            showNotification('Resumo inserido com sucesso!', 'success')
+          }
+        )
+      } else if (message.action === 'resumoErro') {
+        chrome.runtime.onMessage.removeListener(onResponse)
+        showNotification(`Erro ao resumir: ${message.data}`, 'error')
+      }
     }
-  } catch (error) {
-    handleAIError(error)
-  }
+
+    chrome.runtime.onMessage.addListener(onResponse)
+
+    // Envia o pedido ao service-worker com a chain escolhida
+    chrome.runtime.sendMessage({
+      action: 'resumirSolicitacao',
+      chainKey,
+      prompt: montarPromptResumo(rawContent)
+    })
+
+    showNotification('Enviando para a IA... aguarde ⏳', 'info')
+  })
 }
 
 /**
  * Manipula a ação de completar o rascunho via IA (Co-piloto).
+ *
+ * Fluxo:
+ *  1. Valida que existe rascunho no editor
+ *  2. Exibe modal de seleção de fila (chain)
+ *  3. Envia ao service-worker via chrome.runtime.sendMessage
+ *  4. Recebe a resposta via chrome.runtime.onMessage e substitui o conteúdo
  */
 async function handleAICompleteDraft(textArea) {
   const currentDraft = getEditorContent(textArea)
@@ -557,26 +694,35 @@ async function handleAICompleteDraft(textArea) {
     return
   }
 
-  const requestContent = extractPageContentForAI()
+  const { rawContent } = extractPageContentForAI()
 
-  try {
-    const apiKey = await getGeminiApiKey()
-    // completeDraft definido em ai-service.js
-    const completedText = await completeDraft(
-      apiKey,
-      requestContent,
-      currentDraft
-    )
-
-    if (completedText) {
-      // Substitui o conteúdo inteiro
-      textArea.value = completedText
-      textArea.dispatchEvent(new Event('input', { bubbles: true }))
-      showNotification('Rascunho completado com sucesso!', 'success')
+  // Abre o seletor de fila. O callback recebe a chainKey escolhida.
+  openChainSelectorModal('Completar Rascunho — Selecione a Fila', (chainKey) => {
+    const onResponse = (message) => {
+      if (message.action === 'rascunhoCompleto') {
+        chrome.runtime.onMessage.removeListener(onResponse)
+        textArea.value = message.data
+        textArea.dispatchEvent(new Event('input', { bubbles: true }))
+        showNotification('Rascunho completado com sucesso!', 'success')
+      } else if (message.action === 'rascunhoErro') {
+        chrome.runtime.onMessage.removeListener(onResponse)
+        showNotification(`Erro ao completar rascunho: ${message.data}`, 'error')
+      }
     }
-  } catch (error) {
-    handleAIError(error)
-  }
+
+    chrome.runtime.onMessage.addListener(onResponse)
+
+    // Monta o prompt completo: instrução fixa + contexto + rascunho do analista
+    const prompt = montarPromptRascunho(rawContent, currentDraft)
+
+    chrome.runtime.sendMessage({
+      action: 'completarRascunho',
+      chainKey,
+      prompt
+    })
+
+    showNotification('Enviando para a IA... aguarde ⏳', 'info')
+  })
 }
 
 // --- LÓGICA DE ATALHOS (Posição Fixa, Navegação por Teclado e Filtro) ---
