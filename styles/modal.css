@@ -2942,3 +2942,44 @@ a.open-link-btn:hover {
   opacity: 0.6;
   font-style: italic;
 }
+#ai-loading-indicator {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--background-secondary, #1e1e2e);
+  border: 1px solid var(--border-color, #333);
+  border-radius: 24px;
+  padding: 8px 16px 8px 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  animation: ai-loading-fadein 0.2s ease;
+}
+
+@keyframes ai-loading-fadein {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.ai-loading-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border-color, #444);
+  border-top-color: var(--accent-color, #fa6400);
+  border-radius: 50%;
+  animation: ai-spin 0.75s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes ai-spin {
+  to { transform: rotate(360deg); }
+}
+
+.ai-loading-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-color-main, #eee);
+  white-space: nowrap;
+}

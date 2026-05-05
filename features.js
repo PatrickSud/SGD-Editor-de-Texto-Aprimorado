@@ -615,18 +615,33 @@ async function handleAISummary(textArea) {
     return
   }
 
-  // Abre o seletor de fila. O callback recebe a chainKey escolhida.
   openChainSelectorModal('Resumir Solicitação — Selecione a Fila', (chainKey) => {
-    // Registra um listener de UMA SÓ VEZ para receber a resposta do service-worker
+    const masterBtn = document.querySelector('.ai-master-button')
+
+    const ligarLoading = () => {
+      if (masterBtn) {
+        masterBtn.dataset.originalHtml = masterBtn.innerHTML
+        masterBtn.innerHTML = '⏳'
+        masterBtn.classList.add('ai-loading')
+        masterBtn.disabled = true
+      }
+    }
+
+    const desligarLoading = () => {
+      if (masterBtn) {
+        masterBtn.innerHTML = masterBtn.dataset.originalHtml || '✨'
+        masterBtn.classList.remove('ai-loading')
+        masterBtn.disabled = false
+      }
+    }
+
     const onResponse = (message) => {
       if (message.action === 'resumoCompleto') {
         chrome.runtime.onMessage.removeListener(onResponse)
+        desligarLoading()
 
         const rawApiResponse = message.data
 
-        // O prompt pede 3 seções com títulos fixos:
-        // RESUMO DO PROBLEMA: / FATOS RELEVANTES: / PRÓXIMA AÇÃO SUGERIDA:
-        // Extraímos cada uma pela posição dos títulos no texto.
         const extrairSecao = (texto, tituloAtual, tituloProximo) => {
           const regexAtual = new RegExp(`${tituloAtual}[:\\s]*`, 'i')
           const inicioMatch = texto.match(regexAtual)
@@ -641,9 +656,9 @@ async function handleAISummary(textArea) {
           return texto.slice(inicio).trim()
         }
 
-        const resumoTexto      = extrairSecao(rawApiResponse, 'RESUMO DO PROBLEMA',     'FATOS RELEVANTES').replace(/^[-–—]+\s*$/gm, '').trim()
-        const fatosTexto       = extrairSecao(rawApiResponse, 'FATOS RELEVANTES',       'PRÓXIMA AÇÃO SUGERIDA').replace(/^[-–—]+\s*$/gm, '').trim()
-        const proximaAcaoTexto = extrairSecao(rawApiResponse, 'PRÓXIMA AÇÃO SUGERIDA',  null).replace(/^[-–—]+\s*$/gm, '').trim()
+        const resumoTexto      = extrairSecao(rawApiResponse, 'RESUMO DO PROBLEMA',    'FATOS RELEVANTES').replace(/^[-–—]+\s*$/gm, '').trim()
+        const fatosTexto       = extrairSecao(rawApiResponse, 'FATOS RELEVANTES',      'PRÓXIMA AÇÃO SUGERIDA').replace(/^[-–—]+\s*$/gm, '').trim()
+        const proximaAcaoTexto = extrairSecao(rawApiResponse, 'PRÓXIMA AÇÃO SUGERIDA', null).replace(/^[-–—]+\s*$/gm, '').trim()
 
         showSummaryModal(
           resumoTexto,
@@ -658,32 +673,23 @@ async function handleAISummary(textArea) {
         )
       } else if (message.action === 'resumoErro') {
         chrome.runtime.onMessage.removeListener(onResponse)
+        desligarLoading()
         showNotification(`Erro ao resumir: ${message.data}`, 'error')
       }
     }
 
     chrome.runtime.onMessage.addListener(onResponse)
 
-    // Envia o pedido ao service-worker com a chain escolhida
     chrome.runtime.sendMessage({
       action: 'resumirSolicitacao',
       chainKey,
       prompt: montarPromptResumo(rawContent)
     })
 
-    showNotification('Enviando para a IA... aguarde ⏳', 'info')
+    ligarLoading()
   })
 }
 
-/**
- * Manipula a ação de completar o rascunho via IA (Co-piloto).
- *
- * Fluxo:
- *  1. Valida que existe rascunho no editor
- *  2. Exibe modal de seleção de fila (chain)
- *  3. Envia ao service-worker via chrome.runtime.sendMessage
- *  4. Recebe a resposta via chrome.runtime.onMessage e substitui o conteúdo
- */
 async function handleAICompleteDraft(textArea) {
   const currentDraft = getEditorContent(textArea)
   if (!currentDraft.trim()) {
@@ -696,23 +702,42 @@ async function handleAICompleteDraft(textArea) {
 
   const { rawContent } = extractPageContentForAI()
 
-  // Abre o seletor de fila. O callback recebe a chainKey escolhida.
   openChainSelectorModal('Completar Rascunho — Selecione a Fila', (chainKey) => {
+    const masterBtn = document.querySelector('.ai-master-button')
+
+    const ligarLoading = () => {
+      if (masterBtn) {
+        masterBtn.dataset.originalHtml = masterBtn.innerHTML
+        masterBtn.innerHTML = '⏳'
+        masterBtn.classList.add('ai-loading')
+        masterBtn.disabled = true
+      }
+    }
+
+    const desligarLoading = () => {
+      if (masterBtn) {
+        masterBtn.innerHTML = masterBtn.dataset.originalHtml || '✨'
+        masterBtn.classList.remove('ai-loading')
+        masterBtn.disabled = false
+      }
+    }
+
     const onResponse = (message) => {
       if (message.action === 'rascunhoCompleto') {
         chrome.runtime.onMessage.removeListener(onResponse)
+        desligarLoading()
         textArea.value = message.data
         textArea.dispatchEvent(new Event('input', { bubbles: true }))
         showNotification('Rascunho completado com sucesso!', 'success')
       } else if (message.action === 'rascunhoErro') {
         chrome.runtime.onMessage.removeListener(onResponse)
+        desligarLoading()
         showNotification(`Erro ao completar rascunho: ${message.data}`, 'error')
       }
     }
 
     chrome.runtime.onMessage.addListener(onResponse)
 
-    // Monta o prompt completo: instrução fixa + contexto + rascunho do analista
     const prompt = montarPromptRascunho(rawContent, currentDraft)
 
     chrome.runtime.sendMessage({
@@ -721,9 +746,10 @@ async function handleAICompleteDraft(textArea) {
       prompt
     })
 
-    showNotification('Enviando para a IA... aguarde ⏳', 'info')
+    ligarLoading()
   })
 }
+
 
 // --- LÓGICA DE ATALHOS (Posição Fixa, Navegação por Teclado e Filtro) ---
 
