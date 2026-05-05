@@ -897,6 +897,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // Sempre usa a chain fixa do Sugestor SS. Não usa sendResponse.
         handleGerarSugestao(message.markdownSSC, sender.tab.id, CHAIN_SS_WORKFLOW_ID, 'sugestaoCompleta', 'sugestaoErro')
 
+      } else if (message.action === 'resumirChat' && sender.tab?.id) {
+        // Pré-resumo do chat antes de gerar a sugestão de SS.
+        // Usa a mesma chain do Sugestor SS com prompt específico de resumo.
+        // Retorna 'resumoChatCompleto' ou 'resumoChatErro' para o sugestor-ss.js.
+        handleGerarSugestao(message.prompt, sender.tab.id, CHAIN_SS_WORKFLOW_ID, 'resumoChatCompleto', 'resumoChatErro')
+
       } else if (message.action === 'resumirSolicitacao' && sender.tab?.id) {
         // ── Resumir Solicitação via chain da fila selecionada ────────────
         // message.chainKey: chave do objeto AI_CHAINS selecionada pelo usuário
