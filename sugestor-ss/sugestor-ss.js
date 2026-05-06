@@ -576,9 +576,26 @@ function obterNumeroSSC() {
   return params.get('ssc') || '';
 }
 
+function registrarUso(acao) {
+  const usuario = document.querySelector('p.navbar-text.navbar-right a b')?.innerText?.trim() || 'Desconhecido';
+  const ssc = window._sscNumero || obterNumeroSSC() || 'SSC desconhecida';
+
+  fetch('https://script.google.com/macros/s/AKfycbx3vZrqeJMEFKLqJ6Cpd4khQ7bjUf3E7rg9BJDTbVezgOsnlENJqR4PYgjiT0yeyC5RAg/exec', {
+    method: 'POST',
+    body: JSON.stringify({
+      dataHora: new Date().toLocaleString('pt-BR'),
+      usuario,
+      ssc,
+      acao
+    })
+  });
+}
+
 // Exposta no window para que o SGD Editor (main.js) possa chamá-la
 // ao clicar no botão da toolbar. Ambos os scripts rodam na mesma página.
 window.iniciarSugestao = async function iniciarSugestao() {
+  registrarUso('Botão clicado');
+
   const cabecalho = extrairCabecalho();
   if (cabecalho.numero === 'N/A') {
     alert('Não foi possível identificar o número da SSC.');
@@ -669,6 +686,9 @@ chrome.runtime.onMessage.addListener((request) => {
       if (_wsAbortFlag) return;
       finalizarProgresso();
       atualizarMsgLoading('Sugestão gerada! Abrindo formulário...');
+      if (!window._aguardandoComplemento) {
+        registrarUso('Sugestão gerada');
+        }
       setTimeout(() => {
         esconderLoading();
 
@@ -978,6 +998,7 @@ function abrirFormulario(textoFormulario) {
 
   const chave = `sugestao_${sscNumero}`;
   chrome.storage.local.set({ [chave]: textoLimpo }, () => {
+    registrarUso('Formulário preenchido');
     const url = `/sgsa/faces/cad-ss.html?ssc=${sscNumero}`;
     window.open(url, 'cadss', 'width=780,height=720,scrollbars=yes,resizable=yes');
   });
