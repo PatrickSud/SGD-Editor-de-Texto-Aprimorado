@@ -55,6 +55,9 @@ const AI_CHAINS = {
   'GERADOR DE RELATÓRIOS - Criação de Computados':                                               '7459b824-1a6b-4548-9a3a-6716e1dc5a79',
 }
 
+const GPT55_WORKFLOW_ID = '3a875be6-996a-4a44-b78d-d9aa2584f9a4'
+const EXPERIENCE_IDS = [GPT55_WORKFLOW_ID] // IDs que usam SendMessageV3
+
 /**
  * Verifica se um token JWT está expirado.
  * @param {string} token - O token JWT.
@@ -170,13 +173,15 @@ async function handleGerarSugestao(prompt, tabId, workflowId, successAction = 's
     let fullResponse = ''
     const startTime = Date.now()
 
+    const isV3 = EXPERIENCE_IDS.includes(workflowId)
     ws.onopen = () => {
       console.log('[AI WS] WebSocket aberto. Enviando consulta...')
       ws.send(JSON.stringify({
-        action: 'SendMessage',
+        action: isV3 ? 'SendMessageV3' : 'SendMessage',
         workflow_id: workflowId,
         query: prompt,
-        is_persistence_allowed: false
+        is_persistence_allowed: false,
+        ...(isV3 && { conversation_id: null })
       }))
     }
 
@@ -897,12 +902,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // Sempre usa a chain fixa do Sugestor SS. Não usa sendResponse.
         handleGerarSugestao(message.markdownSSC, sender.tab.id, CHAIN_SS_WORKFLOW_ID, 'sugestaoCompleta', 'sugestaoErro')
 
-      } else if (message.action === 'resumirChat' && sender.tab?.id) {
-        // Pré-resumo do chat antes de gerar a sugestão de SS.
-        // Usa a mesma chain do Sugestor SS com prompt específico de resumo.
-        // Retorna 'resumoChatCompleto' ou 'resumoChatErro' para o sugestor-ss.js.
-        handleGerarSugestao(message.prompt, sender.tab.id, CHAIN_SS_WORKFLOW_ID, 'resumoChatCompleto', 'resumoChatErro')
-
       } else if (message.action === 'resumirSolicitacao' && sender.tab?.id) {
         // ── Resumir Solicitação via chain da fila selecionada ────────────
         // message.chainKey: chave do objeto AI_CHAINS selecionada pelo usuário
@@ -916,6 +915,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         } else {
           handleGerarSugestao(message.prompt, sender.tab.id, workflowId, 'resumoCompleto', 'resumoErro')
         }
+
+      } else if (message.action === 'gerarPorTopicos' && sender.tab?.id) {
+        // ── Gerar por Tópicos via GPT-5.5 ────────────────────────────────────
+        handleGerarSugestao(message.prompt, sender.tab.id, GPT55_WORKFLOW_ID, 'topicosCompleto', 'topicosErro')
 
       } else if (message.action === 'completarRascunho' && sender.tab?.id) {
         // ── Completar Rascunho via chain da fila selecionada ────────────

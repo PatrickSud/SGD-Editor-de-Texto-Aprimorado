@@ -726,9 +726,8 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
       <div class="dropdown">
         <button type="button" title="Recursos de IA (Gemini)" class="ai-master-button enhanced-btn">✨</button>
         <div class="dropdown-content">
-          <button type="button" data-action="ai-correct">🪄 Melhorar Texto</button>
+          <button type="button" data-action="ai-complete-draft">🪄 Melhorar Texto</button>
           <button type="button" data-action="ai-generate">💡 Gerar por Tópicos</button>
-          <button type="button" data-action="ai-complete-draft">🚀 Completar Rascunho</button>
           ${
             instanceId === 'main'
               ? '<button type="button" data-action="ai-summarize">📄 Resumir Solicitação</button>'
