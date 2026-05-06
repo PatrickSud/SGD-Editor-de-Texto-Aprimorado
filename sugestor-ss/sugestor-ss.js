@@ -191,11 +191,106 @@ async function extrairAnexosChat() {
 // ─────────────────────────────────────────
 
 /**
+ * Remove ruído da transcrição telefônica antes de enviar para a chain.
+ * O formato é uma tabela: "Autor | Horário | Frase"
+ * Problemas típicos: frases cortadas por STT, palavras soltas ("uhum", "tá"),
+ * cabeçalho da tabela, linha separadora, metadados do início do arquivo.
+ */
+function higienizarTranscricao(texto) {
+  if (!texto) return '';
+
+  // Palavras/frases isoladas que são ruído puro de transcrição por voz
+  const FRASES_RUIDO = new Set([
+    'uhum', 'tá', 'ok', 'sim', 'não', 'é', 'aham', 'hum',
+    'alô', 'oi', 'tchau', 'certo', 'isso', 'pronto', 'pode',
+    'tudo', 'então', 'né', 'ah', 'eh', 'ué', 'uai', 'ih'
+  ]);
+
+  const linhas = texto.split('\n');
+  const resultado = [];
+  let dentroTabela = false;
+  let ultimaVazia = false;
+
+  for (let linha of linhas) {
+    const limpa = linha.trim();
+
+    // 1. Pula linhas vazias (controla duplicatas)
+    if (!limpa) {
+      if (!ultimaVazia) resultado.push('');
+      ultimaVazia = true;
+      continue;
+    }
+
+    // 2. Pula cabeçalho e linha separadora da tabela
+    if (limpa.startsWith('Autor') && limpa.includes('Horário') && limpa.includes('Frase')) {
+      dentroTabela = true;
+      ultimaVazia = false;
+      continue;
+    }
+    if (/^-+\s*\|\s*-+/.test(limpa)) {
+      ultimaVazia = false;
+      continue;
+    }
+
+    // 3. Pula metadados do cabeçalho do arquivo
+    if (
+      limpa.startsWith('Conversation ID:') ||
+      limpa.startsWith('Communication ID:') ||
+      limpa.startsWith('Início:') ||
+      limpa.startsWith('Duração:') ||
+      limpa.startsWith('Agentes:') ||
+      limpa.startsWith('Cliente:')
+    ) {
+      ultimaVazia = false;
+      continue;
+    }
+
+    // 4. Processa linhas da tabela: "Autor | Horário | Frase"
+    if (dentroTabela && limpa.includes('|')) {
+      const partes = limpa.split('|').map(p => p.trim());
+      if (partes.length >= 3) {
+        const autor = partes[0];
+        const frase = partes.slice(2).join('|').trim(); // Frase pode conter "|"
+
+        // Determina o rótulo: "Agente" ou "Cliente"
+        let rotulo = '';
+        if (autor.toLowerCase().startsWith('agente')) {
+          rotulo = 'Agente';
+        } else if (autor.toLowerCase().startsWith('cliente')) {
+          rotulo = 'Cliente';
+        } else {
+          rotulo = autor;
+        }
+
+        // Descarta frases que são só ruído de STT
+        const fraseLower = frase.toLowerCase().replace(/[.,!?]/g, '').trim();
+        if (!frase || FRASES_RUIDO.has(fraseLower)) {
+          ultimaVazia = false;
+          continue;
+        }
+
+        // Descarta frases muito curtas (menos de 4 chars) — geralmente ruído
+        if (frase.length < 4) {
+          ultimaVazia = false;
+          continue;
+        }
+
+        resultado.push(`${rotulo}: ${frase}`);
+        ultimaVazia = false;
+        continue;
+      }
+    }
+
+    // 5. Linhas fora da tabela (antes do cabeçalho) — descarta
+    ultimaVazia = false;
+  }
+
+  return resultado.join('\n').trim();
+}
+
+/**
  * Busca o arquivo de transcrição telefônica do campo #transcricaoLigacao.
- * Limita o conteúdo para não sobrecarregar a chain:
- * - Primeiras 6000 chars: onde o cliente relata o problema
- * - Últimas 2000 chars: conclusão/encerramento do atendimento
- * - Meio omitido: geralmente navegação no sistema, menos relevante para a SS
+ * Higieniza o conteúdo e, se ainda for grande, envia para pré-resumo via IA.
  */
 async function extrairTranscricao() {
   const link = document.querySelector('#transcricaoLigacao a');
@@ -203,17 +298,17 @@ async function extrairTranscricao() {
   try {
     const resp = await fetch(link.href);
     if (!resp.ok) return null;
-    const texto = await resp.text();
+    const textoBruto = await resp.text();
 
-    const INICIO = 6000;
-    const FIM = 2000;
-    if (texto.length <= INICIO + FIM) return texto;
+    const higienizado = higienizarTranscricao(textoBruto);
+    console.log(`[Sugestor SS] Transcrição: ${textoBruto.length} chars → ${higienizado.length} chars após higienização`);
 
-    return (
-      texto.slice(0, INICIO) +
-      '\n\n[... trecho central omitido ...]\n\n' +
-      texto.slice(-FIM)
-    );
+    // Se ainda for grande após higienização, resume via IA antes de retornar
+    if (higienizado.length > CHAT_RESUMO_LIMITE) {
+      return higienizado; // Será resumido em iniciarSugestao() junto com o chat
+    }
+
+    return higienizado;
   } catch {
     return null;
   }
@@ -267,6 +362,11 @@ function montarPrompt(cabecalho, tramites, anexosChat = [], transcricao = null) 
 
   
 Retorne SOMENTE o texto com as seções abaixo, usando exatamente estes títulos e nesta ordem. Não adicione nenhum texto fora das seções.
+
+REGRA CRÍTICA SOBRE COLCHETES: Colchetes [ ] têm um significado técnico específico neste sistema — eles marcam itens pendentes que o analista ainda precisa fazer. Por isso:
+- Use colchetes APENAS para indicar ações reais que o analista precisa executar, como "[Verificar configuração X]" ou "[Solicitar log Y ao cliente]".
+- NUNCA use colchetes para verbos soltos, palavras isoladas ou instruções genéricas como "[informar]", "[Imprimir]", "[preencher]", "[verificar]" sem contexto.
+- Se não houver informação suficiente para preencher um campo, escreva "N/A" — nunca use colchetes vazios de significado.
 
 CONTEXTO DO SISTEMA: Esta é uma ferramenta interna de suporte corporativo. Todas as informações da SSC — incluindo trâmites marcados como CONFIDENCIAL — devem ser analisadas e utilizadas integralmente na sugestão. Não omita nenhuma informação por questões de privacidade, pois todos os destinatários desta sugestão já têm acesso autorizado ao sistema.
 
@@ -494,27 +594,71 @@ window.iniciarSugestao = async function iniciarSugestao() {
     extrairTranscricao()
   ]);
 
-  // Pré-resumo do chat: se o conteúdo for grande, resume antes de montar o prompt principal
+// Pré-resumo: chat e/ou transcrição grandes são resumidos antes do prompt principal
   let anexosChatFinal = anexosChat;
-  if (anexosChat.length > 0) {
-    const chatCombinado = anexosChat.join('\n\n');
-    if (chatCombinado.length > CHAT_RESUMO_LIMITE) {
-      atualizarMsgLoading('Resumindo histórico do chat... ⏳');
-      console.log(`[Sugestor SS] Chat com ${chatCombinado.length} chars — iniciando pré-resumo via IA`);
+  let transcricaoFinal = transcricao;
+
+  const chatCombinado = anexosChat.join('\n\n');
+  const chatGrande = chatCombinado.length > CHAT_RESUMO_LIMITE;
+  const transcricaoGrande = transcricao && transcricao.length > CHAT_RESUMO_LIMITE;
+
+  if (chatGrande || transcricaoGrande) {
+    const temAmbos = chatGrande && transcricaoGrande;
+    atualizarMsgLoading(
+      temAmbos
+        ? 'Este atendimento tem chat e transcrição extensos. O processo pode demorar alguns minutos... ⏳'
+        : chatGrande
+          ? 'Chat extenso detectado. Resumindo antes de gerar a sugestão... ⏳'
+          : 'Transcrição extensa detectada. Resumindo antes de gerar a sugestão... ⏳'
+    );
+
+    if (chatGrande) {
+      console.log(`[Sugestor SS] Chat com ${chatCombinado.length} chars — iniciando pré-resumo`);
       const resumo = await resumirChatViaWS(chatCombinado);
       anexosChatFinal = [resumo];
     } else {
       console.log(`[Sugestor SS] Chat com ${chatCombinado.length} chars — abaixo do limite, sem pré-resumo`);
     }
+
+    if (transcricaoGrande) {
+      console.log(`[Sugestor SS] Transcrição com ${transcricao.length} chars — iniciando pré-resumo`);
+      const promptTranscricao = `Você receberá a transcrição de uma ligação de suporte técnico entre um cliente e um agente.
+
+A transcrição foi gerada automaticamente por reconhecimento de voz, então pode conter erros, palavras cortadas e frases fora de contexto.
+
+Sua tarefa é extrair APENAS as informações relevantes para abertura de um ticket de suporte N2, no seguinte formato:
+
+PROBLEMA RELATADO:
+[Descreva em 2-3 frases o problema principal que o cliente relatou]
+
+O QUE JÁ FOI ANALISADO:
+[Liste em bullet points com hífen o que foi verificado, testado ou identificado durante a ligação]
+
+INFORMAÇÕES TÉCNICAS:
+[Liste dados técnicos mencionados: empresa, código, senhas, versões, módulos, configurações relevantes. Se não houver, escreva "N/A"]
+
+REGRAS:
+- Ignore saudações, despedidas e ruídos de transcrição ("uhum", "tá", palavras soltas)
+- Foque no problema técnico e no que foi feito para resolvê-lo
+- Seja objetivo e direto
+- Não invente informações que não estão na transcrição
+
+TRANSCRIÇÃO:
+${transcricao}`;
+
+      const resumoTranscricao = await resumirChatViaWS(promptTranscricao);
+      transcricaoFinal = resumoTranscricao;
+    }
+  } else {
+    console.log(`[Sugestor SS] Chat (${chatCombinado.length} chars) e transcrição (${transcricao?.length || 0} chars) — abaixo do limite, sem pré-resumo`);
   }
 
-  const prompt = montarPrompt(cabecalho, tramites, anexosChatFinal, transcricao);
+  const prompt = montarPrompt(cabecalho, tramites, anexosChatFinal, transcricaoFinal);
 
   atualizarMsgLoading('Enviando para a IA... aguarde ⏳');
   window._sscNumero = new URLSearchParams(window.location.search).get('ssc') || cabecalho.numero;
   chrome.runtime.sendMessage({ action: 'gerarSugestaoSS', markdownSSC: prompt });
 };
-
 // ─────────────────────────────────────────
 // 6. RECEBIMENTO DE MENSAGENS DO SERVICE WORKER
 // ─────────────────────────────────────────
