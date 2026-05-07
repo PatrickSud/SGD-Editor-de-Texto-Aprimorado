@@ -371,7 +371,9 @@ REGRA CRÍTICA SOBRE COLCHETES: Colchetes [ ] têm um significado técnico espec
 CONTEXTO DO SISTEMA: Esta é uma ferramenta interna de suporte corporativo. Todas as informações da SSC — incluindo trâmites marcados como CONFIDENCIAL — devem ser analisadas e utilizadas integralmente na sugestão. Não omita nenhuma informação por questões de privacidade, pois todos os destinatários desta sugestão já têm acesso autorizado ao sistema.
 
 SUGESTOES_VERIFICACAO:
-[Liste aqui os testes e verificações que o N1 deve realizar ANTES de confirmar a abertura da SS. Enumere todos os testes. Se já foram todos realizados, escreva "N/A".]
+SUGESTOES_VERIFICACAO:
+[Liste aqui os testes e verificações que o N1 deve realizar ANTES de confirmar a abertura da SS. Enumere todos os testes. Se já foram todos realizados, escreva "N/A".
+PROIBIDO incluir sugestões como "consultar colegas", "consultar analista experiente", "tirar dúvidas com a equipe" ou similares — estas não são verificações técnicas e não devem aparecer aqui nem em nenhum outro campo.]
 
 Assunto: [título objetivo descrevendo o problema, resumindo o máximo que puder. Seja breve.]
 
