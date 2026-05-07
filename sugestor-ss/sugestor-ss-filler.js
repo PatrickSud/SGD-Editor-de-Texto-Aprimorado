@@ -468,3 +468,85 @@ if (document.readyState === 'loading') {
 } else {
   preencherFormulario();
 }
+
+function injetarBotaoCopiarNovatos() {
+  const btnCancelar = Array.from(document.querySelectorAll('input[type="button"]'))
+    .find(el => el.value === 'Cancelar');
+
+  if (!btnCancelar) {
+    console.warn('[Sugestor SS] Botao Cancelar nao encontrado. Botao de copia nao injetado.');
+    return;
+  }
+
+  // Botao Gravar = primeiro input[type=submit] do formulario
+  const btnGravar = document.querySelector('input[type="submit"][value="Gravar"]');
+
+  const btn = document.createElement('input');
+  btn.type      = 'button';
+  btn.value     = 'Copiar Sugestao SS (Novatos)';
+  btn.className = 'commandButton';
+  btn.style.marginLeft      = '6px';
+  btn.style.marginRight     = '6px';
+  btn.style.backgroundColor = '#1a6496';
+  btn.style.color           = '#fff';
+  btn.style.cursor          = 'pointer';
+
+  btn.addEventListener('click', function () {
+    const linhas = [];
+
+    // ── 1. Campos de texto preenchidos ───────────────────────────────────
+    document.querySelectorAll('textarea, input[type="text"]').forEach(function (campo) {
+      const valor = campo.value.trim();
+      if (!valor) return;
+
+      let rotulo = '';
+      const tr = campo.closest('tr');
+      if (tr) {
+        const tdRotulo = tr.querySelector('td:first-child');
+        if (tdRotulo) {
+          rotulo = tdRotulo.innerText
+            .replace(/\*/g, '')
+            .replace(/^\s*\[i\]\s*/i, '')
+            .trim();
+        }
+      }
+
+      if (rotulo) {
+        linhas.push('>> ' + rotulo);
+      }
+      linhas.push(valor);
+      linhas.push('');
+    });
+
+    // ── 2. Lista de anexos ───────────────────────────────────────────────
+    const itensAnexo = document.querySelectorAll('#dropzone-container-anexo li');
+    if (itensAnexo.length > 0) {
+      linhas.push('---');
+      linhas.push('ANEXAR ANTES DE GRAVAR:');
+      itensAnexo.forEach(function (li) {
+        linhas.push('- ' + li.innerText.trim());
+      });
+      linhas.push('');
+    }
+
+    const textoFinal = linhas.join('\n');
+
+    navigator.clipboard.writeText(textoFinal).then(function () {
+      const valorOriginal = btn.value;
+      btn.value = 'Copiado!';
+      btn.style.backgroundColor = '#3c763d';
+      setTimeout(function () {
+        btn.value = valorOriginal;
+        btn.style.backgroundColor = '#1a6496';
+      }, 2500);
+    }).catch(function (err) {
+      console.error('[Sugestor SS] Erro ao copiar:', err);
+      alert('Nao foi possivel copiar automaticamente.\nAbra o console para ver o erro.');
+    });
+  });
+
+// ── Posicao: imediatamente antes do Cancelar ─────────────────────────
+  // "Antes do Cancelar" = colado à direita do Gravar, sem nós de texto no meio
+  btnCancelar.parentNode.insertBefore(btn, btnGravar);
+  }
+injetarBotaoCopiarNovatos();
