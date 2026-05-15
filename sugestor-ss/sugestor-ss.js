@@ -81,7 +81,7 @@ function extrairTramites() {
       responsavel: getValorAposLabel('Usuário:'),
       descricao: htmlToText(descHtml)
     };
-  }).filter(t => t.descricao && t.descricao.trim().length > 0);
+  });
 }
 
 // ─────────────────────────────────────────
@@ -608,18 +608,10 @@ window.iniciarSugestao = async function iniciarSugestao() {
   atualizarMsgLoading('Lendo conteúdo da SSC...');
 
   const tramites = extrairTramites();
-  const temResumoTria = tramites.some(t =>
-      t.descricao.trimStart().startsWith('RESUMO DO ATENDIMENTO')
-    );
-
-    const [anexosChat, transcricao] = await Promise.all([
-      temResumoTria ? Promise.resolve([]) : extrairAnexosChat(),
-      extrairTranscricao()
-    ]);
-
-    if (temResumoTria) {
-      console.log('[Sugestor SS] Resumo da TRIA encontrado nos trâmites — leitura do chat ignorada.');
-    }
+  const [anexosChat, transcricao] = await Promise.all([
+    extrairAnexosChat(),
+    extrairTranscricao()
+  ]);
 
 // Pré-resumo: chat e/ou transcrição grandes são resumidos antes do prompt principal
   let anexosChatFinal = anexosChat;
@@ -639,13 +631,9 @@ window.iniciarSugestao = async function iniciarSugestao() {
           : 'Transcrição extensa detectada. Resumindo antes de gerar a sugestão... ⏳'
     );
 
-      if (chatGrande) {
+    if (chatGrande) {
       console.log(`[Sugestor SS] Chat com ${chatCombinado.length} chars — iniciando pré-resumo`);
-      const chatParaResumir = chatCombinado.slice(0, 8000);
-      if (chatCombinado.length > 8000) {
-        console.log(`[Sugestor SS] Chat truncado para 8000 chars antes do pré-resumo (original: ${chatCombinado.length})`);
-      }
-      const resumo = await resumirChatViaWS(chatParaResumir);
+      const resumo = await resumirChatViaWS(chatCombinado);
       anexosChatFinal = [resumo];
     } else {
       console.log(`[Sugestor SS] Chat com ${chatCombinado.length} chars — abaixo do limite, sem pré-resumo`);
