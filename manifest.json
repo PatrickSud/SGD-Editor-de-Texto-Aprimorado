@@ -14,7 +14,8 @@
     "https://sgd.dominiosistemas.com.br/*",
     "https://app.powerbi.com/*",
     "wss://wymocw0zke.execute-api.us-east-1.amazonaws.com/*",
-    "https://aiplatform.thomsonreuters.com/*"
+    "https://aiplatform.thomsonreuters.com/*",
+    "https://script.google.com/*"
   ],
   "background": {
     "service_worker": "service-worker.js"

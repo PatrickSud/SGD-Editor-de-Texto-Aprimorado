@@ -137,10 +137,10 @@ function extractPageContentForAI() {
     }
     if (rowText.startsWith('Anexo:')) {
       row.querySelectorAll('a[href*="anexoss"]').forEach(link => {
-        relevantData.attachments.push({
-          fileName: (link.innerText || '').trim(),
-          fileUrl: link.href
-        })
+        const fileName = (link.innerText || '').trim()
+        // Ignora o botão 'Baixar Todos' e links sem nome de arquivo
+        if (!fileName || /baixar todos/i.test(fileName)) return
+        relevantData.attachments.push({ fileName, fileUrl: link.href })
       })
     }
   })
@@ -189,10 +189,10 @@ function extractPageContentForAI() {
         )
         if (anexoRow) {
           anexoRow.querySelectorAll('a[href*="anexoss"]').forEach(link => {
-            relevantData.attachments.push({
-              fileName: (link.innerText || '').trim(),
-              fileUrl: link.href
-            })
+            const fileName = (link.innerText || '').trim()
+            // Ignora o botão 'Baixar Todos' e links sem nome de arquivo
+            if (!fileName || /baixar todos/i.test(fileName)) return
+            relevantData.attachments.push({ fileName, fileUrl: link.href })
           })
         }
       } catch (e) {
@@ -201,14 +201,28 @@ function extractPageContentForAI() {
     }
   })
 
-  // Nova lógica para encontrar dados de acesso dentro dos trâmites
-  const credentialRegex =
-    /(?:usu[áa]rio|login|email|senha|acesso|user|password)[\s:]*[\w\.\-@]+/gi
+  // Extração de credenciais dos trâmites.
+  // Para ser considerada credencial, a linha precisa passar em TODOS os critérios:
+  //  1. Contém keyword de acesso (senha, login, usuário, ftp, serial...)
+  //  2. Contém um VALOR real após separador (:, =, espaço) — ex: 'senha: Abc123'
+  //     O valor deve ter ≥4 chars alfanuméricos OU conter @, /, \
+  //  3. Não é pergunta (não termina com ?)
+  //  4. Não é frase longa (máx 100 chars)
+  //
+  // Isso elimina frases como 'C - Certificado e senha de instalação para consultas'
+  // que falam SOBRE senha mas não CONTÊM uma senha real.
+  const credentialKeywords = /usu\u00e1rio|login|e-?mail|senha|user|password|ftp|caminho|s\u00e9rie|serial/i
+  // Valor concreto = pelo menos 4 chars alfanum seguidos OU símbolo de path/email
+  // mas deve vir DEPOIS de um separador (:, =, espaço após keyword)
+  const temValorAposKeyword = /(?:usu\u00e1rio|login|e-?mail|senha|user|password|ftp|caminho|s\u00e9rie|serial)[^\n]{0,30}[:\s=]+[\w@.\/\\\-]*(?:\d|@|\/|\\|_)[\w@.\/\\\-]{2,}/i
   const allTramitesText = fullTramiteTextForCredentialScan.join('\n')
-  const matches = allTramitesText.match(credentialRegex)
-  if (matches) {
-    matches.forEach(match => relevantData.accessData.add(match.trim()))
-  }
+  allTramitesText.split('\n').forEach(linha => {
+    const linhaLimpa = linha.trim()
+    if (linhaLimpa.length < 5 || linhaLimpa.length > 100) return
+    if (linhaLimpa.endsWith('?')) return
+    if (!temValorAposKeyword.test(linhaLimpa)) return
+    relevantData.accessData.add(linhaLimpa)
+  })
 
   if (tramites.length > 0) {
     rawContent += 'Trâmites Anteriores:\n' + tramites.join('\n---\n')

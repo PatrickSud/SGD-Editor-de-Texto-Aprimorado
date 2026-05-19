@@ -380,8 +380,15 @@ body.dropdown-click-mode .dropdown.open > .dropdown-content {
 }
 
 .ai-loading {
-  /* Aplica a animação */
   animation: ai-pulse 1.5s infinite ease-in-out;
+}
+
+button.ai-loading,
+button.ai-loading:hover {
+  cursor: wait;
+  background-color: var(--accent-color, #fa6400) !important;
+  color: #fff !important;
+  opacity: 0.85;
 }
 
 button.ai-loading,

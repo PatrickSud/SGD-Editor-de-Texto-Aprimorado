@@ -447,12 +447,11 @@ function openAIGenerationModal(textArea) {
   const modal = createModal(
     '💡 Gerar Texto por Tópicos (IA)',
     `<div class="form-group">
-            <label for="modal-ai-topics">Tópicos ou Palavras-chave</label>
-            <textarea id="modal-ai-topics" placeholder="Ex: Cliente ligou, problema no acesso, senha resetada, aguardando confirmação." style="min-height: 120px;"></textarea>
-         </div>
-         <p style="font-size: 12px; color: var(--text-color-muted);">Descreva os pontos principais que devem constar no texto final.</p>
-        `,
-    async (modalContent, closeModal) => {
+        <label for="modal-ai-topics">Tópicos ou Palavras-chave</label>
+        <textarea id="modal-ai-topics" placeholder="Ex: Cliente ligou, problema no acesso, senha resetada, aguardando confirmação." style="min-height: 120px;"></textarea>
+     </div>
+     <p style="font-size: 12px; color: var(--text-color-muted);">Descreva os pontos principais que devem constar no texto final.</p>`,
+    (modalContent, closeModal) => {
       const topics = modalContent.querySelector('#modal-ai-topics').value.trim()
 
       if (!topics) {
@@ -460,34 +459,51 @@ function openAIGenerationModal(textArea) {
         return
       }
 
-      // Feedback de carregamento no botão Salvar do modal
-      const saveBtn = modalContent
-        .closest('.se-modal-content')
-        .querySelector('#modal-save-btn')
-      saveBtn.disabled = true
-      saveBtn.classList.add('ai-loading')
-      saveBtn.textContent = 'Gerando... ✨'
+      const saveBtn = modalContent.closest('.se-modal-content').querySelector('#modal-save-btn')
+      if (saveBtn) {
+        saveBtn.disabled = true
+        saveBtn.classList.add('ai-loading')
+        saveBtn.textContent = 'Gerando... ✨'
+      }
 
-      try {
-        const apiKey = await getGeminiApiKey()
-        // generateFromTopics definido em ai-service.js
-        const generatedText = await generateFromTopics(apiKey, topics)
-
-        if (generatedText) {
-          insertAtCursor(textArea, generatedText, { prefixNewLine: true })
+      const onResponse = (message) => {
+        if (message.action === 'topicosCompleto') {
+          chrome.runtime.onMessage.removeListener(onResponse)
+          if (saveBtn) {
+            saveBtn.disabled = false
+            saveBtn.classList.remove('ai-loading')
+            saveBtn.textContent = 'Gerar e Inserir'
+          }
+          insertAtCursor(textArea, message.data, { prefixNewLine: true })
           showNotification('Texto gerado com sucesso!', 'success')
           closeModal()
-        }
-      } catch (error) {
-        handleAIError(error)
-      } finally {
-        // Restaura o botão caso o modal não tenha sido fechado (ex: erro)
-        if (saveBtn) {
-          saveBtn.disabled = false
-          saveBtn.classList.remove('ai-loading')
-          saveBtn.textContent = 'Gerar e Inserir'
+        } else if (message.action === 'topicosErro') {
+          chrome.runtime.onMessage.removeListener(onResponse)
+          if (saveBtn) {
+            saveBtn.disabled = false
+            saveBtn.classList.remove('ai-loading')
+            saveBtn.textContent = 'Gerar e Inserir'
+          }
+          showNotification(`Erro ao gerar texto: ${message.data}`, 'error')
         }
       }
+
+      chrome.runtime.onMessage.addListener(onResponse)
+
+      const prompt = `Você é um redator técnico especialista em comunicação de suporte da Thomson Reuters.
+Converta os tópicos abaixo em um texto técnico coeso para ser usado como corpo de um trâmite de suporte.
+
+REGRAS:
+- Retorne APENAS o desenvolvimento dos tópicos — sem saudação, sem encerramento, sem contrapartida
+- Linguagem profissional e didática em Português do Brasil
+- Use HTML para formatação: <strong> para negrito, listas numeradas no padrão "1 - ", "1.1 - "
+- Use &bull; para marcadores quando necessário
+- Não use markdown
+
+TÓPICOS:
+${topics}`
+
+      chrome.runtime.sendMessage({ action: 'gerarPorTopicos', prompt })
     }
   )
 
@@ -496,6 +512,108 @@ function openAIGenerationModal(textArea) {
 
   document.body.appendChild(modal)
   modal.querySelector('#modal-ai-topics').focus()
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MONTAGEM DE PROMPTS — IA via WebSocket (chains Thomson Reuters)
+//
+// Padrão idêntico ao sugestor-ss.js: instrução fixa no topo + conteúdo extraído
+// da página embaixo. Tudo numa string só que vai direto ao WebSocket.
+//
+// Para alterar o comportamento da IA, edite apenas estas duas funções.
+// O restante do fluxo (seleção de fila, envio, recebimento) não precisa mudar.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Monta o prompt completo para "Resumir Solicitação".
+ */
+function montarPromptResumo(conteudoPagina) {
+  const instrucao = `Você é um assistente virtual de comunicação e suporte técnico que auxilia os profissionais de suporte da Thomson Reuters a prover respostas precisas e assertivas sobre o comportamento e resolução de problemas dos sistemas das Soluções Domínio da Thomson Reuters.
+
+Especificamente, você auxilia profissionais que atendem chamados via tickets web. Que enviam trâmites contendo soluções para clientes, que por sua vez, respondem com dúvidas aos técnicos. Se trata de um meio assíncrono baseado em pergunta e resposta.
+
+# SUA TAREFA
+Resuma o atendimento abaixo para o técnico de forma assertiva.
+
+Retorne SOMENTE as seções abaixo, nesta ordem, usando exatamente estes títulos:
+
+RESUMO DO PROBLEMA:
+[Descreva o problema central em 2-3 frases: o que o cliente relatou, em qual sistema ocorre e qual é o estado atual do atendimento.]
+
+FATOS RELEVANTES:
+[Liste em bullet points os eventos, testes e informações mais importantes do histórico. Sem repetir o que já foi dito no resumo. Use - para cada item.]
+
+PRÓXIMA AÇÃO SUGERIDA:
+[Recomende a próxima ação mais lógica com base no histórico. Seja objetivo. Use tom de sugestão: "Sugerimos...", "Considerar...", "Verificar se...". Baseie-se apenas no que está no atendimento — não invente soluções sem evidência.]
+
+# REGRAS ESTRITAS
+- Não invente informações que não estão no atendimento
+- Não sugira escalação para N2 se o problema ocorre em apenas uma máquina
+- Não use termos internos como SAM, SAI, NE, SS — use "solicitação interna" ou similar
+- Não inclua saudações ou encerramentos
+
+# ATENDIMENTO PARA ANALISAR:`
+
+  return `${instrucao}\n\n${conteudoPagina}`
+}
+
+/**
+ * Monta o prompt completo para "Melhorar Texto".
+ */
+function montarPromptRascunho(conteudoPagina, rascunho) {
+  const instrucao = `Você é um assistente de suporte técnico da Thomson Reuters especializado em redigir trâmites de atendimento para os sistemas Domínio.
+
+Sua tarefa é COMPLETAR e MELHORAR o rascunho do técnico abaixo, mantendo a voz e intenção originais dele.
+
+# CONTEXTO DO ATENDIMENTO
+Use o histórico abaixo apenas como referência para entender o problema e enriquecer o conteúdo. Não resuma o histórico — use-o para preencher lacunas no rascunho.
+
+# ESTRUTURA OBRIGATÓRIA DO TRÂMITE
+Todo trâmite deve seguir exatamente esta ordem:
+
+1. SAUDAÇÃO
+   - Use o que o técnico escreveu. Se não houver, use: "Bom dia! Tudo bem? Espero que sim! 😊"
+   - Nunca altere a saudação se já existir.
+
+2. CONTEXTUALIZAÇÃO
+   - 1 a 2 frases explicando POR QUÊ o problema ocorre ou ocorreu.
+   - Se o técnico já escreveu, melhore. Se não escreveu, crie com base no histórico.
+
+3. SOLUÇÃO (passo a passo)
+   - Se o técnico deixou um placeholder como "{passo a passo aqui}": preencha com os passos corretos.
+   - PADRÃO DE NUMERAÇÃO OBRIGATÓRIO:
+     1 - Passo principal
+     1.1 - Sub-passo
+     1.2 - Sub-passo
+     2 - Próximo passo principal
+   - Caminhos de menu em negrito: <strong>Arquivos > Configurações</strong>
+   - Itens críticos em vermelho: <span style="color:#FF0000;"><strong>texto importante</strong></span>
+
+4. ENCERRAMENTO
+   - Se não escreveu: "Caso o escritório não tenha mais dúvidas referente ao assunto deste atendimento, solicitamos que, por gentileza, conclua o mesmo e participe de nossa pesquisa de satisfação. 😊"
+
+5. CONTRAPARTIDA
+   - Formato: "Caso contrário ainda persista algum erro, retornar com: A - ...; B - ...;"
+
+6. DESPEDIDA
+   - Se não escreveu: "Seguimos à disposição. Desejo um ótimo dia de trabalho! 🤝"
+
+# REGRAS ESTRITAS
+- NUNCA invente soluções sem base no histórico do atendimento
+- NUNCA use termos internos como SAM, SAI, NE, SS — use "solicitação interna" ou similar
+- NÃO use markdown (** negrito **) — use HTML (<strong>, <em>)
+- Emojis: use o formato HTML: &#128512; &#128521; &#129309;
+- Retorne APENAS o trâmite final, sem explicações, sem comentários
+
+# HISTÓRICO DO ATENDIMENTO (contexto):
+{HISTORICO}
+
+# RASCUNHO DO TÉCNICO (complete e melhore):
+{RASCUNHO}`
+
+  return instrucao
+    .replace('{HISTORICO}', conteudoPagina)
+    .replace('{RASCUNHO}', rascunho)
 }
 
 /**
@@ -512,40 +630,83 @@ async function handleAISummary(textArea) {
     return
   }
 
-  try {
-    const apiKey = await getGeminiApiKey()
-    const rawApiResponse = await summarizeSupportRequest(apiKey, rawContent)
+  openChainSelectorModal('Resumir Solicitação — Selecione a Fila', (chainKey) => {
+    const masterBtn = document.querySelector('.ai-master-button')
 
-    if (rawApiResponse) {
-      // Processa a resposta da IA com 2 seções
-      const sections = rawApiResponse.split('---')
-      const summaryText = (sections[0] || '').replace('[RESUMO]', '').trim()
-      const nextActionText = (sections[1] || '')
-        .replace('[PRÓXIMA AÇÃO]', '')
-        .trim()
-
-      // Chama o modal com os novos dados
-      showSummaryModal(
-        summaryText,
-        nextActionText,
-        relevantData,
-        contentToInsert => {
-          const formattedContent = `${contentToInsert.replace(
-            /\n/g,
-            '<br>'
-          )}<br><br>--<br><br>`
-          insertAtCursor(textArea, formattedContent, { prefixNewLine: true })
-          showNotification('Resumo inserido com sucesso!', 'success')
-        }
-      )
+    const ligarLoading = () => {
+      if (masterBtn) {
+        masterBtn.dataset.originalHtml = masterBtn.innerHTML
+        masterBtn.innerHTML = '⏳'
+        masterBtn.classList.add('ai-loading')
+        masterBtn.disabled = true
+      }
     }
-  } catch (error) {
-    handleAIError(error)
-  }
+
+    const desligarLoading = () => {
+      if (masterBtn) {
+        masterBtn.innerHTML = masterBtn.dataset.originalHtml || '✨'
+        masterBtn.classList.remove('ai-loading')
+        masterBtn.disabled = false
+      }
+    }
+
+    const onResponse = (message) => {
+      if (message.action === 'resumoCompleto') {
+        chrome.runtime.onMessage.removeListener(onResponse)
+        desligarLoading()
+
+        const rawApiResponse = message.data
+
+        const extrairSecao = (texto, tituloAtual, tituloProximo) => {
+          const regexAtual = new RegExp(`${tituloAtual}[:\\s]*`, 'i')
+          const inicioMatch = texto.match(regexAtual)
+          if (!inicioMatch) return ''
+          const inicio = texto.indexOf(inicioMatch[0]) + inicioMatch[0].length
+          if (tituloProximo) {
+            const regexProximo = new RegExp(`${tituloProximo}[:\\s]*`, 'i')
+            const proximoMatch = texto.match(regexProximo)
+            const fim = proximoMatch ? texto.indexOf(proximoMatch[0]) : texto.length
+            return texto.slice(inicio, fim).trim()
+          }
+          return texto.slice(inicio).trim()
+        }
+
+        const resumoTexto      = extrairSecao(rawApiResponse, 'RESUMO DO PROBLEMA',    'FATOS RELEVANTES').replace(/^[-–—]+\s*$/gm, '').trim()
+        const fatosTexto       = extrairSecao(rawApiResponse, 'FATOS RELEVANTES',      'PRÓXIMA AÇÃO SUGERIDA').replace(/^[-–—]+\s*$/gm, '').trim()
+        const proximaAcaoTexto = extrairSecao(rawApiResponse, 'PRÓXIMA AÇÃO SUGERIDA', null).replace(/^[-–—]+\s*$/gm, '').trim()
+
+        showSummaryModal(
+          resumoTexto,
+          fatosTexto,
+          proximaAcaoTexto,
+          relevantData,
+          contentToInsert => {
+            const formattedContent = `${contentToInsert.replace(/\n/g, '<br>')}<br><br>--<br><br>`
+            insertAtCursor(textArea, formattedContent, { prefixNewLine: true })
+            showNotification('Resumo inserido com sucesso!', 'success')
+          }
+        )
+      } else if (message.action === 'resumoErro') {
+        chrome.runtime.onMessage.removeListener(onResponse)
+        desligarLoading()
+        showNotification(`Erro ao resumir: ${message.data}`, 'error')
+      }
+    }
+
+    chrome.runtime.onMessage.addListener(onResponse)
+
+    chrome.runtime.sendMessage({
+      action: 'resumirSolicitacao',
+      chainKey,
+      prompt: montarPromptResumo(rawContent)
+    })
+
+    ligarLoading()
+  })
 }
 
 /**
- * Manipula a ação de completar o rascunho via IA (Co-piloto).
+ * Manipula a ação de melhorar/completar o texto via IA.
  */
 async function handleAICompleteDraft(textArea) {
   const currentDraft = getEditorContent(textArea)
@@ -557,27 +718,57 @@ async function handleAICompleteDraft(textArea) {
     return
   }
 
-  const requestContent = extractPageContentForAI()
+  const { rawContent } = extractPageContentForAI()
 
-  try {
-    const apiKey = await getGeminiApiKey()
-    // completeDraft definido em ai-service.js
-    const completedText = await completeDraft(
-      apiKey,
-      requestContent,
-      currentDraft
-    )
+  openChainSelectorModal('Melhorar Texto — Selecione a Fila', (chainKey) => {
+    const masterBtn = document.querySelector('.ai-master-button')
 
-    if (completedText) {
-      // Substitui o conteúdo inteiro
-      textArea.value = completedText
-      textArea.dispatchEvent(new Event('input', { bubbles: true }))
-      showNotification('Rascunho completado com sucesso!', 'success')
+    const ligarLoading = () => {
+      if (masterBtn) {
+        masterBtn.dataset.originalHtml = masterBtn.innerHTML
+        masterBtn.innerHTML = '⏳'
+        masterBtn.classList.add('ai-loading')
+        masterBtn.disabled = true
+      }
     }
-  } catch (error) {
-    handleAIError(error)
-  }
+
+    const desligarLoading = () => {
+      if (masterBtn) {
+        masterBtn.innerHTML = masterBtn.dataset.originalHtml || '✨'
+        masterBtn.classList.remove('ai-loading')
+        masterBtn.disabled = false
+      }
+    }
+
+    const onResponse = (message) => {
+      if (message.action === 'rascunhoCompleto') {
+        chrome.runtime.onMessage.removeListener(onResponse)
+        desligarLoading()
+        textArea.value = message.data
+        textArea.dispatchEvent(new Event('input', { bubbles: true }))
+        showNotification('Texto melhorado com sucesso!', 'success')
+      } else if (message.action === 'rascunhoErro') {
+        chrome.runtime.onMessage.removeListener(onResponse)
+        desligarLoading()
+        showNotification(`Erro ao melhorar texto: ${message.data}`, 'error')
+      }
+    }
+
+    chrome.runtime.onMessage.addListener(onResponse)
+
+    const prompt = montarPromptRascunho(rawContent, currentDraft)
+
+    chrome.runtime.sendMessage({
+      action: 'completarRascunho',
+      chainKey,
+      prompt
+    })
+
+    ligarLoading()
+  })
 }
+
+
 
 // --- LÓGICA DE ATALHOS (Posição Fixa, Navegação por Teclado e Filtro) ---
 

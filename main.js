@@ -721,14 +721,12 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
 
   const devMode = await isDevModeEnabled()
   let aiButtonsHtml = ''
-  if (includeAI && devMode) {
+  if (includeAI) {
     aiButtonsHtml = `
       <div class="dropdown">
         <button type="button" title="Recursos de IA (Gemini)" class="ai-master-button enhanced-btn">✨</button>
         <div class="dropdown-content">
-          <button type="button" data-action="ai-correct">🪄 Melhorar Texto</button>
-          <button type="button" data-action="ai-generate">💡 Gerar por Tópicos</button>
-          <button type="button" data-action="ai-complete-draft">🚀 Completar Rascunho</button>
+          <button type="button" data-action="ai-complete-draft">🪄 Melhorar Texto</button>
           ${
             instanceId === 'main'
               ? '<button type="button" data-action="ai-summarize">📄 Resumir Solicitação</button>'
@@ -1512,15 +1510,17 @@ function setupEditorInstanceListeners(
         break
       case 'ai-summarize':
         if (instanceId === 'main') {
-          startAILoading()
-          await handleAISummary(textArea)
-          stopAILoading()
+          // O fluxo agora é assíncrono via WebSocket:
+          // handleAISummary abre o modal de seleção de fila e retorna imediatamente.
+          // O resultado chega via chrome.runtime.onMessage (resumoCompleto/resumoErro).
+          // Por isso não há await nem startAILoading aqui — o loading é gerenciado
+          // pela notificação "Enviando para a IA... aguarde ⏳" disparada internamente.
+          handleAISummary(textArea)
         }
         break
       case 'ai-complete-draft':
-        startAILoading()
-        await handleAICompleteDraft(textArea)
-        stopAILoading()
+        // Mesmo motivo acima: fluxo assíncrono via WebSocket.
+        handleAICompleteDraft(textArea)
         break
       case 'link':
         openLinkModal(textArea)
