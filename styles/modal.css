@@ -2983,3 +2983,18 @@ a.open-link-btn:hover {
   color: var(--text-color-main, #eee);
   white-space: nowrap;
 }
+
+.resumo-lista {
+  margin: 4px 0;
+  padding-left: 18px;
+}
+
+.resumo-lista li {
+  margin-bottom: 3px;
+  line-height: 1.4;
+  font-size: 13px;
+}
+
+.summary-card-content p {
+  margin: 0 0 4px 0;
+}

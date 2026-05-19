@@ -1475,18 +1475,25 @@ function showSummaryModal(resumoTexto, fatosTexto, proximaAcaoTexto, relevantDat
 
   // Converte texto simples com linhas em HTML legível.
   // Linhas que começam com - ou * viram <li>; o resto vira <p>.
-  const textoParaHtml = texto => {
+const textoParaHtml = texto => {
     if (!texto) return '<p>Não disponível.</p>'
     let html = ''
     let emLista = false
     texto.split('\n').forEach(linha => {
       linha = linha.trim()
       if (!linha) return
-      // Remove marcadores de negrito em markdown (**texto**) e converte para <b>
       linha = escapeHTML(linha).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
-      if (linha.startsWith('- ') || linha.startsWith('* ')) {
-        if (!emLista) { html += '<ul>'; emLista = true }
-        html += `<li>${linha.slice(2)}</li>`
+      // Linhas com - * A - B - C - 1. 1 - viram itens de lista
+      if (
+        linha.startsWith('- ') ||
+        linha.startsWith('* ') ||
+        /^[A-Z]\s*[-–]\s/.test(linha) ||
+        /^\d+[\.\-]\d*[\.\-]?\s/.test(linha) ||
+        /^\d+\s*[-–]\s/.test(linha)
+      ) {
+        if (!emLista) { html += '<ul class="resumo-lista">'; emLista = true }
+        const conteudo = linha.replace(/^[-*]\s+/, '').replace(/^[A-Z]\s*[-–]\s/, '').replace(/^\d+[\.\-\s]+/, '')
+        html += `<li>${conteudo}</li>`
       } else {
         if (emLista) { html += '</ul>'; emLista = false }
         html += `<p>${linha}</p>`

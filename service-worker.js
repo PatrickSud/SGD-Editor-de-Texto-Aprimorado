@@ -58,6 +58,35 @@ const AI_CHAINS = {
 const GPT55_WORKFLOW_ID = '3a875be6-996a-4a44-b78d-d9aa2584f9a4'
 const EXPERIENCE_IDS = [GPT55_WORKFLOW_ID] // IDs que usam SendMessageV3
 
+const ROUTER_WORKFLOW_ID = '10a5378c-8777-4217-9cae-6b5a1dbfdb14'
+
+/**
+ * Mapa de classificação da chain roteadora → workflow_id da chain de destino.
+ * A chave é exatamente o valor do campo "classificacao" retornado pelo JSON da roteadora.
+ */
+const ROUTER_CHAIN_MAP = {
+  'FILA 41':                                    '98d8e94a-f795-44fe-aa86-ab8b4471e202', // DOMÍNIO PROCESSOS
+  'FILA 42':                                    'b787e0c7-2608-4ae6-97e5-b128c205c194', // DOMÍNIO MESSENGER
+  'REFORMA TRIBUTÁRIA':                         'dbc04d2e-4157-4369-b8af-2877a798dba1', // FISCONT - Reforma Tributária
+  'DOMINIO COBRANÇAS':                          '26858ea4-9ffd-479a-8125-5f127341d34d', // DOMÍNIO COBRANÇAS
+  'FILA 61':                                    '01138fe4-aecd-48bc-a958-e8ef1006f487', // HONORÁRIOS
+  'FILA 5':                                     'db7162a0-ad9b-4c19-85c4-315169a1ef43', // ÁREA TÉCNICA
+  'FILA 3':                                     'ec6d18b1-955b-426a-a34d-622065fd982a', // ONVIO GESTÃO/PORTAL DO CLIENTE
+  'CONTABILIDADE DIGITAL':                      'af573701-d00c-4fac-89c8-0e7ea6af3434', // CONTABILIDADE DIGITAL
+  'FILA 62':                                    'bdcf2679-98c5-4201-98bd-2c53ee07e63e', // ONBALANCE, CCT, BUSCA, SEFAZ, API
+  'DOMINIO PARA VOCÊ':                          '9631a5ff-16d7-4f9b-b3f4-28f5562b8749', // NOVO PORTAL DO EMPREGADO
+  'LISTA SANE':                                 'bcda651a-1518-4808-97b1-439ad9ca1306', // LISTAGEM DE SANES E SAILS
+  'BUSCA SOLUÇÕES FILAS 23 24 25':             'a84ee410-18f0-4f99-bc65-566b8340e6f8', // FISCONT - Buscador de Soluções
+  'RUBRICAS COM FÓRMULAS':                      'b653d9c8-da78-4880-9347-e08a8c97c145', // FOLHA - Rubricas com Fórmulas
+  'ANÁLISE ERRO ECF P200 P400':                'd66d4161-c01a-498a-95d8-229a4a884e26', // CONTABILIDADE - Análise ECF
+  'DÚVIDAS CADASTRO DE SS':                    '27921542-92d4-408a-a3cb-bb4372553e43', // ASSISTENTE - Manual Cadastro de SSs
+  'ERROS DE VALIDAÇÃO ECD ECF':               '7e04fbb6-cdef-450f-89b5-d83c392583ab', // ESCRITA, CONTABILIDADE, LALUR
+  'FOLHA DÚVIDAS GERAIS':                       '0a365547-b3e1-4008-bbbd-afee1596dcf6', // FOLHA - Dúvidas gerais
+  'ASSISTENTE SUPORTE - COMBINADOS E QUAL A FILA': 'bf79bed3-d1f2-4b9c-b08a-a7c0551eb4dc', // ASSISTENTE SUPORTE
+  'PERFORMANCE':                                'f7ff4d6f-1847-463b-a6be-acc122a0fe01', // PERFORMANCE (chain específica)
+  'ESTOURO':                                    null, // Sem chain — dispara erro de fallback
+}
+
 /**
  * Verifica se um token JWT está expirado.
  * @param {string} token - O token JWT.
@@ -933,6 +962,194 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         } else {
           handleGerarSugestao(message.prompt, sender.tab.id, workflowId, 'rascunhoCompleto', 'rascunhoErro')
         }
+        
+      } else if (message.action === 'rotearEMelhorar' && sender.tab?.id) {
+        // ── Melhorar Texto com roteamento automático de fila ──────────────
+        const { prompt, promptCompleto } = message
+        const tabId = sender.tab.id
+
+        ;(async () => {
+          try {
+            const essoToken = await ensureValidToken()
+            const API_URL = `${WS_BASE_URL}/?Authorization=${essoToken}`
+            const ws = new WebSocket(API_URL)
+            let jsonBruto = ''
+
+            ws.onopen = () => {
+              ws.send(JSON.stringify({
+                action: 'SendMessage',
+                workflow_id: ROUTER_WORKFLOW_ID,
+                query: prompt,
+                is_persistence_allowed: false
+              }))
+            }
+
+            ws.onmessage = (event) => {
+              try {
+                const data = JSON.parse(event.data)
+                for (const key in data) {
+                  const val = data[key]
+                  if (typeof val !== 'object' || val === null) continue
+                  if ('answer' in val && val.answer) jsonBruto += val.answer
+                  if ('cost_track' in val) ws.close()
+                }
+              } catch (e) {
+                chrome.tabs.sendMessage(tabId, {
+                  action: 'rascunhoErro',
+                  data: `Erro ao processar resposta da roteadora: ${e.message}`
+                })
+                ws.close()
+              }
+            }
+
+            ws.onerror = () => {
+              chrome.tabs.sendMessage(tabId, {
+                action: 'rascunhoErro',
+                data: 'Erro na conexão com a chain roteadora.'
+              })
+            }
+
+            ws.onclose = async () => {
+              if (!jsonBruto) return
+
+              let classificacao
+              try {
+                const limpo = jsonBruto.replace(/```json|```/g, '').trim()
+                const parsed = JSON.parse(limpo)
+                classificacao = parsed.classificacao
+              } catch (e) {
+                chrome.tabs.sendMessage(tabId, {
+                  action: 'rascunhoErro',
+                  data: 'A roteadora retornou uma resposta inválida. Tente novamente com mais informações.'
+                })
+                return
+              }
+
+              const workflowId = ROUTER_CHAIN_MAP[classificacao]
+
+              if (!workflowId) {
+                chrome.tabs.sendMessage(tabId, {
+                  action: 'rascunhoErro',
+                  data: `Não foi possível identificar a fila para este atendimento (classificação: "${classificacao}"). Adicione mais informações ao rascunho e tente novamente.`
+                })
+                return
+              }
+
+              chrome.tabs.sendMessage(tabId, {
+                action: 'filaIdentificada',
+                fila: classificacao
+              })
+
+              await handleGerarSugestao(
+                promptCompleto,
+                tabId,
+                workflowId,
+                'rascunhoCompleto',
+                'rascunhoErro'
+              )
+            }
+
+          } catch (err) {
+            chrome.tabs.sendMessage(tabId, {
+              action: 'rascunhoErro',
+              data: `Erro de autenticação: ${err.message}`
+            })
+          }
+        })()
+      } else if (message.action === 'rotearEResumir' && sender.tab?.id) {
+        // ── Resumir Solicitação com roteamento automático de fila ─────────
+        const { prompt, promptCompleto } = message
+        const tabId = sender.tab.id
+
+        ;(async () => {
+          try {
+            const essoToken = await ensureValidToken()
+            const API_URL = `${WS_BASE_URL}/?Authorization=${essoToken}`
+            const ws = new WebSocket(API_URL)
+            let jsonBruto = ''
+
+            ws.onopen = () => {
+              ws.send(JSON.stringify({
+                action: 'SendMessage',
+                workflow_id: ROUTER_WORKFLOW_ID,
+                query: prompt,
+                is_persistence_allowed: false
+              }))
+            }
+
+            ws.onmessage = (event) => {
+              try {
+                const data = JSON.parse(event.data)
+                for (const key in data) {
+                  const val = data[key]
+                  if (typeof val !== 'object' || val === null) continue
+                  if ('answer' in val && val.answer) jsonBruto += val.answer
+                  if ('cost_track' in val) ws.close()
+                }
+              } catch (e) {
+                chrome.tabs.sendMessage(tabId, {
+                  action: 'resumoErro',
+                  data: `Erro ao processar resposta da roteadora: ${e.message}`
+                })
+                ws.close()
+              }
+            }
+
+            ws.onerror = () => {
+              chrome.tabs.sendMessage(tabId, {
+                action: 'resumoErro',
+                data: 'Erro na conexão com a chain roteadora.'
+              })
+            }
+
+            ws.onclose = async () => {
+              if (!jsonBruto) return
+
+              let classificacao
+              try {
+                const limpo = jsonBruto.replace(/```json|```/g, '').trim()
+                const parsed = JSON.parse(limpo)
+                classificacao = parsed.classificacao
+              } catch (e) {
+                chrome.tabs.sendMessage(tabId, {
+                  action: 'resumoErro',
+                  data: 'A roteadora retornou uma resposta inválida. Tente novamente com mais informações.'
+                })
+                return
+              }
+
+              const workflowId = ROUTER_CHAIN_MAP[classificacao]
+
+              if (!workflowId) {
+                chrome.tabs.sendMessage(tabId, {
+                  action: 'resumoErro',
+                  data: `Não foi possível identificar a fila para este atendimento (classificação: "${classificacao}"). Adicione mais informações e tente novamente.`
+                })
+                return
+              }
+
+              chrome.tabs.sendMessage(tabId, {
+                action: 'filaIdentificadaResumo',
+                fila: classificacao
+              })
+
+              await handleGerarSugestao(
+                promptCompleto,
+                tabId,
+                workflowId,
+                'resumoCompleto',
+                'resumoErro'
+              )
+            }
+
+          } catch (err) {
+            chrome.tabs.sendMessage(tabId, {
+              action: 'resumoErro',
+              data: `Erro de autenticação: ${err.message}`
+            })
+          }
+        })()
+
       }
     } catch (error) {
       console.error(`Erro ao processar ação '${message.action}':`, error)
@@ -941,6 +1158,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   })()
   return true // Indica resposta assíncrona.
 })
+
+
 
 /**
  * Listener principal para quando um alarme é disparado.

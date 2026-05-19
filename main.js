@@ -721,7 +721,7 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
 
   const devMode = await isDevModeEnabled()
   let aiButtonsHtml = ''
-  if (includeAI && devMode) {
+  if (includeAI) {
     aiButtonsHtml = `
       <div class="dropdown">
         <button type="button" title="Recursos de IA (Gemini)" class="ai-master-button enhanced-btn">✨</button>

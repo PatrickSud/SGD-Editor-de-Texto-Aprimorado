@@ -630,81 +630,85 @@ async function handleAISummary(textArea) {
     return
   }
 
-  openChainSelectorModal('Resumir Solicitação — Selecione a Fila', (chainKey) => {
-    const masterBtn = document.querySelector('.ai-master-button')
+  const masterBtn = document.querySelector('.ai-master-button')
 
-    const ligarLoading = () => {
-      if (masterBtn) {
-        masterBtn.dataset.originalHtml = masterBtn.innerHTML
-        masterBtn.innerHTML = '⏳'
-        masterBtn.classList.add('ai-loading')
-        masterBtn.disabled = true
-      }
+  const ligarLoading = (label = '⏳') => {
+    if (masterBtn) {
+      masterBtn.dataset.originalHtml = masterBtn.innerHTML
+      masterBtn.innerHTML = label
+      masterBtn.classList.add('ai-loading')
+      masterBtn.disabled = true
+    }
+  }
+
+  const desligarLoading = () => {
+    if (masterBtn) {
+      masterBtn.innerHTML = masterBtn.dataset.originalHtml || '✨'
+      masterBtn.classList.remove('ai-loading')
+      masterBtn.disabled = false
+    }
+  }
+
+  ligarLoading('🔍')
+  showNotification('Identificando a fila automaticamente...', 'info', 8000)
+
+  const onResponse = (message) => {
+    if (message.action === 'filaIdentificadaResumo') {
+      if (masterBtn) masterBtn.innerHTML = '⏳'
+      showNotification(`Fila identificada: ${message.fila}. Resumindo...`, 'info', 6000)
+      return
     }
 
-    const desligarLoading = () => {
-      if (masterBtn) {
-        masterBtn.innerHTML = masterBtn.dataset.originalHtml || '✨'
-        masterBtn.classList.remove('ai-loading')
-        masterBtn.disabled = false
-      }
-    }
+    if (message.action === 'resumoCompleto') {
+      chrome.runtime.onMessage.removeListener(onResponse)
+      desligarLoading()
 
-    const onResponse = (message) => {
-      if (message.action === 'resumoCompleto') {
-        chrome.runtime.onMessage.removeListener(onResponse)
-        desligarLoading()
+      const rawApiResponse = message.data
 
-        const rawApiResponse = message.data
-
-        const extrairSecao = (texto, tituloAtual, tituloProximo) => {
-          const regexAtual = new RegExp(`${tituloAtual}[:\\s]*`, 'i')
-          const inicioMatch = texto.match(regexAtual)
-          if (!inicioMatch) return ''
-          const inicio = texto.indexOf(inicioMatch[0]) + inicioMatch[0].length
-          if (tituloProximo) {
-            const regexProximo = new RegExp(`${tituloProximo}[:\\s]*`, 'i')
-            const proximoMatch = texto.match(regexProximo)
-            const fim = proximoMatch ? texto.indexOf(proximoMatch[0]) : texto.length
-            return texto.slice(inicio, fim).trim()
-          }
-          return texto.slice(inicio).trim()
+      const extrairSecao = (texto, tituloAtual, tituloProximo) => {
+        const regexAtual = new RegExp(`${tituloAtual}[:\\s]*`, 'i')
+        const inicioMatch = texto.match(regexAtual)
+        if (!inicioMatch) return ''
+        const inicio = texto.indexOf(inicioMatch[0]) + inicioMatch[0].length
+        if (tituloProximo) {
+          const regexProximo = new RegExp(`${tituloProximo}[:\\s]*`, 'i')
+          const proximoMatch = texto.match(regexProximo)
+          const fim = proximoMatch ? texto.indexOf(proximoMatch[0]) : texto.length
+          return texto.slice(inicio, fim).trim()
         }
-
-        const resumoTexto      = extrairSecao(rawApiResponse, 'RESUMO DO PROBLEMA',    'FATOS RELEVANTES').replace(/^[-–—]+\s*$/gm, '').trim()
-        const fatosTexto       = extrairSecao(rawApiResponse, 'FATOS RELEVANTES',      'PRÓXIMA AÇÃO SUGERIDA').replace(/^[-–—]+\s*$/gm, '').trim()
-        const proximaAcaoTexto = extrairSecao(rawApiResponse, 'PRÓXIMA AÇÃO SUGERIDA', null).replace(/^[-–—]+\s*$/gm, '').trim()
-
-        showSummaryModal(
-          resumoTexto,
-          fatosTexto,
-          proximaAcaoTexto,
-          relevantData,
-          contentToInsert => {
-            const formattedContent = `${contentToInsert.replace(/\n/g, '<br>')}<br><br>--<br><br>`
-            insertAtCursor(textArea, formattedContent, { prefixNewLine: true })
-            showNotification('Resumo inserido com sucesso!', 'success')
-          }
-        )
-      } else if (message.action === 'resumoErro') {
-        chrome.runtime.onMessage.removeListener(onResponse)
-        desligarLoading()
-        showNotification(`Erro ao resumir: ${message.data}`, 'error')
+        return texto.slice(inicio).trim()
       }
+
+      const resumoTexto      = extrairSecao(rawApiResponse, 'RESUMO DO PROBLEMA',    'FATOS RELEVANTES').replace(/^[-–—]+\s*$/gm, '').trim()
+      const fatosTexto       = extrairSecao(rawApiResponse, 'FATOS RELEVANTES',      'PRÓXIMA AÇÃO SUGERIDA').replace(/^[-–—]+\s*$/gm, '').trim()
+      const proximaAcaoTexto = extrairSecao(rawApiResponse, 'PRÓXIMA AÇÃO SUGERIDA', null).replace(/^[-–—]+\s*$/gm, '').trim()
+
+      showSummaryModal(
+        resumoTexto,
+        fatosTexto,
+        proximaAcaoTexto,
+        relevantData,
+        contentToInsert => {
+          const formattedContent = `${contentToInsert.replace(/\n/g, '<br>')}<br><br>--<br><br>`
+          insertAtCursor(textArea, formattedContent, { prefixNewLine: true })
+          showNotification('Resumo inserido com sucesso!', 'success')
+        }
+      )
+    } else if (message.action === 'resumoErro') {
+      chrome.runtime.onMessage.removeListener(onResponse)
+      desligarLoading()
+      showNotification(message.data, 'error')
     }
+  }
 
-    chrome.runtime.onMessage.addListener(onResponse)
+  chrome.runtime.onMessage.addListener(onResponse)
 
-    chrome.runtime.sendMessage({
-      action: 'resumirSolicitacao',
-      chainKey,
-      prompt: montarPromptResumo(rawContent)
-    })
-
-    ligarLoading()
+  chrome.runtime.sendMessage({
+    action: 'rotearEResumir',
+    prompt: rawContent,
+    promptCompleto: montarPromptResumo(rawContent)
   })
 }
-
 /**
  * Manipula a ação de melhorar/completar o texto via IA.
  */
@@ -719,56 +723,59 @@ async function handleAICompleteDraft(textArea) {
   }
 
   const { rawContent } = extractPageContentForAI()
+  const masterBtn = document.querySelector('.ai-master-button')
 
-  openChainSelectorModal('Melhorar Texto — Selecione a Fila', (chainKey) => {
-    const masterBtn = document.querySelector('.ai-master-button')
+  const ligarLoading = (label = '⏳') => {
+    if (masterBtn) {
+      masterBtn.dataset.originalHtml = masterBtn.innerHTML
+      masterBtn.innerHTML = label
+      masterBtn.classList.add('ai-loading')
+      masterBtn.disabled = true
+    }
+  }
 
-    const ligarLoading = () => {
-      if (masterBtn) {
-        masterBtn.dataset.originalHtml = masterBtn.innerHTML
-        masterBtn.innerHTML = '⏳'
-        masterBtn.classList.add('ai-loading')
-        masterBtn.disabled = true
-      }
+  const desligarLoading = () => {
+    if (masterBtn) {
+      masterBtn.innerHTML = masterBtn.dataset.originalHtml || '✨'
+      masterBtn.classList.remove('ai-loading')
+      masterBtn.disabled = false
+    }
+  }
+
+  ligarLoading('🔍')
+  showNotification('Analisando o conteúdo do atendimento para identificar a fila... 🔍', 'info', 8000)
+
+  const onResponse = (message) => {
+    if (message.action === 'filaIdentificada') {
+      // Atualiza o botão com a fila detectada (feedback visual)
+      if (masterBtn) masterBtn.innerHTML = '⏳'
+      showNotification(`Fila identificada: ${message.fila}. Melhorando o texto...`, 'info', 6000)
+      return // Não remove o listener ainda — ainda espera rascunhoCompleto/rascunhoErro
     }
 
-    const desligarLoading = () => {
-      if (masterBtn) {
-        masterBtn.innerHTML = masterBtn.dataset.originalHtml || '✨'
-        masterBtn.classList.remove('ai-loading')
-        masterBtn.disabled = false
-      }
+    if (message.action === 'rascunhoCompleto') {
+      chrome.runtime.onMessage.removeListener(onResponse)
+      desligarLoading()
+      textArea.value = message.data
+      textArea.dispatchEvent(new Event('input', { bubbles: true }))
+      showNotification('Texto melhorado com sucesso!', 'success')
+    } else if (message.action === 'rascunhoErro') {
+      chrome.runtime.onMessage.removeListener(onResponse)
+      desligarLoading()
+      showNotification(message.data, 'error')
     }
+  }
 
-    const onResponse = (message) => {
-      if (message.action === 'rascunhoCompleto') {
-        chrome.runtime.onMessage.removeListener(onResponse)
-        desligarLoading()
-        textArea.value = message.data
-        textArea.dispatchEvent(new Event('input', { bubbles: true }))
-        showNotification('Texto melhorado com sucesso!', 'success')
-      } else if (message.action === 'rascunhoErro') {
-        chrome.runtime.onMessage.removeListener(onResponse)
-        desligarLoading()
-        showNotification(`Erro ao melhorar texto: ${message.data}`, 'error')
-      }
-    }
+  chrome.runtime.onMessage.addListener(onResponse)
 
-    chrome.runtime.onMessage.addListener(onResponse)
-
-    const prompt = montarPromptRascunho(rawContent, currentDraft)
-
-    chrome.runtime.sendMessage({
-      action: 'completarRascunho',
-      chainKey,
-      prompt
-    })
-
-    ligarLoading()
+  // Manda só o rascunho para a roteadora (contexto mínimo para classificar)
+  // e manda o prompt completo para a chain final
+  chrome.runtime.sendMessage({
+    action: 'rotearEMelhorar',
+    prompt: currentDraft, // Para a roteadora identificar a fila
+    promptCompleto: montarPromptRascunho(rawContent, currentDraft) // Para a chain final
   })
 }
-
-
 
 // --- LÓGICA DE ATALHOS (Posição Fixa, Navegação por Teclado e Filtro) ---
 
