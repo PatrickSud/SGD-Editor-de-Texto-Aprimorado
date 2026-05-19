@@ -1010,11 +1010,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             }
 
             ws.onclose = async () => {
-              if (!jsonBruto) return
+            console.log('[ROUTER] jsonBruto recebido:', jsonBruto)
+            if (!jsonBruto) return
 
               let classificacao
               try {
-                const limpo = jsonBruto.replace(/```json|```/g, '').trim()
+                const limpo = jsonBruto.replace(/```json|```/g, '').replace(/^json\s*/i, '').trim()
                 const parsed = JSON.parse(limpo)
                 classificacao = parsed.classificacao
               } catch (e) {
@@ -1030,7 +1031,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
               if (!workflowId) {
                 chrome.tabs.sendMessage(tabId, {
                   action: 'rascunhoErro',
-                  data: `Não foi possível identificar a fila para este atendimento (classificação: "${classificacao}"). Adicione mais informações ao rascunho e tente novamente.`
+                  data: `Não foi possível identificar a fila para este atendimento. Adicione mais informações ao rascunho e tente novamente.`
                 })
                 return
               }
@@ -1107,7 +1108,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
               let classificacao
               try {
-                const limpo = jsonBruto.replace(/```json|```/g, '').trim()
+                const limpo = jsonBruto.replace(/```json|```/g, '').replace(/^json\s*/i, '').trim()
                 const parsed = JSON.parse(limpo)
                 classificacao = parsed.classificacao
               } catch (e) {

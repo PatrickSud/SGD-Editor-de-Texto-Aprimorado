@@ -565,22 +565,19 @@ function montarPromptRascunho(conteudoPagina, rascunho) {
 
 Sua tarefa é COMPLETAR e MELHORAR o rascunho do técnico abaixo, mantendo a voz e intenção originais dele.
 
-# CONTEXTO DO ATENDIMENTO
-Use o histórico abaixo apenas como referência para entender o problema e enriquecer o conteúdo. Não resuma o histórico — use-o para preencher lacunas no rascunho.
-
 # ESTRUTURA OBRIGATÓRIA DO TRÂMITE
 Todo trâmite deve seguir exatamente esta ordem:
 
 1. SAUDAÇÃO
-   - Use o que o técnico escreveu. Se não houver, use: "Bom dia! Tudo bem? Espero que sim! 😊"
+   - Use o que o técnico escreveu. Se não houver, use: "Bom dia! Tudo bem? Espero que sim! &#128512;"
    - Nunca altere a saudação se já existir.
 
 2. CONTEXTUALIZAÇÃO
    - 1 a 2 frases explicando POR QUÊ o problema ocorre ou ocorreu.
-   - Se o técnico já escreveu, melhore. Se não escreveu, crie com base no histórico.
+   - Se o técnico já escreveu, melhore. Se não escreveu, deduza com base no rascunho.
 
 3. SOLUÇÃO (passo a passo)
-   - Se o técnico deixou um placeholder como "{passo a passo aqui}": preencha com os passos corretos.
+   - Se o técnico deixou um placeholder como "{passo a passo aqui}": desenvolva com base no que ele indicou no rascunho.
    - PADRÃO DE NUMERAÇÃO OBRIGATÓRIO:
      1 - Passo principal
      1.1 - Sub-passo
@@ -590,30 +587,32 @@ Todo trâmite deve seguir exatamente esta ordem:
    - Itens críticos em vermelho: <span style="color:#FF0000;"><strong>texto importante</strong></span>
 
 4. ENCERRAMENTO
-   - Se não escreveu: "Caso o escritório não tenha mais dúvidas referente ao assunto deste atendimento, solicitamos que, por gentileza, conclua o mesmo e participe de nossa pesquisa de satisfação. 😊"
+   - Se não escreveu: "Caso o escritório não tenha mais dúvidas referente ao assunto deste atendimento, solicitamos que, por gentileza, conclua o mesmo e participe de nossa pesquisa de satisfação. &#128512;"
 
 5. CONTRAPARTIDA
-   - Formato: "Caso contrário ainda persista algum erro, retornar com: A - ...; B - ...;"
+   - Formato OBRIGATÓRIO com cada item em linha separada:
+     "Caso contrário ainda persista algum erro, retornar com:
+     <br><br>A - [item];
+     <br>B - [item];
+     <br>C - [item se necessário];"
+   - NUNCA coloque A, B, C na mesma linha separados por ponto e vírgula
+   - Cada item deve ter <br> antes para criar quebra de linha visual
 
 6. DESPEDIDA
-   - Se não escreveu: "Seguimos à disposição. Desejo um ótimo dia de trabalho! 🤝"
+   - Se não escreveu: "Seguimos à disposição. Desejo um ótimo dia de trabalho! &#129309;"
 
 # REGRAS ESTRITAS
-- NUNCA invente soluções sem base no histórico do atendimento
+- Baseie-se APENAS no que o técnico escreveu no rascunho
+- NUNCA invente procedimentos que não estejam no rascunho
 - NUNCA use termos internos como SAM, SAI, NE, SS — use "solicitação interna" ou similar
 - NÃO use markdown (** negrito **) — use HTML (<strong>, <em>)
 - Emojis: use o formato HTML: &#128512; &#128521; &#129309;
 - Retorne APENAS o trâmite final, sem explicações, sem comentários
 
-# HISTÓRICO DO ATENDIMENTO (contexto):
-{HISTORICO}
-
 # RASCUNHO DO TÉCNICO (complete e melhore):
-{RASCUNHO}`
+${rascunho}`
 
   return instrucao
-    .replace('{HISTORICO}', conteudoPagina)
-    .replace('{RASCUNHO}', rascunho)
 }
 
 /**
@@ -722,7 +721,6 @@ async function handleAICompleteDraft(textArea) {
     return
   }
 
-  const { rawContent } = extractPageContentForAI()
   const masterBtn = document.querySelector('.ai-master-button')
 
   const ligarLoading = (label = '⏳') => {
@@ -770,11 +768,13 @@ async function handleAICompleteDraft(textArea) {
 
   // Manda só o rascunho para a roteadora (contexto mínimo para classificar)
   // e manda o prompt completo para a chain final
-  chrome.runtime.sendMessage({
-    action: 'rotearEMelhorar',
-    prompt: currentDraft, // Para a roteadora identificar a fila
-    promptCompleto: montarPromptRascunho(rawContent, currentDraft) // Para a chain final
-  })
+  const pc = montarPromptRascunho('', currentDraft)
+    console.log('[DEBUG] promptCompleto tamanho:', pc.length, 'chars')
+    chrome.runtime.sendMessage({
+      action: 'rotearEMelhorar',
+      prompt: currentDraft,
+      promptCompleto: pc
+    })
 }
 
 // --- LÓGICA DE ATALHOS (Posição Fixa, Navegação por Teclado e Filtro) ---
