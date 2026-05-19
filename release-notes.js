@@ -1,4 +1,25 @@
 const RELEASE_NOTES = {
+  '3.0.2': {
+    title: '🐛 Correções de Bugs — Versão 3.0.2',
+    features: [
+      '<b>📄 Leitura de chats e transcrições corrigida:</b>' +
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+        '<li>Corrigido problema onde chats longos não eram lidos corretamente devido ao tamanho do conteúdo. Agora tanto chats quanto transcrições são processados de forma completa e confiável.</li>' +
+      '</ul>',
+
+      '<b>🤖 Sugestor de SS — Coleta de trâmite confidencial:</b>' +
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+        '<li>O Sugestor de SS agora coleta corretamente as informações do trâmite confidencial, garantindo que o contexto completo do atendimento seja enviado para a IA.</li>' +
+      '</ul>',
+
+      '<b>📋 Botão de validação com liderança:</b>' +
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+        '<li>Adicionado botão dentro da sugestão de SS para copiar e enviar a sugestão ao líder antes de abrir o chamado — especialmente útil para analistas em período de aprendizado.</li>' +
+      '</ul>',
+
+      '<small>⚡ Em breve lançamos uma versão com novidades. Esta versão foi liberada antecipadamente para corrigir problemas que estavam impactando o uso.</small>'
+    ]
+  },
   '3.0.1': {
     title: '✨ Novidades da Versão 3.0.1',
     features: [
