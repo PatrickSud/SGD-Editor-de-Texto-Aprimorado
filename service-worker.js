@@ -931,6 +931,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // Sempre usa a chain fixa do Sugestor SS. Não usa sendResponse.
         handleGerarSugestao(message.markdownSSC, sender.tab.id, CHAIN_SS_WORKFLOW_ID, 'sugestaoCompleta', 'sugestaoErro')
 
+      } else if (message.action === 'gerarSugestaoSS' && sender.tab?.id) {
+        handleGerarSugestao(message.markdownSSC, sender.tab.id, CHAIN_SS_WORKFLOW_ID, 'sugestaoCompleta', 'sugestaoErro')
+
+      // ADICIONE ESTE BLOCO:
+      } else if (message.action === 'gerarSugestaoSAM' && sender.tab?.id) {
+        // ── Sugestor SAM — chain fixa "ASSISTENTE: Cadastro de SA/NE" ──────────
+        const SAM_WORKFLOW_ID = AI_CHAINS['ASSISTENTE: Cadastro de SA/NE']
+        handleGerarSugestao(message.prompt, sender.tab.id, SAM_WORKFLOW_ID, 'samCompleta', 'samErro')
+
       } else if (message.action === 'resumirSolicitacao' && sender.tab?.id) {
         // ── Resumir Solicitação via chain da fila selecionada ────────────
         // message.chainKey: chave do objeto AI_CHAINS selecionada pelo usuário

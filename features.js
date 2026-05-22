@@ -616,6 +616,182 @@ ${rascunho}`
 }
 
 /**
+ * Monta o prompt para "Sugerir SAM" com base na descrição do técnico.
+ */
+function montarPromptSAM(descricaoTecnico) {
+  return `Um técnico de suporte da Thomson Reuters precisa cadastrar uma SAM (Solicitação de Alteração de Melhoria) com base na necessidade relatada pelo cliente abaixo.
+
+REGRA RESTRITA, OBEDEÇA INDEPENDENTEMENTE: Não use caracteres especiais, como negrito: **negrito** e ##. Apenas retorne com o modelo de SAM, sem indicar anomalia e informações adicionais necessárias.
+
+Com base nessa descrição, sugira o preenchimento completo da SAM, com base nesse modelo:
+
+Assunto: Resumo da descrição - Informar uma palavra-chave geral, após uma específica (separando-as por traço).
+
+Descrição: Informar a real necessidade do cliente
+
+Justificativa: Informar o motivo da necessidade da melhoria e qual será seu impacto nas rotinas do cliente.
+
+1 - Qual é o problema?
+2 - Como o cliente resolve atualmente?
+3 - Como ele gostaria que fosse resolvido?
+
+DESCRIÇÃO DO TÉCNICO:
+${descricaoTecnico}`
+}
+
+/**
+ * Monta o prompt para "Sugerir SAM" com base no atendimento completo.
+ */
+function montarPromptSAMDoAtendimento(conteudoPagina) {
+  return `Um técnico de suporte da Thomson Reuters precisa cadastrar uma SAM (Solicitação de Alteração de Melhoria) com base no atendimento abaixo.
+
+Analise o histórico do atendimento, identifique a necessidade de melhoria relatada pelo cliente e sugira o preenchimento completo da SAM.
+
+Se não houver uma necessidade clara de melhoria no atendimento, informe explicitamente que não foi identificada necessidade de SAM.
+
+REGRA RESTRITA, OBEDEÇA INDEPENDENTEMENTE: Não use caracteres especiais, como negrito: **negrito** e ##. Apenas retorne com o modelo de SAM, sem indicar anomalia e informações adicionais necessárias.
+
+Com base nessa descrição, sugira o preenchimento completo da SAM, com base nesse modelo:
+
+Assunto: Resumo da descrição - Informar uma palavra-chave geral, após uma específica (separando-as por traço).
+
+Descrição: Informar a real necessidade do cliente
+
+Justificativa: Informar o motivo da necessidade da melhoria e qual será seu impacto nas rotinas do cliente.
+
+1 - Qual é o problema?
+2 - Como o cliente resolve atualmente?
+3 - Como ele gostaria que fosse resolvido?
+
+HISTÓRICO DO ATENDIMENTO:
+${conteudoPagina}`
+}
+/**
+ * Abre o modal para o técnico descrever o problema e gera sugestão de SAM via IA.
+ * Oferece duas opções: escrever manualmente ou ler o atendimento completo.
+ */
+function handleAISuggestSAM() {
+  const modal = createModal(
+    '📋 Sugerir SAM com IA',
+    `<div class="form-group">
+        <label for="modal-sam-input">Descreva o que o cliente deseja com o máximo de detalhes possível</label>
+        <textarea
+          id="modal-sam-input"
+          placeholder="Ex: O cliente precisa que o sistema permita exportar o relatório de folha em formato XLSX, pois atualmente só existe a opção PDF e isso dificulta o preenchimento de planilhas internas do escritório."
+          style="min-height: 140px;"
+        ></textarea>
+     </div>
+     <p style="font-size: 12px; color: var(--text-color-muted);">
+       Use suas próprias palavras. A IA vai estruturar a SAM com base no que você descrever.
+     </p>
+     <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-color);">
+       <button type="button" id="modal-sam-ler-atendimento" style="background: none; border: none; color: var(--accent-color); cursor: pointer; font-size: 12px; padding: 0; text-decoration: underline;">
+         📖 Prefere que a IA leia o atendimento completo e sugira com base nele?
+       </button>
+     </div>`,
+    (modalContent, closeModal) => {
+      const descricao = modalContent.querySelector('#modal-sam-input').value.trim()
+
+      if (!descricao) {
+        showNotification('Descreva o problema antes de gerar a SAM.', 'error')
+        return
+      }
+
+      closeModal()
+      showNotification('Gerando sugestão de SAM... ⏳', 'info', 8000)
+
+      const onResponse = (message) => {
+        if (message.action === 'samCompleta') {
+          chrome.runtime.onMessage.removeListener(onResponse)
+          preencherDescricaoSAM(message.data)
+        } else if (message.action === 'samErro') {
+          chrome.runtime.onMessage.removeListener(onResponse)
+          showNotification(`Erro ao gerar SAM: ${message.data}`, 'error', 6000)
+        }
+      }
+
+      chrome.runtime.onMessage.addListener(onResponse)
+      chrome.runtime.sendMessage({
+        action: 'gerarSugestaoSAM',
+        prompt: montarPromptSAM(descricao)
+      })
+    }
+  )
+
+  const lerAtendimentoBtn = modal.querySelector('#modal-sam-ler-atendimento')
+  if (lerAtendimentoBtn) {
+    lerAtendimentoBtn.addEventListener('click', () => {
+      const { rawContent } = extractPageContentForAI()
+
+      if (!rawContent || rawContent.length < 50) {
+        showNotification('Não foi possível extrair conteúdo suficiente do atendimento.', 'error')
+        return
+      }
+
+      if (document.body.contains(modal)) document.body.removeChild(modal)
+
+      showNotification('Lendo o atendimento e gerando SAM... ⏳', 'info', 8000)
+
+      const onResponse = (message) => {
+        if (message.action === 'samCompleta') {
+          chrome.runtime.onMessage.removeListener(onResponse)
+          preencherDescricaoSAM(message.data)
+        } else if (message.action === 'samErro') {
+          chrome.runtime.onMessage.removeListener(onResponse)
+          showNotification(`Erro ao gerar SAM: ${message.data}`, 'error', 6000)
+        }
+      }
+
+      chrome.runtime.onMessage.addListener(onResponse)
+      chrome.runtime.sendMessage({
+        action: 'gerarSugestaoSAM',
+        prompt: montarPromptSAMDoAtendimento(rawContent)
+      })
+    })
+  }
+
+  const saveBtn = modal.querySelector('#modal-save-btn')
+  if (saveBtn) saveBtn.textContent = 'Gerar Sugestão de SAM'
+
+  document.body.appendChild(modal)
+  modal.querySelector('#modal-sam-input').focus()
+}
+
+/**
+ * Preenche o campo "Descrição" da SAM na página com o resultado da IA.
+ */
+function preencherDescricaoSAM(textoGerado) {
+  const campoDescricao = document.getElementById('sscForm:descricaoTramite')
+
+  if (!campoDescricao) {
+    showNotification(
+      'Campo de descrição não encontrado. Copie o texto manualmente.',
+      'error',
+      6000
+    )
+    showInfoModal(
+      'Sugestão de SAM gerada pela IA',
+      `<pre style="white-space: pre-wrap; font-size: 13px;">${escapeHTML(textoGerado)}</pre>`
+    )
+    return
+  }
+
+  campoDescricao.value = textoGerado
+  campoDescricao.dispatchEvent(new Event('input', { bubbles: true }))
+  campoDescricao.dispatchEvent(new Event('change', { bubbles: true }))
+  campoDescricao.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }))
+
+  campoDescricao.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  campoDescricao.focus()
+
+  showNotification(
+    'SAM gerada!',
+    'success',
+    6000
+  )
+}
+
+/**
  * Manipula a ação de resumir a solicitação de suporte via IA.
  */
 async function handleAISummary(textArea) {
