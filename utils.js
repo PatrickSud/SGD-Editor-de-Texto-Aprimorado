@@ -301,3 +301,23 @@ function formatRelativeTime(dateInput) {
 
   return `Em ${dateString}`
 }
+
+/**
+ * Lê o valor do select de Classificação do SGD.
+ * @returns {string|null} O texto da opção selecionada, em maiúsculo, ou null se não encontrar.
+ */
+function getSgdClassificacao() {
+  const selectors = [
+    'select[id*="classificacao"]',
+    'select[name*="classificacao"]',
+    'select[id*="Classificacao"]',
+  ]
+  for (const selector of selectors) {
+    const el = document.querySelector(selector)
+    if (el && el.value) {
+      const option = el.options[el.selectedIndex]
+      return (option?.textContent || '').trim().toUpperCase()
+    }
+  }
+  return null
+}

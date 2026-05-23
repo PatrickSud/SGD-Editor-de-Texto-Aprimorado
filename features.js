@@ -397,122 +397,122 @@ function openLinkModal(textArea, options = {}) {
   document.body.appendChild(modal)
 }
 
-// --- LÓGICA DE IA (Integração com ai-service.js) ---
+// // --- LÓGICA DE IA (Integração com ai-service.js) ---
 
-/**
- * Função auxiliar para lidar com erros de IA e exibir notificações.
- */
-function handleAIError(error) {
-  console.error('Erro na operação de IA:', error)
-  let message = error.message || 'Ocorreu um erro inesperado na IA.'
-  // Adiciona contexto se for erro de chave de API
-  if (message.includes('API key') || message.includes('Chave de API')) {
-    message += ' Verifique suas configurações (⚙️).'
-  }
-  showNotification(message, 'error', 5000)
-}
+// /**
+//  * Função auxiliar para lidar com erros de IA e exibir notificações.
+//  */
+// function handleAIError(error) {
+//   console.error('Erro na operação de IA:', error)
+//   let message = error.message || 'Ocorreu um erro inesperado na IA.'
+//   // Adiciona contexto se for erro de chave de API
+//   if (message.includes('API key') || message.includes('Chave de API')) {
+//     message += ' Verifique suas configurações (⚙️).'
+//   }
+//   showNotification(message, 'error', 5000)
+// }
 
-/**
- * Manipula a ação de correção de texto via IA.
- */
-async function handleAICorrection(textArea) {
-  const originalText = getEditorContent(textArea)
-  if (!originalText.trim()) {
-    showNotification('Nenhum texto para corrigir.', 'info')
-    return
-  }
+// /**
+//  * Manipula a ação de correção de texto via IA.
+//  */
+// async function handleAICorrection(textArea) {
+//   const originalText = getEditorContent(textArea)
+//   if (!originalText.trim()) {
+//     showNotification('Nenhum texto para corrigir.', 'info')
+//     return
+//   }
 
-  try {
-    const apiKey = await getGeminiApiKey()
-    // correctText definido em ai-service.js
-    const correctedText = await correctText(apiKey, originalText)
+//   try {
+//     const apiKey = await getGeminiApiKey()
+//     // correctText definido em ai-service.js
+//     const correctedText = await correctText(apiKey, originalText)
 
-    if (correctedText && correctedText.trim() !== originalText.trim()) {
-      // Substitui o conteúdo inteiro
-      textArea.value = correctedText
-      textArea.dispatchEvent(new Event('input', { bubbles: true }))
-      showNotification('Texto corrigido com sucesso!', 'success')
-    } else if (correctedText) {
-      showNotification('Nenhuma correção necessária ou encontrada.', 'info')
-    }
-  } catch (error) {
-    handleAIError(error)
-  }
-}
+//     if (correctedText && correctedText.trim() !== originalText.trim()) {
+//       // Substitui o conteúdo inteiro
+//       textArea.value = correctedText
+//       textArea.dispatchEvent(new Event('input', { bubbles: true }))
+//       showNotification('Texto corrigido com sucesso!', 'success')
+//     } else if (correctedText) {
+//       showNotification('Nenhuma correção necessária ou encontrada.', 'info')
+//     }
+//   } catch (error) {
+//     handleAIError(error)
+//   }
+// }
 
-/**
- * Abre o modal para geração de texto a partir de tópicos.
- */
-function openAIGenerationModal(textArea) {
-  const modal = createModal(
-    '💡 Gerar Texto por Tópicos (IA)',
-    `<div class="form-group">
-        <label for="modal-ai-topics">Tópicos ou Palavras-chave</label>
-        <textarea id="modal-ai-topics" placeholder="Ex: Cliente ligou, problema no acesso, senha resetada, aguardando confirmação." style="min-height: 120px;"></textarea>
-     </div>
-     <p style="font-size: 12px; color: var(--text-color-muted);">Descreva os pontos principais que devem constar no texto final.</p>`,
-    (modalContent, closeModal) => {
-      const topics = modalContent.querySelector('#modal-ai-topics').value.trim()
+// /**
+//  * Abre o modal para geração de texto a partir de tópicos.
+//  */
+// function openAIGenerationModal(textArea) {
+//   const modal = createModal(
+//     '💡 Gerar Texto por Tópicos (IA)',
+//     `<div class="form-group">
+//         <label for="modal-ai-topics">Tópicos ou Palavras-chave</label>
+//         <textarea id="modal-ai-topics" placeholder="Ex: Cliente ligou, problema no acesso, senha resetada, aguardando confirmação." style="min-height: 120px;"></textarea>
+//      </div>
+//      <p style="font-size: 12px; color: var(--text-color-muted);">Descreva os pontos principais que devem constar no texto final.</p>`,
+//     (modalContent, closeModal) => {
+//       const topics = modalContent.querySelector('#modal-ai-topics').value.trim()
 
-      if (!topics) {
-        showNotification('Por favor, insira os tópicos para geração.', 'error')
-        return
-      }
+//       if (!topics) {
+//         showNotification('Por favor, insira os tópicos para geração.', 'error')
+//         return
+//       }
 
-      const saveBtn = modalContent.closest('.se-modal-content').querySelector('#modal-save-btn')
-      if (saveBtn) {
-        saveBtn.disabled = true
-        saveBtn.classList.add('ai-loading')
-        saveBtn.textContent = 'Gerando... ✨'
-      }
+//       const saveBtn = modalContent.closest('.se-modal-content').querySelector('#modal-save-btn')
+//       if (saveBtn) {
+//         saveBtn.disabled = true
+//         saveBtn.classList.add('ai-loading')
+//         saveBtn.textContent = 'Gerando... ✨'
+//       }
 
-      const onResponse = (message) => {
-        if (message.action === 'topicosCompleto') {
-          chrome.runtime.onMessage.removeListener(onResponse)
-          if (saveBtn) {
-            saveBtn.disabled = false
-            saveBtn.classList.remove('ai-loading')
-            saveBtn.textContent = 'Gerar e Inserir'
-          }
-          insertAtCursor(textArea, message.data, { prefixNewLine: true })
-          showNotification('Texto gerado com sucesso!', 'success')
-          closeModal()
-        } else if (message.action === 'topicosErro') {
-          chrome.runtime.onMessage.removeListener(onResponse)
-          if (saveBtn) {
-            saveBtn.disabled = false
-            saveBtn.classList.remove('ai-loading')
-            saveBtn.textContent = 'Gerar e Inserir'
-          }
-          showNotification(`Erro ao gerar texto: ${message.data}`, 'error')
-        }
-      }
+//       const onResponse = (message) => {
+//         if (message.action === 'topicosCompleto') {
+//           chrome.runtime.onMessage.removeListener(onResponse)
+//           if (saveBtn) {
+//             saveBtn.disabled = false
+//             saveBtn.classList.remove('ai-loading')
+//             saveBtn.textContent = 'Gerar e Inserir'
+//           }
+//           insertAtCursor(textArea, message.data, { prefixNewLine: true })
+//           showNotification('Texto gerado com sucesso!', 'success')
+//           closeModal()
+//         } else if (message.action === 'topicosErro') {
+//           chrome.runtime.onMessage.removeListener(onResponse)
+//           if (saveBtn) {
+//             saveBtn.disabled = false
+//             saveBtn.classList.remove('ai-loading')
+//             saveBtn.textContent = 'Gerar e Inserir'
+//           }
+//           showNotification(`Erro ao gerar texto: ${message.data}`, 'error')
+//         }
+//       }
 
-      chrome.runtime.onMessage.addListener(onResponse)
+//       chrome.runtime.onMessage.addListener(onResponse)
 
-      const prompt = `Você é um redator técnico especialista em comunicação de suporte da Thomson Reuters.
-Converta os tópicos abaixo em um texto técnico coeso para ser usado como corpo de um trâmite de suporte.
+//       const prompt = `Você é um redator técnico especialista em comunicação de suporte da Thomson Reuters.
+// Converta os tópicos abaixo em um texto técnico coeso para ser usado como corpo de um trâmite de suporte.
 
-REGRAS:
-- Retorne APENAS o desenvolvimento dos tópicos — sem saudação, sem encerramento, sem contrapartida
-- Linguagem profissional e didática em Português do Brasil
-- Use HTML para formatação: <strong> para negrito, listas numeradas no padrão "1 - ", "1.1 - "
-- Use &bull; para marcadores quando necessário
-- Não use markdown
+// REGRAS:
+// - Retorne APENAS o desenvolvimento dos tópicos — sem saudação, sem encerramento, sem contrapartida
+// - Linguagem profissional e didática em Português do Brasil
+// - Use HTML para formatação: <strong> para negrito, listas numeradas no padrão "1 - ", "1.1 - "
+// - Use &bull; para marcadores quando necessário
+// - Não use markdown
 
-TÓPICOS:
-${topics}`
+// TÓPICOS:
+// ${topics}`
 
-      chrome.runtime.sendMessage({ action: 'gerarPorTopicos', prompt })
-    }
-  )
+//       chrome.runtime.sendMessage({ action: 'gerarPorTopicos', prompt })
+//     }
+//   )
 
-  const saveBtn = modal.querySelector('#modal-save-btn')
-  if (saveBtn) saveBtn.textContent = 'Gerar e Inserir'
+//   const saveBtn = modal.querySelector('#modal-save-btn')
+//   if (saveBtn) saveBtn.textContent = 'Gerar e Inserir'
 
-  document.body.appendChild(modal)
-  modal.querySelector('#modal-ai-topics').focus()
-}
+//   document.body.appendChild(modal)
+//   modal.querySelector('#modal-ai-topics').focus()
+// }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MONTAGEM DE PROMPTS — IA via WebSocket (chains Thomson Reuters)
@@ -550,7 +550,12 @@ PRÓXIMA AÇÃO SUGERIDA:
 - Não invente informações que não estão no atendimento
 - Não sugira escalação para N2 se o problema ocorre em apenas uma máquina
 - Não use termos internos como SAM, SAI, NE, SS — use "solicitação interna" ou similar
-- Não inclua saudações ou encerramentos
+- Não inclua saudações ou encerramentos 
+
+SIGA ESSAS REGRAS ESTRITAMENTE:
+- Apenas devolva com as informações que pedi
+- Não retorne com saudações, encerramentos, pedidos de copiar e colar no sgd. Nada disso. Siga exatamente o que estou pedindo.
+- Não utilize ** para separar, apenas use sua quebra de linha normal.
 
 # ATENDIMENTO PARA ANALISAR:`
 
@@ -565,22 +570,19 @@ function montarPromptRascunho(conteudoPagina, rascunho) {
 
 Sua tarefa é COMPLETAR e MELHORAR o rascunho do técnico abaixo, mantendo a voz e intenção originais dele.
 
-# CONTEXTO DO ATENDIMENTO
-Use o histórico abaixo apenas como referência para entender o problema e enriquecer o conteúdo. Não resuma o histórico — use-o para preencher lacunas no rascunho.
-
 # ESTRUTURA OBRIGATÓRIA DO TRÂMITE
 Todo trâmite deve seguir exatamente esta ordem:
 
 1. SAUDAÇÃO
-   - Use o que o técnico escreveu. Se não houver, use: "Bom dia! Tudo bem? Espero que sim! 😊"
+   - Use o que o técnico escreveu. Se não houver, use: "Bom dia! Tudo bem? Espero que sim! &#128512;"
    - Nunca altere a saudação se já existir.
 
 2. CONTEXTUALIZAÇÃO
    - 1 a 2 frases explicando POR QUÊ o problema ocorre ou ocorreu.
-   - Se o técnico já escreveu, melhore. Se não escreveu, crie com base no histórico.
+   - Se o técnico já escreveu, melhore. Se não escreveu, deduza com base no rascunho.
 
 3. SOLUÇÃO (passo a passo)
-   - Se o técnico deixou um placeholder como "{passo a passo aqui}": preencha com os passos corretos.
+   - Se o técnico deixou um placeholder como "[passo a passo aqui]": desenvolva com base no que ele indicou no rascunho.
    - PADRÃO DE NUMERAÇÃO OBRIGATÓRIO:
      1 - Passo principal
      1.1 - Sub-passo
@@ -588,32 +590,216 @@ Todo trâmite deve seguir exatamente esta ordem:
      2 - Próximo passo principal
    - Caminhos de menu em negrito: <strong>Arquivos > Configurações</strong>
    - Itens críticos em vermelho: <span style="color:#FF0000;"><strong>texto importante</strong></span>
+   - Cada item deve ter uma quebra de linha (SEM BR, apenas a quebra de linha normal, como se fosse apertar ENTER) antes para melhor visualização
+   - SIGA ESSA REGRA ESTRITAMENTE: Não deixe um espaço entre eles, o passo a passo deve ser feito um abaixo do outro, como exemplo:
+   1 - Etapa 1;
+   1.2 - Etapa 1.2;
+   1.3 - Etapa 1.3;
+   2 - Etapa 2;
 
 4. ENCERRAMENTO
-   - Se não escreveu: "Caso o escritório não tenha mais dúvidas referente ao assunto deste atendimento, solicitamos que, por gentileza, conclua o mesmo e participe de nossa pesquisa de satisfação. 😊"
+   - Se não escreveu: "Caso o escritório não tenha mais dúvidas referente ao assunto deste atendimento, solicitamos que, por gentileza, conclua o mesmo e participe de nossa pesquisa de satisfação. &#128512;"
 
 5. CONTRAPARTIDA
-   - Formato: "Caso contrário ainda persista algum erro, retornar com: A - ...; B - ...;"
+   - Formato OBRIGATÓRIO com cada item em linha separada:
+     "Caso contrário ainda persista algum erro, retornar com:
+     A - [item];
+     B - [item];
+     C - [item se necessário];"
+   - NUNCA coloque A, B, C na mesma linha separados por ponto e vírgula
+   - Cada item deve ter uma quebra de linha (SEM BR, apenas a quebra de linha normal, como se fosse apertar ENTER) antes para melhor visualização
 
 6. DESPEDIDA
-   - Se não escreveu: "Seguimos à disposição. Desejo um ótimo dia de trabalho! 🤝"
+   - Se não escreveu: "Seguimos à disposição. Desejo um ótimo dia de trabalho! &#129309;"
 
 # REGRAS ESTRITAS
-- NUNCA invente soluções sem base no histórico do atendimento
+- Baseie-se APENAS no que o técnico escreveu no rascunho
+- NUNCA invente procedimentos que não estejam no rascunho
 - NUNCA use termos internos como SAM, SAI, NE, SS — use "solicitação interna" ou similar
 - NÃO use markdown (** negrito **) — use HTML (<strong>, <em>)
 - Emojis: use o formato HTML: &#128512; &#128521; &#129309;
 - Retorne APENAS o trâmite final, sem explicações, sem comentários
 
-# HISTÓRICO DO ATENDIMENTO (contexto):
-{HISTORICO}
-
 # RASCUNHO DO TÉCNICO (complete e melhore):
-{RASCUNHO}`
+${rascunho}`
 
   return instrucao
-    .replace('{HISTORICO}', conteudoPagina)
-    .replace('{RASCUNHO}', rascunho)
+}
+
+/**
+ * Monta o prompt para "Sugerir SAM" com base na descrição do técnico.
+ */
+function montarPromptSAM(descricaoTecnico) {
+  return `Um técnico de suporte da Thomson Reuters precisa cadastrar uma SAM (Solicitação de Alteração de Melhoria) com base na necessidade relatada pelo cliente abaixo.
+
+REGRA RESTRITA, OBEDEÇA INDEPENDENTEMENTE: Não use caracteres especiais, como negrito: **negrito** e ##. Apenas retorne com o modelo de SAM, sem indicar anomalia e informações adicionais necessárias.
+
+Com base nessa descrição, sugira o preenchimento completo da SAM, com base nesse modelo:
+
+Assunto: Resumo da descrição - Informar uma palavra-chave geral, após uma específica (separando-as por traço).
+
+Descrição: Informar a real necessidade do cliente
+
+Justificativa: Informar o motivo da necessidade da melhoria e qual será seu impacto nas rotinas do cliente.
+
+1 - Qual é o problema?
+2 - Como o cliente resolve atualmente?
+3 - Como ele gostaria que fosse resolvido?
+
+DESCRIÇÃO DO TÉCNICO:
+${descricaoTecnico}`
+}
+
+/**
+ * Monta o prompt para "Sugerir SAM" com base no atendimento completo.
+ */
+function montarPromptSAMDoAtendimento(conteudoPagina) {
+  return `Um técnico de suporte da Thomson Reuters precisa cadastrar uma SAM (Solicitação de Alteração de Melhoria) com base no atendimento abaixo.
+
+Analise o histórico do atendimento, identifique a necessidade de melhoria relatada pelo cliente e sugira o preenchimento completo da SAM.
+
+Se não houver uma necessidade clara de melhoria no atendimento, informe explicitamente que não foi identificada necessidade de SAM.
+
+REGRA RESTRITA, OBEDEÇA INDEPENDENTEMENTE: Não use caracteres especiais, como negrito: **negrito** e ##. Apenas retorne com o modelo de SAM, sem indicar anomalia e informações adicionais necessárias.
+
+Com base nessa descrição, sugira o preenchimento completo da SAM, com base nesse modelo:
+
+Assunto: Resumo da descrição - Informar uma palavra-chave geral, após uma específica (separando-as por traço).
+
+Descrição: Informar a real necessidade do cliente
+
+Justificativa: Informar o motivo da necessidade da melhoria e qual será seu impacto nas rotinas do cliente.
+
+1 - Qual é o problema?
+2 - Como o cliente resolve atualmente?
+3 - Como ele gostaria que fosse resolvido?
+
+HISTÓRICO DO ATENDIMENTO:
+${conteudoPagina}`
+}
+/**
+ * Abre o modal para o técnico descrever o problema e gera sugestão de SAM via IA.
+ * Oferece duas opções: escrever manualmente ou ler o atendimento completo.
+ */
+function handleAISuggestSAM() {
+  const modal = createModal(
+    '📋 Sugerir SAM com IA',
+    `<div class="form-group">
+        <label for="modal-sam-input">Descreva o que o cliente deseja com o máximo de detalhes possível</label>
+        <textarea
+          id="modal-sam-input"
+          placeholder="Ex: O cliente precisa que o sistema permita exportar o relatório de folha em formato XLSX, pois atualmente só existe a opção PDF e isso dificulta o preenchimento de planilhas internas do escritório."
+          style="min-height: 140px;"
+        ></textarea>
+     </div>
+     <p style="font-size: 12px; color: var(--text-color-muted);">
+       Use suas próprias palavras. A IA vai estruturar a SAM com base no que você descrever.
+     </p>
+     <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-color);">
+       <button type="button" id="modal-sam-ler-atendimento" style="background: none; border: none; color: var(--accent-color); cursor: pointer; font-size: 12px; padding: 0; text-decoration: underline;">
+         📖 Prefere que a IA leia o atendimento completo e sugira com base nele?
+       </button>
+     </div>`,
+    (modalContent, closeModal) => {
+      const descricao = modalContent.querySelector('#modal-sam-input').value.trim()
+
+      if (!descricao) {
+        showNotification('Descreva o problema antes de gerar a SAM.', 'error')
+        return
+      }
+
+      closeModal()
+      showNotification('Gerando sugestão de SAM... ⏳', 'info', 8000)
+
+      const onResponse = (message) => {
+        if (message.action === 'samCompleta') {
+          chrome.runtime.onMessage.removeListener(onResponse)
+          preencherDescricaoSAM(message.data)
+        } else if (message.action === 'samErro') {
+          chrome.runtime.onMessage.removeListener(onResponse)
+          showNotification(`Erro ao gerar SAM: ${message.data}`, 'error', 6000)
+        }
+      }
+
+      chrome.runtime.onMessage.addListener(onResponse)
+      chrome.runtime.sendMessage({
+        action: 'gerarSugestaoSAM',
+        prompt: montarPromptSAM(descricao)
+      })
+    }
+  )
+
+  const lerAtendimentoBtn = modal.querySelector('#modal-sam-ler-atendimento')
+  if (lerAtendimentoBtn) {
+    lerAtendimentoBtn.addEventListener('click', () => {
+      const { rawContent } = extractPageContentForAI()
+
+      if (!rawContent || rawContent.length < 50) {
+        showNotification('Não foi possível extrair conteúdo suficiente do atendimento.', 'error')
+        return
+      }
+
+      if (document.body.contains(modal)) document.body.removeChild(modal)
+
+      showNotification('Lendo o atendimento e gerando SAM... ⏳', 'info', 8000)
+
+      const onResponse = (message) => {
+        if (message.action === 'samCompleta') {
+          chrome.runtime.onMessage.removeListener(onResponse)
+          preencherDescricaoSAM(message.data)
+        } else if (message.action === 'samErro') {
+          chrome.runtime.onMessage.removeListener(onResponse)
+          showNotification(`Erro ao gerar SAM: ${message.data}`, 'error', 6000)
+        }
+      }
+
+      chrome.runtime.onMessage.addListener(onResponse)
+      chrome.runtime.sendMessage({
+        action: 'gerarSugestaoSAM',
+        prompt: montarPromptSAMDoAtendimento(rawContent)
+      })
+    })
+  }
+
+  const saveBtn = modal.querySelector('#modal-save-btn')
+  if (saveBtn) saveBtn.textContent = 'Gerar Sugestão de SAM'
+
+  document.body.appendChild(modal)
+  modal.querySelector('#modal-sam-input').focus()
+}
+
+/**
+ * Preenche o campo "Descrição" da SAM na página com o resultado da IA.
+ */
+function preencherDescricaoSAM(textoGerado) {
+  const campoDescricao = document.getElementById('sscForm:descricaoTramite')
+
+  if (!campoDescricao) {
+    showNotification(
+      'Campo de descrição não encontrado. Copie o texto manualmente.',
+      'error',
+      6000
+    )
+    showInfoModal(
+      'Sugestão de SAM gerada pela IA',
+      `<pre style="white-space: pre-wrap; font-size: 13px;">${escapeHTML(textoGerado)}</pre>`
+    )
+    return
+  }
+
+  campoDescricao.value = textoGerado
+  campoDescricao.dispatchEvent(new Event('input', { bubbles: true }))
+  campoDescricao.dispatchEvent(new Event('change', { bubbles: true }))
+  campoDescricao.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }))
+
+  campoDescricao.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  campoDescricao.focus()
+
+  showNotification(
+    'SAM gerada!',
+    'success',
+    6000
+  )
 }
 
 /**
@@ -630,78 +816,112 @@ async function handleAISummary(textArea) {
     return
   }
 
-  openChainSelectorModal('Resumir Solicitação — Selecione a Fila', (chainKey) => {
-    const masterBtn = document.querySelector('.ai-master-button')
+  const masterBtn = document.querySelector('.ai-master-button')
 
-    const ligarLoading = () => {
-      if (masterBtn) {
-        masterBtn.dataset.originalHtml = masterBtn.innerHTML
-        masterBtn.innerHTML = '⏳'
-        masterBtn.classList.add('ai-loading')
-        masterBtn.disabled = true
-      }
+  const ligarLoading = (label = '⏳') => {
+    if (masterBtn) {
+      masterBtn.dataset.originalHtml = masterBtn.innerHTML
+      masterBtn.innerHTML = label
+      masterBtn.classList.add('ai-loading')
+      masterBtn.disabled = true
     }
+  }
 
-    const desligarLoading = () => {
-      if (masterBtn) {
-        masterBtn.innerHTML = masterBtn.dataset.originalHtml || '✨'
-        masterBtn.classList.remove('ai-loading')
-        masterBtn.disabled = false
-      }
+  const desligarLoading = () => {
+    if (masterBtn) {
+      masterBtn.innerHTML = masterBtn.dataset.originalHtml || '✨'
+      masterBtn.classList.remove('ai-loading')
+      masterBtn.disabled = false
     }
+  }
 
-    const onResponse = (message) => {
+  // ── Verifica classificação ANTES de registrar qualquer listener ──────
+  const classificacaoSgd = getSgdClassificacao()
+
+  if (classificacaoSgd === 'PERFORMANCE') {
+    ligarLoading('⏳')
+    showNotification('✅ Classificação identificada: PERFORMANCE. Analisando...', 'info', 8000)
+
+    const onResponsePerformance = (message) => {
       if (message.action === 'resumoCompleto') {
-        chrome.runtime.onMessage.removeListener(onResponse)
+        chrome.runtime.onMessage.removeListener(onResponsePerformance)
         desligarLoading()
-
-        const rawApiResponse = message.data
-
-        const extrairSecao = (texto, tituloAtual, tituloProximo) => {
-          const regexAtual = new RegExp(`${tituloAtual}[:\\s]*`, 'i')
-          const inicioMatch = texto.match(regexAtual)
-          if (!inicioMatch) return ''
-          const inicio = texto.indexOf(inicioMatch[0]) + inicioMatch[0].length
-          if (tituloProximo) {
-            const regexProximo = new RegExp(`${tituloProximo}[:\\s]*`, 'i')
-            const proximoMatch = texto.match(regexProximo)
-            const fim = proximoMatch ? texto.indexOf(proximoMatch[0]) : texto.length
-            return texto.slice(inicio, fim).trim()
-          }
-          return texto.slice(inicio).trim()
-        }
-
-        const resumoTexto      = extrairSecao(rawApiResponse, 'RESUMO DO PROBLEMA',    'FATOS RELEVANTES').replace(/^[-–—]+\s*$/gm, '').trim()
-        const fatosTexto       = extrairSecao(rawApiResponse, 'FATOS RELEVANTES',      'PRÓXIMA AÇÃO SUGERIDA').replace(/^[-–—]+\s*$/gm, '').trim()
-        const proximaAcaoTexto = extrairSecao(rawApiResponse, 'PRÓXIMA AÇÃO SUGERIDA', null).replace(/^[-–—]+\s*$/gm, '').trim()
-
-        showSummaryModal(
-          resumoTexto,
-          fatosTexto,
-          proximaAcaoTexto,
-          relevantData,
-          contentToInsert => {
-            const formattedContent = `${contentToInsert.replace(/\n/g, '<br>')}<br><br>--<br><br>`
-            insertAtCursor(textArea, formattedContent, { prefixNewLine: true })
-            showNotification('Resumo inserido com sucesso!', 'success')
-          }
-        )
+        insertAtCursor(textArea, message.data, { prefixNewLine: true })
+        showNotification('Análise de performance inserida com sucesso!', 'success')
       } else if (message.action === 'resumoErro') {
-        chrome.runtime.onMessage.removeListener(onResponse)
+        chrome.runtime.onMessage.removeListener(onResponsePerformance)
         desligarLoading()
-        showNotification(`Erro ao resumir: ${message.data}`, 'error')
+        showNotification(message.data, 'error')
       }
     }
 
-    chrome.runtime.onMessage.addListener(onResponse)
-
+    chrome.runtime.onMessage.addListener(onResponsePerformance)
     chrome.runtime.sendMessage({
-      action: 'resumirSolicitacao',
-      chainKey,
-      prompt: montarPromptResumo(rawContent)
+      action: 'resumirDireto',
+      chainKey: 'PERFORMANCE',
+      prompt: rawContent
     })
+    return // ← para aqui, não registra o listener normal
+  }
 
-    ligarLoading()
+  // ── Fluxo normal — roteadora + modal ────────────────────────────────
+  ligarLoading('🔍')
+  showNotification('Identificando a fila automaticamente...', 'info', 8000)
+
+  const onResponse = (message) => {
+    if (message.action === 'filaIdentificadaResumo') {
+      if (masterBtn) masterBtn.innerHTML = '⏳'
+      showNotification(`Fila identificada: ${message.fila}. Resumindo...`, 'info', 6000)
+      return
+    }
+
+    if (message.action === 'resumoCompleto') {
+      chrome.runtime.onMessage.removeListener(onResponse)
+      desligarLoading()
+
+      const rawApiResponse = message.data
+
+      const extrairSecao = (texto, tituloAtual, tituloProximo) => {
+        const regexAtual = new RegExp(`${tituloAtual}[:\\s]*`, 'i')
+        const inicioMatch = texto.match(regexAtual)
+        if (!inicioMatch) return ''
+        const inicio = texto.indexOf(inicioMatch[0]) + inicioMatch[0].length
+        if (tituloProximo) {
+          const regexProximo = new RegExp(`${tituloProximo}[:\\s]*`, 'i')
+          const proximoMatch = texto.match(regexProximo)
+          const fim = proximoMatch ? texto.indexOf(proximoMatch[0]) : texto.length
+          return texto.slice(inicio, fim).trim()
+        }
+        return texto.slice(inicio).trim()
+      }
+
+      const resumoTexto      = extrairSecao(rawApiResponse, 'RESUMO DO PROBLEMA',    'FATOS RELEVANTES').replace(/^[-–—]+\s*$/gm, '').trim()
+      const fatosTexto       = extrairSecao(rawApiResponse, 'FATOS RELEVANTES',      'PRÓXIMA AÇÃO SUGERIDA').replace(/^[-–—]+\s*$/gm, '').trim()
+      const proximaAcaoTexto = extrairSecao(rawApiResponse, 'PRÓXIMA AÇÃO SUGERIDA', null).replace(/^[-–—]+\s*$/gm, '').trim()
+
+      showSummaryModal(
+        resumoTexto,
+        fatosTexto,
+        proximaAcaoTexto,
+        relevantData,
+        contentToInsert => {
+          const formattedContent = `${contentToInsert.replace(/\n/g, '<br>')}<br><br>--<br><br>`
+          insertAtCursor(textArea, formattedContent, { prefixNewLine: true })
+          showNotification('Resumo inserido com sucesso!', 'success')
+        }
+      )
+    } else if (message.action === 'resumoErro') {
+      chrome.runtime.onMessage.removeListener(onResponse)
+      desligarLoading()
+      showNotification(message.data, 'error')
+    }
+  }
+
+  chrome.runtime.onMessage.addListener(onResponse)
+  chrome.runtime.sendMessage({
+    action: 'rotearEResumir',
+    prompt: rawContent,
+    promptCompleto: montarPromptResumo(rawContent)
   })
 }
 
@@ -718,57 +938,72 @@ async function handleAICompleteDraft(textArea) {
     return
   }
 
+  const masterBtn = document.querySelector('.ai-master-button')
+
+  const ligarLoading = (label = '⏳') => {
+    if (masterBtn) {
+      masterBtn.dataset.originalHtml = masterBtn.innerHTML
+      masterBtn.innerHTML = label
+      masterBtn.classList.add('ai-loading')
+      masterBtn.disabled = true
+    }
+  }
+
+  const desligarLoading = () => {
+    if (masterBtn) {
+      masterBtn.innerHTML = masterBtn.dataset.originalHtml || '✨'
+      masterBtn.classList.remove('ai-loading')
+      masterBtn.disabled = false
+    }
+  }
+
+  ligarLoading('🔍')
+  showNotification('Analisando o conteúdo do atendimento para identificar a fila... 🔍', 'info', 8000)
+
+  const onResponse = (message) => {
+    if (message.action === 'filaIdentificada') {
+      // Atualiza o botão com a fila detectada (feedback visual)
+      if (masterBtn) masterBtn.innerHTML = '⏳'
+      showNotification(`Fila identificada: ${message.fila}. Melhorando o texto...`, 'info', 6000)
+      return // Não remove o listener ainda — ainda espera rascunhoCompleto/rascunhoErro
+    }
+
+    if (message.action === 'rascunhoCompleto') {
+      chrome.runtime.onMessage.removeListener(onResponse)
+      desligarLoading()
+      textArea.value = message.data
+      textArea.dispatchEvent(new Event('input', { bubbles: true }))
+      showNotification('Texto melhorado com sucesso!', 'success')
+    } else if (message.action === 'rascunhoErro') {
+      chrome.runtime.onMessage.removeListener(onResponse)
+      desligarLoading()
+      showNotification(message.data, 'error')
+    }
+  }
+
+  chrome.runtime.onMessage.addListener(onResponse)
+
   const { rawContent } = extractPageContentForAI()
+  const promptCompleto = montarPromptRascunho(rawContent, currentDraft)
 
-  openChainSelectorModal('Melhorar Texto — Selecione a Fila', (chainKey) => {
-    const masterBtn = document.querySelector('.ai-master-button')
-
-    const ligarLoading = () => {
-      if (masterBtn) {
-        masterBtn.dataset.originalHtml = masterBtn.innerHTML
-        masterBtn.innerHTML = '⏳'
-        masterBtn.classList.add('ai-loading')
-        masterBtn.disabled = true
-      }
-    }
-
-    const desligarLoading = () => {
-      if (masterBtn) {
-        masterBtn.innerHTML = masterBtn.dataset.originalHtml || '✨'
-        masterBtn.classList.remove('ai-loading')
-        masterBtn.disabled = false
-      }
-    }
-
-    const onResponse = (message) => {
-      if (message.action === 'rascunhoCompleto') {
-        chrome.runtime.onMessage.removeListener(onResponse)
-        desligarLoading()
-        textArea.value = message.data
-        textArea.dispatchEvent(new Event('input', { bubbles: true }))
-        showNotification('Texto melhorado com sucesso!', 'success')
-      } else if (message.action === 'rascunhoErro') {
-        chrome.runtime.onMessage.removeListener(onResponse)
-        desligarLoading()
-        showNotification(`Erro ao melhorar texto: ${message.data}`, 'error')
-      }
-    }
-
-    chrome.runtime.onMessage.addListener(onResponse)
-
-    const prompt = montarPromptRascunho(rawContent, currentDraft)
-
+  const classificacaoSgd = getSgdClassificacao()
+  if (classificacaoSgd === 'PERFORMANCE') {
+    showNotification('Classificação identificada: PERFORMANCE. Melhorando o texto...', 'info', 8000)
     chrome.runtime.sendMessage({
-      action: 'completarRascunho',
-      chainKey,
-      prompt
+      action: 'melhorarDireto',
+      chainKey: 'PERFORMANCE',
+      prompt: promptCompleto
     })
-
-    ligarLoading()
-  })
+  } else {
+    // Manda só o rascunho para a roteadora (contexto mínimo para classificar)
+    // e manda o prompt completo para a chain final
+    chrome.runtime.sendMessage({
+      action: 'rotearEMelhorar',
+      prompt: currentDraft,
+      promptCompleto: promptCompleto
+    })
+  }
 }
-
-
 
 // --- LÓGICA DE ATALHOS (Posição Fixa, Navegação por Teclado e Filtro) ---
 

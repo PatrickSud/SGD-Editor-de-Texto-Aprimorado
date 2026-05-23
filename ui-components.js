@@ -1475,18 +1475,25 @@ function showSummaryModal(resumoTexto, fatosTexto, proximaAcaoTexto, relevantDat
 
   // Converte texto simples com linhas em HTML legível.
   // Linhas que começam com - ou * viram <li>; o resto vira <p>.
-  const textoParaHtml = texto => {
+const textoParaHtml = texto => {
     if (!texto) return '<p>Não disponível.</p>'
     let html = ''
     let emLista = false
     texto.split('\n').forEach(linha => {
       linha = linha.trim()
       if (!linha) return
-      // Remove marcadores de negrito em markdown (**texto**) e converte para <b>
       linha = escapeHTML(linha).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
-      if (linha.startsWith('- ') || linha.startsWith('* ')) {
-        if (!emLista) { html += '<ul>'; emLista = true }
-        html += `<li>${linha.slice(2)}</li>`
+      // Linhas com - * A - B - C - 1. 1 - viram itens de lista
+      if (
+        linha.startsWith('- ') ||
+        linha.startsWith('* ') ||
+        /^[A-Z]\s*[-–]\s/.test(linha) ||
+        /^\d+[\.\-]\d*[\.\-]?\s/.test(linha) ||
+        /^\d+\s*[-–]\s/.test(linha)
+      ) {
+        if (!emLista) { html += '<ul class="resumo-lista">'; emLista = true }
+        const conteudo = linha.replace(/^[-*]\s+/, '').replace(/^[A-Z]\s*[-–]\s/, '').replace(/^\d+[\.\-\s]+/, '')
+        html += `<li>${conteudo}</li>`
       } else {
         if (emLista) { html += '</ul>'; emLista = false }
         html += `<p>${linha}</p>`
@@ -2092,7 +2099,10 @@ function createSpeechCommandHint() {
  */
 function showWhatsNewModal(notes) {
   const featuresHtml = notes.features
-    .map(feature => `<li style="margin-bottom: 8px;">${feature}</li>`)
+    .map(feature => feature.trimStart().startsWith('<p')
+      ? feature
+      : `<li style="margin-bottom: 8px;">${feature}</li>`
+    )
     .join('')
 
   const currentVersion = chrome.runtime.getManifest().version
@@ -2131,10 +2141,12 @@ function showWhatsNewModal(notes) {
     <div class="whats-new-content">
       <p>Confira as principais novidades do <strong>SGD - Editor de Texto Aprimorado</strong>:</p>
       <ul style="margin-top: 8px;">${featuresHtml}</ul>
-      <p>Espero que goste das melhorias! Para reportar bugs ou sugerir melhorias, entre em contato comigo no Teams.</p>
+      <br>
+      <p>Espero que goste das melhorias! Para reportar bugs ou sugerir melhorias, entre em contato comigo no Teams &#129309;</p>
       <p>- Luiza Moro</p>
-      <div style="margin-top: 12px; text-align: center;">
-        <a href="#" id="latest-updates-link" class="action-btn" style="display:inline-block;">Últimas Atualizações</a>
+    <div style="margin-top: 12px; text-align: center;">
+        <a href="#" id="latest-updates-link" class="action-btn enhanced-btn" style="display:inline-block; padding: 8px 20px; 
+        background: var(--accent-color, #fa6400); color: #fff; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 13px;">Últimas Atualizações</a>
         <div id="latest-updates-container" style="display:none; margin-top: 10px; text-align: left;">${previousHtml || '<p>Sem atualizações anteriores.</p>'}</div>
       </div>
     </div>

@@ -1,4 +1,23 @@
 const RELEASE_NOTES = {
+  '3.0.3': {
+    title: '🤖 Novidades — Versão 3.0.3',
+    features: [
+      '<b>🪄 Melhorar Texto com IA:</b>' +
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+        '<li>O botão <b>Melhorar Texto</b> agora utiliza inteligência artificial das Thomson Reuters (Chains das filas) para completar e aprimorar o rascunho do técnico automaticamente.</li>' +
+        '<li>A IA identifica automaticamente a fila do atendimento e direciona para a chain especializada correta, sem necessidade de seleção manual.</li>' +
+        '<li>Atendimentos classificados como <b>Performance</b> são direcionados diretamente para a chain especializada, sem passar pela etapa de roteamento.</li>' +
+      '</ul>',
+
+      '<b>📄 Resumir Solicitação com IA:</b>' +
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+        '<li>Novo botão <b>Resumir Solicitação</b> analisa todo o histórico do atendimento e gera automaticamente um resumo estruturado com: Resumo do Problema, Fatos Relevantes e Próxima Ação Sugerida.</li>' +
+        '<li>Assim como o Melhorar Texto, o roteamento para a chain correta acontece de forma automática com base no conteúdo do atendimento.</li>' +
+        '<li>Para atendimentos de <b>Performance</b>, a análise é inserida diretamente no campo de descrição, sem abrir o modal.</li>' +
+      '</ul>',
+      
+    '<p style="margin-top: 8px; padding: 8px 12px; background: rgba(250, 100, 0, 0.1); border-left: 3px solid #fa6400; border-radius: 4px; font-size: 12px; max-width: 100%;">⚡ Estas funcionalidades utilizam as chains internas da Thomson Reuters, é necessário estar autenticado na plataforma de IA para utilizá-las.</p>'    ]
+  },
   '3.0.2': {
     title: '🐛 Correções de Bugs — Versão 3.0.2',
     features: [

@@ -359,14 +359,14 @@ async function saveSettings(newSettings) {
   }
 }
 
-/**
- * Helper específico para obter a chave de API do Gemini.
- * @returns {Promise<string>} A chave de API ou string vazia.
- */
-async function getGeminiApiKey() {
-  const settings = await getSettings()
-  return settings.geminiApiKey || ''
-}
+// /**
+//  * Helper específico para obter a chave de API do Gemini.
+//  * @returns {Promise<string>} A chave de API ou string vazia.
+//  */
+// async function getGeminiApiKey() {
+//   const settings = await getSettings()
+//   return settings.geminiApiKey || ''
+// }
 
 // --- GERENCIAMENTO DE TEMA (Atualizado para usar Settings) ---
 
