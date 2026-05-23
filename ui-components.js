@@ -2099,7 +2099,10 @@ function createSpeechCommandHint() {
  */
 function showWhatsNewModal(notes) {
   const featuresHtml = notes.features
-    .map(feature => `<li style="margin-bottom: 8px;">${feature}</li>`)
+    .map(feature => feature.trimStart().startsWith('<p')
+      ? feature
+      : `<li style="margin-bottom: 8px;">${feature}</li>`
+    )
     .join('')
 
   const currentVersion = chrome.runtime.getManifest().version
@@ -2138,10 +2141,12 @@ function showWhatsNewModal(notes) {
     <div class="whats-new-content">
       <p>Confira as principais novidades do <strong>SGD - Editor de Texto Aprimorado</strong>:</p>
       <ul style="margin-top: 8px;">${featuresHtml}</ul>
-      <p>Espero que goste das melhorias! Para reportar bugs ou sugerir melhorias, entre em contato comigo no Teams.</p>
+      <br>
+      <p>Espero que goste das melhorias! Para reportar bugs ou sugerir melhorias, entre em contato comigo no Teams &#129309;</p>
       <p>- Luiza Moro</p>
-      <div style="margin-top: 12px; text-align: center;">
-        <a href="#" id="latest-updates-link" class="action-btn" style="display:inline-block;">Últimas Atualizações</a>
+    <div style="margin-top: 12px; text-align: center;">
+        <a href="#" id="latest-updates-link" class="action-btn enhanced-btn" style="display:inline-block; padding: 8px 20px; 
+        background: var(--accent-color, #fa6400); color: #fff; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 13px;">Últimas Atualizações</a>
         <div id="latest-updates-container" style="display:none; margin-top: 10px; text-align: left;">${previousHtml || '<p>Sem atualizações anteriores.</p>'}</div>
       </div>
     </div>
