@@ -807,40 +807,40 @@ async function openManagementModal() {
     }
   }
 
-  const currentApiKey = await getGeminiApiKey()
+  // const currentApiKey = await getGeminiApiKey()
   const devMode = await isDevModeEnabled()
   const settings = await getSettings()
   const uiSettings = settings.uiSettings || DEFAULT_SETTINGS.uiSettings
   const preferences = settings.preferences || DEFAULT_SETTINGS.preferences
 
-  let aiSettingsHtml = '' // Inicia como string vazia
-  if (devMode) {
-    aiSettingsHtml = `
-      <hr>
-      <div class="management-section collapsible-section">
-          <h4 class="collapsible-header">
-            <span class="collapsible-icon">▶</span>
-            <span class="collapsible-title">✨ Configurações de IA (Gemini)</span>
-          </h4>
-          <div class="collapsible-content">
-              <p>Insira sua chave de API do Google Gemini para habilitar os recursos de IA.</p>
-              <div class="form-group">
-                  <label for="gemini-api-key-input">Chave da API Gemini</label>
-                  <div class="category-form">
-                      <input type="text" id="gemini-api-key-input" placeholder="AIzaSy..." value="${escapeHTML(
-      currentApiKey
-    )}">
-                       <button type="button" id="save-gemini-key-btn" class="action-btn save-cat-btn" title="Salvar Chave">💾</button>
-                  </div>
-                   <div class="category-form" style="margin-top: 10px; justify-content: space-between;">
-                      <button type="button" id="how-to-get-api-key-link" class="action-btn small-btn">👆 Como obter a chave de API?</button>
-                      <button type="button" id="test-api-key-btn" class="action-btn">Testar Conexão</button>
-                  </div>
-              </div>
-          </div>
-      </div>
-    `
-  }
+  // let aiSettingsHtml = '' // Inicia como string vazia
+  // if (devMode) {
+  //   aiSettingsHtml = `
+  //     <hr>
+  //     <div class="management-section collapsible-section">
+  //         <h4 class="collapsible-header">
+  //           <span class="collapsible-icon">▶</span>
+  //           <span class="collapsible-title">✨ Configurações de IA (Gemini)</span>
+  //         </h4>
+  //         <div class="collapsible-content">
+  //             <p>Insira sua chave de API do Google Gemini para habilitar os recursos de IA.</p>
+  //             <div class="form-group">
+  //                 <label for="gemini-api-key-input">Chave da API Gemini</label>
+  //                 <div class="category-form">
+  //                     <input type="text" id="gemini-api-key-input" placeholder="AIzaSy..." value="${escapeHTML(
+  //     currentApiKey
+  //   )}">
+  //                      <button type="button" id="save-gemini-key-btn" class="action-btn save-cat-btn" title="Salvar Chave">💾</button>
+  //                 </div>
+  //                  <div class="category-form" style="margin-top: 10px; justify-content: space-between;">
+  //                     <button type="button" id="how-to-get-api-key-link" class="action-btn small-btn">👆 Como obter a chave de API?</button>
+  //                     <button type="button" id="test-api-key-btn" class="action-btn">Testar Conexão</button>
+  //                 </div>
+  //             </div>
+  //         </div>
+  //     </div>
+  //   `
+  // }
 
   const modalContentHtml = `
         <!-- 
@@ -985,8 +985,6 @@ async function openManagementModal() {
                 </div>
             </div>
         </div>
-        
-        ${aiSettingsHtml}
     `
 
   const modal = createModal(
@@ -1156,60 +1154,60 @@ async function openManagementModal() {
   })
 
   // IMPORTANTE: Adicione uma verificação antes de procurar os seletores de IA
-  if (devMode) {
-    const apiKeyInput = modal.querySelector('#gemini-api-key-input')
+  // if (devMode) {
+  //   const apiKeyInput = modal.querySelector('#gemini-api-key-input')
 
-    modal
-      .querySelector('#save-gemini-key-btn')
-      .addEventListener('click', async e => {
-        e.preventDefault()
-        const newKey = apiKeyInput.value.trim()
-        try {
-          await saveSettings({ geminiApiKey: newKey })
-          showNotification('Chave da API Gemini salva com sucesso!', 'success')
-        } catch (error) {
-          showNotification('Erro ao salvar a chave da API.', 'error')
-        }
-      })
+  //   modal
+  //     .querySelector('#save-gemini-key-btn')
+  //     .addEventListener('click', async e => {
+  //       e.preventDefault()
+  //       const newKey = apiKeyInput.value.trim()
+  //       try {
+  //         await saveSettings({ geminiApiKey: newKey })
+  //         showNotification('Chave da API Gemini salva com sucesso!', 'success')
+  //       } catch (error) {
+  //         showNotification('Erro ao salvar a chave da API.', 'error')
+  //       }
+  //     })
 
-    modal
-      .querySelector('#test-api-key-btn')
-      .addEventListener('click', async e => {
-        e.preventDefault()
-        const key = apiKeyInput.value.trim()
-        if (!key) {
-          showNotification(
-            'Por favor, insira uma chave de API para testar.',
-            'info'
-          )
-          return
-        }
-        const button = e.target
-        button.disabled = true
-        button.classList.add('ai-loading')
-        button.textContent = 'Testando...'
+  //   modal
+  //     .querySelector('#test-api-key-btn')
+  //     .addEventListener('click', async e => {
+  //       e.preventDefault()
+  //       const key = apiKeyInput.value.trim()
+  //       if (!key) {
+  //         showNotification(
+  //           'Por favor, insira uma chave de API para testar.',
+  //           'info'
+  //         )
+  //         return
+  //       }
+  //       const button = e.target
+  //       button.disabled = true
+  //       button.classList.add('ai-loading')
+  //       button.textContent = 'Testando...'
 
-        try {
-          const success = await testApiKey(key)
-          if (success) {
-            showNotification('Conexão com a API bem-sucedida!', 'success')
-          }
-        } catch (error) {
-          showNotification(`Falha na conexão: ${error.message}`, 'error', 5000)
-        } finally {
-          button.disabled = false
-          button.classList.remove('ai-loading')
-          button.textContent = 'Testar Conexão'
-        }
-      })
+  //       try {
+  //         const success = await testApiKey(key)
+  //         if (success) {
+  //           showNotification('Conexão com a API bem-sucedida!', 'success')
+  //         }
+  //       } catch (error) {
+  //         showNotification(`Falha na conexão: ${error.message}`, 'error', 5000)
+  //       } finally {
+  //         button.disabled = false
+  //         button.classList.remove('ai-loading')
+  //         button.textContent = 'Testar Conexão'
+  //       }
+  //     })
 
-    modal
-      .querySelector('#how-to-get-api-key-link')
-      .addEventListener('click', e => {
-        e.preventDefault()
-        showHowToGetApiKeyModal()
-      })
-  }
+  //   modal
+  //     .querySelector('#how-to-get-api-key-link')
+  //     .addEventListener('click', e => {
+  //       e.preventDefault()
+  //       showHowToGetApiKeyModal()
+  //     })
+  // }
 
   // Seção de categorias inativada - funcionalidade duplicada com Painel de Trâmites
   // await renderCategoryManagementList(modal)
@@ -1299,27 +1297,27 @@ async function openManagementModal() {
   });
 }
 
-/**
- * Exibe um modal com instruções sobre como obter a chave da API Gemini.
- */
-function showHowToGetApiKeyModal() {
-  const content = `
-    <p>Para usar os recursos de Inteligência Artificial, você precisa de uma chave de API gratuita do Google AI Studio.</p>
-    <ol style="padding-left: 20px; line-height: 1.6;">
-        <li>Acesse o <i>Google AI Studio</i> clicando no botão abaixo.</li>
-        <li>Faça login com sua conta Google, se necessário.</li>
-        <li>Clique no botão "<b>Get API key</b>" e aceite os termos.</li>
-        <li>Clique no botão "<b>+ Criar chave de API</b>".</li>
-        <li>Copie a chave gerada.</li>
-        <li>Cole a chave no campo "<b>Chave da API Gemini</b>" nas configurações e clique em salvar.</li>
-    </ol>
-    <div style="text-align: center; margin-top: 20px;">
-     <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="action-btn action-btn-themed">Abrir Google AI Studio</a>
-    </div>
-    <p style="font-size: 12px; color: var(--text-color-muted); margin-top: 15px;">Sua chave é armazenada de forma segura apenas no seu navegador e nunca é compartilhada.</p>
-    `
-  showInfoModal('Como Obter uma Chave de API do Gemini', content)
-}
+// /**
+//  * Exibe um modal com instruções sobre como obter a chave da API Gemini.
+//  */
+// function showHowToGetApiKeyModal() {
+//   const content = `
+//     <p>Para usar os recursos de Inteligência Artificial, você precisa de uma chave de API gratuita do Google AI Studio.</p>
+//     <ol style="padding-left: 20px; line-height: 1.6;">
+//         <li>Acesse o <i>Google AI Studio</i> clicando no botão abaixo.</li>
+//         <li>Faça login com sua conta Google, se necessário.</li>
+//         <li>Clique no botão "<b>Get API key</b>" e aceite os termos.</li>
+//         <li>Clique no botão "<b>+ Criar chave de API</b>".</li>
+//         <li>Copie a chave gerada.</li>
+//         <li>Cole a chave no campo "<b>Chave da API Gemini</b>" nas configurações e clique em salvar.</li>
+//     </ol>
+//     <div style="text-align: center; margin-top: 20px;">
+//      <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="action-btn action-btn-themed">Abrir Google AI Studio</a>
+//     </div>
+//     <p style="font-size: 12px; color: var(--text-color-muted); margin-top: 15px;">Sua chave é armazenada de forma segura apenas no seu navegador e nunca é compartilhada.</p>
+//     `
+//   showInfoModal('Como Obter uma Chave de API do Gemini', content)
+// }
 
 /**
  * Renderiza a lista de categorias no modal de gerenciamento, habilitando edição e reordenação.

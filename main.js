@@ -3,6 +3,11 @@
  * Ponto de entrada principal da extensão
  */
 
+// ─── FEATURE FLAGS ───────────────────────────────────────────────────────────
+// Para reativar, mude para true e recarregue a extensão.
+const FEATURE_SUGERIR_SAM = false
+// ─────────────────────────────────────────────────────────────────────────────
+
 function createHistoryManager(initialState) {
   let history = [initialState]
   let position = 0
@@ -724,7 +729,7 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
   if (includeAI) {
     aiButtonsHtml = `
       <div class="dropdown">
-        <button type="button" title="Recursos de IA (Gemini)" class="ai-master-button enhanced-btn">✨</button>
+        <button type="button" title="Recursos de IA" class="ai-master-button enhanced-btn">✨</button>
         <div class="dropdown-content">
           <button type="button" data-action="ai-complete-draft">🪄 Melhorar Texto</button>
           ${
@@ -760,7 +765,7 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
   const sugestorSSHtml = isSscPage
     ? `<div class="toolbar-separator" data-id="separator-sugestor-ss"></div>
       <button type="button" data-action="sugerir-ss" class="shine-effect sugestor-ss-toolbar-btn" title="Sugerir SS com IA">✨ Sugerir SS</button>
-      <button type="button" data-action="sugerir-sam" class="shine-effect sugestor-ss-toolbar-btn" title="Sugerir SAM com IA">📋 Sugerir SAM</button>`
+      ${FEATURE_SUGERIR_SAM ? `<button type="button" data-action="sugerir-sam" class="shine-effect sugestor-ss-toolbar-btn" title="Sugerir SAM com IA">📋 Sugerir SAM</button>` : ''}`
     : ''
 
   return `

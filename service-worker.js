@@ -1160,6 +1160,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           }
         })()
 
+    } else if (message.action === 'resumirDireto' && sender.tab?.id) {
+        const workflowId = ROUTER_CHAIN_MAP[message.chainKey]
+        if (!workflowId) {
+          chrome.tabs.sendMessage(sender.tab.id, {
+            action: 'resumoErro',
+            data: `Chain não encontrada para: "${message.chainKey}"`
+          })
+        } else {
+          handleGerarSugestao(message.prompt, sender.tab.id, workflowId, 'resumoCompleto', 'resumoErro')
+        }
+
+      } else if (message.action === 'melhorarDireto' && sender.tab?.id) {
+        const workflowId = ROUTER_CHAIN_MAP[message.chainKey]
+        if (!workflowId) {
+          chrome.tabs.sendMessage(sender.tab.id, {
+            action: 'rascunhoErro',
+            data: `Chain não encontrada para: "${message.chainKey}"`
+          })
+        } else {
+          handleGerarSugestao(message.prompt, sender.tab.id, workflowId, 'rascunhoCompleto', 'rascunhoErro')
+        }
+
       }
     } catch (error) {
       console.error(`Erro ao processar ação '${message.action}':`, error)

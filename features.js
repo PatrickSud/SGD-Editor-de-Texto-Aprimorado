@@ -397,122 +397,122 @@ function openLinkModal(textArea, options = {}) {
   document.body.appendChild(modal)
 }
 
-// --- LÓGICA DE IA (Integração com ai-service.js) ---
+// // --- LÓGICA DE IA (Integração com ai-service.js) ---
 
-/**
- * Função auxiliar para lidar com erros de IA e exibir notificações.
- */
-function handleAIError(error) {
-  console.error('Erro na operação de IA:', error)
-  let message = error.message || 'Ocorreu um erro inesperado na IA.'
-  // Adiciona contexto se for erro de chave de API
-  if (message.includes('API key') || message.includes('Chave de API')) {
-    message += ' Verifique suas configurações (⚙️).'
-  }
-  showNotification(message, 'error', 5000)
-}
+// /**
+//  * Função auxiliar para lidar com erros de IA e exibir notificações.
+//  */
+// function handleAIError(error) {
+//   console.error('Erro na operação de IA:', error)
+//   let message = error.message || 'Ocorreu um erro inesperado na IA.'
+//   // Adiciona contexto se for erro de chave de API
+//   if (message.includes('API key') || message.includes('Chave de API')) {
+//     message += ' Verifique suas configurações (⚙️).'
+//   }
+//   showNotification(message, 'error', 5000)
+// }
 
-/**
- * Manipula a ação de correção de texto via IA.
- */
-async function handleAICorrection(textArea) {
-  const originalText = getEditorContent(textArea)
-  if (!originalText.trim()) {
-    showNotification('Nenhum texto para corrigir.', 'info')
-    return
-  }
+// /**
+//  * Manipula a ação de correção de texto via IA.
+//  */
+// async function handleAICorrection(textArea) {
+//   const originalText = getEditorContent(textArea)
+//   if (!originalText.trim()) {
+//     showNotification('Nenhum texto para corrigir.', 'info')
+//     return
+//   }
 
-  try {
-    const apiKey = await getGeminiApiKey()
-    // correctText definido em ai-service.js
-    const correctedText = await correctText(apiKey, originalText)
+//   try {
+//     const apiKey = await getGeminiApiKey()
+//     // correctText definido em ai-service.js
+//     const correctedText = await correctText(apiKey, originalText)
 
-    if (correctedText && correctedText.trim() !== originalText.trim()) {
-      // Substitui o conteúdo inteiro
-      textArea.value = correctedText
-      textArea.dispatchEvent(new Event('input', { bubbles: true }))
-      showNotification('Texto corrigido com sucesso!', 'success')
-    } else if (correctedText) {
-      showNotification('Nenhuma correção necessária ou encontrada.', 'info')
-    }
-  } catch (error) {
-    handleAIError(error)
-  }
-}
+//     if (correctedText && correctedText.trim() !== originalText.trim()) {
+//       // Substitui o conteúdo inteiro
+//       textArea.value = correctedText
+//       textArea.dispatchEvent(new Event('input', { bubbles: true }))
+//       showNotification('Texto corrigido com sucesso!', 'success')
+//     } else if (correctedText) {
+//       showNotification('Nenhuma correção necessária ou encontrada.', 'info')
+//     }
+//   } catch (error) {
+//     handleAIError(error)
+//   }
+// }
 
-/**
- * Abre o modal para geração de texto a partir de tópicos.
- */
-function openAIGenerationModal(textArea) {
-  const modal = createModal(
-    '💡 Gerar Texto por Tópicos (IA)',
-    `<div class="form-group">
-        <label for="modal-ai-topics">Tópicos ou Palavras-chave</label>
-        <textarea id="modal-ai-topics" placeholder="Ex: Cliente ligou, problema no acesso, senha resetada, aguardando confirmação." style="min-height: 120px;"></textarea>
-     </div>
-     <p style="font-size: 12px; color: var(--text-color-muted);">Descreva os pontos principais que devem constar no texto final.</p>`,
-    (modalContent, closeModal) => {
-      const topics = modalContent.querySelector('#modal-ai-topics').value.trim()
+// /**
+//  * Abre o modal para geração de texto a partir de tópicos.
+//  */
+// function openAIGenerationModal(textArea) {
+//   const modal = createModal(
+//     '💡 Gerar Texto por Tópicos (IA)',
+//     `<div class="form-group">
+//         <label for="modal-ai-topics">Tópicos ou Palavras-chave</label>
+//         <textarea id="modal-ai-topics" placeholder="Ex: Cliente ligou, problema no acesso, senha resetada, aguardando confirmação." style="min-height: 120px;"></textarea>
+//      </div>
+//      <p style="font-size: 12px; color: var(--text-color-muted);">Descreva os pontos principais que devem constar no texto final.</p>`,
+//     (modalContent, closeModal) => {
+//       const topics = modalContent.querySelector('#modal-ai-topics').value.trim()
 
-      if (!topics) {
-        showNotification('Por favor, insira os tópicos para geração.', 'error')
-        return
-      }
+//       if (!topics) {
+//         showNotification('Por favor, insira os tópicos para geração.', 'error')
+//         return
+//       }
 
-      const saveBtn = modalContent.closest('.se-modal-content').querySelector('#modal-save-btn')
-      if (saveBtn) {
-        saveBtn.disabled = true
-        saveBtn.classList.add('ai-loading')
-        saveBtn.textContent = 'Gerando... ✨'
-      }
+//       const saveBtn = modalContent.closest('.se-modal-content').querySelector('#modal-save-btn')
+//       if (saveBtn) {
+//         saveBtn.disabled = true
+//         saveBtn.classList.add('ai-loading')
+//         saveBtn.textContent = 'Gerando... ✨'
+//       }
 
-      const onResponse = (message) => {
-        if (message.action === 'topicosCompleto') {
-          chrome.runtime.onMessage.removeListener(onResponse)
-          if (saveBtn) {
-            saveBtn.disabled = false
-            saveBtn.classList.remove('ai-loading')
-            saveBtn.textContent = 'Gerar e Inserir'
-          }
-          insertAtCursor(textArea, message.data, { prefixNewLine: true })
-          showNotification('Texto gerado com sucesso!', 'success')
-          closeModal()
-        } else if (message.action === 'topicosErro') {
-          chrome.runtime.onMessage.removeListener(onResponse)
-          if (saveBtn) {
-            saveBtn.disabled = false
-            saveBtn.classList.remove('ai-loading')
-            saveBtn.textContent = 'Gerar e Inserir'
-          }
-          showNotification(`Erro ao gerar texto: ${message.data}`, 'error')
-        }
-      }
+//       const onResponse = (message) => {
+//         if (message.action === 'topicosCompleto') {
+//           chrome.runtime.onMessage.removeListener(onResponse)
+//           if (saveBtn) {
+//             saveBtn.disabled = false
+//             saveBtn.classList.remove('ai-loading')
+//             saveBtn.textContent = 'Gerar e Inserir'
+//           }
+//           insertAtCursor(textArea, message.data, { prefixNewLine: true })
+//           showNotification('Texto gerado com sucesso!', 'success')
+//           closeModal()
+//         } else if (message.action === 'topicosErro') {
+//           chrome.runtime.onMessage.removeListener(onResponse)
+//           if (saveBtn) {
+//             saveBtn.disabled = false
+//             saveBtn.classList.remove('ai-loading')
+//             saveBtn.textContent = 'Gerar e Inserir'
+//           }
+//           showNotification(`Erro ao gerar texto: ${message.data}`, 'error')
+//         }
+//       }
 
-      chrome.runtime.onMessage.addListener(onResponse)
+//       chrome.runtime.onMessage.addListener(onResponse)
 
-      const prompt = `Você é um redator técnico especialista em comunicação de suporte da Thomson Reuters.
-Converta os tópicos abaixo em um texto técnico coeso para ser usado como corpo de um trâmite de suporte.
+//       const prompt = `Você é um redator técnico especialista em comunicação de suporte da Thomson Reuters.
+// Converta os tópicos abaixo em um texto técnico coeso para ser usado como corpo de um trâmite de suporte.
 
-REGRAS:
-- Retorne APENAS o desenvolvimento dos tópicos — sem saudação, sem encerramento, sem contrapartida
-- Linguagem profissional e didática em Português do Brasil
-- Use HTML para formatação: <strong> para negrito, listas numeradas no padrão "1 - ", "1.1 - "
-- Use &bull; para marcadores quando necessário
-- Não use markdown
+// REGRAS:
+// - Retorne APENAS o desenvolvimento dos tópicos — sem saudação, sem encerramento, sem contrapartida
+// - Linguagem profissional e didática em Português do Brasil
+// - Use HTML para formatação: <strong> para negrito, listas numeradas no padrão "1 - ", "1.1 - "
+// - Use &bull; para marcadores quando necessário
+// - Não use markdown
 
-TÓPICOS:
-${topics}`
+// TÓPICOS:
+// ${topics}`
 
-      chrome.runtime.sendMessage({ action: 'gerarPorTopicos', prompt })
-    }
-  )
+//       chrome.runtime.sendMessage({ action: 'gerarPorTopicos', prompt })
+//     }
+//   )
 
-  const saveBtn = modal.querySelector('#modal-save-btn')
-  if (saveBtn) saveBtn.textContent = 'Gerar e Inserir'
+//   const saveBtn = modal.querySelector('#modal-save-btn')
+//   if (saveBtn) saveBtn.textContent = 'Gerar e Inserir'
 
-  document.body.appendChild(modal)
-  modal.querySelector('#modal-ai-topics').focus()
-}
+//   document.body.appendChild(modal)
+//   modal.querySelector('#modal-ai-topics').focus()
+// }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MONTAGEM DE PROMPTS — IA via WebSocket (chains Thomson Reuters)
@@ -550,7 +550,12 @@ PRÓXIMA AÇÃO SUGERIDA:
 - Não invente informações que não estão no atendimento
 - Não sugira escalação para N2 se o problema ocorre em apenas uma máquina
 - Não use termos internos como SAM, SAI, NE, SS — use "solicitação interna" ou similar
-- Não inclua saudações ou encerramentos
+- Não inclua saudações ou encerramentos 
+
+SIGA ESSAS REGRAS ESTRITAMENTE:
+- Apenas devolva com as informações que pedi
+- Não retorne com saudações, encerramentos, pedidos de copiar e colar no sgd. Nada disso. Siga exatamente o que estou pedindo.
+- Não utilize ** para separar, apenas use sua quebra de linha normal.
 
 # ATENDIMENTO PARA ANALISAR:`
 
@@ -577,7 +582,7 @@ Todo trâmite deve seguir exatamente esta ordem:
    - Se o técnico já escreveu, melhore. Se não escreveu, deduza com base no rascunho.
 
 3. SOLUÇÃO (passo a passo)
-   - Se o técnico deixou um placeholder como "{passo a passo aqui}": desenvolva com base no que ele indicou no rascunho.
+   - Se o técnico deixou um placeholder como "[passo a passo aqui]": desenvolva com base no que ele indicou no rascunho.
    - PADRÃO DE NUMERAÇÃO OBRIGATÓRIO:
      1 - Passo principal
      1.1 - Sub-passo
@@ -585,6 +590,12 @@ Todo trâmite deve seguir exatamente esta ordem:
      2 - Próximo passo principal
    - Caminhos de menu em negrito: <strong>Arquivos > Configurações</strong>
    - Itens críticos em vermelho: <span style="color:#FF0000;"><strong>texto importante</strong></span>
+   - Cada item deve ter uma quebra de linha (SEM BR, apenas a quebra de linha normal, como se fosse apertar ENTER) antes para melhor visualização
+   - SIGA ESSA REGRA ESTRITAMENTE: Não deixe um espaço entre eles, o passo a passo deve ser feito um abaixo do outro, como exemplo:
+   1 - Etapa 1;
+   1.2 - Etapa 1.2;
+   1.3 - Etapa 1.3;
+   2 - Etapa 2;
 
 4. ENCERRAMENTO
    - Se não escreveu: "Caso o escritório não tenha mais dúvidas referente ao assunto deste atendimento, solicitamos que, por gentileza, conclua o mesmo e participe de nossa pesquisa de satisfação. &#128512;"
@@ -592,11 +603,11 @@ Todo trâmite deve seguir exatamente esta ordem:
 5. CONTRAPARTIDA
    - Formato OBRIGATÓRIO com cada item em linha separada:
      "Caso contrário ainda persista algum erro, retornar com:
-     <br><br>A - [item];
-     <br>B - [item];
-     <br>C - [item se necessário];"
+     A - [item];
+     B - [item];
+     C - [item se necessário];"
    - NUNCA coloque A, B, C na mesma linha separados por ponto e vírgula
-   - Cada item deve ter <br> antes para criar quebra de linha visual
+   - Cada item deve ter uma quebra de linha (SEM BR, apenas a quebra de linha normal, como se fosse apertar ENTER) antes para melhor visualização
 
 6. DESPEDIDA
    - Se não escreveu: "Seguimos à disposição. Desejo um ótimo dia de trabalho! &#129309;"
@@ -824,6 +835,36 @@ async function handleAISummary(textArea) {
     }
   }
 
+  // ── Verifica classificação ANTES de registrar qualquer listener ──────
+  const classificacaoSgd = getSgdClassificacao()
+
+  if (classificacaoSgd === 'PERFORMANCE') {
+    ligarLoading('⏳')
+    showNotification('✅ Classificação identificada: PERFORMANCE. Analisando...', 'info', 8000)
+
+    const onResponsePerformance = (message) => {
+      if (message.action === 'resumoCompleto') {
+        chrome.runtime.onMessage.removeListener(onResponsePerformance)
+        desligarLoading()
+        insertAtCursor(textArea, message.data, { prefixNewLine: true })
+        showNotification('Análise de performance inserida com sucesso!', 'success')
+      } else if (message.action === 'resumoErro') {
+        chrome.runtime.onMessage.removeListener(onResponsePerformance)
+        desligarLoading()
+        showNotification(message.data, 'error')
+      }
+    }
+
+    chrome.runtime.onMessage.addListener(onResponsePerformance)
+    chrome.runtime.sendMessage({
+      action: 'resumirDireto',
+      chainKey: 'PERFORMANCE',
+      prompt: rawContent
+    })
+    return // ← para aqui, não registra o listener normal
+  }
+
+  // ── Fluxo normal — roteadora + modal ────────────────────────────────
   ligarLoading('🔍')
   showNotification('Identificando a fila automaticamente...', 'info', 8000)
 
@@ -877,13 +918,13 @@ async function handleAISummary(textArea) {
   }
 
   chrome.runtime.onMessage.addListener(onResponse)
-
   chrome.runtime.sendMessage({
     action: 'rotearEResumir',
     prompt: rawContent,
     promptCompleto: montarPromptResumo(rawContent)
   })
 }
+
 /**
  * Manipula a ação de melhorar/completar o texto via IA.
  */
@@ -942,15 +983,26 @@ async function handleAICompleteDraft(textArea) {
 
   chrome.runtime.onMessage.addListener(onResponse)
 
-  // Manda só o rascunho para a roteadora (contexto mínimo para classificar)
-  // e manda o prompt completo para a chain final
-  const pc = montarPromptRascunho('', currentDraft)
-    console.log('[DEBUG] promptCompleto tamanho:', pc.length, 'chars')
+  const { rawContent } = extractPageContentForAI()
+  const promptCompleto = montarPromptRascunho(rawContent, currentDraft)
+
+  const classificacaoSgd = getSgdClassificacao()
+  if (classificacaoSgd === 'PERFORMANCE') {
+    showNotification('Classificação identificada: PERFORMANCE. Melhorando o texto...', 'info', 8000)
+    chrome.runtime.sendMessage({
+      action: 'melhorarDireto',
+      chainKey: 'PERFORMANCE',
+      prompt: promptCompleto
+    })
+  } else {
+    // Manda só o rascunho para a roteadora (contexto mínimo para classificar)
+    // e manda o prompt completo para a chain final
     chrome.runtime.sendMessage({
       action: 'rotearEMelhorar',
       prompt: currentDraft,
-      promptCompleto: pc
+      promptCompleto: promptCompleto
     })
+  }
 }
 
 // --- LÓGICA DE ATALHOS (Posição Fixa, Navegação por Teclado e Filtro) ---
