@@ -588,7 +588,8 @@ function registrarUso(acao) {
       dataHora: new Date().toLocaleString('pt-BR'),
       usuario,
       ssc,
-      acao
+      acao,
+      guia: 'Sugestor de SS'
     })
   });
 }

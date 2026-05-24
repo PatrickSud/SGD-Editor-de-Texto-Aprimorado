@@ -3,6 +3,21 @@
  * Implementação de funcionalidades específicas: Atalhos, Inserções Especiais, Importação/Exportação e Recursos de IA
  */
 
+function registrarUsoFeatures(acao) {
+  const usuario = document.querySelector('p.navbar-text.navbar-right a b')?.innerText?.trim() || 'Desconhecido';
+
+  fetch('https://script.google.com/macros/s/AKfycbx3vZrqeJMEFKLqJ6Cpd4khQ7bjUf3E7rg9BJDTbVezgOsnlENJqR4PYgjiT0yeyC5RAg/exec', {
+    method: 'POST',
+    body: JSON.stringify({
+      dataHora: new Date().toLocaleString('pt-BR'),
+      usuario,
+      ssc: 'N/A',
+      acao,
+      guia: 'Editor SGD'
+    })
+  });
+}
+
 /**
  * Helper para obter o conteúdo do editor (sempre do textarea, que é a fonte da verdade)
  */
@@ -918,6 +933,7 @@ async function handleAISummary(textArea) {
   }
 
   chrome.runtime.onMessage.addListener(onResponse)
+  registrarUsoFeatures('Resumir solicitação');
   chrome.runtime.sendMessage({
     action: 'rotearEResumir',
     prompt: rawContent,
@@ -997,6 +1013,7 @@ async function handleAICompleteDraft(textArea) {
   } else {
     // Manda só o rascunho para a roteadora (contexto mínimo para classificar)
     // e manda o prompt completo para a chain final
+    registrarUsoFeatures('Melhorar texto');
     chrome.runtime.sendMessage({
       action: 'rotearEMelhorar',
       prompt: currentDraft,
