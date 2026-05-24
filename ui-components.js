@@ -1459,15 +1459,15 @@ function showSummaryModal(resumoTexto, fatosTexto, proximaAcaoTexto, relevantDat
   // ── Utilitários ────────────────────────────────────────────────────────
   const formatTimeAgo = timestamp => {
     if (!timestamp) return 'Data não encontrada'
-    const now  = new Date()
+    const now = new Date()
     const past = new Date(timestamp)
     const diffInSeconds = Math.floor((now - past) / 1000)
     const minutes = Math.floor(diffInSeconds / 60)
-    const hours   = Math.floor(minutes / 60)
-    const days    = Math.floor(hours / 24)
-    if (days > 1)    return `Há ${days} dias`
-    if (days === 1)  return 'Há 1 dia'
-    if (hours > 1)   return `Há ${hours} horas`
+    const hours = Math.floor(minutes / 60)
+    const days = Math.floor(hours / 24)
+    if (days > 1) return `Há ${days} dias`
+    if (days === 1) return 'Há 1 dia'
+    if (hours > 1) return `Há ${hours} horas`
     if (hours === 1) return 'Há 1 hora'
     if (minutes > 1) return `Há ${minutes} minutos`
     return 'Há poucos instantes'
@@ -1475,7 +1475,7 @@ function showSummaryModal(resumoTexto, fatosTexto, proximaAcaoTexto, relevantDat
 
   // Converte texto simples com linhas em HTML legível.
   // Linhas que começam com - ou * viram <li>; o resto vira <p>.
-const textoParaHtml = texto => {
+  const textoParaHtml = texto => {
     if (!texto) return '<p>Não disponível.</p>'
     let html = ''
     let emLista = false
@@ -1587,8 +1587,8 @@ const textoParaHtml = texto => {
     modalContentHtml,
     (modalBody, closeModal) => {
       const conteudo = [
-        resumoTexto    ? `Resumo do Problema:\n${resumoTexto}`         : '',
-        fatosTexto     ? `\nFatos Relevantes:\n${fatosTexto}`          : '',
+        resumoTexto ? `Resumo do Problema:\n${resumoTexto}` : '',
+        fatosTexto ? `\nFatos Relevantes:\n${fatosTexto}` : '',
         proximaAcaoTexto ? `\nPróxima Ação Sugerida:\n${proximaAcaoTexto}` : ''
       ].filter(Boolean).join('\n')
       onInsert(conteudo)
@@ -2142,8 +2142,40 @@ function showWhatsNewModal(notes) {
       <p>Confira as principais novidades do <strong>SGD - Editor de Texto Aprimorado</strong>:</p>
       <ul style="margin-top: 8px;">${featuresHtml}</ul>
       <br>
-      <p>Espero que goste das melhorias! Para reportar bugs ou sugerir melhorias, entre em contato comigo no Teams &#129309;</p>
-      <p>- Luiza Moro</p>
+      <p>Espero que goste das melhorias! Para reportar bugs ou sugerir melhorias, entre em contato conosco no Teams &#129309;</p>
+      <style>
+        .signature-1 {
+          display: flex;
+          justify-content: flex-start;
+          gap: 0.5rem;
+          font-weight: 500;
+          color: #555;
+          margin-top: 1rem;
+        }
+        .signature-1 .author {
+          position: relative;
+          padding-bottom: 2px;
+          transition: color 0.2s ease;
+        }
+        .signature-1 .author:hover {
+          color: var(--accent-color, #fa6400);
+        }
+        .signature-1 .author::after {
+          content: "";
+          position: absolute;
+          left: 0;
+          bottom: 0;
+          height: 2px;
+          width: 0;
+          background: var(--accent-color, #fa6400);
+          transition: width 0.3s ease;
+        }
+        .signature-1 .author:hover::after {
+          width: 100%;
+        }
+        .signature-1 .sep { color: var(--accent-color, #fa6400); }
+      </style>
+      <p class="signature-1"><span class="author">- Luiza Moro</span><span class="sep">&amp;</span><span class="author">Patrick Godoy</span></p>
     <div style="margin-top: 12px; text-align: center;">
         <a href="#" id="latest-updates-link" class="action-btn enhanced-btn" style="display:inline-block; padding: 8px 20px; 
         background: var(--accent-color, #fa6400); color: #fff; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 13px;">Últimas Atualizações</a>
