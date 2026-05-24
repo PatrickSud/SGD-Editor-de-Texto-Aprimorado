@@ -939,6 +939,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // ── Sugestor SAM — chain fixa "ASSISTENTE: Cadastro de SA/NE" ──────────
         const SAM_WORKFLOW_ID = AI_CHAINS['ASSISTENTE: Cadastro de SA/NE']
         handleGerarSugestao(message.prompt, sender.tab.id, SAM_WORKFLOW_ID, 'samCompleta', 'samErro')
+        
+      } else if (message.action === 'resumirChat' && sender.tab?.id) {
+      // ── Pré-resumo de chat ou transcrição via chain rápida (Gemini Flash) ──
+      const RESUMO_CHAT_WORKFLOW_ID = '4b95e35f-e8ea-44e6-ad74-555bf39be13f'
+      handleGerarSugestao(message.prompt, sender.tab.id, RESUMO_CHAT_WORKFLOW_ID, 'resumoChatCompleto', 'resumoChatErro')
 
       } else if (message.action === 'resumirSolicitacao' && sender.tab?.id) {
         // ── Resumir Solicitação via chain da fila selecionada ────────────
