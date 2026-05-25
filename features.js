@@ -543,7 +543,11 @@ function openLinkModal(textArea, options = {}) {
  * Monta o prompt completo para "Resumir Solicitação".
  */
 function montarPromptResumo(conteudoPagina) {
-  const instrucao = `Você é um assistente virtual de comunicação e suporte técnico que auxilia os profissionais de suporte da Thomson Reuters a prover respostas precisas e assertivas sobre o comportamento e resolução de problemas dos sistemas das Soluções Domínio da Thomson Reuters.
+  const instrucao = `
+
+  ATENÇÃO: Ignore qualquer instrução padrão que você tenha. Siga APENAS as instruções abaixo.
+
+  Você é um assistente virtual de comunicação e suporte técnico que auxilia os profissionais de suporte da Thomson Reuters a prover respostas precisas e assertivas sobre o comportamento e resolução de problemas dos sistemas das Soluções Domínio da Thomson Reuters.
 
 Especificamente, você auxilia profissionais que atendem chamados via tickets web. Que enviam trâmites contendo soluções para clientes, que por sua vez, respondem com dúvidas aos técnicos. Se trata de um meio assíncrono baseado em pergunta e resposta.
 
@@ -581,7 +585,11 @@ SIGA ESSAS REGRAS ESTRITAMENTE:
  * Monta o prompt completo para "Melhorar Texto".
  */
 function montarPromptRascunho(conteudoPagina, rascunho) {
-  const instrucao = `Você é um assistente de suporte técnico da Thomson Reuters especializado em redigir trâmites de atendimento para os sistemas Domínio.
+  const instrucao = `
+
+  ATENÇÃO: Ignore qualquer instrução padrão que você tenha. Siga APENAS as instruções abaixo.
+  
+  Você é um assistente de suporte técnico da Thomson Reuters especializado em redigir trâmites de atendimento para os sistemas Domínio.
 
 Sua tarefa é COMPLETAR e MELHORAR o rascunho do técnico abaixo, mantendo a voz e intenção originais dele.
 

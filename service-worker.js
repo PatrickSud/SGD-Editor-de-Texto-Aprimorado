@@ -75,16 +75,12 @@ const ROUTER_CHAIN_MAP = {
   'CONTABILIDADE DIGITAL':                      'af573701-d00c-4fac-89c8-0e7ea6af3434', // CONTABILIDADE DIGITAL
   'FILA 62':                                    'bdcf2679-98c5-4201-98bd-2c53ee07e63e', // ONBALANCE, CCT, BUSCA, SEFAZ, API
   'DOMINIO PARA VOCÊ':                          '9631a5ff-16d7-4f9b-b3f4-28f5562b8749', // NOVO PORTAL DO EMPREGADO
-  'LISTA SANE':                                 'bcda651a-1518-4808-97b1-439ad9ca1306', // LISTAGEM DE SANES E SAILS
-  'BUSCA SOLUÇÕES FILAS 23 24 25':             'a84ee410-18f0-4f99-bc65-566b8340e6f8', // FISCONT - Buscador de Soluções
-  'RUBRICAS COM FÓRMULAS':                      'b653d9c8-da78-4880-9347-e08a8c97c145', // FOLHA - Rubricas com Fórmulas
-  'ANÁLISE ERRO ECF P200 P400':                'd66d4161-c01a-498a-95d8-229a4a884e26', // CONTABILIDADE - Análise ECF
-  'DÚVIDAS CADASTRO DE SS':                    '27921542-92d4-408a-a3cb-bb4372553e43', // ASSISTENTE - Manual Cadastro de SSs
-  'ERROS DE VALIDAÇÃO ECD ECF':               '7e04fbb6-cdef-450f-89b5-d83c392583ab', // ESCRITA, CONTABILIDADE, LALUR
-  'FOLHA DÚVIDAS GERAIS':                       '0a365547-b3e1-4008-bbbd-afee1596dcf6', // FOLHA - Dúvidas gerais
-  'ASSISTENTE SUPORTE - COMBINADOS E QUAL A FILA': 'bf79bed3-d1f2-4b9c-b08a-a7c0551eb4dc', // ASSISTENTE SUPORTE
-  'PERFORMANCE':                                'f7ff4d6f-1847-463b-a6be-acc122a0fe01', // PERFORMANCE (chain específica)
-  'ESTOURO':                                    null, // Sem chain — dispara erro de fallback
+  'CONTABILIDADE ECF':                           'd66d4161-c01a-498a-95d8-229a4a884e26', // CONTABILIDADE - Análise ECF
+  'FOLHA':                                      '0a365547-b3e1-4008-bbbd-afee1596dcf6', // FOLHA - Dúvidas gerais
+  'PERFORMANCE':                                'f7ff4d6f-1847-463b-a6be-acc122a0fe01', // PERFORMANCE
+  'FISCONT KOLOSSUS':                            '0f1088b3-b410-468c-9039-00932d4c13df', // KOLOSSUS
+  'FISCONT':                                     'f4e61162-241e-477b-851e-c28e1470b519', // FISCONT - ASSISTENTE
+  'ESTOURO':                                      null, // Sem chain — dispara erro de fallback
 }
 
 /**
