@@ -972,6 +972,12 @@ async function openManagementModal() {
                     <label for="enable-windows-notifications">Habilitar notificações do Windows para lembretes</label>
                 </div>
                 <hr style="margin: 15px 0;">
+                <h5>Pré-visualização do SGD</h5>
+                <div class="form-checkbox-group indent-checkbox">
+                    <input type="checkbox" id="ocultar-previsualizacao-site" ${preferences.ocultarPreVisualizacaoSite ? 'checked' : ''}>
+                    <label for="ocultar-previsualizacao-site">Ocultar o campo "Pré-visualizar:" nativo do SGD</label>
+                </div>
+                <hr style="margin: 15px 0;">
                 <h5>Comportamento dos Menus Flutuantes</h5>
                 <div class="radio-inline-group">
                     <div class="form-radio-group">
@@ -2765,6 +2771,12 @@ async function savePreferencesSettings(modal) {
     newPreferences.enableWindowsNotifications = windowsNotificationsCheckbox.checked;
   }
 
+  // NOVO: Ler preferência para ocultar o preview do site
+  const ocultarPreviewSiteCheckbox = container.querySelector('#ocultar-previsualizacao-site');
+  if (ocultarPreviewSiteCheckbox) {
+    newPreferences.ocultarPreVisualizacaoSite = ocultarPreviewSiteCheckbox.checked;
+  }
+
   // NOVO: Ler comportamento do dropdown
   const selectedBehavior = container.querySelector('input[name="dropdownBehavior"]:checked');
   if (selectedBehavior) {
@@ -2776,6 +2788,9 @@ async function savePreferencesSettings(modal) {
     // Aplicar imediatamente
     if (typeof applyDropdownBehaviorSetting === 'function') {
       await applyDropdownBehaviorSetting();
+    }
+    if (typeof applyOcultarPreVisualizacaoSiteSetting === 'function') {
+      await applyOcultarPreVisualizacaoSiteSetting();
     }
     return true;
   } catch (error) {

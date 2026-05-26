@@ -1,21 +1,26 @@
-﻿#image-size-modal .se-modal-content {
-  max-width: 1100px; /* Aumenta consideravelmente a largura para melhor visualização */
+#image-size-modal .se-modal-content {
+  max-width: 1100px;
+  /* Aumenta consideravelmente a largura para melhor visualização */
 }
 
 #image-size-modal .se-modal-body {
-  max-height: 85vh; /* mais alto para ver melhor a imagem */
+  max-height: 85vh;
+  /* mais alto para ver melhor a imagem */
 }
 
 #image-size-modal .image-preview-container {
   overflow-x: hidden;
-  padding: 8px 8px 12px 8px; /* espaço mais compacto para a imagem */
+  padding: 8px 8px 12px 8px;
+  /* espaço mais compacto para a imagem */
 }
 
 /* A imagem pode ocupar mais altura no modal grande mantendo proporção */
 #image-size-modal .modal-image-preview {
   display: inline-block;
-  height: auto; /* mantém proporção */
-  max-width: 100%; /* evita barra lateral; adapta à largura do container */
+  height: auto;
+  /* mantém proporção */
+  max-width: 100%;
+  /* evita barra lateral; adapta à largura do container */
 }
 
 /* Centraliza a legenda acima/abaixo do slider conforme posição atual no HTML */
@@ -23,6 +28,7 @@
   text-align: center;
   margin: 0 0 6px 0;
 }
+
 /* --- MODAIS ('se-') --- */
 
 .editor-modal {
@@ -69,6 +75,7 @@
   padding: 12px 16px;
   border-bottom: 1px solid var(--border-color);
 }
+
 .se-modal-header h3 {
   margin: 0;
   font-size: 18px;
@@ -164,18 +171,19 @@
   height: 16px;
   margin-right: 8px;
   border: 1px solid var(--border-color);
-  border-radius: 3px; /* quadrado como checkbox */
+  border-radius: 3px;
+  /* quadrado como checkbox */
   background-color: var(--background-main);
   box-sizing: border-box;
 }
 
-.form-radio-group input[type='radio']:checked + label::before {
+.form-radio-group input[type='radio']:checked+label::before {
   background-color: var(--primary-color);
   border-color: var(--primary-color);
   box-shadow: inset 0 0 0 3px color-mix(in srgb, white 92%, transparent);
 }
 
-.form-radio-group input[type='radio']:focus + label::before {
+.form-radio-group input[type='radio']:focus+label::before {
   outline: none;
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 35%, transparent);
 }
@@ -231,6 +239,7 @@
   color: white;
   border-color: transparent;
 }
+
 .reschedule-btn:hover {
   background-color: var(--action-green-hover);
 }
@@ -323,6 +332,7 @@ a.open-link-btn:hover {
   color: white;
   border-color: transparent;
 }
+
 .reschedule-btn:hover {
   background-color: var(--action-green-hover);
 }
@@ -352,8 +362,8 @@ a.open-link-btn:hover {
 
 /* Checkboxes padronizados via styles/base.css */
 
-/* Caso específico: habilitar notificações do Windows */
-#enable-windows-notifications {
+#enable-windows-notifications,
+#ocultar-previsualizacao-site {
   appearance: none;
   -webkit-appearance: none;
   position: relative;
@@ -366,16 +376,19 @@ a.open-link-btn:hover {
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
-#enable-windows-notifications:hover {
+#enable-windows-notifications:hover,
+#ocultar-previsualizacao-site:hover {
   border-color: var(--primary-color);
 }
 
-#enable-windows-notifications:checked {
+#enable-windows-notifications:checked,
+#ocultar-previsualizacao-site:checked {
   background-color: var(--primary-color);
   border-color: var(--primary-color);
 }
 
-#enable-windows-notifications:checked::after {
+#enable-windows-notifications:checked::after,
+#ocultar-previsualizacao-site:checked::after {
   content: '✔';
   position: absolute;
   color: white;
@@ -385,15 +398,16 @@ a.open-link-btn:hover {
   left: 50%;
   transform: translate(-50%, -50%);
 }
+
 .se-modal-body input[type='text']:focus,
 .se-modal-body input[type='datetime-local']:focus,
 .se-modal-body textarea:focus,
 .se-modal-body select:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px
-    color-mix(in srgb, var(--primary-color) 40%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 40%, transparent);
 }
+
 .se-modal-body textarea {
   min-height: 200px;
   resize: vertical;
@@ -464,6 +478,7 @@ a.open-link-btn:hover {
   border-top: 1px solid var(--border-color);
   background-color: var(--background-main);
 }
+
 .se-modal-actions button {
   padding: 8px 16px;
   border-radius: var(--border-radius-sm);
@@ -471,14 +486,18 @@ a.open-link-btn:hover {
   cursor: pointer;
   font-weight: 500;
 }
+
 .se-modal-actions button[data-action='share-extension'] {
   color: #fff !important;
-  margin-right: auto; /* Move o botão Compartilhar para a esquerda */
+  margin-right: auto;
+  /* Move o botão Compartilhar para a esquerda */
 }
+
 .se-modal-actions button[data-action='share-extension']:hover,
 .se-modal-actions button[data-action='share-extension']:focus {
   color: #fff !important;
 }
+
 .link-as-button-container {
   display: flex;
   align-items: center;
@@ -491,21 +510,26 @@ a.open-link-btn:hover {
   background-color: var(--action-green);
   color: white;
 }
+
 #modal-save-btn:hover,
 .save-cat-btn:hover {
   background-color: var(--action-green-hover);
 }
+
 .delete-cat-btn {
   background-color: var(--action-red);
   color: white;
 }
+
 .delete-cat-btn:hover {
   background-color: var(--action-red-hover);
 }
+
 #add-category-btn {
   background-color: var(--action-orange);
   color: white;
 }
+
 #add-category-btn:hover {
   background-color: var(--action-orange-hover);
 }
@@ -515,6 +539,7 @@ a.open-link-btn:hover {
   background-color: var(--action-blue);
   color: white;
 }
+
 .add-message-btn:hover,
 #export-btn:hover {
   background-color: var(--action-blue-hover);
@@ -524,6 +549,7 @@ a.open-link-btn:hover {
   background-color: var(--action-lightblue);
   color: white;
 }
+
 #import-btn:hover {
   background-color: var(--action-lightblue-hover);
 }
@@ -533,12 +559,11 @@ a.open-link-btn:hover {
   border-color: var(--border-color);
   color: var(--text-color-main);
 }
+
 #modal-cancel-btn:hover {
-  background-color: color-mix(
-    in srgb,
-    var(--text-color-main) 10%,
-    var(--background-hover)
-  );
+  background-color: color-mix(in srgb,
+      var(--text-color-main) 10%,
+      var(--background-hover));
 }
 
 /* --- MODAL DE GERENCIAMENTO --- */
@@ -547,11 +572,13 @@ a.open-link-btn:hover {
   flex-direction: column;
   gap: 10px;
 }
+
 .management-section h4 {
   margin: 10px 0 0 0;
   color: var(--text-color-main);
   font-size: 16px;
 }
+
 .management-section p {
   margin: 0;
   font-size: 12px;
@@ -628,14 +655,17 @@ a.open-link-btn:hover {
   background-color: var(--primary-color-hover);
   border-color: var(--primary-color-hover);
 }
+
 .category-form {
   display: flex;
   align-items: center;
   gap: 8px;
 }
+
 .category-form input {
   flex-grow: 1;
 }
+
 .export-list,
 .category-list,
 .gc-list {
@@ -646,6 +676,7 @@ a.open-link-btn:hover {
   padding: 8px;
   background-color: var(--background-main);
 }
+
 .export-item {
   display: flex;
   align-items: center;
@@ -653,7 +684,10 @@ a.open-link-btn:hover {
   padding: 4px;
 }
 
-.export-item input[type='checkbox'] { /* usa base global */ display: inline-block; }
+.export-item input[type='checkbox'] {
+  /* usa base global */
+  display: inline-block;
+}
 
 .export-item label {
   user-select: none;
@@ -681,6 +715,7 @@ a.open-link-btn:hover {
   border-radius: var(--border-radius-sm);
   position: relative;
 }
+
 .category-item:hover,
 .gc-item:hover {
   background-color: var(--background-hover);
@@ -702,6 +737,7 @@ a.open-link-btn:hover {
   cursor: text;
   padding: 2px 4px;
 }
+
 .category-item .category-name[contenteditable='true']:focus,
 .gc-item .gc-item-name[contenteditable='true']:focus {
   outline: none;
@@ -709,6 +745,7 @@ a.open-link-btn:hover {
   border-radius: var(--border-radius-sm);
   background-color: var(--background-secondary);
 }
+
 .category-item .shortcut-display {
   background-color: var(--background-hover);
   padding: 2px 8px;
@@ -719,6 +756,7 @@ a.open-link-btn:hover {
   flex-shrink: 0;
   font-family: monospace;
 }
+
 .set-shortcut-btn {
   flex-shrink: 0;
 }
@@ -728,19 +766,23 @@ a.open-link-btn:hover {
   user-select: none;
   display: flex;
   align-items: center;
-  gap: 8px; /* Espaçamento entre o ícone e o título */
+  gap: 8px;
+  /* Espaçamento entre o ícone e o título */
 }
 
 .collapsible-icon {
-  width: 1em; /* Garante que o ícone tenha um espaço reservado */
+  width: 1em;
+  /* Garante que o ícone tenha um espaço reservado */
   text-align: center;
 }
 
-/* Layout em grade para configurações de visibilidade dos botões */  
+/* Layout em grade para configurações de visibilidade dos botões */
 .button-visibility-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr); /* Cria 2 colunas */
-  gap: 10px 20px; /* Espaçamento vertical e horizontal */
+  grid-template-columns: repeat(2, 1fr);
+  /* Cria 2 colunas */
+  gap: 10px 20px;
+  /* Espaçamento vertical e horizontal */
   padding-top: 10px;
 }
 
@@ -1027,16 +1069,20 @@ a.open-link-btn:hover {
 }
 
 .collapsible-content {
-  display: none; /* ESSENCIAL: Garante que comece recolhido */
+  display: none;
+  /* ESSENCIAL: Garante que comece recolhido */
   flex-direction: column;
   gap: 12px;
   margin-top: 8px;
-  overflow: hidden; /* Adicionado para animações suaves */
+  overflow: hidden;
+  /* Adicionado para animações suaves */
 }
 
 .collapsible-section.expanded .collapsible-content {
-  display: flex; /* Mostra o conteudo quando a classe .expanded esta presente */
+  display: flex;
+  /* Mostra o conteudo quando a classe .expanded esta presente */
 }
+
 .export-category {
   margin-bottom: 10px;
 }
@@ -1049,7 +1095,11 @@ a.open-link-btn:hover {
   gap: 8px;
 }
 
-.export-category-header input[type='checkbox'] { /* usa base global */ display: inline-block; }
+.export-category-header input[type='checkbox'] {
+  /* usa base global */
+  display: inline-block;
+}
+
 .export-messages-list {
   padding-left: 20px;
 }
@@ -1067,6 +1117,7 @@ a.open-link-btn:hover {
   color: var(--text-color-main);
   font-family: monospace;
 }
+
 .shortcut-recommendation {
   font-size: 12px;
   color: var(--text-color-muted);
@@ -1105,7 +1156,10 @@ a.open-link-btn:hover {
   flex-wrap: wrap;
 }
 
-.import-category-header input[type='checkbox'] { /* usa base global */ display: inline-block; }
+.import-category-header input[type='checkbox'] {
+  /* usa base global */
+  display: inline-block;
+}
 
 .import-category-header label,
 .import-item label {
@@ -1127,7 +1181,10 @@ a.open-link-btn:hover {
   gap: 8px;
 }
 
-.import-item input[type='checkbox'] { /* usa base global */ display: inline-block; }
+.import-item input[type='checkbox'] {
+  /* usa base global */
+  display: inline-block;
+}
 
 .import-category-destination {
   display: flex;
@@ -1161,6 +1218,7 @@ a.open-link-btn:hover {
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1219,6 +1277,7 @@ a.open-link-btn:hover {
     transform: translateX(100%);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -1257,6 +1316,7 @@ a.open-link-btn:hover {
   border-radius: 4px;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
+
 .open-link-btn-note:hover {
   background-color: var(--background-secondary);
   color: var(--text-color-main);
@@ -1265,17 +1325,21 @@ a.open-link-btn:hover {
 /* --- GERENCIAMENTO DE LEMBRETES --- */
 .reminder-item {
   align-items: flex-start;
-  border-left: 4px solid transparent; /* Espaçamento padrão */
+  border-left: 4px solid transparent;
+  /* Espaçamento padrão */
   padding-left: 10px;
-  margin-left: -10px; /* Compensa o padding para alinhar o conteúdo */
+  margin-left: -10px;
+  /* Compensa o padding para alinhar o conteúdo */
 }
 
 .reminder-item.priority-low {
   border-left-color: var(--action-blue);
 }
+
 .reminder-item.priority-medium {
   border-left-color: var(--action-yellow);
 }
+
 .reminder-item.priority-high {
   border-left-color: var(--action-red);
 }
@@ -1323,6 +1387,7 @@ a.open-link-btn:hover {
   color: white;
   border-color: transparent;
 }
+
 .edit-reminder-btn:hover {
   background-color: var(--action-blue-hover);
 }
@@ -1335,8 +1400,10 @@ a.open-link-btn:hover {
 
 /* --- ESTILOS APRIMORADOS PARA CONFIGURAÇÕES DE IA --- */
 #gemini-api-key-input {
-  font-family: monospace; /* Facilita a leitura da chave */
-  flex-grow: 1; /* Ocupa o espaço disponível no form-group */
+  font-family: monospace;
+  /* Facilita a leitura da chave */
+  flex-grow: 1;
+  /* Ocupa o espaço disponível no form-group */
   background-color: var(--background-main);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
@@ -1358,7 +1425,8 @@ a.open-link-btn:hover {
   text-decoration: none;
   display: inline-block;
   padding: 8px 16px;
-  color: white !important; /* Garante texto branco sobre o fundo do tema */
+  color: white !important;
+  /* Garante texto branco sobre o fundo do tema */
 }
 
 .se-modal-body a.action-btn:hover {
@@ -1462,7 +1530,8 @@ a.open-link-btn:hover {
 
 /* --- ESTILOS PARA O MODAL DE DIAGNÓSTICO --- */
 .se-modal-content.diagnostic-modal {
-  max-width: 900px; /* Aumenta a largura para acomodar a grade */
+  max-width: 900px;
+  /* Aumenta a largura para acomodar a grade */
 }
 
 .diagnostic-grid {
@@ -1614,9 +1683,11 @@ a.open-link-btn:hover {
 .in-page-notification.priority-low::before {
   background-color: var(--action-blue);
 }
+
 .in-page-notification.priority-medium::before {
   background-color: var(--action-yellow);
 }
+
 .in-page-notification.priority-high::before {
   background-color: var(--action-red);
 }
@@ -1701,9 +1772,11 @@ a.open-link-btn:hover {
 .in-page-notification.priority-low {
   border-left-color: var(--action-blue);
 }
+
 .in-page-notification.priority-medium {
   border-left-color: var(--action-yellow);
 }
+
 .in-page-notification.priority-high {
   border-left-color: var(--action-red);
 }
@@ -1727,10 +1800,10 @@ a.open-link-btn:hover {
 
 /* --- FIRED REMINDERS PANEL --- */
 #fired-reminders-panel {
-  position: absolute; 
-  width: 400px; 
-  max-height: 450px; 
-  z-index: 2100; 
+  position: absolute;
+  width: 400px;
+  max-height: 450px;
+  z-index: 2100;
   border-radius: var(--border-radius-md);
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--border-color);
@@ -1739,7 +1812,7 @@ a.open-link-btn:hover {
   overflow: hidden;
   opacity: 0;
   transform: scale(0.95);
-  transform-origin: top center; 
+  transform-origin: top center;
   transition: transform 0.2s ease-out, opacity 0.2s ease-out;
 
   /* Efeito Glassmorphism */
@@ -1970,7 +2043,8 @@ a.open-link-btn:hover {
   border-radius: var(--border-radius-md);
   padding: 16px;
   margin-bottom: 16px;
-  overflow-x: auto; /* Permite visualizar imagens maiores horizontalmente */
+  overflow-x: auto;
+  /* Permite visualizar imagens maiores horizontalmente */
 }
 
 .image-preview {
@@ -1982,7 +2056,8 @@ a.open-link-btn:hover {
 
 /* Garante que a classe usada no JS limite o tamanho da imagem no modal */
 .modal-image-preview {
-  max-width: none; /* Permite crescer além do container, com scroll */
+  max-width: none;
+  /* Permite crescer além do container, com scroll */
   height: auto;
   border-radius: var(--border-radius-sm);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -2060,7 +2135,8 @@ a.open-link-btn:hover {
   position: relative;
   padding: 15px 0 25px 0;
   margin-top: 10px;
-  text-align: center; /* centraliza o h4 acima e elementos internos inline */
+  text-align: center;
+  /* centraliza o h4 acima e elementos internos inline */
 }
 
 /* Reduz a largura do slider no modal de imagem e o centraliza */
@@ -2128,7 +2204,9 @@ a.open-link-btn:hover {
 /* labels removidos por decisão de UX */
 
 /* Caso inputs antigos apareçam por cache */
-.custom-size-inputs { display: none !important; }
+.custom-size-inputs {
+  display: none !important;
+}
 
 /* Pré-visualização do upload no primeiro modal */
 .upload-preview-container {
@@ -2251,11 +2329,9 @@ a.open-link-btn:hover {
 .file-input-label {
   display: inline-block;
   padding: 8px 16px;
-  background: linear-gradient(
-    135deg,
-    var(--primary-color),
-    var(--primary-color-hover)
-  );
+  background: linear-gradient(135deg,
+      var(--primary-color),
+      var(--primary-color-hover));
   color: white !important;
   border: 1px solid var(--primary-color);
   border-radius: var(--border-radius-sm);
@@ -2275,21 +2351,17 @@ a.open-link-btn:hover {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.2),
-    transparent
-  );
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent);
   transition: left 0.5s;
 }
 
 .file-input-label:hover {
-  background: linear-gradient(
-    135deg,
-    var(--primary-color-hover),
-    var(--primary-color)
-  );
+  background: linear-gradient(135deg,
+      var(--primary-color-hover),
+      var(--primary-color));
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   border-color: var(--primary-color-hover);
@@ -2309,11 +2381,13 @@ a.open-link-btn:hover {
     opacity: 1;
     transform: scale(1);
   }
+
   to {
     opacity: 0;
     transform: scale(0.95);
   }
 }
+
 #reminders-list {
   display: flex;
   flex-direction: column;
@@ -2427,6 +2501,7 @@ a.open-link-btn:hover {
   background-color: color-mix(in srgb, var(--action-blue) 15%, transparent);
   color: var(--action-blue);
 }
+
 .card-actions .action-btn.primary:hover {
   background-color: var(--action-blue);
   color: white;
@@ -2436,6 +2511,7 @@ a.open-link-btn:hover {
   background-color: color-mix(in srgb, var(--text-color-muted) 15%, transparent);
   color: var(--text-color-muted);
 }
+
 .card-actions .action-btn.secondary:hover {
   background-color: var(--text-color-muted);
   color: var(--background-main);
@@ -2445,6 +2521,7 @@ a.open-link-btn:hover {
   background-color: color-mix(in srgb, var(--action-red) 15%, transparent);
   color: var(--action-red);
 }
+
 .card-actions .action-btn.destructive:hover {
   background-color: var(--action-red);
   color: white;
@@ -2453,9 +2530,11 @@ a.open-link-btn:hover {
 .reminder-card.priority-low {
   border-left-color: var(--action-blue);
 }
+
 .reminder-card.priority-medium {
   border-left-color: var(--action-yellow);
 }
+
 .reminder-card.priority-high {
   border-left-color: var(--action-red);
 }
@@ -2463,6 +2542,7 @@ a.open-link-btn:hover {
 .reminder-card.acknowledged {
   opacity: 0.7;
 }
+
 .reminder-card.acknowledged .card-title {
   text-decoration: line-through;
 }
@@ -2668,12 +2748,10 @@ a.open-link-btn:hover {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.2),
-    transparent
-  );
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent);
   transition: left 0.5s;
 }
 
@@ -2707,7 +2785,7 @@ a.open-link-btn:hover {
 }
 
 /* Estiliza cada seção principal como um card */
-.se-modal-body > .management-section {
+.se-modal-body>.management-section {
   background-color: var(--background-main);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
@@ -2717,15 +2795,16 @@ a.open-link-btn:hover {
 }
 
 /* Ajusta o cabeçalho dentro do card */
-.se-modal-body > .management-section > .collapsible-header {
+.se-modal-body>.management-section>.collapsible-header {
   padding: 0;
   margin-bottom: 8px;
 }
 
 /* Melhora a aparência dos cabeçalhos principais (H4) */
-.management-section > h4.collapsible-header {
+.management-section>h4.collapsible-header {
   font-size: 16px;
-  font-weight: 600; /* Mais destaque */
+  font-weight: 600;
+  /* Mais destaque */
   color: var(--text-color-main);
   padding-bottom: 8px;
   margin-bottom: 12px;
@@ -2734,7 +2813,8 @@ a.open-link-btn:hover {
 /* Remove o fundo dos cabeçalhos de subseção para um visual mais limpo */
 .management-section h5.collapsible-header {
   margin: 0;
-  font-size: 15px; /* Ligeiramente menor que o h4 principal */
+  font-size: 15px;
+  /* Ligeiramente menor que o h4 principal */
   font-weight: 500;
   padding: 8px;
   background-color: transparent;
@@ -2744,11 +2824,13 @@ a.open-link-btn:hover {
 }
 
 .management-section h5.collapsible-header:hover {
-  background-color: var(--background-hover); /* Mantém o feedback no hover */
+  background-color: var(--background-hover);
+  /* Mantém o feedback no hover */
 }
 
 .nested-section .collapsible-content {
-  padding: 10px 0 5px 5px; /* Ajusta o preenchimento interno */
+  padding: 10px 0 5px 5px;
+  /* Ajusta o preenchimento interno */
 }
 
 /* --- RODAPÉ DA VERSÃO NO MODAL DE CONFIGURAÇÕES --- */
@@ -2774,7 +2856,7 @@ a.open-link-btn:hover {
 }
 
 /* --- WHATS NEW (Notas da Versão) --- */
-.whats-new-content li > b:first-child {
+.whats-new-content li>b:first-child {
   color: var(--primary-color);
 }
 
@@ -2942,6 +3024,7 @@ a.open-link-btn:hover {
   opacity: 0.6;
   font-style: italic;
 }
+
 #ai-loading-indicator {
   position: fixed;
   top: 16px;
@@ -2954,13 +3037,20 @@ a.open-link-btn:hover {
   border: 1px solid var(--border-color, #333);
   border-radius: 24px;
   padding: 8px 16px 8px 10px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
   animation: ai-loading-fadein 0.2s ease;
 }
 
 @keyframes ai-loading-fadein {
-  from { opacity: 0; transform: translateY(-8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .ai-loading-spinner {
@@ -2974,7 +3064,9 @@ a.open-link-btn:hover {
 }
 
 @keyframes ai-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .ai-loading-label {

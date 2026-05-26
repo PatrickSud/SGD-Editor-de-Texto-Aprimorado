@@ -242,14 +242,19 @@ function setupSituationListener(textArea) {
 function observeForTextArea() {
   const observer = new MutationObserver(async (mutations, obs) => {
     const textArea = getTargetTextArea()
-    if (textArea && !textArea.dataset.enhanced) {
-      await initializeEditorInstance(textArea, 'main', {
-        includePreview: true,
-        includeQuickSteps: true,
-        includeThemeToggle: true,
-        includeNotes: true,
-        includeReminders: true
-      })
+    if (textArea) {
+      if (typeof applyOcultarPreVisualizacaoSiteSetting === 'function') {
+        await applyOcultarPreVisualizacaoSiteSetting()
+      }
+      if (!textArea.dataset.enhanced) {
+        await initializeEditorInstance(textArea, 'main', {
+          includePreview: true,
+          includeQuickSteps: true,
+          includeThemeToggle: true,
+          includeNotes: true,
+          includeReminders: true
+        })
+      }
     }
   })
 
@@ -1757,6 +1762,10 @@ async function togglePreview(textArea) {
   if (instanceId === 'main') {
     await savePreviewState(!isVisible)
   }
+
+  if (typeof applyOcultarPreVisualizacaoSiteSetting === 'function') {
+    await applyOcultarPreVisualizacaoSiteSetting()
+  }
 }
 
 function addSgdActionButtons(masterContainer) {
@@ -1820,6 +1829,39 @@ function addSgdActionButtons(masterContainer) {
   if (actionGroup.children.length > 0) {
     toolbar.appendChild(actionGroup)
   }
+}
+
+// --- CONTROLE DE EXIBIÇÃO DA PRÉ-VISUALIZAÇÃO NATIVA DO SITE (SGD) ---
+async function applyOcultarPreVisualizacaoSiteSetting() {
+  const settings = await getSettings()
+  const forcarOcultar = settings.preferences?.ocultarPreVisualizacaoSite === true
+
+  // Verifica se o painel de preview da extensão está visível na tela
+  const previewContainer = document.getElementById('editor-preview-container-main')
+  const extPreviewVisivel = previewContainer && previewContainer.style.display !== 'none'
+
+  // Oculta se o preview da extensão estiver visível OU se a opção de ocultação forçada estiver ativada
+  const ocultar = extPreviewVisivel || forcarOcultar
+
+  // Elemento do preview
+  const divPreview = document.getElementById('descricaoTramitePreview')
+  if (divPreview) {
+    const trPreview = divPreview.closest('tr')
+    if (trPreview) {
+      trPreview.style.display = ocultar ? 'none' : ''
+    }
+  }
+
+  // Label "Pré-visualizar:"
+  const labels = document.querySelectorAll('td.tableCadastroLabel')
+  labels.forEach(td => {
+    if (td.textContent.trim().includes('Pré-visualizar:')) {
+      const trLabel = td.closest('tr')
+      if (trLabel) {
+        trLabel.style.display = ocultar ? 'none' : ''
+      }
+    }
+  })
 }
 
 // --- CONTROLE DE COMPORTAMENTO DOS DROPDOWNS (hover/click) ---
@@ -1996,6 +2038,9 @@ async function initializeExtension() {
   // Aplica comportamento de dropdowns conforme preferência global
   if (typeof applyDropdownBehaviorSetting === 'function') {
     await applyDropdownBehaviorSetting()
+  }
+  if (typeof applyOcultarPreVisualizacaoSiteSetting === 'function') {
+    await applyOcultarPreVisualizacaoSiteSetting()
   }
   SpeechService.initialize() // Inicializa o serviço de reconhecimento de voz
   observeForTextArea()

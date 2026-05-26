@@ -833,3 +833,25 @@ input[type='range']:hover::-webkit-slider-thumb {
 input[type='range']:active::-webkit-slider-thumb {
   background: var(--primary-color-hover);
 }
+
+/* --- OCULTAR PRÉ-VISUALIZADOR NATIVO DO SITE (SGD) --- */
+/*
+  Quando a classe "ocultar-preview-site" estiver no <body>,
+  os <tr> que contêm o campo "Pré-visualizar:" do SGD são ocultados.
+  Isso evita duplicidade com o visualizador embutido da extensão.
+*/
+body.ocultar-preview-site #descricaoTramitePreview,
+body.ocultar-preview-site #descricaoTramitePreview * {
+  display: none !important;
+}
+
+/* Oculta o <tr> pai do campo de preview */
+body.ocultar-preview-site tr:has(#descricaoTramitePreview) {
+  display: none !important;
+}
+
+
+/* Classe utilitária adicionada via JS ao <tr> do label "Pré-visualizar:" */
+body.ocultar-preview-site .sgd-preview-label-row {
+  display: none !important;
+}

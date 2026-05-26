@@ -58,7 +58,8 @@ const DEFAULT_SETTINGS = {
   },
   preferences: {
     enableWindowsNotifications: true,
-    dropdownBehavior: 'hover' // 'hover' ou 'click'
+    dropdownBehavior: 'hover', // 'hover' ou 'click'
+    ocultarPreVisualizacaoSite: false // Oculta o campo "Pré-visualizar:" nativo do site por padrão desativado
   }
 }
 
