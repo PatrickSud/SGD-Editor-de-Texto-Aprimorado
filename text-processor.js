@@ -42,7 +42,10 @@ async function resolveVariablesInText(text) {
 async function _getUserNameLogic() {
   const getFirstName = element => {
     if (element && element.textContent) {
-      const fullName = element.textContent.trim()
+      const fullName = element.textContent.trim().replace(/\s+/g, ' ')
+      if (fullName.toLowerCase() === 'não informado') {
+        return null
+      }
       return fullName.split(' ')[0]
     }
     return null

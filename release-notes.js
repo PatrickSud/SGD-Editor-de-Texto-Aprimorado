@@ -24,6 +24,7 @@ const RELEASE_NOTES = {
       '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
         '<li>Quando a fila do atendimento não é identificada automaticamente, a IA agora realiza uma <b>melhoria genérica do texto</b> em vez de exibir erro — garantindo que o técnico sempre receba uma resposta útil.</li>' +
         '<li>Corrigido o funcionamento de chains específicas das filas de <b>ECD/ECF</b> e demais filas que não estavam respondendo corretamente.</li>' +
+        '<li>Corrigido problema onde o usuário "Não Informado" preenchia incorretamente a saudação como "Bom dia Não!".</li>' +
       '</ul>',
 
 
