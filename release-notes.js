@@ -18,7 +18,15 @@ const RELEASE_NOTES = {
       '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
       '<li> <b>Instabilidades:</b> Adicionados novos sistemas à lista de monitoramento de instabilidades: <b>Processos</b>, <b>Messenger</b>, <b>FGTS</b> e <b>DCTFWeb</b>.</li>' +
       '<li> <b>Modo Dev:</b> O interruptor do <b>Modo Dev</b> agora fica permanentemente visível no rodapé e requer autenticação com senha para ativação.</li>' +
-      '</ul>'
+      '</ul>',
+
+      '<b>🔧 Correções e Melhorias:</b>' +
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+        '<li>Quando a fila do atendimento não é identificada automaticamente, a IA agora realiza uma <b>melhoria genérica do texto</b> em vez de exibir erro — garantindo que o técnico sempre receba uma resposta útil.</li>' +
+        '<li>Corrigido o funcionamento de chains específicas das filas de <b>ECD/ECF</b> e demais filas que não estavam respondendo corretamente.</li>' +
+      '</ul>',
+
+
     ]
   },
   '3.0.3': {
