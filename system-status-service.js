@@ -267,9 +267,40 @@ async function getRecentReportsStats() {
 }
 
 window.initializeSystemsInFirestore = async function () {
-  if (typeof initializeSystemsInFirestore === 'function') {
-    return await initializeSystemsInFirestore();
+  const defaultSystems = [
+    { id: "onvio", name: "Onvio", order: 1 },
+    { id: "portal-cliente", name: "Portal do Cliente", order: 2 },
+    { id: "processos", name: "Processos", order: 3 },
+    { id: "messenger", name: "Messenger", order: 4 },
+    { id: "dominio-web", name: "Dominio Web", order: 5 },
+    { id: "dominio-sistemas", name: "Dominio Sistemas", order: 6 },
+    { id: "integracao-apis", name: "Integração API's", order: 7 },
+    { id: "comunicacao-esocial", name: "Comunicação eSocial", order: 8 },
+    { id: "fgts", name: "FGTS", order: 9 },
+    { id: "dctfweb", name: "DCTFWeb", order: 10 },
+    { id: "notificacao-erro", name: "Notificação de Erro no Sistema", order: 11 }
+  ];
+
+  console.log("Inicializando/atualizando sistemas no Firestore...");
+  const now = new Date().toISOString();
+
+  for (const sys of defaultSystems) {
+    try {
+      await setSystemStatus(sys.id, {
+        name: sys.name,
+        status: "operational",
+        message: "Todos os serviços operando normalmente.",
+        order: sys.order,
+        workaround: "",
+        updatedAt: now
+      });
+      console.log(`Sistema ${sys.name} inicializado.`);
+    } catch (e) {
+      console.error(`Erro ao inicializar ${sys.name}:`, e);
+    }
   }
+  await touchMetadata();
+  console.log("Inicialização concluída com sucesso!");
 };
 
 window.systemStatusService = {

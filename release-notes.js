@@ -12,6 +12,12 @@ const RELEASE_NOTES = {
       '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
       '<li>Nova opção de configuração <i><b>Ocultar o campo \'Pré-visualizar:\' nativo do SGD</b></i> (desabilitada por padrão).</li>' +
       '<li>Quando ativada pelo usuário, a pré-visualização do SGD permanecerá oculta mesmo que a visualização da extensão esteja fechada.</li>' +
+      '</ul>',
+
+      '<b>🚨 Central de Informações SGD</b>' +
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      '<li> <b>Instabilidades:</b> Adicionados novos sistemas à lista de monitoramento de instabilidades: <b>Processos</b>, <b>Messenger</b>, <b>FGTS</b> e <b>DCTFWeb</b>.</li>' +
+      '<li> <b>Modo Dev:</b> O interruptor do <b>Modo Dev</b> agora fica permanentemente visível no rodapé e requer autenticação com senha para ativação.</li>' +
       '</ul>'
     ]
   },

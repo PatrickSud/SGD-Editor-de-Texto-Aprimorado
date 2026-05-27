@@ -114,9 +114,9 @@ async function openInfoPanel() {
 
   // Filtrar seções baseado na chave Equipe AT e Modo Dev
   const sections = allSections.filter(section => {
-    // Equipe AT aparece se estiver habilitada OU se estiver em modo desenvolvedor
+    // Equipe AT aparece exclusivamente se estiver habilitada, independente do modo dev
     if (section.id === 'team-status') {
-      return equipeATEnabled || developerMode
+      return equipeATEnabled
     }
 
     // Outras abas aparecem se estiver em modo dev
@@ -137,19 +137,13 @@ async function openInfoPanel() {
   // HTML do rodapé da sidebar (Interruptores de Opções)
   const sidebarFooterHtml = `
     <div class="ip-sidebar-footer">
-      ${
-        infoDevMode
-          ? `
-        <div class="ip-dev-toggle-wrapper" style="margin-bottom: 8px;">
-          <span>Modo Dev (Painel)</span>
-          <label class="ip-switch" title="Desativar Modo Desenvolvedor do Painel">
-            <input type="checkbox" id="ip-dev-mode-switch" checked>
-            <span class="ip-slider round"></span>
-          </label>
-        </div>
-      `
-          : ''
-      }
+      <div class="ip-dev-toggle-wrapper" style="margin-bottom: 8px;">
+        <span>Modo Dev</span>
+        <label class="ip-switch" title="Mostrar/Ocultar Modo Desenvolvedor do Painel">
+          <input type="checkbox" id="ip-dev-mode-switch" ${infoDevMode ? 'checked' : ''}>
+          <span class="ip-slider round"></span>
+        </label>
+      </div>
       <div class="ip-dev-toggle-wrapper">
         <span>Equipe AT</span>
         <label class="ip-switch" title="Mostrar/Ocultar aba Equipe AT">
@@ -428,12 +422,6 @@ async function openInfoPanel() {
     }
   }
 
-  // --- Lógica do Gatilho Secreto (5 cliques) ---
-  const devTrigger = modal.querySelector('#developer-mode-trigger')
-  if (devTrigger) {
-    devTrigger.addEventListener('click', handleDeveloperModeClick)
-  }
-
   // --- Lógica dos Interruptores do Rodapé ---
   const equipeATSwitch = modal.querySelector('#ip-equipe-at-switch')
   if (equipeATSwitch) {
@@ -509,13 +497,73 @@ async function openInfoPanel() {
 
   const devModeSwitch = modal.querySelector('#ip-dev-mode-switch')
   if (devModeSwitch) {
-    devModeSwitch.addEventListener('change', async () => {
-      // Desativa o modo dev específico do painel
-      await chrome.storage.local.set({ infoDevMode: false })
+    devModeSwitch.addEventListener('click', async e => {
+      const isChecking = e.target.checked
 
-      // Recarrega o painel para refletir a mudança
-      modal.remove()
-      openInfoPanel()
+      if (isChecking) {
+        // Previne a mudança imediata até a senha ser validada
+        e.preventDefault()
+
+        const passwordModalHtml = `
+          <div style="padding: 10px;">
+            <p style="margin-bottom: 12px; font-size: 13px; color: var(--text-color-main);">Esta seção é de acesso restrito. Por favor, insira a senha do Modo Dev para continuar.</p>
+            <input type="password" id="dev-password-input" 
+              style="display: block; width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); font-size: 14px;" 
+              placeholder="Digite a senha...">
+          </div>
+        `
+
+        const passwordModal = createModal(
+          'Acesso Protegido',
+          passwordModalHtml,
+          async (content, closePasswordModal) => {
+            const input = content.querySelector('#dev-password-input')
+            const password = input.value
+
+            if (password === 'Dominio@2026') {
+              await chrome.storage.local.set({ infoDevMode: true })
+              closePasswordModal()
+              modal.remove() // Fecha o painel de info principal
+              openInfoPanel() // Reabre para mostrar os recursos de desenvolvimento
+              showNotification(
+                'Acesso concedido! Modo desenvolvedor habilitado.',
+                'success'
+              )
+            } else {
+              showNotification('Senha incorreta', 'error')
+            }
+          },
+          {
+            isManagementModal: false,
+            modalId: 'dev-password-modal'
+          }
+        )
+
+        // Personalizar botão de salvar
+        const confirmBtn = passwordModal.querySelector('#modal-save-btn')
+        if (confirmBtn) confirmBtn.textContent = 'Confirmar'
+
+        document.body.appendChild(passwordModal)
+
+        // Foco no input e suporte ao Enter
+        setTimeout(() => {
+          const input = passwordModal.querySelector('#dev-password-input')
+          if (input) {
+            input.focus()
+            input.addEventListener('keypress', event => {
+              if (event.key === 'Enter') {
+                confirmBtn.click()
+              }
+            })
+          }
+        }, 100)
+      } else {
+        // Desativando (sem senha)
+        await chrome.storage.local.set({ infoDevMode: false })
+        // Recarrega o painel para refletir a mudança
+        modal.remove()
+        openInfoPanel()
+      }
     })
   }
 
