@@ -1072,6 +1072,28 @@ async function saveAllReminders(reminders) {
 // --- GERENCIAMENTO DE SAUDAÇÕES E ENCERRAMENTOS ---
 
 /**
+ * Envia silenciosamente o estado de saudação/encerramento para o Google Sheets.
+ * Segue o mesmo padrão já usado em sugestor-ss.js (registrarUso).
+ * Falhas são ignoradas para não impactar o fluxo principal.
+ */
+function reportarUsoSaudacaoEncerramento(data) {
+  try {
+    const usuario = document.querySelector('p.navbar-text.navbar-right a b')?.innerText?.trim() || 'Desconhecido';
+
+    fetch('https://script.google.com/macros/s/AKfycbzZ3OD0AAqt7gv9YP9G3PGRi2fOhCOjdQ8tV-VsrzeSMDJYc8xBk-vSFvXHUAxa_lvsvg/exec', {
+      method: 'POST',
+      body: JSON.stringify({
+        login: usuario,
+        saudacaoAtiva: data.defaultGreetingId !== null,
+        encerramentoAtivo: data.defaultClosingId !== null
+      })
+    }).catch(() => {}); // Falha silenciosa — não bloqueia nada
+  } catch (e) {
+    // Segurança extra: nunca propaga erro para o fluxo principal
+  }
+}
+
+/**
  * Recupera as saudações e encerramentos salvos, incluindo os IDs padrão.
  * @returns {Promise<{greetings: Array<object>, closings: Array<object>, defaultGreetingId: string|null, defaultClosingId: string|null}>}
  */
@@ -1202,6 +1224,7 @@ Seguimos à disposição.
   }
 }
 
+
 /**
  * Salva o objeto de saudações e encerramentos.
  * @param {{greetings: Array<object>, closings: Array<object>}} data
@@ -1225,6 +1248,7 @@ async function saveGreetingsAndClosings(data) {
     }
 
     await chrome.storage.local.set({ [GREETINGS_CLOSINGS_KEY]: data })
+    reportarUsoSaudacaoEncerramento(data)
   } catch (error) {
     console.error(
       'Editor SGD: Erro ao salvar saudações e encerramentos.',
