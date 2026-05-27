@@ -10,7 +10,7 @@ const RELEASE_NOTES = {
 
       '<b>⚙️ Nova Preferência:</b>' +
       '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-      '<li>Nova opção de configuração <i>"Ocultar o campo \'Pré-visualizar:\' nativo do SGD"</i> (desabilitada por padrão).</li>' +
+      '<li>Nova opção de configuração <i><b>Ocultar o campo \'Pré-visualizar:\' nativo do SGD</b></i> (desabilitada por padrão).</li>' +
       '<li>Quando ativada pelo usuário, a pré-visualização do SGD permanecerá oculta mesmo que a visualização da extensão esteja fechada.</li>' +
       '</ul>'
     ]

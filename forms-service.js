@@ -89,7 +89,7 @@ const DEFAULT_FORMS_DATA = {
           type: 'link',
           title: 'Assuntos Fila 41',
           description: 'Domínio Processos',
-          url: 'https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/5b28725a-42d4-4de7-926b-430cde10f85c?chain_builder=true&sidebar=instructions_auto',
+          url: 'https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/1672b454-2cff-46fb-89d8-b939b0a5385b?chain_builder=true',
           icon: '🤖'
         },
         {

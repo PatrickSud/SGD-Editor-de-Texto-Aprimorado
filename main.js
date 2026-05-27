@@ -547,8 +547,8 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
   const micButtonTitle = shouldShowMicButton
     ? 'Gravar com Microfone'
     : isOpera
-    ? 'Reconhecimento de voz não suportado no Opera'
-    : 'Reconhecimento de voz não suportado neste navegador'
+      ? 'Reconhecimento de voz não suportado no Opera'
+      : 'Reconhecimento de voz não suportado neste navegador'
 
   const boldLabel = buttonLabelType === 'text' ? '<b>Negrito</b>' : '<b>B</b>'
   const italicLabel = buttonLabelType === 'text' ? '<i>Itálico</i>' : '<i>I</i>'
@@ -567,11 +567,10 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
       <button type="button" data-action="bold" class="shine-effect" title="Negrito (Ctrl+B)">${boldLabel}</button>
       <button type="button" data-action="italic" class="shine-effect" title="Itálico (Ctrl+I)">${italicLabel}</button>
       <button type="button" data-action="underline" class="shine-effect" title="Sublinhado (Ctrl+U)">${underlineLabel}</button>
-      ${
-        buttonsVisibility.separator2
-          ? '<div class="toolbar-separator" data-id="separator2"></div>'
-          : ''
-      }
+      ${buttonsVisibility.separator2
+      ? '<div class="toolbar-separator" data-id="separator2"></div>'
+      : ''
+    }
     `
     : ''
 
@@ -586,15 +585,13 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
           <button type="button" data-action="lettered">A. Letra</button>
         </div>
       </div>
-      ${
-        buttonsVisibility.bullet !== false
-          ? `<button type="button" data-action="bullet" class="shine-effect" title="Adicionar Marcador (Ctrl+M)">&bull;</button>`
-          : ''
+      ${buttonsVisibility.bullet !== false
+        ? `<button type="button" data-action="bullet" class="shine-effect" title="Adicionar Marcador (Ctrl+M)">&bull;</button>`
+        : ''
       }
-      ${
-        buttonsVisibility.separator3
-          ? '<div class="toolbar-separator" data-id="separator3"></div>'
-          : ''
+      ${buttonsVisibility.separator3
+        ? '<div class="toolbar-separator" data-id="separator3"></div>'
+        : ''
       }
     `
       : ''
@@ -602,66 +599,57 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
   const canInsertUsername = isUserNameInsertionAvailable()
   const insertButtons =
     (includeLink && buttonsVisibility.link !== false) ||
-    (includeImage && buttonsVisibility.insertImage !== false) ||
-    (includeUsername &&
-      buttonsVisibility.username !== false &&
-      canInsertUsername)
+      (includeImage && buttonsVisibility.insertImage !== false) ||
+      (includeUsername &&
+        buttonsVisibility.username !== false &&
+        canInsertUsername)
       ? `
-      ${
-        includeLink && buttonsVisibility.link !== false
-          ? `<button type="button" data-action="link" class="shine-effect" title="Inserir Hiperlink (Ctrl+Alt+H)">🔗</button>`
-          : ''
+      ${includeLink && buttonsVisibility.link !== false
+        ? `<button type="button" data-action="link" class="shine-effect" title="Inserir Hiperlink (Ctrl+Alt+H)">🔗</button>`
+        : ''
       }
-      ${
-        includeImage && buttonsVisibility.insertImage !== false
-          ? `<button type="button" data-action="insert-image" class="shine-effect" title="Inserir Imagem (Ctrl+V)">📸</button>`
-          : ''
+      ${includeImage && buttonsVisibility.insertImage !== false
+        ? `<button type="button" data-action="insert-image" class="shine-effect" title="Inserir Imagem (Ctrl+V)">📸</button>`
+        : ''
       }
-      ${
-        includeUsername &&
+      ${includeUsername &&
         buttonsVisibility.username !== false &&
         canInsertUsername
-          ? `<button type="button" data-action="username" class="shine-effect" title="Inserir Nome do Usuário (Alt+Shift+U)">🏷️</button>`
-          : ''
+        ? `<button type="button" data-action="username" class="shine-effect" title="Inserir Nome do Usuário (Alt+Shift+U)">🏷️</button>`
+        : ''
       }
-      ${
-        buttonsVisibility.separator4
-          ? '<div class="toolbar-separator" data-id="separator4"></div>'
-          : ''
+      ${buttonsVisibility.separator4
+        ? '<div class="toolbar-separator" data-id="separator4"></div>'
+        : ''
       }
     `
       : ''
 
   const colorButtons =
     includeColors &&
-    (buttonsVisibility.color !== false ||
-      buttonsVisibility.highlight !== false ||
-      (includeEmoji && buttonsVisibility.emoji !== false))
+      (buttonsVisibility.color !== false ||
+        buttonsVisibility.highlight !== false ||
+        (includeEmoji && buttonsVisibility.emoji !== false))
       ? `
-      ${
-        includeEmoji && buttonsVisibility.emoji !== false
-          ? `<button type="button" data-action="emoji" class="shine-effect" title="Emojis (Código HTML)">😀</button>`
-          : ''
+      ${includeEmoji && buttonsVisibility.emoji !== false
+        ? `<button type="button" data-action="emoji" class="shine-effect" title="Emojis (Código HTML)">😀</button>`
+        : ''
       }
-      ${
-        includeColors && buttonsVisibility.color !== false
-          ? `<button type="button" data-action="color" class="shine-effect" title="Cor do Texto">🎨</button>`
-          : ''
+      ${includeColors && buttonsVisibility.color !== false
+        ? `<button type="button" data-action="color" class="shine-effect" title="Cor do Texto">🎨</button>`
+        : ''
       }
-      ${
-        includeColors && buttonsVisibility.highlight !== false
-          ? `<button type="button" data-action="highlight" class="shine-effect" title="Cor de Destaque">🖌️</button>`
-          : ''
+      ${includeColors && buttonsVisibility.highlight !== false
+        ? `<button type="button" data-action="highlight" class="shine-effect" title="Cor de Destaque">🖌️</button>`
+        : ''
       }
-      ${
-        instanceId === 'shared-basic'
-          ? `<button type="button" data-action="move-toolbar" class="move-toolbar-btn" title="Mover Barra de Ferramentas">⇅</button>`
-          : ''
+      ${instanceId === 'shared-basic'
+        ? `<button type="button" data-action="move-toolbar" class="move-toolbar-btn" title="Mover Barra de Ferramentas">⇅</button>`
+        : ''
       }
-      ${
-        buttonsVisibility.separator5
-          ? '<div class="toolbar-separator" data-id="separator5"></div>'
-          : ''
+      ${buttonsVisibility.separator5
+        ? '<div class="toolbar-separator" data-id="separator5"></div>'
+        : ''
       }
     `
       : ''
@@ -680,8 +668,8 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
 
   const quickStepsHtml =
     includeQuickSteps &&
-    includeQuickStepsDropdown &&
-    buttonsVisibility.quickSteps
+      includeQuickStepsDropdown &&
+      buttonsVisibility.quickSteps
       ? `<div class="dropdown">
         <button type="button" data-action="quick-steps" class="shine-effect" title="Trâmites Rápidos">⚡</button>
         <div class="dropdown-content quick-steps-dropdown"></div>
@@ -737,17 +725,15 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
         <button type="button" title="Recursos de IA" class="ai-master-button enhanced-btn">✨</button>
         <div class="dropdown-content">
           <button type="button" data-action="ai-complete-draft">🪄 Melhorar Texto</button>
-          ${
-            instanceId === 'main'
-              ? '<button type="button" data-action="ai-summarize">📄 Resumir Solicitação</button>'
-              : ''
-          }
+          ${instanceId === 'main'
+        ? '<button type="button" data-action="ai-summarize">📄 Resumir Solicitação</button>'
+        : ''
+      }
         </div>
       </div>
-      ${
-        buttonsVisibility.separator1
-          ? '<div class="toolbar-separator" data-id="separator1"></div>'
-          : ''
+      ${buttonsVisibility.separator1
+        ? '<div class="toolbar-separator" data-id="separator1"></div>'
+        : ''
       }
     `
   }
@@ -758,7 +744,7 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
 
   const separator6 =
     (includeNotes || includeReminders || includeQuickSteps) &&
-    buttonsVisibility.separator6
+      buttonsVisibility.separator6
       ? '<div class="toolbar-separator" data-id="separator6"></div>'
       : ''
 
@@ -963,15 +949,12 @@ async function loadQuickChangeOptions(editorContainer) {
       .map(item => {
         const isActive = item.id === defaultId
         return `
-        <div class="quick-change-item gc-item" draggable="true" data-id="${
-          item.id
-        }" data-type="${type}" data-order="${item.order || 0}">
+        <div class="quick-change-item gc-item" draggable="true" data-id="${item.id
+          }" data-type="${type}" data-order="${item.order || 0}">
           <span class="drag-handle" title="Arraste para reordenar">⠿</span>
-          <button type="button" class="set-default-btn ${
-            isActive ? 'active' : ''
-          }" title="${
-          isActive ? 'Padrão atual' : 'Definir como padrão'
-        }">⭐</button>
+          <button type="button" class="set-default-btn ${isActive ? 'active' : ''
+          }" title="${isActive ? 'Padrão atual' : 'Definir como padrão'
+          }">⭐</button>
           <span class="quick-change-title" title="Inserir no texto">${escapeHTML(
             item.title
           )}</span>
@@ -1432,8 +1415,7 @@ function setupEditorInstanceListeners(
       if (e.target.closest('.delete-item-btn')) {
         e.stopPropagation() // Impede o menu de fechar durante a confirmação
         showConfirmDialog(
-          `Excluir "${
-            itemElement.querySelector('.quick-change-title').textContent
+          `Excluir "${itemElement.querySelector('.quick-change-title').textContent
           }"?`,
           async () => {
             const data = await getGreetingsAndClosings()
@@ -1605,7 +1587,7 @@ function setupEditorInstanceListeners(
         }
         break
 
-        case 'sugerir-sam':
+      case 'sugerir-sam':
         handleAISuggestSAM()
         break
     }
@@ -1951,7 +1933,7 @@ function removeClickDropdowns() {
     dropdownClickHandlers.forEach(({ btn, handler }) => {
       try {
         btn.removeEventListener('click', handler)
-      } catch {}
+      } catch { }
     })
     dropdownClickHandlers = []
   }
@@ -2157,7 +2139,7 @@ async function initializeExtension() {
       if (typeof openInfoPanel === 'function') {
         try {
           await openInfoPanel()
-          
+
           // Aguarda o modal ser injetado no DOM antes de tentar clicar na aba
           let attempts = 0
           const clickPendingTab = () => {
@@ -2169,7 +2151,7 @@ async function initializeExtension() {
               setTimeout(clickPendingTab, 200)
             }
           }
-          
+
           // Inicia a tentativa de focar na aba de pendências
           setTimeout(clickPendingTab, 300)
         } catch (error) {
@@ -2774,8 +2756,7 @@ async function createQuickChangePopup(type, triggerElement) {
 
   if (!items || items.length === 0) {
     showNotification(
-      `Nenhum(a) ${
-        type === 'greetings' ? 'saudação' : 'encerramento'
+      `Nenhum(a) ${type === 'greetings' ? 'saudação' : 'encerramento'
       } cadastrado(a).`,
       'info'
     )
@@ -2789,8 +2770,7 @@ async function createQuickChangePopup(type, triggerElement) {
   const buttonsHtml = items
     .map(
       item =>
-        `<button type="button" class="dropdown-option" data-id="${
-          item.id
+        `<button type="button" class="dropdown-option" data-id="${item.id
         }">${escapeHTML(item.title)}</button>`
     )
     .join('')
@@ -2881,8 +2861,7 @@ async function createInteractiveChangePopup(targetSpan) {
     .filter(item => item.id !== currentId)
     .map(
       item =>
-        `<button type="button" class="dropdown-option" data-id="${
-          item.id
+        `<button type="button" class="dropdown-option" data-id="${item.id
         }">${escapeHTML(item.title)}</button>`
     )
     .join('')
@@ -2946,7 +2925,7 @@ async function initializeStopwatch() {
   }
 
   const today = new Date().toISOString().split('T')[0]
-  
+
   // Reset diário se a data mudou
   if (stopwatchState.lastActiveDate !== today) {
     resetStopwatch()
@@ -2972,7 +2951,7 @@ function startStopwatch() {
   stopwatchState.isRunning = true
   stopwatchState.startTime = Date.now()
   stopwatchState.lastActiveDate = new Date().toISOString().split('T')[0]
-  
+
   saveStopwatchState()
   startStopwatchTicker()
   updateStopwatchIcon()
@@ -2986,7 +2965,7 @@ function pauseStopwatch() {
   stopwatchState.accumulatedTime += (now - stopwatchState.startTime)
   stopwatchState.startTime = null // Reseta o início do segmento
   stopwatchState.isRunning = false
-  
+
   saveStopwatchState()
   stopStopwatchTicker()
   updateStopwatchDisplay() // Garante que mostre o valor exato final
@@ -3010,7 +2989,7 @@ function resetStopwatch() {
 function setStopwatchTime() {
   const timerText = document.getElementById('fab-timer-text')
   const timerInput = document.getElementById('fab-timer-input')
-  
+
   if (!timerText || !timerInput) return
 
   // Pausa se estiver rodando para evitar inconsistências
@@ -3023,17 +3002,17 @@ function setStopwatchTime() {
   if (stopwatchState.isRunning && stopwatchState.startTime) {
     currentMs += (Date.now() - stopwatchState.startTime)
   }
-  
+
   timerInput.value = formatTime(currentMs)
-  
+
   // Alterna visibilidade
   timerText.style.display = 'none'
   timerInput.style.display = 'inline-block'
-  
+
   // Adiciona classe de edição para manter visível
   const wrapper = document.getElementById('fab-stopwatch-wrapper')
   if (wrapper) wrapper.classList.add('is-editing')
-  
+
   // Foca e seleciona tudo
   setTimeout(() => {
     timerInput.focus()
@@ -3044,7 +3023,7 @@ function setStopwatchTime() {
 function handleStopwatchInputComplete(save = true) {
   const timerText = document.getElementById('fab-timer-text')
   const timerInput = document.getElementById('fab-timer-input')
-  
+
   if (!timerText || !timerInput) return
   if (timerInput.style.display === 'none') return
 
@@ -3062,7 +3041,7 @@ function handleStopwatchInputComplete(save = true) {
   // Volta ao estado normal
   timerInput.style.display = 'none'
   timerText.style.display = 'inline-block'
-  
+
   // Remove classe de edição
   const wrapper = document.getElementById('fab-stopwatch-wrapper')
   if (wrapper) wrapper.classList.remove('is-editing')
@@ -3100,12 +3079,12 @@ function stopStopwatchTicker() {
 function updateStopwatchIcon() {
   const btn = document.getElementById('fab-timer-toggle')
   const wrapper = document.getElementById('fab-stopwatch-wrapper')
-  
+
   if (btn) {
     btn.textContent = stopwatchState.isRunning ? '⏸️' : '▶️'
     btn.title = stopwatchState.isRunning ? 'Pausar (Ctrl+Alt+T)' : 'Iniciar (Ctrl+Alt+T)'
   }
-  
+
   if (wrapper) {
     wrapper.classList.toggle('is-running', stopwatchState.isRunning)
   }
@@ -3116,7 +3095,7 @@ function updateStopwatchDisplay() {
   if (!timerText) return
 
   let totalMilliseconds = stopwatchState.accumulatedTime
-  
+
   if (stopwatchState.isRunning && stopwatchState.startTime) {
     totalMilliseconds += (Date.now() - stopwatchState.startTime)
   }
@@ -3303,7 +3282,7 @@ function setupFabListeners() {
     if (e.ctrlKey && e.altKey && e.code === 'KeyT') {
       e.preventDefault()
       toggleStopwatch()
-      
+
       // Feedback visual via notificação
       const status = stopwatchState.isRunning ? '⏱️ Cronômetro Iniciado' : '⏱️ Cronômetro Pausado'
       if (typeof showNotification === 'function') {
@@ -3375,9 +3354,8 @@ function setupFabListeners() {
     } else {
       const midX = window.innerWidth / 2,
         midY = window.innerHeight / 2
-      finalPosition = `${e.clientY < midY ? 'top' : 'bottom'}-${
-        e.clientX < midX ? 'left' : 'right'
-      }`
+      finalPosition = `${e.clientY < midY ? 'top' : 'bottom'}-${e.clientX < midX ? 'left' : 'right'
+        }`
     }
     fabContainer.className = `fab-container ${finalPosition}`
     await saveFabPosition(finalPosition)
@@ -3404,7 +3382,7 @@ async function initializeFabPins() {
       }
     }
   })
-  
+
   updateFabOptionsPinnedState()
 }
 
@@ -3413,7 +3391,7 @@ async function toggleFabPin(targetId) {
   if (!element) return
 
   const isPinned = element.classList.toggle('is-pinned')
-  
+
   // Atualiza visual do botão
   const pinBtn = element.querySelector('.fab-pin-btn')
   if (pinBtn) pinBtn.classList.toggle('active', isPinned)
@@ -3423,7 +3401,7 @@ async function toggleFabPin(targetId) {
   const pinnedState = data.fabPinnedState || {}
   pinnedState[targetId] = isPinned
   await chrome.storage.local.set({ fabPinnedState: pinnedState })
-  
+
   // Se for uma ferramenta do menu de opções, atualiza o estado do container pai
   if (targetId.startsWith('fab-wrapper-')) {
     updateFabOptionsPinnedState()
@@ -3437,7 +3415,7 @@ async function toggleFabPin(targetId) {
 function updateFabOptionsPinnedState() {
   const optionsContainer = document.getElementById('fab-options')
   if (!optionsContainer) return
-  
+
   const hasPinnedItems = optionsContainer.querySelector('.is-pinned') !== null
   optionsContainer.classList.toggle('has-pinned-items', hasPinnedItems)
 }
@@ -3764,16 +3742,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'TRIGGER_PENDING_CHECK') {
     console.log('Main: Recebido pedido de verificação de pendências.')
     checkNewPendings().then(async result => {
-        updatePendingBadgeUI(result)
-        
-        // Se houver novas pendências, solicita notificação ao SW
-        if (result.newCount > 0) {
-            chrome.runtime.sendMessage({
-                action: 'SHOW_GENERIC_NOTIFICATION',
-                title: 'Novas Pendências no SGD',
-                message: `Você tem ${result.newCount} nova(s) pendência(s). Total: ${result.total}`
-            })
-        }
+      updatePendingBadgeUI(result)
+
+      // Se houver novas pendências, solicita notificação ao SW
+      if (result.newCount > 0) {
+        chrome.runtime.sendMessage({
+          action: 'SHOW_GENERIC_NOTIFICATION',
+          title: 'Novas Pendências no SGD',
+          message: `Você tem ${result.newCount} nova(s) pendência(s). Total: ${result.total}`
+        })
+      }
     })
   }
 })
@@ -3869,8 +3847,8 @@ async function initializePendingBadge() {
   if (!lastResult) {
     // Delay aleatório curto para evitar pico no reload de várias abas
     setTimeout(async () => {
-        const result = await checkNewPendings()
-        updatePendingBadgeUI(result)
+      const result = await checkNewPendings()
+      updatePendingBadgeUI(result)
     }, Math.random() * 5000)
   }
 }
