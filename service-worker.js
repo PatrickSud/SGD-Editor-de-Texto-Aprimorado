@@ -12,6 +12,7 @@
 const CHAIN_SS_WORKFLOW_ID = '27921542-92d4-408a-a3cb-bb4372553e43'
 const WS_BASE_URL = 'wss://wymocw0zke.execute-api.us-east-1.amazonaws.com/prod'
 const AI_PLATFORM_LOGIN_URL = 'https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/' + CHAIN_SS_WORKFLOW_ID
+const FALLBACK_WORKFLOW_ID = '4b95e35f-e8ea-44e6-ad74-555bf39be13f' // Chain genérica — fallback ESTOURO
 
 /**
  * Mapa de chains da plataforma de IA Thomson Reuters.
@@ -1039,10 +1040,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
               const workflowId = ROUTER_CHAIN_MAP[classificacao]
 
               if (!workflowId) {
+                // ESTOURO — fallback para chain genérica
+                console.log('[ROTEADORA] Classificação não reconhecida. Usando fallback genérico.')
                 chrome.tabs.sendMessage(tabId, {
-                  action: 'rascunhoErro',
-                  data: `Não foi possível identificar a fila para este atendimento. Adicione mais informações ao rascunho e tente novamente.`
+                  action: 'filaIdentificada',
+                  fila: 'Melhoria Geral'
                 })
+                await handleGerarSugestao(
+                  promptCompleto,
+                  tabId,
+                  FALLBACK_WORKFLOW_ID,
+                  'rascunhoCompleto',
+                  'rascunhoErro'
+                )
                 return
               }
 
