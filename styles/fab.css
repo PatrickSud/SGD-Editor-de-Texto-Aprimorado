@@ -426,9 +426,23 @@
 /* --- STOPWATCH LABEL (TIMER DISPLAY) --- */
 /* --- STOPWATCH WRAPPER (Lateral Display) --- */
 /* --- STOPWATCH WRAPPER (Lateral Display) --- */
-.fab-stopwatch-wrapper {
+.fab-stopwatch-outer-wrapper {
   position: absolute;
   /* top/bottom definido via classes .top-* / .bottom-* abaixo */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 1045;
+  /* Delay na saída para dar tempo de mover o mouse (estabilidade) */
+  transition: opacity 0.2s ease 0.2s, transform 0.2s ease 0.2s;
+  
+  /* Padrão: Oculto */
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-10px); /* Leve deslocamento inicial */
+}
+
+.fab-stopwatch-wrapper {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -448,19 +462,40 @@
   font-family: monospace;
   font-weight: bold;
   font-size: 14px;
-  
-  z-index: 1045;
-  /* Delay na saída para dar tempo de mover o mouse (estabilidade) */
-  transition: opacity 0.2s ease 0.2s, transform 0.2s ease 0.2s;
-  
-  /* Padrão: Oculto */
-  opacity: 0;
-  pointer-events: none;
-  transform: translateX(-10px); /* Leve deslocamento inicial */
+}
+
+/* Botão separado para copiar link SSC */
+#fab-copy-ssc-link {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba(60, 60, 60, 0.700);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  color: #f0f0f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+#fab-copy-ssc-link:hover {
+  background-color: rgba(80, 80, 80, 0.85);
+  transform: scale(1.05);
+}
+
+#fab-copy-ssc-link:active {
+  transform: scale(0.95);
 }
 
 /* Ponte Invisível para estabilidade do Hover */
-.fab-stopwatch-wrapper::before {
+.fab-stopwatch-outer-wrapper::before {
   content: '';
   position: absolute;
   top: 0;
@@ -470,18 +505,18 @@
 }
 
 /* Ajusta a posição da ponte conforme o lado */
-.fab-container.top-left .fab-stopwatch-wrapper::before,
-.fab-container.bottom-left .fab-stopwatch-wrapper::before {
+.fab-container.top-left .fab-stopwatch-outer-wrapper::before,
+.fab-container.bottom-left .fab-stopwatch-outer-wrapper::before {
   right: 100%; /* Estende para a esquerda (em direção ao FAB) */
 }
 
-.fab-container.top-right .fab-stopwatch-wrapper::before,
-.fab-container.bottom-right .fab-stopwatch-wrapper::before {
+.fab-container.top-right .fab-stopwatch-outer-wrapper::before,
+.fab-container.bottom-right .fab-stopwatch-outer-wrapper::before {
   left: 100%; /* Estende para a direita (em direção ao FAB) */
 }
 
 /* Mostra apenas no Hover do Container */
-.fab-container:hover .fab-stopwatch-wrapper {
+.fab-container:hover .fab-stopwatch-outer-wrapper {
   opacity: 1;
   pointer-events: auto;
   transform: translateX(0);
@@ -490,7 +525,7 @@
 }
 
 /* Esconde labels e inputs do FAB quando arrastando para evitar poluição visual */
-.fab-container.dragging .fab-stopwatch-wrapper {
+.fab-container.dragging .fab-stopwatch-outer-wrapper {
   opacity: 0.3;
   pointer-events: none;
 }
@@ -568,22 +603,22 @@
 /* --- POSICIONAMENTO LATERAL CONDICIONAL COM ALINHAMENTO VERTICAL --- */
 
 /* FAB no TOPO -> Alinha pelo topo */
-.fab-container.top-left .fab-stopwatch-wrapper,
-.fab-container.top-right .fab-stopwatch-wrapper {
+.fab-container.top-left .fab-stopwatch-outer-wrapper,
+.fab-container.top-right .fab-stopwatch-outer-wrapper {
   top: 0;
   bottom: auto;
 }
 
 /* FAB na BASE -> Alinha pela base (CORREÇÃO DE ALINHAMENTO) */
-.fab-container.bottom-left .fab-stopwatch-wrapper,
-.fab-container.bottom-right .fab-stopwatch-wrapper {
+.fab-container.bottom-left .fab-stopwatch-outer-wrapper,
+.fab-container.bottom-right .fab-stopwatch-outer-wrapper {
   bottom: 0;
   top: auto;
 }
 
 /* FAB na ESQUERDA -> Cronômetro à DIREITA */
-.fab-container.top-left .fab-stopwatch-wrapper,
-.fab-container.bottom-left .fab-stopwatch-wrapper {
+.fab-container.top-left .fab-stopwatch-outer-wrapper,
+.fab-container.bottom-left .fab-stopwatch-outer-wrapper {
   left: 100%;
   right: auto;
   margin-left: 12px; /* Gap lateral */
@@ -591,13 +626,18 @@
 }
 
 /* FAB na DIREITA -> Cronômetro à ESQUERDA (Invertido) */
-.fab-container.top-right .fab-stopwatch-wrapper,
-.fab-container.bottom-right .fab-stopwatch-wrapper {
+.fab-container.top-right .fab-stopwatch-outer-wrapper,
+.fab-container.bottom-right .fab-stopwatch-outer-wrapper {
   right: 100%;
   left: auto;
   margin-right: 12px;
   transform-origin: right center;
-  flex-direction: row-reverse; /* Inverte a ordem interna dos botões */
+}
+
+/* FAB na DIREITA -> Mantém row-reverse apenas no cronômetro interno para seus botões */
+.fab-container.top-right .fab-stopwatch-wrapper,
+.fab-container.bottom-right .fab-stopwatch-wrapper {
+  flex-direction: row-reverse; /* Inverte a ordem interna dos botões do cronômetro */
 }
 
 
@@ -651,7 +691,7 @@
 }
 
 /* ROTAÇÕES CONDICIONAIS NO MODO FIXADO */
-.is-pinned#fab-stopwatch-wrapper .fab-pin-btn svg {
+.is-pinned#fab-stopwatch-outer-wrapper .fab-pin-btn svg {
   transform: rotate(45deg);
 }
 
@@ -699,9 +739,9 @@
 }
 
 /* 3. Comportamento do Cronômetro (Mantém-se igual, pois é sibling) */
-.fab-stopwatch-wrapper.is-pinned,
-.fab-stopwatch-wrapper.is-running,
-.fab-stopwatch-wrapper.is-editing {
+.fab-stopwatch-outer-wrapper.is-pinned,
+.fab-stopwatch-outer-wrapper.is-running,
+.fab-stopwatch-outer-wrapper.is-editing {
   opacity: 1 !important;
   pointer-events: auto !important;
   transform: translateX(0) !important;

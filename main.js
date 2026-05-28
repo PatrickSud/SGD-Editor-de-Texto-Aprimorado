@@ -3010,7 +3010,7 @@ function setStopwatchTime() {
   timerInput.style.display = 'inline-block'
 
   // Adiciona classe de edição para manter visível
-  const wrapper = document.getElementById('fab-stopwatch-wrapper')
+  const wrapper = document.getElementById('fab-stopwatch-outer-wrapper')
   if (wrapper) wrapper.classList.add('is-editing')
 
   // Foca e seleciona tudo
@@ -3043,7 +3043,7 @@ function handleStopwatchInputComplete(save = true) {
   timerText.style.display = 'inline-block'
 
   // Remove classe de edição
-  const wrapper = document.getElementById('fab-stopwatch-wrapper')
+  const wrapper = document.getElementById('fab-stopwatch-outer-wrapper')
   if (wrapper) wrapper.classList.remove('is-editing')
 
   updateStopwatchDisplay()
@@ -3078,7 +3078,7 @@ function stopStopwatchTicker() {
 
 function updateStopwatchIcon() {
   const btn = document.getElementById('fab-timer-toggle')
-  const wrapper = document.getElementById('fab-stopwatch-wrapper')
+  const wrapper = document.getElementById('fab-stopwatch-outer-wrapper')
 
   if (btn) {
     btn.textContent = stopwatchState.isRunning ? '⏸️' : '▶️'
@@ -3174,16 +3174,19 @@ function createFloatingActionButtons() {
     </div>
     <button type="button" class="fab-button main-fab" title="Ações Rápidas">+</button>
     
-    <!-- WRAPPER DO CRONÔMETRO (SIBLING) -->
-    <div class="fab-stopwatch-wrapper" id="fab-stopwatch-wrapper">
-      <button type="button" class="fab-pin-btn" title="Fixar Cronômetro" data-target="fab-stopwatch-wrapper">
-        <svg viewBox="0 0 24 24"><path d="M12,2A3,3 0 0,1 15,5V11L17,13V15H13V21L12,22L11,21V15H7V13L9,11V5A3,3 0 0,1 12,2Z" /></svg>
-      </button>
-      <button type="button" id="fab-timer-toggle" class="stopwatch-btn" title="Iniciar/Pausar">▶️</button>
-      <span id="fab-timer-text">00:00:00</span>
-      <input type="text" id="fab-timer-input" class="fab-timer-input" style="display: none;" placeholder="00:00:00" />
-      <button type="button" id="fab-timer-reset" class="stopwatch-btn" title="Zerar">↺</button>
-      <button type="button" id="fab-timer-set" class="stopwatch-btn" title="Definir Tempo">✎</button>
+    <!-- WRAPPER DO CRONÔMETRO E BOTÃO SSC (SIBLING) -->
+    <div class="fab-stopwatch-outer-wrapper" id="fab-stopwatch-outer-wrapper">
+      <button type="button" id="fab-copy-ssc-link" title="Copiar Link SSC">🔗</button>
+      <div class="fab-stopwatch-wrapper" id="fab-stopwatch-wrapper">
+        <button type="button" class="fab-pin-btn" title="Fixar Cronômetro" data-target="fab-stopwatch-outer-wrapper">
+          <svg viewBox="0 0 24 24"><path d="M12,2A3,3 0 0,1 15,5V11L17,13V15H13V21L12,22L11,21V15H7V13L9,11V5A3,3 0 0,1 12,2Z" /></svg>
+        </button>
+        <button type="button" id="fab-timer-toggle" class="stopwatch-btn" title="Iniciar/Pausar">▶️</button>
+        <span id="fab-timer-text">00:00:00</span>
+        <input type="text" id="fab-timer-input" class="fab-timer-input" style="display: none;" placeholder="00:00:00" />
+        <button type="button" id="fab-timer-reset" class="stopwatch-btn" title="Zerar">↺</button>
+        <button type="button" id="fab-timer-set" class="stopwatch-btn" title="Definir Tempo">✎</button>
+      </div>
     </div>
   `
   document.body.appendChild(fabContainer)
@@ -3236,6 +3239,14 @@ function setupFabListeners() {
 
   // Listeners para os botões do cronômetro (Wrapper dedicado)
   fabContainer.addEventListener('click', e => {
+    // Verifica se o clique foi no botão de Copiar Link SSC
+    const copySscBtn = e.target.closest('#fab-copy-ssc-link')
+    if (copySscBtn) {
+      e.stopPropagation()
+      copySscLink()
+      return
+    }
+
     // Verifica se o clique foi no botão de Toggle (Play/Pause)
     const toggleBtn = e.target.closest('#fab-timer-toggle')
     if (toggleBtn) {
@@ -3362,6 +3373,58 @@ function setupFabListeners() {
     adjustGoToTopButtonPosition(finalPosition) // Ajusta o botão 'Ir ao Topo'
     dropZones.forEach(zone => zone.classList.remove('active'))
   })
+}
+
+/**
+ * Captura as informações da Solicitação de Suporte (SSC) atual e copia
+ * um texto de trâmite formatado com link dinâmico para a área de transferência.
+ */
+function copySscLink() {
+  const hidden =
+    document.querySelector('input[id*="ssc"]') ||
+    document.querySelector('input[name*="ssc"]');
+
+  let ssc = null;
+  if (hidden && hidden.value) {
+    ssc = hidden.value.trim();
+  } else {
+    const params = new URLSearchParams(window.location.search);
+    ssc = params.get("ssc");
+  }
+
+  const numeroEl = document.querySelector("#td\\:numero");
+  const assuntoEl = document.querySelector("#td\\:assunto");
+
+  if (!ssc || !numeroEl || !assuntoEl) {
+    if (typeof showNotification === 'function') {
+      showNotification("Não foi possível capturar as informações do SSC nesta página.", "error");
+    } else {
+      alert("❌ Não foi possível capturar todas as informações.");
+    }
+    return;
+  }
+
+  const numero = numeroEl.innerText.trim();
+  const assunto = assuntoEl.innerText.trim();
+
+  const textToCopy = `Então, verifiquei que estamos avaliando esse mesmo assunto em outra Solicitação de Suporte.
+
+Caso queira acessar a outra Solicitação, poderá acessar pelo link: <input name="" type="button" button style="background: #fa6400; border-radius: 5px; padding: 3px; cursor: pointer; color: #fff; border: none;" onclick="window.open(' https://suporte.dominioatendimento.com/sgsc/faces/ssc.html?ssc=${ssc}')" value="SSC ${numero} - ${assunto}, Clique aqui!"></button>
+
+Sigo a disposição.`;
+
+  navigator.clipboard.writeText(textToCopy)
+    .then(() => {
+      if (typeof showNotification === 'function') {
+        showNotification("Texto do trâmite copiado com sucesso!", "success");
+      }
+    })
+    .catch(err => {
+      console.error("Erro ao copiar o texto do trâmite: ", err);
+      if (typeof showNotification === 'function') {
+        showNotification("Erro ao copiar o texto.", "error");
+      }
+    });
 }
 
 /**
