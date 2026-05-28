@@ -62,6 +62,14 @@ function extrairCabecalho() {
   };
 }
 
+function removerAssinaturaDescricao(texto) {
+  if (!texto) return texto;
+  const marcador = 'A IA treinada com o melhor';
+  const idx = texto.indexOf(marcador);
+  if (idx === -1) return texto;
+  return texto.slice(0, idx).trim();
+}
+
 function extrairTramites() {
   const tabelas = document.querySelectorAll('table[id^="id_tramite_"]');
   if (!tabelas.length) return [];
@@ -79,8 +87,18 @@ function extrairTramites() {
       data: extractDate(getValorAposLabel('Entrada:')),
       situacao,
       responsavel: getValorAposLabel('Usuário:'),
-      descricao: htmlToText(descHtml)
+      descricao: removerAssinaturaDescricao(htmlToText(descHtml))
     };
+  }).filter(t => {
+    
+    const situacoesIgnorar = [
+      'troca de responsável',
+      'alteração no formulário',
+    ];
+    const situacaoLower = (t.situacao || '').toLowerCase();
+    if (situacoesIgnorar.some(s => situacaoLower.includes(s))) return false;
+    if (situacaoLower === 'em análise' && !t.descricao?.trim()) return false;
+    return true;
   });
 }
 
@@ -674,6 +692,10 @@ ${transcricao}`;
   }
 
   const prompt = montarPrompt(cabecalho, tramites, anexosChatFinal, transcricaoFinal);
+  // ANTES (errado — prompt está undefined aqui):
+  console.log('[Sugestor SS] Prompt enviado para a IA:', prompt);
+  // DEPOIS (correto — a variável certa é promptComplemento):
+  console.log('[Sugestor SS] Prompt complemento enviado para a IA:', promptComplemento);
 
   atualizarMsgLoading('Enviando para a IA... aguarde ⏳');
   window._sscNumero = new URLSearchParams(window.location.search).get('ssc') || cabecalho.numero;
