@@ -2047,7 +2047,7 @@ async function initializeExtension() {
 
   // Cria os elementos flutuantes
   initializeScrollToTopButton()
-  createFloatingActionButtons()
+  await createFloatingActionButtons()
   setupFabListeners()
 
   // Aplica visibilidade inicial aos elementos globais
@@ -3128,64 +3128,69 @@ function saveStopwatchState() {
 
 // ----------------------
 
-function createFloatingActionButtons() {
+/**
+ * Cria os botões flutuantes (FAB) e seus menus.
+ */
+async function createFloatingActionButtons() {
   if (document.getElementById('fab-container')) return
+  
   const fabContainer = document.createElement('div')
   fabContainer.id = 'fab-container'
   fabContainer.className = 'fab-container'
 
-  fabContainer.innerHTML = `
-    <div class="fab-options" id="fab-options">
-      <div class="fab-option-wrapper" id="fab-wrapper-info">
+  // Carrega a ordem salva ou usa a padrão
+  const data = await chrome.storage.local.get(['fabOptionsOrder', 'fabWidgetsOrder'])
+  
+  const defaultOptionsOrder = ['fab-wrapper-info', 'fab-wrapper-notes', 'fab-wrapper-reminders', 'fab-wrapper-quicksteps', 'fab-wrapper-manage']
+  const defaultWidgetsOrder = ['fab-copy-ssc-wrapper', 'fab-stopwatch-wrapper']
+  
+  const optionsOrder = data.fabOptionsOrder || defaultOptionsOrder
+  const widgetsOrder = data.fabWidgetsOrder || defaultWidgetsOrder
+
+  // Mapa de conteúdo dos botões de opções
+  const optionsContent = {
+    'fab-wrapper-info': `
         <button type="button" class="fab-pin-btn" title="Fixar" data-target="fab-wrapper-info">
           <svg viewBox="0 0 24 24"><path d="M12,2A3,3 0 0,1 15,5V11L17,13V15H13V21L12,22L11,21V15H7V13L9,11V5A3,3 0 0,1 12,2Z" /></svg>
         </button>
         <button type="button" class="fab-button fab-option shine-effect" data-action="fab-info-panel" data-tooltip="Central de Informações">ℹ️</button>
         <span class="fab-badge"></span>
-      </div>
-
-      <div class="fab-option-wrapper" id="fab-wrapper-notes">
+    `,
+    'fab-wrapper-notes': `
         <button type="button" class="fab-pin-btn" title="Fixar" data-target="fab-wrapper-notes">
           <svg viewBox="0 0 24 24"><path d="M12,2A3,3 0 0,1 15,5V11L17,13V15H13V21L12,22L11,21V15H7V13L9,11V5A3,3 0 0,1 12,2Z" /></svg>
         </button>
         <button type="button" class="fab-button fab-option shine-effect" data-action="fab-notes" data-tooltip="Anotações">✍️</button>
-      </div>
-
-      <div class="fab-option-wrapper" id="fab-wrapper-reminders">
+    `,
+    'fab-wrapper-reminders': `
         <button type="button" class="fab-pin-btn" title="Fixar" data-target="fab-wrapper-reminders">
           <svg viewBox="0 0 24 24"><path d="M12,2A3,3 0 0,1 15,5V11L17,13V15H13V21L12,22L11,21V15H7V13L9,11V5A3,3 0 0,1 12,2Z" /></svg>
         </button>
         <button type="button" class="fab-button fab-option shine-effect" data-action="fab-reminders" data-tooltip="Gerenciar Lembretes">⏰</button>
-      </div>
-
-      <div class="fab-option-wrapper" id="fab-wrapper-quicksteps">
+    `,
+    'fab-wrapper-quicksteps': `
         <button type="button" class="fab-pin-btn" title="Fixar" data-target="fab-wrapper-quicksteps">
           <svg viewBox="0 0 24 24"><path d="M12,2A3,3 0 0,1 15,5V11L17,13V15H13V21L12,22L11,21V15H7V13L9,11V5A3,3 0 0,1 12,2Z" /></svg>
         </button>
         <button type="button" class="fab-button fab-option shine-effect" data-action="fab-quick-steps" data-tooltip="Trâmites">⚡</button>
-      </div>
-
-      <div class="fab-option-wrapper" id="fab-wrapper-manage">
+    `,
+    'fab-wrapper-manage': `
         <button type="button" class="fab-pin-btn" title="Fixar" data-target="fab-wrapper-manage">
           <svg viewBox="0 0 24 24"><path d="M12,2A3,3 0 0,1 15,5V11L17,13V15H13V21L12,22L11,21V15H7V13L9,11V5A3,3 0 0,1 12,2Z" /></svg>
         </button>
         <button type="button" class="fab-button fab-option shine-effect" data-action="fab-manage-steps" data-tooltip="Configurações">⚙️</button>
-      </div>
-    </div>
-    <button type="button" class="fab-button main-fab" title="Ações Rápidas">+</button>
-    
-    <!-- CONTAINER LATERAL DE WIDGETS -->
-    <div class="fab-lateral-widgets" id="fab-lateral-widgets">
-      <!-- WRAPPER DO COPIAR LINK SSC (SIBLING) -->
-      <div class="fab-copy-ssc-wrapper" id="fab-copy-ssc-wrapper">
+    `
+  }
+
+  // Mapa de conteúdo dos widgets laterais
+  const widgetsContent = {
+    'fab-copy-ssc-wrapper': `
         <button type="button" class="fab-pin-btn" title="Fixar Link SSC" data-target="fab-copy-ssc-wrapper">
           <svg viewBox="0 0 24 24"><path d="M12,2A3,3 0 0,1 15,5V11L17,13V15H13V21L12,22L11,21V15H7V13L9,11V5A3,3 0 0,1 12,2Z" /></svg>
         </button>
         <button type="button" id="fab-copy-ssc-link" class="stopwatch-btn" title="Copiar Link SSC">🔗</button>
-      </div>
-
-      <!-- WRAPPER DO CRONÔMETRO (SIBLING) -->
-      <div class="fab-stopwatch-wrapper" id="fab-stopwatch-wrapper">
+    `,
+    'fab-stopwatch-wrapper': `
         <button type="button" class="fab-pin-btn" title="Fixar Cronômetro" data-target="fab-stopwatch-wrapper">
           <svg viewBox="0 0 24 24"><path d="M12,2A3,3 0 0,1 15,5V11L17,13V15H13V21L12,22L11,21V15H7V13L9,11V5A3,3 0 0,1 12,2Z" /></svg>
         </button>
@@ -3194,7 +3199,32 @@ function createFloatingActionButtons() {
         <input type="text" id="fab-timer-input" class="fab-timer-input" style="display: none;" placeholder="00:00:00" />
         <button type="button" id="fab-timer-reset" class="stopwatch-btn" title="Zerar">↺</button>
         <button type="button" id="fab-timer-set" class="stopwatch-btn" title="Definir Tempo">✎</button>
-      </div>
+    `
+  }
+
+  // Monta o HTML das opções baseado na ordem
+  let optionsHtml = ''
+  optionsOrder.forEach(id => {
+    if (optionsContent[id]) {
+      optionsHtml += `<div class="fab-option-wrapper" id="${id}" draggable="true">${optionsContent[id]}</div>`
+    }
+  })
+
+  // Monta o HTML dos widgets baseado na ordem
+  let widgetsHtml = ''
+  widgetsOrder.forEach(id => {
+    if (widgetsContent[id]) {
+      widgetsHtml += `<div class="${id === 'fab-copy-ssc-wrapper' ? 'fab-copy-ssc-wrapper' : 'fab-stopwatch-wrapper'}" id="${id}" draggable="true">${widgetsContent[id]}</div>`
+    }
+  })
+
+  fabContainer.innerHTML = `
+    <div class="fab-options" id="fab-options">
+      ${optionsHtml}
+    </div>
+    <button type="button" class="fab-button main-fab" title="Ações Rápidas">+</button>
+    <div class="fab-lateral-widgets" id="fab-lateral-widgets">
+      ${widgetsHtml}
     </div>
   `
   document.body.appendChild(fabContainer)
@@ -3324,6 +3354,8 @@ function setupFabListeners() {
   initializeStopwatch()
   // Inicializa o estado dos Pins
   initializeFabPins()
+  // Configura reordenação via Drag and Drop
+  setupFabDragAndDrop()
 
   let isDragging = false,
     offsetX,
@@ -3384,6 +3416,111 @@ function setupFabListeners() {
 }
 
 /**
+ * Configura a funcionalidade de arrastar e soltar para reordenar os botões do FAB.
+ */
+function setupFabDragAndDrop() {
+  const containers = [
+    document.getElementById('fab-options'),
+    document.getElementById('fab-lateral-widgets')
+  ]
+
+  containers.forEach(container => {
+    if (!container) return
+
+    container.addEventListener('dragstart', e => {
+      const draggable = e.target.closest('[draggable="true"]')
+      if (!draggable) return
+      
+      draggable.classList.add('is-dragging')
+      e.dataTransfer.setData('text/plain', draggable.id)
+      e.dataTransfer.effectAllowed = 'move'
+    })
+
+    container.addEventListener('dragend', e => {
+      const draggable = e.target.closest('[draggable="true"]')
+      if (draggable) {
+        draggable.classList.remove('is-dragging')
+      }
+      
+      // Remove classes de drag-over de todos os itens
+      container.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'))
+      
+      // Salva a nova ordem
+      saveFabItemsOrder(container.id)
+    })
+
+    container.addEventListener('dragover', e => {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'move'
+      
+      const draggable = container.querySelector('.is-dragging')
+      if (!draggable) return
+
+      const afterElement = getDragAfterElement(container, e.clientY, e.clientX)
+      if (afterElement == null) {
+        container.appendChild(draggable)
+      } else {
+        container.insertBefore(draggable, afterElement)
+      }
+      
+      // Feedback visual do alvo
+      container.querySelectorAll('[draggable="true"]').forEach(el => {
+        if (el !== draggable) {
+          el.classList.remove('drag-over')
+        }
+      })
+    })
+  })
+}
+
+/**
+ * Determina qual elemento está logo após a posição do mouse durante o arraste.
+ */
+function getDragAfterElement(container, y, x) {
+  const draggableElements = [...container.querySelectorAll('[draggable="true"]:not(.is-dragging)')]
+
+  return draggableElements.reduce((closest, child) => {
+    const box = child.getBoundingClientRect()
+    
+    // Para fab-options (vertical)
+    if (container.id === 'fab-options') {
+      const offset = y - box.top - box.height / 2
+      if (offset < 0 && offset > closest.offset) {
+        return { offset: offset, element: child }
+      } else {
+        return closest
+      }
+    } 
+    // Para fab-lateral-widgets (horizontal)
+    else {
+      const offset = x - box.left - box.width / 2
+      if (offset < 0 && offset > closest.offset) {
+        return { offset: offset, element: child }
+      } else {
+        return closest
+      }
+    }
+  }, { offset: Number.NEGATIVE_INFINITY }).element
+}
+
+/**
+ * Salva a ordem atual dos itens de um container no storage.
+ */
+async function saveFabItemsOrder(containerId) {
+  const container = document.getElementById(containerId)
+  if (!container) return
+
+  const items = [...container.querySelectorAll('[draggable="true"]')]
+  const order = items.map(item => item.id)
+
+  if (containerId === 'fab-options') {
+    await chrome.storage.local.set({ fabOptionsOrder: order })
+  } else if (containerId === 'fab-lateral-widgets') {
+    await chrome.storage.local.set({ fabWidgetsOrder: order })
+  }
+}
+
+/**
  * Captura as informações da Solicitação de Suporte (SSC) atual e copia
  * um texto de trâmite formatado com link dinâmico para a área de transferência.
  */
@@ -3405,7 +3542,7 @@ function copySscLink() {
 
   if (!ssc || !numeroEl || !assuntoEl) {
     if (typeof showNotification === 'function') {
-      showNotification("Não foi possível capturar as informações do SSC nesta página.", "error");
+      showNotification("Não foi possível capturar as informações da SSC nesta página.", "error");
     } else {
       alert("❌ Não foi possível capturar todas as informações.");
     }

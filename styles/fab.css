@@ -104,7 +104,7 @@
   /* Mantém a cor de destaque, mas com efeito glass */
   background: rgba(255, 255, 255, 0.5);
   color: #333;
-  z-index: 2;
+  z-index: 1050; /* Aumentado para ficar acima da ponte de hover lateral */
   cursor: grab;
   background: rgba(0, 0, 0, 0.6); /* Fundo preto com 60% de opacidade */
   color: #fff; /* Ícones brancos para contraste */
@@ -796,13 +796,44 @@
   visibility: visible !important;
 }
 
-/* Ajuste específico para o transform do menu em diferentes posições quando fixado */
-.fab-container.bottom-left .fab-options.has-pinned-items,
-.fab-container.bottom-right .fab-options.has-pinned-items,
-.fab-container.top-left .fab-options.has-pinned-items,
-.fab-container.top-right .fab-options.has-pinned-items {
-  opacity: 1;
+/* --- DRAG AND DROP FEEDBACK --- */
+.fab-option-wrapper,
+.fab-copy-ssc-wrapper,
+.fab-stopwatch-wrapper {
+  cursor: grab;
+  user-select: none;
+}
+
+.fab-option-wrapper:active,
+.fab-copy-ssc-wrapper:active,
+.fab-stopwatch-wrapper:active {
+  cursor: grabbing;
+}
+
+.fab-option-wrapper.is-dragging,
+.fab-copy-ssc-wrapper.is-dragging,
+.fab-stopwatch-wrapper.is-dragging {
+  opacity: 0.4;
+  transform: scale(0.9);
+}
+
+.fab-option-wrapper.drag-over,
+.fab-copy-ssc-wrapper.drag-over,
+.fab-stopwatch-wrapper.drag-over {
+  border: 2px dashed var(--action-blue, #2563eb);
+  background: rgba(37, 99, 235, 0.1);
+}
+
+/* Garante que botões internos não interfiram no arraste do wrapper */
+.fab-option-wrapper button,
+.fab-copy-ssc-wrapper button,
+.fab-stopwatch-wrapper button,
+.fab-stopwatch-wrapper span {
   pointer-events: auto;
-  transform: translateY(0) scale(1);
+}
+
+/* Esconde o Pin durante o arraste para evitar poluição */
+.is-dragging .fab-pin-btn {
+  display: none !important;
 }
 
