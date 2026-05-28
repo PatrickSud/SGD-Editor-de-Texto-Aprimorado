@@ -5,7 +5,7 @@
 
 // ─── FEATURE FLAGS ───────────────────────────────────────────────────────────
 // Para reativar, mude para true e recarregue a extensão.
-const FEATURE_SUGERIR_SAM = false
+const FEATURE_SUGERIR_SAM = true
 // ─────────────────────────────────────────────────────────────────────────────
 
 function createHistoryManager(initialState) {
@@ -755,8 +755,8 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
   const isSscPage = window.location.pathname.includes('/sgsc/faces/ssc.html')
   const sugestorSSHtml = isSscPage
     ? `<div class="toolbar-separator" data-id="separator-sugestor-ss"></div>
-      <button type="button" data-action="sugerir-ss" class="shine-effect sugestor-ss-toolbar-btn" title="Sugerir SS com IA">✨ Sugerir SS</button>
-      ${FEATURE_SUGERIR_SAM ? `<button type="button" data-action="sugerir-sam" class="shine-effect sugestor-ss-toolbar-btn" title="Sugerir SAM com IA">📋 Sugerir SAM</button>` : ''}`
+     <button type="button" data-action="sugerir-ss" class="shine-effect sugestor-ss-toolbar-btn" title="Sugerir SS com IA">✨ Sugerir SS</button>
+     ${FEATURE_SUGERIR_SAM ? `<div class="toolbar-separator" data-id="separator-sugerir-sam"></div><button type="button" data-action="sugerir-sam" class="shine-effect sugestor-ss-toolbar-btn" title="Sugerir SAM com IA">📋 Sugerir SAM</button>` : ''}`
     : ''
 
   return `

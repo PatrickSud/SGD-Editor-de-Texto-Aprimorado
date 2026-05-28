@@ -49,7 +49,7 @@ const AI_CHAINS = {
   'ASSISTENTE SUPORTE - Padrões e assuntos por fila':                                            'bf79bed3-d1f2-4b9c-b08a-a7c0551eb4dc',
   'ASSISTENTE - Manual Cadastro de SSs':                                                         '27921542-92d4-408a-a3cb-bb4372553e43',
   'ASSISTENTE: Cadastro de SA/NE':                                                               '3ef5f8c0-721e-4ee1-bf3a-48e37ec9f9e2',
-  'LISTAGEM DE SANES E SAILS - GERAL':                                                           'bcda651a-1518-4808-97b1-439ad9ca1306',
+  'LISTAGEM DE SANES E SAILS - GERAL':                                                           'cb5f81b8-40eb-4f61-b155-e70a51525103',
   'Analisador - Consultar SSCs recentes do mesmo cliente':                                       '1c742809-5c60-4e38-9432-cd350906de7c',
   'APOIO AO SUPORTE - Boas práticas telefone/laptop':                                            '4f0e3f37-e63f-4188-8c15-373eb75c77c8',
   'GERADOR DE RELATÓRIOS - Criar arquivo BGR com consultas SQL':                                 'c5c03c64-1577-4e1d-bf7a-61723a450449',
@@ -58,7 +58,6 @@ const AI_CHAINS = {
 
 const GPT55_WORKFLOW_ID = '3a875be6-996a-4a44-b78d-d9aa2584f9a4'
 const EXPERIENCE_IDS = [GPT55_WORKFLOW_ID] // IDs que usam SendMessageV3
-
 const ROUTER_WORKFLOW_ID = '10a5378c-8777-4217-9cae-6b5a1dbfdb14'
 
 /**
@@ -936,7 +935,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // ── Sugestor SAM — chain fixa "ASSISTENTE: Cadastro de SA/NE" ──────────
         const SAM_WORKFLOW_ID = AI_CHAINS['ASSISTENTE: Cadastro de SA/NE']
         handleGerarSugestao(message.prompt, sender.tab.id, SAM_WORKFLOW_ID, 'samCompleta', 'samErro')
+      
+      } else if (message.action === 'buscarSAMSimilares' && sender.tab?.id) {
+        // ── Busca SAMs similares antes de cadastrar ───────────────────────
+        const BUSCA_SAM_WORKFLOW_ID = AI_CHAINS['LISTAGEM DE SANES E SAILS - GERAL']
         
+        handleGerarSugestao(message.prompt, sender.tab.id, BUSCA_SAM_WORKFLOW_ID, 'buscaSAMCompleta', 'buscaSAMErro')
       } else if (message.action === 'resumirChat' && sender.tab?.id) {
       // ── Pré-resumo de chat ou transcrição via chain rápida (Gemini Flash) ──
       const RESUMO_CHAT_WORKFLOW_ID = '4b95e35f-e8ea-44e6-ad74-555bf39be13f'

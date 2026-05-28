@@ -731,24 +731,13 @@ function handleAISuggestSAM() {
         return
       }
 
-      closeModal()
-      showNotification('Gerando sugestão de SAM... ⏳', 'info', 8000)
-
-      const onResponse = (message) => {
-        if (message.action === 'samCompleta') {
-          chrome.runtime.onMessage.removeListener(onResponse)
-          preencherDescricaoSAM(message.data)
-        } else if (message.action === 'samErro') {
-          chrome.runtime.onMessage.removeListener(onResponse)
-          showNotification(`Erro ao gerar SAM: ${message.data}`, 'error', 6000)
-        }
+      if (descricao.length < 30) {
+        showNotification('Descrição muito curta. Adicione mais detalhes para uma SAM de qualidade.', 'error')
+        return
       }
 
-      chrome.runtime.onMessage.addListener(onResponse)
-      chrome.runtime.sendMessage({
-        action: 'gerarSugestaoSAM',
-        prompt: montarPromptSAM(descricao)
-      })
+      closeModal()
+      _buscarESugerirSAM(descricao, false)
     }
   )
 
@@ -763,24 +752,7 @@ function handleAISuggestSAM() {
       }
 
       if (document.body.contains(modal)) document.body.removeChild(modal)
-
-      showNotification('Lendo o atendimento e gerando SAM... ⏳', 'info', 8000)
-
-      const onResponse = (message) => {
-        if (message.action === 'samCompleta') {
-          chrome.runtime.onMessage.removeListener(onResponse)
-          preencherDescricaoSAM(message.data)
-        } else if (message.action === 'samErro') {
-          chrome.runtime.onMessage.removeListener(onResponse)
-          showNotification(`Erro ao gerar SAM: ${message.data}`, 'error', 6000)
-        }
-      }
-
-      chrome.runtime.onMessage.addListener(onResponse)
-      chrome.runtime.sendMessage({
-        action: 'gerarSugestaoSAM',
-        prompt: montarPromptSAMDoAtendimento(rawContent)
-      })
+      _buscarESugerirSAM(rawContent, true)
     })
   }
 
@@ -789,6 +761,152 @@ function handleAISuggestSAM() {
 
   document.body.appendChild(modal)
   modal.querySelector('#modal-sam-input').focus()
+}
+
+/**
+ * Busca SAMs similares e depois exibe o resultado para o técnico decidir.
+ * @param {string} conteudo - Descrição do técnico ou conteúdo do atendimento.
+ * @param {boolean} veioDoAtendimento - true = leu a página, false = técnico escreveu.
+ */
+function _buscarESugerirSAM(conteudo, veioDoAtendimento) {
+  showNotification('Buscando SAMs similares... 🔍', 'info', 10000)
+
+  // Ativa loading no botão Sugerir SAM
+  const btnSAM = document.querySelector('[data-action="sugerir-sam"]')
+  if (btnSAM) {
+    btnSAM.dataset.originalHtml = btnSAM.innerHTML
+    btnSAM.innerHTML = 'Sugerir SAM ⏳'
+    btnSAM.classList.add('ai-loading')
+    btnSAM.disabled = true
+  }
+
+  const onBusca = (message) => {
+    if (message.action === 'buscaSAMCompleta') {
+      chrome.runtime.onMessage.removeListener(onBusca)
+
+      // Desativa loading
+      if (btnSAM) {
+        btnSAM.innerHTML = btnSAM.dataset.originalHtml || '📋 Sugerir SAM'
+        btnSAM.classList.remove('ai-loading')
+        btnSAM.disabled = false
+      }
+
+      _mostrarResultadosBusca(message.data, conteudo, veioDoAtendimento)
+
+    } else if (message.action === 'buscaSAMErro') {
+      chrome.runtime.onMessage.removeListener(onBusca)
+
+      // Desativa loading
+      if (btnSAM) {
+        btnSAM.innerHTML = btnSAM.dataset.originalHtml || '📋 Sugerir SAM'
+        btnSAM.classList.remove('ai-loading')
+        btnSAM.disabled = false
+      }
+
+      showNotification(`Erro na busca: ${message.data}`, 'error', 6000)
+    }
+  }
+
+  chrome.runtime.onMessage.addListener(onBusca)
+  chrome.runtime.sendMessage({
+    action: 'buscarSAMSimilares',
+    prompt: conteudo
+  })
+}
+/**
+ * Exibe o modal com SAMs similares encontradas.
+ * O técnico decide se cadastra mesmo assim ou cancela.
+ */
+function _mostrarResultadosBusca(resultadoBusca, conteudoOriginal, veioDoAtendimento) {
+  // ── Extrai os blocos de solicitação da resposta da chain ─────────────
+  // Cada solicitação começa com "✅ Solicitação N:" ou "---"
+  const blocos = resultadoBusca
+    .split(/---+/)
+    .map(b => b.trim())
+    .filter(b => b.length > 20 && (b.includes('Assunto:') || b.includes('Solicitação Interna:')))
+
+  let htmlConteudo = ''
+
+  if (blocos.length === 0) {
+    // Nenhum bloco reconhecido — exibe o texto bruto formatado como fallback
+    htmlConteudo = `<p style="font-size:13px;">${resultadoBusca.replace(/\n/g, '<br>')}</p>`
+  } else {
+    htmlConteudo = blocos.map(bloco => {
+      // Extrai campos do bloco
+      const extrair = (label) => {
+        const regex = new RegExp(`\\*{0,2}${label}\\*{0,2}[:\\s]+([^\\n]+)`, 'i')
+        const match = bloco.match(regex)
+        return match ? match[1].replace(/\*+/g, '').trim() : ''
+      }
+
+      const assunto    = extrair('Assunto')
+      const situacao   = extrair('Situação')
+      const descricao  = extrair('Descrição')
+
+      // Link da solicitação interna: [NÚMERO](URL)
+      const linkMatch  = bloco.match(/\[(\d+)\]\((https?:\/\/[^\)]+)\)/)
+      const linkHtml = linkMatch
+        ? `<a href="${linkMatch[2]}" target="_blank" rel="noopener noreferrer" style="color: var(--accent-color); font-weight: bold; font-size: 15px;">${linkMatch[1]}</a>`
+        : ''
+
+      return `
+        <div style="
+          padding: 10px 12px;
+          margin-bottom: 10px;
+          border: 1px solid var(--border-color);
+          border-radius: 6px;
+          background: var(--bg-primary);
+          font-size: 13px;
+          line-height: 1.5;
+        ">
+          ${assunto ? `<div style="font-weight: bold; margin-bottom: 4px;">${escapeHTML(assunto)}</div>` : ''}
+          <div style="display: flex; gap: 12px; margin-bottom: 6px; font-size: 12px; color: var(--text-color-muted);">
+            ${linkHtml ? `<span style="font-size: 14px; font-weight: bold;">🔗 Solicitação: ${linkHtml}</span>` : ''}
+            ${situacao   ? `<span>📌 ${escapeHTML(situacao)}</span>`   : ''}
+          </div>
+          ${descricao ? `<div style="color: var(--text-color-secondary);">${escapeHTML(descricao)}</div>` : ''}
+        </div>`
+    }).join('')
+  }
+
+  const modalBusca = createModal(
+    '🔍 SAMs Similares Encontradas',
+    `<div style="max-height: 400px; overflow-y: auto; padding-right: 4px;">
+       ${htmlConteudo}
+     </div>
+     <p style="font-size: 12px; color: var(--text-color-muted); margin: 10px 0 0;">
+       Verifique se alguma das SAMs acima já contempla a necessidade do cliente antes de cadastrar uma nova.
+     </p>`,
+    (modalContent, closeModal) => {
+      closeModal()
+      showNotification('Gerando sugestão de SAM... ⏳', 'info', 8000)
+
+      const prompt = veioDoAtendimento
+        ? montarPromptSAMDoAtendimento(conteudoOriginal)
+        : montarPromptSAM(conteudoOriginal)
+
+      const onGeracao = (message) => {
+        if (message.action === 'samCompleta') {
+          chrome.runtime.onMessage.removeListener(onGeracao)
+          preencherDescricaoSAM(message.data)
+        } else if (message.action === 'samErro') {
+          chrome.runtime.onMessage.removeListener(onGeracao)
+          showNotification(`Erro ao gerar SAM: ${message.data}`, 'error', 6000)
+        }
+      }
+
+      chrome.runtime.onMessage.addListener(onGeracao)
+      chrome.runtime.sendMessage({ action: 'gerarSugestaoSAM', prompt })
+    }
+  )
+
+  const saveBtn = modalBusca.querySelector('#modal-save-btn')
+  if (saveBtn) saveBtn.textContent = 'Cadastrar SAM mesmo assim'
+
+  const cancelBtn = modalBusca.querySelector('#modal-cancel-btn')
+  if (cancelBtn) cancelBtn.textContent = 'Cancelar'
+
+  document.body.appendChild(modalBusca)
 }
 
 /**

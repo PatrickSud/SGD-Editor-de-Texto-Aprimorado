@@ -3090,3 +3090,8 @@ a.open-link-btn:hover {
 .summary-card-content p {
   margin: 0 0 4px 0;
 }
+
+@keyframes samLinkPulse {
+  0%, 100% { text-shadow: 0 0 6px rgba(250, 100, 0, 0.5); }
+  50%       { text-shadow: 0 0 14px rgba(250, 100, 0, 0.95); color: #ff7a1a; }
+}
