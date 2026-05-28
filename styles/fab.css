@@ -426,15 +426,32 @@
 /* --- STOPWATCH LABEL (TIMER DISPLAY) --- */
 /* --- STOPWATCH WRAPPER (Lateral Display) --- */
 /* --- STOPWATCH WRAPPER (Lateral Display) --- */
-.fab-stopwatch-outer-wrapper {
+.fab-lateral-widgets {
   position: absolute;
-  /* top/bottom definido via classes .top-* / .bottom-* abaixo */
+  /* top/bottom e left/right definidos via classes .top-* / .bottom-* abaixo */
   display: flex;
   align-items: center;
   gap: 8px;
   z-index: 1045;
-  /* Delay na saída para dar tempo de mover o mouse (estabilidade) */
-  transition: opacity 0.2s ease 0.2s, transform 0.2s ease 0.2s;
+  pointer-events: none;
+}
+
+/* Wrapper do Copiar Link SSC */
+.fab-copy-ssc-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba(60, 60, 60, 0.700);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  color: #f0f0f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: opacity 0.2s ease, transform 0.2s ease, background-color 0.2s ease;
   
   /* Padrão: Oculto */
   opacity: 0;
@@ -442,6 +459,35 @@
   transform: translateX(-10px); /* Leve deslocamento inicial */
 }
 
+.fab-copy-ssc-wrapper:hover {
+  background-color: rgba(80, 80, 80, 0.85);
+  transform: scale(1.05);
+}
+
+.fab-copy-ssc-wrapper:active {
+  transform: scale(0.95);
+}
+
+#fab-copy-ssc-link {
+  background: transparent;
+  border: none;
+  color: #ccc;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+#fab-copy-ssc-link:hover {
+  color: #fff;
+}
+
+/* Wrapper do Cronômetro */
 .fab-stopwatch-wrapper {
   display: flex;
   align-items: center;
@@ -457,75 +503,56 @@
   color: #f0f0f0;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: opacity 0.2s ease, transform 0.2s ease;
   
   white-space: nowrap;
   font-family: monospace;
   font-weight: bold;
   font-size: 14px;
-}
-
-/* Botão separado para copiar link SSC */
-#fab-copy-ssc-link {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: rgba(60, 60, 60, 0.700);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  color: #f0f0f0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 16px;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-  padding: 0;
-}
-
-#fab-copy-ssc-link:hover {
-  background-color: rgba(80, 80, 80, 0.85);
-  transform: scale(1.05);
-}
-
-#fab-copy-ssc-link:active {
-  transform: scale(0.95);
+  
+  /* Padrão: Oculto */
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-10px); /* Leve deslocamento inicial */
 }
 
 /* Ponte Invisível para estabilidade do Hover */
-.fab-stopwatch-outer-wrapper::before {
+.fab-lateral-widgets::before {
   content: '';
   position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 20px; /* Largura suficiente para cobrir o gap */
+  top: -25px; /* Expande significativamente verticalmente para maior segurança no movimento diagonal */
+  bottom: -25px;
+  width: 45px; /* Aumentado para cobrir o gap de 12px com muita folga e sobrepor o FAB */
   z-index: -1;
+  pointer-events: auto; /* CRÍTICO: Permite que a ponte capture o hover */
 }
 
 /* Ajusta a posição da ponte conforme o lado */
-.fab-container.top-left .fab-stopwatch-outer-wrapper::before,
-.fab-container.bottom-left .fab-stopwatch-outer-wrapper::before {
+.fab-container.top-left .fab-lateral-widgets::before,
+.fab-container.bottom-left .fab-lateral-widgets::before {
   right: 100%; /* Estende para a esquerda (em direção ao FAB) */
 }
 
-.fab-container.top-right .fab-stopwatch-outer-wrapper::before,
-.fab-container.bottom-right .fab-stopwatch-outer-wrapper::before {
+.fab-container.top-right .fab-lateral-widgets::before,
+.fab-container.bottom-right .fab-lateral-widgets::before {
   left: 100%; /* Estende para a direita (em direção ao FAB) */
 }
 
 /* Mostra apenas no Hover do Container */
-.fab-container:hover .fab-stopwatch-outer-wrapper {
+.fab-container:hover .fab-lateral-widgets {
+  pointer-events: auto;
+}
+
+.fab-container:hover .fab-copy-ssc-wrapper,
+.fab-container:hover .fab-stopwatch-wrapper {
   opacity: 1;
   pointer-events: auto;
   transform: translateX(0);
-  /* Remove o delay na entrada para aparecer instantaneamente */
-  transition-delay: 0s;
 }
 
 /* Esconde labels e inputs do FAB quando arrastando para evitar poluição visual */
-.fab-container.dragging .fab-stopwatch-outer-wrapper {
+.fab-container.dragging .fab-copy-ssc-wrapper,
+.fab-container.dragging .fab-stopwatch-wrapper {
   opacity: 0.3;
   pointer-events: none;
 }
@@ -603,35 +630,37 @@
 /* --- POSICIONAMENTO LATERAL CONDICIONAL COM ALINHAMENTO VERTICAL --- */
 
 /* FAB no TOPO -> Alinha pelo topo */
-.fab-container.top-left .fab-stopwatch-outer-wrapper,
-.fab-container.top-right .fab-stopwatch-outer-wrapper {
+.fab-container.top-left .fab-lateral-widgets,
+.fab-container.top-right .fab-lateral-widgets {
   top: 0;
   bottom: auto;
 }
 
 /* FAB na BASE -> Alinha pela base (CORREÇÃO DE ALINHAMENTO) */
-.fab-container.bottom-left .fab-stopwatch-outer-wrapper,
-.fab-container.bottom-right .fab-stopwatch-outer-wrapper {
+.fab-container.bottom-left .fab-lateral-widgets,
+.fab-container.bottom-right .fab-lateral-widgets {
   bottom: 0;
   top: auto;
 }
 
-/* FAB na ESQUERDA -> Cronômetro à DIREITA */
-.fab-container.top-left .fab-stopwatch-outer-wrapper,
-.fab-container.bottom-left .fab-stopwatch-outer-wrapper {
+/* FAB na ESQUERDA -> Widgets à DIREITA, Link à ESQUERDA do Relógio */
+.fab-container.top-left .fab-lateral-widgets,
+.fab-container.bottom-left .fab-lateral-widgets {
   left: 100%;
   right: auto;
   margin-left: 12px; /* Gap lateral */
   transform-origin: left center;
+  flex-direction: row;
 }
 
-/* FAB na DIREITA -> Cronômetro à ESQUERDA (Invertido) */
-.fab-container.top-right .fab-stopwatch-outer-wrapper,
-.fab-container.bottom-right .fab-stopwatch-outer-wrapper {
+/* FAB na DIREITA -> Widgets à ESQUERDA, Link à DIREITA do Relógio */
+.fab-container.top-right .fab-lateral-widgets,
+.fab-container.bottom-right .fab-lateral-widgets {
   right: 100%;
   left: auto;
   margin-right: 12px;
   transform-origin: right center;
+  flex-direction: row-reverse;
 }
 
 /* FAB na DIREITA -> Mantém row-reverse apenas no cronômetro interno para seus botões */
@@ -644,54 +673,64 @@
 /* --- FAB PIN BUTTON & BEHAVIOR --- */
 .fab-pin-btn {
   position: absolute;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border: none;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0; /* Invisível por padrão */
+  opacity: 0; /* Invisível por padrão, aparece no hover do pai */
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 100;
-  color: #888; /* Cinza no estado desabilitado/normal */
+  z-index: 110;
+  color: #555;
   padding: 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
 
 .fab-pin-btn svg {
-  width: 100%;
-  height: 100%;
+  width: 14px;
+  height: 14px;
   fill: transparent;
   stroke: currentColor;
-  stroke-width: 2px;
+  stroke-width: 2.5px;
   transition: all 0.3s ease;
-  opacity: 0.9;
 }
 
 /* Mostra o pin no hover do elemento pai */
 .fab-option-wrapper:hover .fab-pin-btn,
 .fab-stopwatch-wrapper:hover .fab-pin-btn,
+.fab-copy-ssc-wrapper:hover .fab-pin-btn,
 .fab-pin-btn.active {
   opacity: 1;
 }
 
-.fab-pin-btn:hover svg {
-  opacity: 1;
+.fab-pin-btn:hover {
+  background: #fff;
   transform: scale(1.1);
+  box-shadow: 0 3px 6px rgba(0,0,0,0.25);
+  color: #000;
 }
 
 /* ESTADO FIXADO (PIN ATIVO) */
+.fab-pin-btn.active,
+.is-pinned .fab-pin-btn {
+  opacity: 1;
+  background: var(--action-blue, #2563eb);
+  color: #fff;
+}
+
 .fab-pin-btn.active svg,
 .is-pinned .fab-pin-btn svg {
-  fill: currentColor;
+  fill: #fff;
   stroke: none;
-  opacity: 1;
-  color: #3333339d; /* Cinza bem escuro no estado ativado */
 }
 
 /* ROTAÇÕES CONDICIONAIS NO MODO FIXADO */
-.is-pinned#fab-stopwatch-outer-wrapper .fab-pin-btn svg {
+.is-pinned#fab-stopwatch-wrapper .fab-pin-btn svg,
+.is-pinned#fab-copy-ssc-wrapper .fab-pin-btn svg {
   transform: rotate(45deg);
 }
 
@@ -699,14 +738,10 @@
   transform: rotate(-45deg);
 }
 
-.fab-pin-btn.active {
-  opacity: 1;
-}
-
 /* Posicionamento do Pin em .fab-option-wrapper (Ferramentas Individuais) */
 .fab-option-wrapper .fab-pin-btn {
-  top: -7px;
-  left: -7px;
+  top: -8px;
+  left: -8px;
 }
 
 /* Posicionamento do Pin em .fab-stopwatch-wrapper (Cronômetro) */
@@ -715,10 +750,17 @@
   right: -8px;
 }
 
+/* Posicionamento do Pin em .fab-copy-ssc-wrapper (Link SSC) */
+.fab-copy-ssc-wrapper .fab-pin-btn {
+  top: -8px;
+  left: -8px;
+}
+
 /* --- REGRAS DE VISIBILIDADE PARA ITENS FIXADOS --- */
 
 /* 1. O container de opções fica visível se estiver em HOVER ou se tiver itens fixados */
 .fab-container:hover .fab-options,
+.fab-lateral-widgets:hover ~ .fab-options,
 .fab-options.has-pinned-items {
   opacity: 1;
   pointer-events: auto;
@@ -733,15 +775,23 @@
 }
 
 .fab-container:hover .fab-option-wrapper,
+.fab-lateral-widgets:hover .fab-option-wrapper,
 .fab-option-wrapper.is-pinned {
   opacity: 1;
   pointer-events: auto;
 }
 
-/* 3. Comportamento do Cronômetro (Mantém-se igual, pois é sibling) */
-.fab-stopwatch-outer-wrapper.is-pinned,
-.fab-stopwatch-outer-wrapper.is-running,
-.fab-stopwatch-outer-wrapper.is-editing {
+/* 3. Comportamento do Cronômetro e do Copiar Link SSC */
+.fab-copy-ssc-wrapper.is-pinned {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  transform: translateX(0) !important;
+  visibility: visible !important;
+}
+
+.fab-stopwatch-wrapper.is-pinned,
+.fab-stopwatch-wrapper.is-running,
+.fab-stopwatch-wrapper.is-editing {
   opacity: 1 !important;
   pointer-events: auto !important;
   transform: translateX(0) !important;

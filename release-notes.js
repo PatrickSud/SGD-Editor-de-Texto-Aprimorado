@@ -1,4 +1,14 @@
 const RELEASE_NOTES = {
+  '3.0.5': {
+    title: '✨ Novidades da Versão 3.0.5',
+    features: [
+      '<b>🔗 Copiar Link SSC diretamente do FAB:</b>' +
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      '<li>Novo botão flutuante <b>Copiar Link SSC</b> disponível no menu de Acesso Rápido (FAB).</li>' +
+      '<li>Permite copiar rapidamente o link da SSC, formatando um texto pronto para envio ao cliente em um novo trâmite que existe outra SSC de mesmo assunto.</li>' +
+      '</ul>'
+    ]
+  },
   '3.0.4': {
     title: '👁️ Melhorias no Preview — Versão 3.0.4',
     features: [

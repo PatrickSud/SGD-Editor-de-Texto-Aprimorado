@@ -3010,7 +3010,7 @@ function setStopwatchTime() {
   timerInput.style.display = 'inline-block'
 
   // Adiciona classe de edição para manter visível
-  const wrapper = document.getElementById('fab-stopwatch-outer-wrapper')
+  const wrapper = document.getElementById('fab-stopwatch-wrapper')
   if (wrapper) wrapper.classList.add('is-editing')
 
   // Foca e seleciona tudo
@@ -3043,7 +3043,7 @@ function handleStopwatchInputComplete(save = true) {
   timerText.style.display = 'inline-block'
 
   // Remove classe de edição
-  const wrapper = document.getElementById('fab-stopwatch-outer-wrapper')
+  const wrapper = document.getElementById('fab-stopwatch-wrapper')
   if (wrapper) wrapper.classList.remove('is-editing')
 
   updateStopwatchDisplay()
@@ -3078,7 +3078,7 @@ function stopStopwatchTicker() {
 
 function updateStopwatchIcon() {
   const btn = document.getElementById('fab-timer-toggle')
-  const wrapper = document.getElementById('fab-stopwatch-outer-wrapper')
+  const wrapper = document.getElementById('fab-stopwatch-wrapper')
 
   if (btn) {
     btn.textContent = stopwatchState.isRunning ? '⏸️' : '▶️'
@@ -3174,11 +3174,19 @@ function createFloatingActionButtons() {
     </div>
     <button type="button" class="fab-button main-fab" title="Ações Rápidas">+</button>
     
-    <!-- WRAPPER DO CRONÔMETRO E BOTÃO SSC (SIBLING) -->
-    <div class="fab-stopwatch-outer-wrapper" id="fab-stopwatch-outer-wrapper">
-      <button type="button" id="fab-copy-ssc-link" title="Copiar Link SSC">🔗</button>
+    <!-- CONTAINER LATERAL DE WIDGETS -->
+    <div class="fab-lateral-widgets" id="fab-lateral-widgets">
+      <!-- WRAPPER DO COPIAR LINK SSC (SIBLING) -->
+      <div class="fab-copy-ssc-wrapper" id="fab-copy-ssc-wrapper">
+        <button type="button" class="fab-pin-btn" title="Fixar Link SSC" data-target="fab-copy-ssc-wrapper">
+          <svg viewBox="0 0 24 24"><path d="M12,2A3,3 0 0,1 15,5V11L17,13V15H13V21L12,22L11,21V15H7V13L9,11V5A3,3 0 0,1 12,2Z" /></svg>
+        </button>
+        <button type="button" id="fab-copy-ssc-link" class="stopwatch-btn" title="Copiar Link SSC">🔗</button>
+      </div>
+
+      <!-- WRAPPER DO CRONÔMETRO (SIBLING) -->
       <div class="fab-stopwatch-wrapper" id="fab-stopwatch-wrapper">
-        <button type="button" class="fab-pin-btn" title="Fixar Cronômetro" data-target="fab-stopwatch-outer-wrapper">
+        <button type="button" class="fab-pin-btn" title="Fixar Cronômetro" data-target="fab-stopwatch-wrapper">
           <svg viewBox="0 0 24 24"><path d="M12,2A3,3 0 0,1 15,5V11L17,13V15H13V21L12,22L11,21V15H7V13L9,11V5A3,3 0 0,1 12,2Z" /></svg>
         </button>
         <button type="button" id="fab-timer-toggle" class="stopwatch-btn" title="Iniciar/Pausar">▶️</button>
@@ -3416,13 +3424,13 @@ Sigo a disposição.`;
   navigator.clipboard.writeText(textToCopy)
     .then(() => {
       if (typeof showNotification === 'function') {
-        showNotification("Texto do trâmite copiado com sucesso!", "success");
+        showNotification("Link da SSC copiado com sucesso! Gerado Trâmite com o link para o cliente.", "success");
       }
     })
     .catch(err => {
-      console.error("Erro ao copiar o texto do trâmite: ", err);
+      console.error("Erro ao copiar o link da Solicitação de Suporte: ", err);
       if (typeof showNotification === 'function') {
-        showNotification("Erro ao copiar o texto.", "error");
+        showNotification("Erro ao copiar o link da Solicitação de Suporte.", "error");
       }
     });
 }
