@@ -699,11 +699,10 @@
   transition: all 0.3s ease;
 }
 
-/* Mostra o pin no hover do elemento pai */
+/* Mostra o pin no hover do elemento pai (independente de estar fixado ou não) */
 .fab-option-wrapper:hover .fab-pin-btn,
 .fab-stopwatch-wrapper:hover .fab-pin-btn,
-.fab-copy-ssc-wrapper:hover .fab-pin-btn,
-.fab-pin-btn.active {
+.fab-copy-ssc-wrapper:hover .fab-pin-btn {
   opacity: 1;
 }
 
@@ -714,10 +713,9 @@
   color: #000;
 }
 
-/* ESTADO FIXADO (PIN ATIVO) */
+/* ESTADO FIXADO (PIN ATIVO) - Estilo visual quando visível no hover */
 .fab-pin-btn.active,
 .is-pinned .fab-pin-btn {
-  opacity: 1;
   background: var(--action-blue, #2563eb);
   color: #fff;
 }
