@@ -1603,15 +1603,18 @@ function setupEditorInstanceListeners(
     const startAILoading = () => {
       button.disabled = true
       button.classList.add('ai-loading')
-      const masterButton = editorContainer.querySelector('.ai-master-button')
-      if (masterButton) masterButton.classList.add('ai-loading')
+      // Adiciona loading em TODOS os botões mestre de IA da página (pode haver mais de um editor)
+      document
+        .querySelectorAll('.ai-master-button')
+        .forEach(btn => btn.classList.add('ai-loading'))
     }
 
     const stopAILoading = () => {
       button.disabled = false
       button.classList.remove('ai-loading')
-      const masterButton = editorContainer.querySelector('.ai-master-button')
-      if (masterButton) masterButton.classList.remove('ai-loading')
+      document
+        .querySelectorAll('.ai-master-button')
+        .forEach(btn => btn.classList.remove('ai-loading'))
     }
 
     switch (action) {
@@ -1715,7 +1718,21 @@ function setupEditorInstanceListeners(
         // Chama a função exposta pelo sugestor-ss.js via window.
         // Ambos os scripts rodam na ssc.html — o window é compartilhado.
         if (typeof window.iniciarSugestao === 'function') {
-          window.iniciarSugestao()
+          startAILoading()
+          // O Sugestor SS gerencia o próprio loading visual no overlay,
+          // mas precisamos desativar o loading no botão mestre quando terminar.
+          const checkFinished = setInterval(() => {
+            const overlay = document.getElementById('sugestor-ss-overlay')
+            if (!overlay || overlay.style.display === 'none') {
+              clearInterval(checkFinished)
+              stopAILoading()
+            }
+          }, 1000)
+
+          window.iniciarSugestao().catch(() => {
+            clearInterval(checkFinished)
+            stopAILoading()
+          })
         } else {
           showNotification(
             'Sugestor SS não disponível. Recarregue a página.',
@@ -1725,7 +1742,8 @@ function setupEditorInstanceListeners(
         break
 
       case 'sugerir-sam':
-        handleAISuggestSAM()
+        startAILoading()
+        handleAISuggestSAM().finally(() => stopAILoading())
         break
     }
   })
