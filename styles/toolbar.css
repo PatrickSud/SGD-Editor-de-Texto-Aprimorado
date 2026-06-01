@@ -20,8 +20,10 @@
   cursor: pointer;
   font-size: var(--ui-font-size);
   color: var(--text-color-main);
-  transition: background-color var(--transition-fast),
-    box-shadow var(--transition-fast), transform var(--transition-fast);
+  transition:
+    background-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 .editor-toolbar button:hover,
@@ -47,7 +49,9 @@
   color: white;
   border-color: var(--primary-color);
   transform: translateY(-1px) scale(var(--ui-icon-scale));
-  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2), var(--shadow-md);
+  box-shadow:
+    inset 0 0 5px rgba(0, 0, 0, 0.2),
+    var(--shadow-md);
 }
 
 /* Ajuste para que o tamanho do ícone seja controlado pela escala */
@@ -121,9 +125,129 @@
   width: 100%;
   text-align: left;
   margin-bottom: 4px;
+  white-space: nowrap;
+  flex: 1;
 }
-.dropdown-content button:last-child {
+
+/* Opções de IA com PIN */
+.ai-option-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  margin-bottom: 4px;
+  padding: 0;
+}
+
+.ai-option-wrapper:last-child {
   margin-bottom: 0;
+}
+
+.ai-option-wrapper button[data-action] {
+  margin-bottom: 0;
+}
+
+.ai-option-wrapper button[data-action].is-pinned {
+  opacity: 0.5;
+}
+
+.pin-ai-btn {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  max-width: 28px !important;
+  max-height: 28px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--border-radius-sm) !important;
+  font-size: 13px !important;
+  opacity: 0.4;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+  transform: none !important; /* Impede a escala global de afetar o tamanho */
+  box-sizing: border-box !important;
+}
+
+.pin-ai-btn:hover {
+  opacity: 1;
+  background: var(--background-hover) !important;
+  border-color: var(--border-color) !important;
+  transform: translateY(
+    -1px
+  ) !important; /* Mantém apenas o deslocamento, sem escala */
+}
+
+.pin-ai-btn.active {
+  opacity: 1;
+  color: var(--primary-color);
+  background: color-mix(
+    in srgb,
+    var(--primary-color) 10%,
+    transparent
+  ) !important;
+  border-color: var(--primary-color) !important;
+}
+
+.pinned-ai-button {
+  border: 1px solid var(--primary-color) !important;
+  background-color: color-mix(
+    in srgb,
+    var(--primary-color) 10%,
+    transparent
+  ) !important;
+}
+
+/* Seções de IA no dropdown */
+.ai-dropdown-sections {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.ai-section {
+  display: flex;
+  flex-direction: column;
+  min-width: 150px;
+}
+
+.ai-section-separator {
+  width: 1.5px;
+  background-color: var(--border-color);
+  margin: 0 4px;
+  align-self: stretch;
+  opacity: 0.6;
+}
+
+/* Ajuste do botão Recursos de IA com label */
+.ai-master-button {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 12px !important;
+  width: auto !important;
+  height: 32px !important;
+  min-width: 32px;
+  box-sizing: border-box !important;
+  line-height: 1 !important;
+  vertical-align: middle;
+  margin: 0 !important;
+}
+
+.ai-master-button .btn-label {
+  font-size: 13px; /* Igualado aos outros botões da fixed-toolbar */
+  font-weight: 600;
+  white-space: nowrap;
+  line-height: 1;
+  display: inline-block;
+  margin-top: 1px; /* Pequeno ajuste fino para alinhar texto com o ícone */
 }
 
 /* Modo HOVER: exibe via :hover quando habilitado */
@@ -609,7 +733,9 @@ button[data-action='speech-to-text']:disabled:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.2s ease, background-color 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    background-color 0.2s ease;
 }
 
 .quick-change-item .set-default-btn {
@@ -652,7 +778,9 @@ button[data-action='speech-to-text']:disabled:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: opacity 0.2s ease, background-color 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    background-color 0.2s ease;
   opacity: 0;
 }
 
@@ -735,22 +863,30 @@ button[data-action='speech-to-text']:disabled:hover {
 }
 
 .cloned-search-button:hover {
-  background-color: rgba(0, 0, 0, 0.3) !important; /* igual ao clear-form-btn:hover */
+  background-color: rgba(
+    0,
+    0,
+    0,
+    0.3
+  ) !important; /* igual ao clear-form-btn:hover */
 }
 
 /* --- BARRA DE FERRAMENTAS FIXA (BÁSICA) --- */
 .fixed-toolbar {
   position: fixed;
   z-index: 1998; /* Abaixo dos modais (2000) e painel de notas (1999) */
-  
+
   /* Começa oculta */
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
-  
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease,
+    transform 0.2s ease;
+
   width: auto; /* Largura automática baseada nos botões */
   padding: 6px;
-  
+
   /* Layout vertical para os botões */
   display: flex;
   flex-direction: column;
@@ -977,11 +1113,11 @@ button[data-action='speech-to-text']:disabled:hover {
 }
 
 /* Oculta o último divisor (após cor de destaque) na barra fixa */
-.fixed-toolbar [data-id="separator5"],
-.fixed-toolbar.position-left [data-id="separator5"],
-.fixed-toolbar.position-right [data-id="separator5"],
-.fixed-toolbar.position-top [data-id="separator5"],
-.fixed-toolbar.position-bottom [data-id="separator5"] {
+.fixed-toolbar [data-id='separator5'],
+.fixed-toolbar.position-left [data-id='separator5'],
+.fixed-toolbar.position-right [data-id='separator5'],
+.fixed-toolbar.position-top [data-id='separator5'],
+.fixed-toolbar.position-bottom [data-id='separator5'] {
   display: none !important;
 }
 
@@ -989,6 +1125,7 @@ button[data-action='speech-to-text']:disabled:hover {
 /* (Remove a classe .basic-editor-target para ser mais global) */
 textarea.basic-editor-focused {
   border-color: var(--primary-color) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 25%, transparent) !important;
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--primary-color) 25%, transparent) !important;
   outline: none;
 }
