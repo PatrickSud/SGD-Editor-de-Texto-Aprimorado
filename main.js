@@ -567,10 +567,11 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
       <button type="button" data-action="bold" class="shine-effect" title="Negrito (Ctrl+B)">${boldLabel}</button>
       <button type="button" data-action="italic" class="shine-effect" title="Itálico (Ctrl+I)">${italicLabel}</button>
       <button type="button" data-action="underline" class="shine-effect" title="Sublinhado (Ctrl+U)">${underlineLabel}</button>
-      ${buttonsVisibility.separator2
-      ? '<div class="toolbar-separator" data-id="separator2"></div>'
-      : ''
-    }
+      ${
+        buttonsVisibility.separator2
+          ? '<div class="toolbar-separator" data-id="separator2"></div>'
+          : ''
+      }
     `
     : ''
 
@@ -585,13 +586,15 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
           <button type="button" data-action="lettered">A. Letra</button>
         </div>
       </div>
-      ${buttonsVisibility.bullet !== false
-        ? `<button type="button" data-action="bullet" class="shine-effect" title="Adicionar Marcador (Ctrl+M)">&bull;</button>`
-        : ''
+      ${
+        buttonsVisibility.bullet !== false
+          ? `<button type="button" data-action="bullet" class="shine-effect" title="Adicionar Marcador (Ctrl+M)">&bull;</button>`
+          : ''
       }
-      ${buttonsVisibility.separator3
-        ? '<div class="toolbar-separator" data-id="separator3"></div>'
-        : ''
+      ${
+        buttonsVisibility.separator3
+          ? '<div class="toolbar-separator" data-id="separator3"></div>'
+          : ''
       }
     `
       : ''
@@ -599,57 +602,66 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
   const canInsertUsername = isUserNameInsertionAvailable()
   const insertButtons =
     (includeLink && buttonsVisibility.link !== false) ||
-      (includeImage && buttonsVisibility.insertImage !== false) ||
-      (includeUsername &&
-        buttonsVisibility.username !== false &&
-        canInsertUsername)
+    (includeImage && buttonsVisibility.insertImage !== false) ||
+    (includeUsername &&
+      buttonsVisibility.username !== false &&
+      canInsertUsername)
       ? `
-      ${includeLink && buttonsVisibility.link !== false
-        ? `<button type="button" data-action="link" class="shine-effect" title="Inserir Hiperlink (Ctrl+Alt+H)">🔗</button>`
-        : ''
+      ${
+        includeLink && buttonsVisibility.link !== false
+          ? `<button type="button" data-action="link" class="shine-effect" title="Inserir Hiperlink (Ctrl+Alt+H)">🔗</button>`
+          : ''
       }
-      ${includeImage && buttonsVisibility.insertImage !== false
-        ? `<button type="button" data-action="insert-image" class="shine-effect" title="Inserir Imagem (Ctrl+V)">📸</button>`
-        : ''
+      ${
+        includeImage && buttonsVisibility.insertImage !== false
+          ? `<button type="button" data-action="insert-image" class="shine-effect" title="Inserir Imagem (Ctrl+V)">📸</button>`
+          : ''
       }
-      ${includeUsername &&
+      ${
+        includeUsername &&
         buttonsVisibility.username !== false &&
         canInsertUsername
-        ? `<button type="button" data-action="username" class="shine-effect" title="Inserir Nome do Usuário (Alt+Shift+U)">🏷️</button>`
-        : ''
+          ? `<button type="button" data-action="username" class="shine-effect" title="Inserir Nome do Usuário (Alt+Shift+U)">🏷️</button>`
+          : ''
       }
-      ${buttonsVisibility.separator4
-        ? '<div class="toolbar-separator" data-id="separator4"></div>'
-        : ''
+      ${
+        buttonsVisibility.separator4
+          ? '<div class="toolbar-separator" data-id="separator4"></div>'
+          : ''
       }
     `
       : ''
 
   const colorButtons =
     includeColors &&
-      (buttonsVisibility.color !== false ||
-        buttonsVisibility.highlight !== false ||
-        (includeEmoji && buttonsVisibility.emoji !== false))
+    (buttonsVisibility.color !== false ||
+      buttonsVisibility.highlight !== false ||
+      (includeEmoji && buttonsVisibility.emoji !== false))
       ? `
-      ${includeEmoji && buttonsVisibility.emoji !== false
-        ? `<button type="button" data-action="emoji" class="shine-effect" title="Emojis (Código HTML)">😀</button>`
-        : ''
+      ${
+        includeEmoji && buttonsVisibility.emoji !== false
+          ? `<button type="button" data-action="emoji" class="shine-effect" title="Emojis (Código HTML)">😀</button>`
+          : ''
       }
-      ${includeColors && buttonsVisibility.color !== false
-        ? `<button type="button" data-action="color" class="shine-effect" title="Cor do Texto">🎨</button>`
-        : ''
+      ${
+        includeColors && buttonsVisibility.color !== false
+          ? `<button type="button" data-action="color" class="shine-effect" title="Cor do Texto">🎨</button>`
+          : ''
       }
-      ${includeColors && buttonsVisibility.highlight !== false
-        ? `<button type="button" data-action="highlight" class="shine-effect" title="Cor de Destaque">🖌️</button>`
-        : ''
+      ${
+        includeColors && buttonsVisibility.highlight !== false
+          ? `<button type="button" data-action="highlight" class="shine-effect" title="Cor de Destaque">🖌️</button>`
+          : ''
       }
-      ${instanceId === 'shared-basic'
-        ? `<button type="button" data-action="move-toolbar" class="move-toolbar-btn" title="Mover Barra de Ferramentas">⇅</button>`
-        : ''
+      ${
+        instanceId === 'shared-basic'
+          ? `<button type="button" data-action="move-toolbar" class="move-toolbar-btn" title="Mover Barra de Ferramentas">⇅</button>`
+          : ''
       }
-      ${buttonsVisibility.separator5
-        ? '<div class="toolbar-separator" data-id="separator5"></div>'
-        : ''
+      ${
+        buttonsVisibility.separator5
+          ? '<div class="toolbar-separator" data-id="separator5"></div>'
+          : ''
       }
     `
       : ''
@@ -668,8 +680,8 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
 
   const quickStepsHtml =
     includeQuickSteps &&
-      includeQuickStepsDropdown &&
-      buttonsVisibility.quickSteps
+    includeQuickStepsDropdown &&
+    buttonsVisibility.quickSteps
       ? `<div class="dropdown">
         <button type="button" data-action="quick-steps" class="shine-effect" title="Trâmites Rápidos">⚡</button>
         <div class="dropdown-content quick-steps-dropdown"></div>
@@ -717,26 +729,94 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
     ? `<button type="button" data-action="toggle-preview" class="shine-effect" title="Mostrar Visualização (Ctrl+Alt+V)">👁️</button>`
     : ''
 
+  const isSscPage = window.location.pathname.includes('/sgsc/faces/ssc.html')
   const devMode = await isDevModeEnabled()
+  const pinnedAIButtons = settings.pinnedAIButtons || []
+
   let aiButtonsHtml = ''
   if (includeAI) {
+    const renderAIOption = action => {
+      const feature = AI_FEATURES[action]
+      const isPinned = pinnedAIButtons.includes(action)
+      return `
+        <div class="ai-option-wrapper">
+          <button type="button" data-action="${action}" class="${
+            isPinned ? 'is-pinned' : ''
+          }">${feature.icon} ${feature.label}</button>
+          <button type="button" class="pin-ai-btn ${
+            isPinned ? 'active' : ''
+          }" data-feature="${action}" title="${
+            isPinned ? 'Desafixar' : 'Fixar na toolbar'
+          }">📌</button>
+        </div>
+      `
+    }
+
+    let section1Html = renderAIOption('ai-complete-draft')
+    if (instanceId === 'main') {
+      section1Html += renderAIOption('ai-summarize')
+    }
+
+    let aiDropdownContent = section1Html
+
+    if (isSscPage) {
+      let section2Html = renderAIOption('sugerir-ss')
+      if (FEATURE_SUGERIR_SAM) {
+        section2Html += renderAIOption('sugerir-sam')
+      }
+
+      aiDropdownContent = `
+        <div class="ai-dropdown-sections">
+          <div class="ai-section">
+            ${section1Html}
+          </div>
+          <div class="ai-section-separator"></div>
+          <div class="ai-section">
+            ${section2Html}
+          </div>
+        </div>
+      `
+    }
+
     aiButtonsHtml = `
       <div class="dropdown">
-        <button type="button" title="Recursos de IA" class="ai-master-button enhanced-btn">✨</button>
+        <button type="button" title="Recursos de IA" class="ai-master-button enhanced-btn">✨ <span class="btn-label">Recursos de IA</span></button>
         <div class="dropdown-content">
-          <button type="button" data-action="ai-complete-draft">🪄 Melhorar Texto</button>
-          ${instanceId === 'main'
-        ? '<button type="button" data-action="ai-summarize">📄 Resumir Solicitação</button>'
-        : ''
-      }
+          ${aiDropdownContent}
         </div>
       </div>
-      ${buttonsVisibility.separator1
-        ? '<div class="toolbar-separator" data-id="separator1"></div>'
-        : ''
+      ${
+        buttonsVisibility.separator1
+          ? '<div class="toolbar-separator" data-id="separator1"></div>'
+          : ''
       }
     `
   }
+
+  const pinnedAIButtonsHtml = pinnedAIButtons
+    .filter(action => {
+      if (action === 'ai-summarize' && instanceId !== 'main') return false
+      if (['sugerir-ss', 'sugerir-sam'].includes(action) && !isSscPage)
+        return false
+      if (action === 'sugerir-sam' && !FEATURE_SUGERIR_SAM) return false
+      return true
+    })
+    .map(action => {
+      const feature = AI_FEATURES[action]
+      return `<button type="button" data-action="${action}" class="shine-effect pinned-ai-button ai-master-button" title="${feature.title}">${feature.icon} <span class="btn-label">${feature.label}</span></button>`
+    })
+    .join('')
+
+  const pinnedAIWrapperHtml = `
+    <div class="pinned-ai-wrapper" style="display: ${
+      pinnedAIButtonsHtml ? 'flex' : 'none'
+    }; align-items: center;">
+      <div class="toolbar-separator" data-id="separator-pinned-ai"></div>
+      <div class="pinned-ai-list" style="display: flex; gap: 6px;">
+        ${pinnedAIButtonsHtml}
+      </div>
+    </div>
+  `
 
   const manageStepsButton = includeManageSteps
     ? '<button type="button" data-action="manage-steps" class="shine-effect" title="Configurações">⚙️</button>'
@@ -744,20 +824,9 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
 
   const separator6 =
     (includeNotes || includeReminders || includeQuickSteps) &&
-      buttonsVisibility.separator6
+    buttonsVisibility.separator6
       ? '<div class="toolbar-separator" data-id="separator6"></div>'
       : ''
-
-  // ── Sugestor SS ──────────────────────────────────────────────────────────
-  // O botão só é gerado quando a página atual é a SSC (ssc.html).
-  // A função window.iniciarSugestao() é definida pelo sugestor-ss.js,
-  // que também é injetado nessa página pelo manifest — ambos compartilham o window.
-  const isSscPage = window.location.pathname.includes('/sgsc/faces/ssc.html')
-  const sugestorSSHtml = isSscPage
-    ? `<div class="toolbar-separator" data-id="separator-sugestor-ss"></div>
-     <button type="button" data-action="sugerir-ss" class="shine-effect sugestor-ss-toolbar-btn" title="Sugerir SS com IA">✨ Sugerir SS</button>
-     ${FEATURE_SUGERIR_SAM ? `<div class="toolbar-separator" data-id="separator-sugerir-sam"></div><button type="button" data-action="sugerir-sam" class="shine-effect sugestor-ss-toolbar-btn" title="Sugerir SAM com IA">📋 Sugerir SAM</button>` : ''}`
-    : ''
 
   return `
     <div class="editor-toolbar">
@@ -776,7 +845,7 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
       ${separator6}
       ${togglePreviewHtml}
       ${themeToggleHtml}
-      ${sugestorSSHtml}
+      ${pinnedAIWrapperHtml}
     </div>
     
     <div id="emoji-picker-${instanceId}" class="picker"></div>
@@ -949,11 +1018,14 @@ async function loadQuickChangeOptions(editorContainer) {
       .map(item => {
         const isActive = item.id === defaultId
         return `
-        <div class="quick-change-item gc-item" draggable="true" data-id="${item.id
-          }" data-type="${type}" data-order="${item.order || 0}">
+        <div class="quick-change-item gc-item" draggable="true" data-id="${
+          item.id
+        }" data-type="${type}" data-order="${item.order || 0}">
           <span class="drag-handle" title="Arraste para reordenar">⠿</span>
-          <button type="button" class="set-default-btn ${isActive ? 'active' : ''
-          }" title="${isActive ? 'Padrão atual' : 'Definir como padrão'
+          <button type="button" class="set-default-btn ${
+            isActive ? 'active' : ''
+          }" title="${
+            isActive ? 'Padrão atual' : 'Definir como padrão'
           }">⭐</button>
           <span class="quick-change-title" title="Inserir no texto">${escapeHTML(
             item.title
@@ -1352,6 +1424,67 @@ function setupEditorInstanceListeners(
 
   // --- Listeners da Toolbar (Delegação de Eventos) ---
   editorContainer.addEventListener('click', async e => {
+    // PIN de recursos de IA
+    const pinBtn = e.target.closest('.pin-ai-btn')
+    if (pinBtn) {
+      e.preventDefault()
+      e.stopPropagation()
+      const feature = pinBtn.dataset.feature
+      const settings = await getSettings()
+      let pinned = settings.pinnedAIButtons || []
+
+      const isPinnedNow = pinned.includes(feature)
+      if (isPinnedNow) {
+        pinned = pinned.filter(f => f !== feature)
+      } else {
+        pinned.push(feature)
+      }
+
+      await saveSettings({ pinnedAIButtons: pinned })
+
+      // Atualização Cirúrgica da UI
+      const isPinnedAfter = pinned.includes(feature)
+
+      // 1. Atualiza o botão de PIN e a opacidade da opção no menu
+      pinBtn.classList.toggle('active', isPinnedAfter)
+      pinBtn.title = isPinnedAfter ? 'Desafixar' : 'Fixar na toolbar'
+
+      const optionBtn = pinBtn.parentElement.querySelector(
+        `button[data-action="${feature}"]`
+      )
+      if (optionBtn) {
+        optionBtn.classList.toggle('is-pinned', isPinnedAfter)
+      }
+
+      // 2. Atualiza a lista de botões fixados na toolbar
+      const pinnedWrapper = editorContainer.querySelector('.pinned-ai-wrapper')
+      const pinnedList = editorContainer.querySelector('.pinned-ai-list')
+
+      if (pinnedWrapper && pinnedList) {
+        // Filtra e gera o HTML dos botões fixados (reutiliza a lógica do template)
+        const pinnedButtonsHtml = pinned
+          .filter(action => {
+            if (action === 'ai-summarize' && instanceId !== 'main') return false
+            if (
+              ['sugerir-ss', 'sugerir-sam'].includes(action) &&
+              !window.location.pathname.includes('/sgsc/faces/ssc.html')
+            )
+              return false
+            if (action === 'sugerir-sam' && !FEATURE_SUGERIR_SAM) return false
+            return true
+          })
+          .map(action => {
+            const f = AI_FEATURES[action]
+            return `<button type="button" data-action="${action}" class="shine-effect pinned-ai-button ai-master-button" title="${f.title}">${f.icon} <span class="btn-label">${f.label}</span></button>`
+          })
+          .join('')
+
+        pinnedList.innerHTML = pinnedButtonsHtml
+        pinnedWrapper.style.display = pinnedButtonsHtml ? 'flex' : 'none'
+      }
+      return
+    }
+
     const themeOption = e.target.closest('.theme-option')
     if (themeOption && themeOption.dataset.themeName) {
       setTheme(themeOption.dataset.themeName)
@@ -1415,7 +1548,8 @@ function setupEditorInstanceListeners(
       if (e.target.closest('.delete-item-btn')) {
         e.stopPropagation() // Impede o menu de fechar durante a confirmação
         showConfirmDialog(
-          `Excluir "${itemElement.querySelector('.quick-change-title').textContent
+          `Excluir "${
+            itemElement.querySelector('.quick-change-title').textContent
           }"?`,
           async () => {
             const data = await getGreetingsAndClosings()
@@ -1583,7 +1717,10 @@ function setupEditorInstanceListeners(
         if (typeof window.iniciarSugestao === 'function') {
           window.iniciarSugestao()
         } else {
-          showNotification('Sugestor SS não disponível. Recarregue a página.', 'error')
+          showNotification(
+            'Sugestor SS não disponível. Recarregue a página.',
+            'error'
+          )
         }
         break
 
@@ -1816,11 +1953,15 @@ function addSgdActionButtons(masterContainer) {
 // --- CONTROLE DE EXIBIÇÃO DA PRÉ-VISUALIZAÇÃO NATIVA DO SITE (SGD) ---
 async function applyOcultarPreVisualizacaoSiteSetting() {
   const settings = await getSettings()
-  const forcarOcultar = settings.preferences?.ocultarPreVisualizacaoSite === true
+  const forcarOcultar =
+    settings.preferences?.ocultarPreVisualizacaoSite === true
 
   // Verifica se o painel de preview da extensão está visível na tela
-  const previewContainer = document.getElementById('editor-preview-container-main')
-  const extPreviewVisivel = previewContainer && previewContainer.style.display !== 'none'
+  const previewContainer = document.getElementById(
+    'editor-preview-container-main'
+  )
+  const extPreviewVisivel =
+    previewContainer && previewContainer.style.display !== 'none'
 
   // Oculta se o preview da extensão estiver visível OU se a opção de ocultação forçada estiver ativada
   const ocultar = extPreviewVisivel || forcarOcultar
@@ -1933,7 +2074,7 @@ function removeClickDropdowns() {
     dropdownClickHandlers.forEach(({ btn, handler }) => {
       try {
         btn.removeEventListener('click', handler)
-      } catch { }
+      } catch {}
     })
     dropdownClickHandlers = []
   }
@@ -2143,7 +2284,9 @@ async function initializeExtension() {
           // Aguarda o modal ser injetado no DOM antes de tentar clicar na aba
           let attempts = 0
           const clickPendingTab = () => {
-            const pendingTab = document.querySelector('.ip-nav-item[data-target="pending"]')
+            const pendingTab = document.querySelector(
+              '.ip-nav-item[data-target="pending"]'
+            )
             if (pendingTab) {
               pendingTab.click()
             } else if (attempts < 10) {
@@ -2158,7 +2301,9 @@ async function initializeExtension() {
           console.error('Erro ao abrir painel via parâmetro URL:', error)
         }
       } else {
-        console.warn('Função openInfoPanel não encontrada ao tentar abrir via parâmetro URL.')
+        console.warn(
+          'Função openInfoPanel não encontrada ao tentar abrir via parâmetro URL.'
+        )
       }
     }, 1000)
   }
@@ -2496,9 +2641,14 @@ Seguimos à disposição!`
 function observeForSolutionResponseRadio() {
   const choice = (window.__sgdUserRadioChoice ||= {})
   const apply = () => {
-    const names = ['cadSscForm:tipoRespostaCliente', 'sscForm:tipoRespostaCliente']
+    const names = [
+      'cadSscForm:tipoRespostaCliente',
+      'sscForm:tipoRespostaCliente'
+    ]
     names.forEach(name => {
-      const group = document.querySelectorAll(`input[type="radio"][name="${name}"]`)
+      const group = document.querySelectorAll(
+        `input[type="radio"][name="${name}"]`
+      )
       if (!group || group.length === 0) return
       group.forEach(r => {
         if (!r._sgdBound) {
@@ -2511,12 +2661,15 @@ function observeForSolutionResponseRadio() {
       if (choice[name]) return
       const anyChecked = Array.from(group).some(r => r.checked)
       if (anyChecked) return
-      const sol = document.querySelector(`input[type="radio"][name="${name}"][value="2"]`)
+      const sol = document.querySelector(
+        `input[type="radio"][name="${name}"][value="2"]`
+      )
       if (sol && !sol.checked && !sol.disabled) sol.click()
     })
   }
   const observer = new MutationObserver(() => apply())
-  if (document.body) observer.observe(document.body, { childList: true, subtree: true })
+  if (document.body)
+    observer.observe(document.body, { childList: true, subtree: true })
   apply()
 }
 
@@ -2526,7 +2679,8 @@ function observeForClassificationDefault() {
     const options = Array.from(select.options)
     let seenTodas = false
     options.forEach(opt => {
-      const isTodas = opt.value === '0' && opt.textContent.trim().toUpperCase() === 'TODAS'
+      const isTodas =
+        opt.value === '0' && opt.textContent.trim().toUpperCase() === 'TODAS'
       if (isTodas) {
         if (seenTodas) opt.remove()
         seenTodas = true
@@ -2536,7 +2690,9 @@ function observeForClassificationDefault() {
     if (!settings.uiSettings) settings.uiSettings = {}
     let preferredValue = settings.uiSettings.classificationDefaultValue
     if (!preferredValue) {
-      const tecnicaOpt = Array.from(select.options).find(o => o.textContent.trim().toUpperCase() === 'TÉCNICA')
+      const tecnicaOpt = Array.from(select.options).find(
+        o => o.textContent.trim().toUpperCase() === 'TÉCNICA'
+      )
       if (tecnicaOpt) {
         preferredValue = tecnicaOpt.value
         settings.uiSettings.classificationDefaultValue = preferredValue
@@ -2756,7 +2912,8 @@ async function createQuickChangePopup(type, triggerElement) {
 
   if (!items || items.length === 0) {
     showNotification(
-      `Nenhum(a) ${type === 'greetings' ? 'saudação' : 'encerramento'
+      `Nenhum(a) ${
+        type === 'greetings' ? 'saudação' : 'encerramento'
       } cadastrado(a).`,
       'info'
     )
@@ -2770,7 +2927,8 @@ async function createQuickChangePopup(type, triggerElement) {
   const buttonsHtml = items
     .map(
       item =>
-        `<button type="button" class="dropdown-option" data-id="${item.id
+        `<button type="button" class="dropdown-option" data-id="${
+          item.id
         }">${escapeHTML(item.title)}</button>`
     )
     .join('')
@@ -2861,7 +3019,8 @@ async function createInteractiveChangePopup(targetSpan) {
     .filter(item => item.id !== currentId)
     .map(
       item =>
-        `<button type="button" class="dropdown-option" data-id="${item.id
+        `<button type="button" class="dropdown-option" data-id="${
+          item.id
         }">${escapeHTML(item.title)}</button>`
     )
     .join('')
@@ -2902,8 +3061,6 @@ async function createInteractiveChangePopup(targetSpan) {
     }
   })
 }
-
-
 
 // --- STOPWATCH LOGIC ---
 
@@ -2962,7 +3119,7 @@ function pauseStopwatch() {
 
   // Acumula o tempo decorrido no segmento atual
   const now = Date.now()
-  stopwatchState.accumulatedTime += (now - stopwatchState.startTime)
+  stopwatchState.accumulatedTime += now - stopwatchState.startTime
   stopwatchState.startTime = null // Reseta o início do segmento
   stopwatchState.isRunning = false
 
@@ -3000,7 +3157,7 @@ function setStopwatchTime() {
   // Prepara o input
   let currentMs = stopwatchState.accumulatedTime
   if (stopwatchState.isRunning && stopwatchState.startTime) {
-    currentMs += (Date.now() - stopwatchState.startTime)
+    currentMs += Date.now() - stopwatchState.startTime
   }
 
   timerInput.value = formatTime(currentMs)
@@ -3060,7 +3217,7 @@ function parseTimeString(timeString) {
 
   if (isNaN(hours) || isNaN(minutes) || isNaN(seconds)) return null
 
-  return ((hours * 3600) + (minutes * 60) + seconds) * 1000
+  return (hours * 3600 + minutes * 60 + seconds) * 1000
 }
 
 function startStopwatchTicker() {
@@ -3082,7 +3239,9 @@ function updateStopwatchIcon() {
 
   if (btn) {
     btn.textContent = stopwatchState.isRunning ? '⏸️' : '▶️'
-    btn.title = stopwatchState.isRunning ? 'Pausar (Ctrl+Alt+T)' : 'Iniciar (Ctrl+Alt+T)'
+    btn.title = stopwatchState.isRunning
+      ? 'Pausar (Ctrl+Alt+T)'
+      : 'Iniciar (Ctrl+Alt+T)'
   }
 
   if (wrapper) {
@@ -3097,7 +3256,7 @@ function updateStopwatchDisplay() {
   let totalMilliseconds = stopwatchState.accumulatedTime
 
   if (stopwatchState.isRunning && stopwatchState.startTime) {
-    totalMilliseconds += (Date.now() - stopwatchState.startTime)
+    totalMilliseconds += Date.now() - stopwatchState.startTime
   }
 
   // Atualiza as cores baseadas no tempo
@@ -3133,17 +3292,26 @@ function saveStopwatchState() {
  */
 async function createFloatingActionButtons() {
   if (document.getElementById('fab-container')) return
-  
+
   const fabContainer = document.createElement('div')
   fabContainer.id = 'fab-container'
   fabContainer.className = 'fab-container'
 
   // Carrega a ordem salva ou usa a padrão
-  const data = await chrome.storage.local.get(['fabOptionsOrder', 'fabWidgetsOrder'])
-  
-  const defaultOptionsOrder = ['fab-wrapper-info', 'fab-wrapper-notes', 'fab-wrapper-reminders', 'fab-wrapper-quicksteps', 'fab-wrapper-manage']
+  const data = await chrome.storage.local.get([
+    'fabOptionsOrder',
+    'fabWidgetsOrder'
+  ])
+
+  const defaultOptionsOrder = [
+    'fab-wrapper-info',
+    'fab-wrapper-notes',
+    'fab-wrapper-reminders',
+    'fab-wrapper-quicksteps',
+    'fab-wrapper-manage'
+  ]
   const defaultWidgetsOrder = ['fab-copy-ssc-wrapper', 'fab-stopwatch-wrapper']
-  
+
   const optionsOrder = data.fabOptionsOrder || defaultOptionsOrder
   const widgetsOrder = data.fabWidgetsOrder || defaultWidgetsOrder
 
@@ -3333,7 +3501,9 @@ function setupFabListeners() {
       toggleStopwatch()
 
       // Feedback visual via notificação
-      const status = stopwatchState.isRunning ? '⏱️ Cronômetro Iniciado' : '⏱️ Cronômetro Pausado'
+      const status = stopwatchState.isRunning
+        ? '⏱️ Cronômetro Iniciado'
+        : '⏱️ Cronômetro Pausado'
       if (typeof showNotification === 'function') {
         showNotification(status)
       }
@@ -3405,8 +3575,9 @@ function setupFabListeners() {
     } else {
       const midX = window.innerWidth / 2,
         midY = window.innerHeight / 2
-      finalPosition = `${e.clientY < midY ? 'top' : 'bottom'}-${e.clientX < midX ? 'left' : 'right'
-        }`
+      finalPosition = `${e.clientY < midY ? 'top' : 'bottom'}-${
+        e.clientX < midX ? 'left' : 'right'
+      }`
     }
     fabContainer.className = `fab-container ${finalPosition}`
     await saveFabPosition(finalPosition)
@@ -3430,7 +3601,7 @@ function setupFabDragAndDrop() {
     container.addEventListener('dragstart', e => {
       const draggable = e.target.closest('[draggable="true"]')
       if (!draggable) return
-      
+
       draggable.classList.add('is-dragging')
       e.dataTransfer.setData('text/plain', draggable.id)
       e.dataTransfer.effectAllowed = 'move'
@@ -3441,10 +3612,12 @@ function setupFabDragAndDrop() {
       if (draggable) {
         draggable.classList.remove('is-dragging')
       }
-      
+
       // Remove classes de drag-over de todos os itens
-      container.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'))
-      
+      container
+        .querySelectorAll('.drag-over')
+        .forEach(el => el.classList.remove('drag-over'))
+
       // Salva a nova ordem
       saveFabItemsOrder(container.id)
     })
@@ -3452,7 +3625,7 @@ function setupFabDragAndDrop() {
     container.addEventListener('dragover', e => {
       e.preventDefault()
       e.dataTransfer.dropEffect = 'move'
-      
+
       const draggable = container.querySelector('.is-dragging')
       if (!draggable) return
 
@@ -3462,7 +3635,7 @@ function setupFabDragAndDrop() {
       } else {
         container.insertBefore(draggable, afterElement)
       }
-      
+
       // Feedback visual do alvo
       container.querySelectorAll('[draggable="true"]').forEach(el => {
         if (el !== draggable) {
@@ -3477,30 +3650,35 @@ function setupFabDragAndDrop() {
  * Determina qual elemento está logo após a posição do mouse durante o arraste.
  */
 function getDragAfterElement(container, y, x) {
-  const draggableElements = [...container.querySelectorAll('[draggable="true"]:not(.is-dragging)')]
+  const draggableElements = [
+    ...container.querySelectorAll('[draggable="true"]:not(.is-dragging)')
+  ]
 
-  return draggableElements.reduce((closest, child) => {
-    const box = child.getBoundingClientRect()
-    
-    // Para fab-options (vertical)
-    if (container.id === 'fab-options') {
-      const offset = y - box.top - box.height / 2
-      if (offset < 0 && offset > closest.offset) {
-        return { offset: offset, element: child }
-      } else {
-        return closest
+  return draggableElements.reduce(
+    (closest, child) => {
+      const box = child.getBoundingClientRect()
+
+      // Para fab-options (vertical)
+      if (container.id === 'fab-options') {
+        const offset = y - box.top - box.height / 2
+        if (offset < 0 && offset > closest.offset) {
+          return { offset: offset, element: child }
+        } else {
+          return closest
+        }
       }
-    } 
-    // Para fab-lateral-widgets (horizontal)
-    else {
-      const offset = x - box.left - box.width / 2
-      if (offset < 0 && offset > closest.offset) {
-        return { offset: offset, element: child }
-      } else {
-        return closest
+      // Para fab-lateral-widgets (horizontal)
+      else {
+        const offset = x - box.left - box.width / 2
+        if (offset < 0 && offset > closest.offset) {
+          return { offset: offset, element: child }
+        } else {
+          return closest
+        }
       }
-    }
-  }, { offset: Number.NEGATIVE_INFINITY }).element
+    },
+    { offset: Number.NEGATIVE_INFINITY }
+  ).element
 }
 
 /**
@@ -3527,49 +3705,59 @@ async function saveFabItemsOrder(containerId) {
 function copySscLink() {
   const hidden =
     document.querySelector('input[id*="ssc"]') ||
-    document.querySelector('input[name*="ssc"]');
+    document.querySelector('input[name*="ssc"]')
 
-  let ssc = null;
+  let ssc = null
   if (hidden && hidden.value) {
-    ssc = hidden.value.trim();
+    ssc = hidden.value.trim()
   } else {
-    const params = new URLSearchParams(window.location.search);
-    ssc = params.get("ssc");
+    const params = new URLSearchParams(window.location.search)
+    ssc = params.get('ssc')
   }
 
-  const numeroEl = document.querySelector("#td\\:numero");
-  const assuntoEl = document.querySelector("#td\\:assunto");
+  const numeroEl = document.querySelector('#td\\:numero')
+  const assuntoEl = document.querySelector('#td\\:assunto')
 
   if (!ssc || !numeroEl || !assuntoEl) {
     if (typeof showNotification === 'function') {
-      showNotification("Não foi possível capturar as informações da SSC nesta página.", "error");
+      showNotification(
+        'Não foi possível capturar as informações da SSC nesta página.',
+        'error'
+      )
     } else {
-      alert("❌ Não foi possível capturar todas as informações.");
+      alert('❌ Não foi possível capturar todas as informações.')
     }
-    return;
+    return
   }
 
-  const numero = numeroEl.innerText.trim();
-  const assunto = assuntoEl.innerText.trim();
+  const numero = numeroEl.innerText.trim()
+  const assunto = assuntoEl.innerText.trim()
 
   const textToCopy = `Então, verifiquei que estamos avaliando esse mesmo assunto em outra Solicitação de Suporte.
 
 Caso queira acessar a outra Solicitação, poderá acessar pelo link: <input name="" type="button" button style="background: #fa6400; border-radius: 5px; padding: 3px; cursor: pointer; color: #fff; border: none;" onclick="window.open(' https://suporte.dominioatendimento.com/sgsc/faces/ssc.html?ssc=${ssc}')" value="SSC ${numero} - ${assunto}, Clique aqui!"></button>
 
-Sigo a disposição.`;
+Sigo a disposição.`
 
-  navigator.clipboard.writeText(textToCopy)
+  navigator.clipboard
+    .writeText(textToCopy)
     .then(() => {
       if (typeof showNotification === 'function') {
-        showNotification("Link da SSC copiado com sucesso! Gerado Trâmite com o link para o cliente.", "success");
+        showNotification(
+          'Link da SSC copiado com sucesso! Gerado Trâmite com o link para o cliente.',
+          'success'
+        )
       }
     })
     .catch(err => {
-      console.error("Erro ao copiar o link da Solicitação de Suporte: ", err);
+      console.error('Erro ao copiar o link da Solicitação de Suporte: ', err)
       if (typeof showNotification === 'function') {
-        showNotification("Erro ao copiar o link da Solicitação de Suporte.", "error");
+        showNotification(
+          'Erro ao copiar o link da Solicitação de Suporte.',
+          'error'
+        )
       }
-    });
+    })
 }
 
 /**
@@ -4015,14 +4203,20 @@ async function checkVersionAndShowWhatsNew() {
     if (noteworthyVersion !== lastSeenVersion) {
       // (Ex: vai procurar por '2.9.6' no RELEASE_NOTES, mesmo se a versão for '2.9.6.1')
       if (RELEASE_NOTES && RELEASE_NOTES[noteworthyVersion]) {
-        let notesToShow = RELEASE_NOTES[noteworthyVersion];
-        if (typeof MINOR_RELEASE_NOTES !== 'undefined' && MINOR_RELEASE_NOTES[lastSeenVersion]) {
-          const minorList = MINOR_RELEASE_NOTES[lastSeenVersion];
-          const minorFeatures = minorList.reduce((acc, item) => acc.concat(item.features || []), []);
+        let notesToShow = RELEASE_NOTES[noteworthyVersion]
+        if (
+          typeof MINOR_RELEASE_NOTES !== 'undefined' &&
+          MINOR_RELEASE_NOTES[lastSeenVersion]
+        ) {
+          const minorList = MINOR_RELEASE_NOTES[lastSeenVersion]
+          const minorFeatures = minorList.reduce(
+            (acc, item) => acc.concat(item.features || []),
+            []
+          )
           notesToShow = {
             ...notesToShow,
             features: [...notesToShow.features, ...minorFeatures]
-          };
+          }
         }
         showWhatsNewModal(notesToShow)
         // Salva a versão "notável" como a última vista para evitar reexibir em subversões
@@ -4067,7 +4261,9 @@ async function initializePendingBadge() {
  */
 function updatePendingBadgeUI(result) {
   const fabBadge = document.querySelector('.fab-option-wrapper .fab-badge')
-  const infoBtn = document.querySelector('.fab-button[data-action="fab-info-panel"]')
+  const infoBtn = document.querySelector(
+    '.fab-button[data-action="fab-info-panel"]'
+  )
 
   if (!fabBadge || !infoBtn) return
 

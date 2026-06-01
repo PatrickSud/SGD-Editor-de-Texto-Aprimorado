@@ -22,6 +22,25 @@ const PENDING_MINOR_NOTES_KEY = 'pendingMinorNotes'
 const GREETING_SEPARATOR = '<!--Saudação-->\n\n'
 const CLOSING_SEPARATOR = '\n\n<!--Encerramento-->'
 
+const AI_FEATURES = {
+  'ai-complete-draft': {
+    label: 'Melhorar Texto',
+    icon: '🪄',
+    title: 'Melhorar Texto com IA'
+  },
+  'ai-summarize': {
+    label: 'Resumir Solicitação',
+    icon: '📄',
+    title: 'Resumir Solicitação com IA'
+  },
+  'sugerir-ss': { label: 'Sugerir SS', icon: '✨', title: 'Sugerir SS com IA' },
+  'sugerir-sam': {
+    label: 'Sugerir SAM',
+    icon: '📋',
+    title: 'Sugerir SAM com IA'
+  }
+}
+
 const DEFAULT_SETTINGS = {
   reminderRetentionDays: 7,
   geminiApiKey: '',
@@ -60,7 +79,8 @@ const DEFAULT_SETTINGS = {
     enableWindowsNotifications: true,
     dropdownBehavior: 'hover', // 'hover' ou 'click'
     ocultarPreVisualizacaoSite: false // Oculta o campo "Pré-visualizar:" nativo do site por padrão desativado
-  }
+  },
+  pinnedAIButtons: []
 }
 
 let currentEditorTheme = 'padrao'
