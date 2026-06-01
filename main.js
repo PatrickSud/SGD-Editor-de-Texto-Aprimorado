@@ -1038,33 +1038,33 @@ async function loadQuickChangeOptions(editorContainer) {
       `
       })
       .join('')
-    // Adiciona o botão "Adicionar Novo" ao final da lista de itens
-    itemsHtml += `<button type="button" class="add-new-item-btn" data-type="${type}">+ Adicionar</button>`
     return itemsHtml
   }
 
   // Renderiza Saudações
-  html += '<div class="gc-list" data-list-type="greetings">' // Wrapper para drop
-  html += '<h5>Saudações</h5>'
+  html += '<div class="gc-list-wrapper">'
+  html += '  <div class="gc-list-header">'
+  html += '    <h5>Saudações</h5>'
+  html += `    <button type="button" class="add-new-item-btn mini-btn" data-type="greetings" title="Adicionar Saudação">+ Adicionar</button>`
+  html += '  </div>'
+  html += '  <div class="gc-list scrollable" data-list-type="greetings">'
   if (data.greetings && data.greetings.length > 0) {
     html += createItemsHtml(data.greetings, 'greetings')
-  } else {
-    // Se não houver saudações, mostra apenas o botão de adicionar
-    html += '<h5>Saudações</h5>'
-    html += `<button type="button" class="add-new-item-btn" data-type="greetings">+ Adicionar Saudação</button>`
   }
+  html += '  </div>'
   html += '</div>'
 
   // Renderiza Encerramentos
-  html += '<div class="gc-list" data-list-type="closings">' // Wrapper para drop
-  html += '<h5>Encerramentos</h5>'
+  html += '<div class="gc-list-wrapper">'
+  html += '  <div class="gc-list-header">'
+  html += '    <h5>Encerramentos</h5>'
+  html += `    <button type="button" class="add-new-item-btn mini-btn" data-type="closings" title="Adicionar Encerramento">+ Adicionar</button>`
+  html += '  </div>'
+  html += '  <div class="gc-list scrollable" data-list-type="closings">'
   if (data.closings && data.closings.length > 0) {
     html += createItemsHtml(data.closings, 'closings')
-  } else {
-    // Se não houver encerramentos, mostra apenas o botão de adicionar
-    html += '<h5>Encerramentos</h5>'
-    html += `<button type="button" class="add-new-item-btn" data-type="closings">+ Adicionar Encerramento</button>`
   }
+  html += '  </div>'
   html += '</div>'
 
   container.innerHTML = html

@@ -122,11 +122,19 @@
 }
 
 .dropdown-content button {
-  width: 100%;
+  width: auto; /* Alterado de 100% para auto para evitar estiramento de botões de ícone */
+  min-width: max-content;
   text-align: left;
   margin-bottom: 4px;
   white-space: nowrap;
-  flex: 1;
+}
+
+/* Botões que devem ocupar a largura total no dropdown */
+.dropdown-content
+  button:not(.set-default-btn):not(.edit-item-btn):not(.delete-item-btn):not(
+    .pin-ai-btn
+  ) {
+  width: 100%;
 }
 
 /* Opções de IA com PIN */
@@ -681,6 +689,10 @@ button[data-action='speech-to-text']:disabled:hover {
 }
 
 /* --- ESTILOS PARA DROPDOWN DE TROCA RÁPIDA --- */
+.quick-change-container {
+  text-align: left; /* Garante alinhamento à esquerda no container */
+}
+
 .quick-change-container h5 {
   margin: 4px 0 6px 0;
   padding: 4px 8px;
@@ -688,20 +700,26 @@ button[data-action='speech-to-text']:disabled:hover {
   font-weight: bold;
   color: var(--text-color-muted);
   text-transform: uppercase;
+  text-align: left; /* Alinhamento explícito */
   border-bottom: 1px solid var(--border-color);
 }
 
 .quick-change-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px;
+  justify-content: flex-start; /* Força justificação à esquerda */
+  gap: 8px;
+  padding: 6px 12px; /* Alinhado com o padding do h5 (12px) */
   border-radius: var(--border-radius-sm);
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
 }
 
 .quick-change-actions {
   display: flex;
   align-items: center;
+  margin-left: auto; /* Empurra as ações para a direita */
 }
 
 .quick-change-item:hover {
@@ -710,12 +728,14 @@ button[data-action='speech-to-text']:disabled:hover {
 
 .quick-change-title {
   flex-grow: 1;
+  min-width: 0; /* Permite que o flex-item encolha e mostre reticências */
   padding: 6px 8px;
   cursor: pointer;
   text-align: left;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--text-color-main);
 }
 
 .quick-change-item .set-default-btn,
@@ -730,6 +750,8 @@ button[data-action='speech-to-text']:disabled:hover {
   border-radius: 50%;
   width: 32px;
   height: 32px;
+  min-width: 32px; /* Garante formato circular */
+  min-height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -749,13 +771,13 @@ button[data-action='speech-to-text']:disabled:hover {
 
 .quick-change-item:hover .edit-item-btn,
 .quick-change-item:hover .delete-item-btn {
-  opacity: 0.6; /* Aparece no hover */
+  opacity: 0.6;
 }
 
 .quick-change-item .set-default-btn:hover,
 .quick-change-item .edit-item-btn:hover,
 .quick-change-item .delete-item-btn:hover {
-  opacity: 1;
+  opacity: 1 !important;
   background-color: var(--background-secondary);
 }
 
@@ -763,81 +785,71 @@ button[data-action='speech-to-text']:disabled:hover {
   opacity: 1;
 }
 
-/* Botões de Editar e Excluir no dropdown de Trâmites Rápidos */
-.message-item .edit-message-btn,
-.message-item .delete-message-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 6px;
-  font-size: 16px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
+.gc-list {
+  padding: 0 !important;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.quick-change-container {
+  padding: 0 !important;
+  min-width: 300px;
+  max-width: 400px; /* Limita o crescimento da janela */
+}
+
+.quick-change-container h5 {
+  margin: 0;
+  padding: 0;
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--text-color-muted);
+  text-transform: uppercase;
+  text-align: left;
+}
+
+.gc-list-wrapper {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 8px;
+}
+
+.gc-list-header {
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition:
-    opacity 0.2s ease,
-    background-color 0.2s ease;
-  opacity: 0;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-color);
+  background-color: rgba(0, 0, 0, 0.02);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
-.message-item:hover .edit-message-btn,
-.message-item:hover .delete-message-btn {
-  opacity: 0.6; /* Aparece no hover */
+.gc-list.scrollable {
+  max-height: 200px; /* Limita a altura da lista interna */
+  overflow-y: auto;
+  padding: 4px 0;
 }
 
-.message-item .edit-message-btn:hover,
-.message-item .delete-message-btn:hover {
-  opacity: 1;
-  background-color: var(--background-secondary);
+.quick-change-container .add-new-item-btn.mini-btn {
+  width: auto !important;
+  margin: 0 !important;
+  padding: 4px 10px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  height: 24px !important;
+  border-radius: 4px !important;
 }
 
-/* --- Estilo para o botão "Adicionar Novo" no menu de troca rápida --- */
-.quick-change-container .add-new-item-btn {
-  width: 100%;
-  margin-top: 8px;
-  padding: 8px;
-  background-color: transparent;
+.quick-change-item .drag-handle {
+  padding: 0 4px;
+  margin-right: 2px;
   color: var(--text-color-muted);
-  border: 1px dashed var(--border-color);
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  font-weight: 500;
-  text-align: center;
-  transition: all 0.2s ease;
 }
 
-.quick-change-container .add-new-item-btn:hover {
-  background-color: var(--background-hover);
-  color: var(--text-color);
-  border-color: var(--action-green);
-}
-
-/* --- Estilo para o botão "Adicionar Novo" nos menus dropdown --- */
-.quick-change-container .add-new-item-btn,
-.quick-steps-actions .add-message-btn {
-  width: 100%;
-  margin-top: 8px;
-  padding: 4px 8px;
-  background-color: transparent;
-  color: var(--text-color-muted);
-  border: 1px dashed var(--border-color);
-  border-radius: var(--border-radius-sm);
-  cursor: pointer;
-  font-weight: 500;
-  text-align: center;
-  font-size: 12px;
-  transition: all 0.2s ease;
-}
-
-.quick-change-container .add-new-item-btn:hover,
-.quick-steps-actions .add-message-btn:hover {
-  background-color: var(--background-hover);
-  color: var(--text-color);
-  border-color: var(--action-green);
+.quick-change-container .add-new-item-btn.mini-btn:hover {
+  transform: translateY(-1px);
 }
 
 /* --- INÍCIO: Botão "Pesquisar Resposta" Clonado --- */
