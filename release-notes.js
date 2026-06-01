@@ -2,19 +2,7 @@ const RELEASE_NOTES = {
   '3.0.5': {
     title: '✨ Novidades da Versão 3.0.5',
     features: [
-      '<b>🔗 Copiar Link SSC diretamente do FAB:</b>' +
-        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-        '<li>Novo botão flutuante <b>Copiar Link SSC</b> disponível no menu de Acesso Rápido (FAB).</li>' +
-        '<li>Permite copiar rapidamente o link da SSC, formatando um texto pronto para envio ao cliente em um novo trâmite que existe outra SSC de mesmo assunto.</li>' +
-        '</ul>',
-
-      '<b>↕️ Reordenação e PIN no FAB:</b>' +
-        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-        '<li>Implementada a funcionalidade de reordenação por clique e arraste (Drag and Drop) para todos os botões do menu flutuante (FAB).</li>' +
-        '<li>Melhorado o funcionamento do PIN no FAB.</li>' +
-        '</ul>',
-
-      '<b>📋 Sugestor de SAM com IA:</b>' +
+      '<b>✨ Sugestor de SAM com IA:</b>' +
         '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
         '<li>Novo botão <b>Sugerir SAM</b> na toolbar da SSC, ao lado do Sugerir SS.</li>' +
         '<li>O técnico descreve o problema com suas próprias palavras e a IA estrutura a sugestão de SAM automaticamente.</li>' +
@@ -26,7 +14,18 @@ const RELEASE_NOTES = {
         '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
         '<li><b>Integração:</b> Os botões Sugerir SS e Sugerir SAM agora estão organizados dentro de um novo menu suspenso chamado <b>Recursos de IA</b>.</li>' +
         '<li><b>📌 Fixação (PIN) Individual:</b> Agora você pode fixar seus recursos de IA favoritos diretamente na toolbar! Basta clicar no ícone de pin 📌 dentro do menu para criar um atalho rápido.</li>' +
-        '<li><b>Visual Aprimorado:</b> Interface mais limpa e organizada com descrições textuais ao lado dos ícones para facilitar a identificação.</li>' +
+        '</ul>',
+
+      '<b>🔗 Copiar Link SSC diretamente do FAB (Menu Flutuante):</b>' +
+        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+        '<li>Novo botão flutuante <b>🔗 Copiar Link SSC</b> disponível no menu de Acesso Rápido (FAB).</li>' +
+        '<li>Permite copiar rapidamente o link da SSC, formatando um texto pronto para envio ao cliente em um novo trâmite que existe outra SSC de mesmo assunto.</li>' +
+        '</ul>',
+
+      '<b>↕️ Reordenação e PIN no FAB (Menu Flutuante):</b>' +
+        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+        '<li>Implementada a funcionalidade de reordenação por clique e arraste (Drag and Drop) para todos os botões do menu flutuante (FAB).</li>' +
+        '<li>Melhorado o funcionamento do PIN no FAB.</li>' +
         '</ul>'
     ]
   },
