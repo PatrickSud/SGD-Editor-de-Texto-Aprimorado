@@ -832,6 +832,41 @@ button[data-action='speech-to-text']:disabled:hover {
   padding: 4px 0;
 }
 
+/* Seletor de Classificação (Solução / Info) */
+.gc-classification-selector {
+  display: flex;
+  padding: 8px;
+  gap: 4px;
+  background-color: rgba(0, 0, 0, 0.03);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.classification-btn {
+  flex: 1;
+  padding: 6px 4px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  background-color: var(--background-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-color-muted) !important;
+  cursor: pointer;
+  border-radius: 4px !important;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.classification-btn:hover {
+  background-color: var(--background-hover) !important;
+  color: var(--text-color-main) !important;
+}
+
+.classification-btn.active {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  color: white !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 .quick-change-container .add-new-item-btn.mini-btn {
   width: auto !important;
   margin: 0 !important;

@@ -60,6 +60,33 @@ let temporaryGreetingClosing = {
 
 let draggedGcItem = null // Variável global para rastrear o item arrastado
 
+// Variável para armazenar a classificação atual (Solução ou Pedir mais informações)
+let currentGcClassification = 'solution' // 'solution' (default) ou 'info'
+
+function getSelectedResponseClassification() {
+  const radioGroups = [
+    'cadSscForm:tipoRespostaCliente',
+    'sscForm:tipoRespostaCliente'
+  ]
+
+  for (const groupName of radioGroups) {
+    const selectedRadio = document.querySelector(
+      `input[type="radio"][name="${groupName}"]:checked`
+    )
+    if (!selectedRadio) continue
+
+    if (selectedRadio.value === '1') {
+      return 'info'
+    }
+
+    if (selectedRadio.value === '2') {
+      return 'solution'
+    }
+  }
+
+  return 'solution'
+}
+
 // --- NOVAS VARIÁVEIS GLOBAIS PARA EDITOR BÁSICO ---
 let activeBasicEditor = null
 let hideToolbarTimeout = null
@@ -109,9 +136,14 @@ function extractContentParts(fullText) {
  * Adiciona saudação e encerramento ao conteúdo, usando textos salvos ou padrões.
  * @param {string} content - O conteúdo interno atual.
  * @param {boolean} useTemporary - Se deve tentar usar textos temporários salvos.
+ * @param {string} forcedClassification - Se fornecido, ignora a detecção automática e usa esta classificação.
  * @returns {Promise<string>} O texto completo com saudação e encerramento.
  */
-async function addGreetingAndClosing(content, useTemporary = true) {
+async function addGreetingAndClosing(
+  content,
+  useTemporary = true,
+  forcedClassification = null
+) {
   let greeting = ''
   let closing = ''
 
@@ -126,8 +158,29 @@ async function addGreetingAndClosing(content, useTemporary = true) {
     // Limpa o cache temporário após uso
     temporaryGreetingClosing = { greeting: '', closing: '' }
   } else {
-    // Busca os padrões configurados
-    const data = await getGreetingsAndClosings()
+    // Detecta a classificação atual do SGD (Solução ou Pedir mais informações)
+    let classification = forcedClassification
+
+    if (!classification) {
+      classification = 'solution'
+      const infoRadios = [
+        document.getElementById('sscForm:tipoRespostaCliente:0'),
+        document.getElementById('cadSscForm:tipoRespostaCliente:0')
+      ]
+      const solutionRadios = [
+        document.getElementById('sscForm:tipoRespostaCliente:1'),
+        document.getElementById('cadSscForm:tipoRespostaCliente:1')
+      ]
+
+      if (infoRadios.some(r => r && r.checked)) {
+        classification = 'info'
+      } else if (solutionRadios.some(r => r && r.checked)) {
+        classification = 'solution'
+      }
+    }
+
+    // Busca os padrões configurados para a classificação detectada
+    const data = await getGreetingsAndClosings(classification)
 
     if (data.defaultGreetingId) {
       const defaultGreeting = data.greetings.find(
@@ -185,10 +238,61 @@ function setupSituationListener(textArea) {
         const currentText = textArea.value
 
         // Valor 3 = "Respondido ao Cliente"
-        if (selectedValue === '3') {
-          // Adicionar saudação e encerramento
+        // Valor 2 = "Em Análise"
+        // Valor 14 = "Em Análise - Técnico"
+        if (
+          selectedValue === '3' ||
+          selectedValue === '2' ||
+          selectedValue === '14'
+        ) {
+          // Determina a classificação para buscar os padrões
+          let classification = 'solution'
+          if (selectedValue === '3') {
+            // Se for respondido, verifica os rádios de Solução/Info
+            const infoRadios = [
+              document.getElementById('sscForm:tipoRespostaCliente:0'),
+              document.getElementById('cadSscForm:tipoRespostaCliente:0')
+            ]
+            classification = infoRadios.some(r => r && r.checked)
+              ? 'info'
+              : 'solution'
+          } else {
+            // Se for "Em Análise" ou "Em Análise - Técnico"
+            classification = 'analysis'
+          }
+
+          // Adicionar saudação e encerramento baseados na classificação detectada
+          const data = await getGreetingsAndClosings(classification)
+          let greeting = ''
+          let closing = ''
+
+          if (data.defaultGreetingId) {
+            const defaultGreeting = data.greetings.find(
+              g => g.id === data.defaultGreetingId
+            )
+            if (defaultGreeting)
+              greeting = await resolveVariablesInText(defaultGreeting.content)
+          }
+          if (data.defaultClosingId) {
+            const defaultClosing = data.closings.find(
+              c => c.id === data.defaultClosingId
+            )
+            if (defaultClosing)
+              closing = await resolveVariablesInText(defaultClosing.content)
+          }
+
+          // Monta o novo texto (substituindo o que o SGD pode ter inserido)
           const parts = extractContentParts(currentText)
-          const newText = await addGreetingAndClosing(parts.content, true)
+
+          // Se for "Em Análise", o comportamento padrão de limpar o conteúdo se mantém,
+          // inserindo apenas saudação/encerramento se houver padrões definidos.
+          let newText = ''
+          if (selectedValue === '3') {
+            newText = await addGreetingAndClosing(parts.content, true)
+          } else {
+            // Para "Em Análise", usamos o conteúdo vazio e forçamos a classificação 'analysis'
+            newText = await addGreetingAndClosing('', false, 'analysis')
+          }
 
           if (newText !== currentText) {
             textArea.value = newText
@@ -197,15 +301,21 @@ function setupSituationListener(textArea) {
 
           // Reforço: após o site terminar possíveis atualizações tardias, reaplica se necessário
           setTimeout(async () => {
-            // Garante que a situação ainda é 'Respondido ao Cliente'
-            if (select.value !== '3') return
+            // Garante que a situação ainda é uma das parametrizadas
+            if (
+              select.value !== '3' &&
+              select.value !== '2' &&
+              select.value !== '14'
+            )
+              return
             const latestText = textArea.value
             const latestParts = extractContentParts(latestText)
             // Se por acaso removido, reinsere saudação/encerramento
             if (!latestParts.greeting && !latestParts.closing) {
               const reapplied = await addGreetingAndClosing(
-                latestParts.content,
-                true
+                selectedValue === '3' ? latestParts.content : '',
+                selectedValue === '3',
+                selectedValue === '3' ? null : 'analysis'
               )
               if (reapplied !== latestText) {
                 textArea.value = reapplied
@@ -941,7 +1051,9 @@ async function performAutoFill(textArea) {
     }
   }
 
-  const data = await getGreetingsAndClosings()
+  const data = await getGreetingsAndClosings(
+    getSelectedResponseClassification()
+  )
 
   if (!data.defaultGreetingId && !data.defaultClosingId) {
     return
@@ -1003,8 +1115,17 @@ async function loadQuickChangeOptions(editorContainer) {
   const container = editorContainer.querySelector('.quick-change-container')
   if (!container) return
 
-  const data = await getGreetingsAndClosings()
+  const data = await getGreetingsAndClosings(currentGcClassification)
   let html = ''
+
+  // Adiciona o seletor de classificação no topo
+  html += `
+    <div class="gc-classification-selector">
+      <button type="button" class="classification-btn ${currentGcClassification === 'solution' ? 'active' : ''}" data-class="solution">Solução</button>
+      <button type="button" class="classification-btn ${currentGcClassification === 'info' ? 'active' : ''}" data-class="info">Pedir Informações</button>
+      <button type="button" class="classification-btn ${currentGcClassification === 'analysis' ? 'active' : ''}" data-class="analysis">Em Análise</button>
+    </div>
+  `
 
   // Função auxiliar para criar a lista de itens arrastáveis
   const createItemsHtml = (items, type) => {
@@ -1199,7 +1320,7 @@ async function handleGcDrop(e) {
   }
 
   // Recalcula a ordem
-  const data = await getGreetingsAndClosings()
+  const data = await getGreetingsAndClosings(currentGcClassification)
   const listKey = draggedType // 'greetings' ou 'closings'
 
   // Filtra a lista correta e remove o item arrastado temporariamente
@@ -1226,7 +1347,7 @@ async function handleGcDrop(e) {
   data[listKey] = updatedList
 
   // Salva os dados atualizados
-  await saveGreetingsAndClosings(data)
+  await saveGreetingsAndClosings(data, false, currentGcClassification)
 
   // Recarrega o menu para refletir a nova ordem
   const editorContainer = targetList.closest('.editor-container')
@@ -1493,18 +1614,31 @@ function setupEditorInstanceListeners(
 
     const quickChangeContainer = e.target.closest('.quick-change-container')
     if (quickChangeContainer) {
+      // Ação: Mudar Classificação (Solução / Info)
+      const classBtn = e.target.closest('.classification-btn')
+      if (classBtn) {
+        currentGcClassification = classBtn.dataset.class
+        loadQuickChangeOptions(editorContainer)
+        return
+      }
+
       // Ação: Adicionar Novo Item (clique no botão + Adicionar)
       if (e.target.closest('.add-new-item-btn')) {
         const button = e.target.closest('.add-new-item-btn')
         const type = button.dataset.type // 'greetings' ou 'closings'
 
         // Abre o modal de criação, passando o tipo e um callback para recarregar o menu
-        openGreetingClosingModal(null, type, () => {
-          loadQuickChangeOptions(editorContainer)
-          // Também recarrega a lista no modal de configurações, se estiver aberto
-          const mgmtModal = document.getElementById('management-modal')
-          if (mgmtModal) renderGreetingsClosingsManagement(mgmtModal)
-        })
+        openGreetingClosingModal(
+          null,
+          type,
+          () => {
+            loadQuickChangeOptions(editorContainer)
+            // Também recarrega a lista no modal de configurações, se estiver aberto
+            const mgmtModal = document.getElementById('management-modal')
+            if (mgmtModal) renderGreetingsClosingsManagement(mgmtModal)
+          },
+          currentGcClassification
+        )
         // Deixa o menu fechar naturalmente
         return
       }
@@ -1518,11 +1652,11 @@ function setupEditorInstanceListeners(
       // Ação: Definir como Padrão (clique na estrela)
       if (e.target.closest('.set-default-btn')) {
         e.stopPropagation() // Impede o menu de fechar
-        const data = await getGreetingsAndClosings()
+        const data = await getGreetingsAndClosings(currentGcClassification)
         const property =
           type === 'greetings' ? 'defaultGreetingId' : 'defaultClosingId'
         data[property] = data[property] === itemId ? null : itemId
-        await saveGreetingsAndClosings(data)
+        await saveGreetingsAndClosings(data, false, currentGcClassification)
         showNotification('Padrão atualizado!', 'success', 2000)
         loadQuickChangeOptions(editorContainer) // Recarrega o menu para refletir a mudança
         return
@@ -1530,15 +1664,20 @@ function setupEditorInstanceListeners(
 
       // Ação: Editar (clique no lápis)
       if (e.target.closest('.edit-item-btn')) {
-        const data = await getGreetingsAndClosings()
+        const data = await getGreetingsAndClosings(currentGcClassification)
         const item = data[type]?.find(i => i.id === itemId)
         if (item) {
-          openGreetingClosingModal(item, type, () => {
-            loadQuickChangeOptions(editorContainer)
-            // Também recarrega a lista no modal de configurações, se estiver aberto
-            const mgmtModal = document.getElementById('management-modal')
-            if (mgmtModal) renderGreetingsClosingsManagement(mgmtModal)
-          })
+          openGreetingClosingModal(
+            item,
+            type,
+            () => {
+              loadQuickChangeOptions(editorContainer)
+              // Também recarrega a lista no modal de configurações, se estiver aberto
+              const mgmtModal = document.getElementById('management-modal')
+              if (mgmtModal) renderGreetingsClosingsManagement(mgmtModal)
+            },
+            currentGcClassification
+          )
         }
         // Deixa o menu fechar
         return
@@ -1552,7 +1691,7 @@ function setupEditorInstanceListeners(
             itemElement.querySelector('.quick-change-title').textContent
           }"?`,
           async () => {
-            const data = await getGreetingsAndClosings()
+            const data = await getGreetingsAndClosings(currentGcClassification)
             data[type] = data[type].filter(i => i.id !== itemId)
             if (
               (type === 'greetings' && data.defaultGreetingId === itemId) ||
@@ -1562,7 +1701,7 @@ function setupEditorInstanceListeners(
                 type === 'greetings' ? 'defaultGreetingId' : 'defaultClosingId'
               ] = null
             }
-            await saveGreetingsAndClosings(data)
+            await saveGreetingsAndClosings(data, false, currentGcClassification)
             showNotification('Item excluído.', 'success')
             loadQuickChangeOptions(editorContainer)
           }
@@ -1572,7 +1711,7 @@ function setupEditorInstanceListeners(
 
       // Ação Padrão: Inserir no Texto (clique no título)
       if (e.target.closest('.quick-change-title')) {
-        const data = await getGreetingsAndClosings()
+        const data = await getGreetingsAndClosings(currentGcClassification)
         const item = data[type]?.find(i => i.id === itemId)
         if (item) {
           const resolvedContent = await resolveVariablesInText(item.content)
@@ -2671,14 +2810,76 @@ function observeForSolutionResponseRadio() {
       group.forEach(r => {
         if (!r._sgdBound) {
           r._sgdBound = true
-          r.addEventListener('change', () => {
+          r.addEventListener('change', async () => {
+            // Se a mudança foi programática (via r.click() abaixo), evitamos re-execução infinita
+            if (r._isProgrammaticChange) return
+
             choice[name] = r.value
+            currentGcClassification = r.value === '1' ? 'info' : 'solution'
+
+            // Atualiza os dropdowns da UI
+            document
+              .querySelectorAll('.editor-container')
+              .forEach(container => loadQuickChangeOptions(container))
+
+            // Aguarda um pouco para o SGD terminar sua própria atualização nativa
+            // (carregaDescricaoTramiteSaudacaoBySituacaoTipoResposta)
+            setTimeout(async () => {
+              const textArea = getTargetTextArea()
+              if (textArea) {
+                const situationSelects = [
+                  document.getElementById('cadSscForm:situacaoTramite'),
+                  document.getElementById('sscForm:situacaoTramite'),
+                  document.getElementById('ssForm:situacaoTramite')
+                ]
+                const isRespondido = situationSelects.some(
+                  s => s && s.value === '3'
+                )
+
+                if (isRespondido) {
+                  const parts = extractContentParts(textArea.value)
+                  // Forçamos o uso dos padrões da nova classificação (useTemporary = false)
+                  const newText = await addGreetingAndClosing(
+                    parts.content,
+                    false
+                  )
+                  if (newText !== textArea.value) {
+                    textArea.value = newText
+                    textArea.dispatchEvent(
+                      new Event('input', { bubbles: true })
+                    )
+                  }
+                }
+              }
+            }, 500)
           })
         }
       })
-      if (choice[name]) return
+
+      // Se o usuário já fez uma escolha nesta sessão, garantimos que ela seja respeitada
+      // mesmo após re-renderizações do SGD (AJAX)
+      if (choice[name]) {
+        const preferredRadio = Array.from(group).find(
+          r => r.value === choice[name]
+        )
+        if (preferredRadio && !preferredRadio.checked) {
+          preferredRadio._isProgrammaticChange = true
+          preferredRadio.click()
+          delete preferredRadio._isProgrammaticChange
+          currentGcClassification = choice[name] === '1' ? 'info' : 'solution'
+        }
+        return
+      }
+
       const anyChecked = Array.from(group).some(r => r.checked)
-      if (anyChecked) return
+      if (anyChecked) {
+        const checkedRadio = Array.from(group).find(r => r.checked)
+        if (checkedRadio) {
+          currentGcClassification =
+            checkedRadio.value === '1' ? 'info' : 'solution'
+        }
+        return
+      }
       const sol = document.querySelector(
         `input[type="radio"][name="${name}"][value="2"]`
       )
@@ -2797,7 +2998,9 @@ function setupSolutionObserver(textArea) {
         .trim()
 
       // 2. Busca as configurações de saudação/encerramento do usuário na extensão.
-      const data = await getGreetingsAndClosings()
+      const data = await getGreetingsAndClosings(
+        getSelectedResponseClassification()
+      )
       let userGreeting = ''
       let userClosing = ''
 
@@ -2925,7 +3128,9 @@ async function createQuickChangePopup(type, triggerElement) {
   // Remove popups antigos para evitar duplicatas
   document.querySelector('.quick-change-popup')?.remove()
 
-  const data = await getGreetingsAndClosings()
+  const data = await getGreetingsAndClosings(
+    getSelectedResponseClassification()
+  )
   const items = data[type]
 
   if (!items || items.length === 0) {
@@ -3023,7 +3228,9 @@ async function createInteractiveChangePopup(targetSpan) {
     targetSpan.dataset.interactiveType === 'greeting' ? 'greetings' : 'closings'
   const currentId = targetSpan.dataset.itemId
 
-  const data = await getGreetingsAndClosings()
+  const data = await getGreetingsAndClosings(
+    getSelectedResponseClassification()
+  )
   const items = data[type]
 
   if (!items || items.length <= 1) return // Não mostra o menu se só houver uma opção

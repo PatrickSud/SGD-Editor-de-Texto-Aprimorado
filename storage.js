@@ -331,7 +331,9 @@ async function getSettings() {
 async function saveSettings(newSettings) {
   // Verifica se o contexto está válido antes de tentar salvar
   if (!isExtensionContextValid()) {
-    console.warn('Editor SGD: Contexto da extensão invalidado. Não é possível salvar configurações.')
+    console.warn(
+      'Editor SGD: Contexto da extensão invalidado. Não é possível salvar configurações.'
+    )
     return
   }
 
@@ -351,7 +353,9 @@ async function saveSettings(newSettings) {
   } catch (error) {
     // Se for erro de contexto invalidado, apenas retorna sem propagar
     if (isContextInvalidatedError(error)) {
-      console.warn('Editor SGD: Contexto da extensão invalidado. Não é possível salvar configurações.')
+      console.warn(
+        'Editor SGD: Contexto da extensão invalidado. Não é possível salvar configurações.'
+      )
       return
     }
     console.error('Editor SGD: Erro ao salvar configurações.', error)
@@ -1078,16 +1082,22 @@ async function saveAllReminders(reminders) {
  */
 function reportarUsoSaudacaoEncerramento(data) {
   try {
-    const usuario = document.querySelector('p.navbar-text.navbar-right a b')?.innerText?.trim() || 'Desconhecido';
+    const usuario =
+      document
+        .querySelector('p.navbar-text.navbar-right a b')
+        ?.innerText?.trim() || 'Desconhecido'
 
-    fetch('https://script.google.com/macros/s/AKfycbzZ3OD0AAqt7gv9YP9G3PGRi2fOhCOjdQ8tV-VsrzeSMDJYc8xBk-vSFvXHUAxa_lvsvg/exec', {
-      method: 'POST',
-      body: JSON.stringify({
-        login: usuario,
-        saudacaoAtiva: data.defaultGreetingId !== null,
-        encerramentoAtivo: data.defaultClosingId !== null
-      })
-    }).catch(() => {}); // Falha silenciosa — não bloqueia nada
+    fetch(
+      'https://script.google.com/macros/s/AKfycbzZ3OD0AAqt7gv9YP9G3PGRi2fOhCOjdQ8tV-VsrzeSMDJYc8xBk-vSFvXHUAxa_lvsvg/exec',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          login: usuario,
+          saudacaoAtiva: data.defaultGreetingId !== null,
+          encerramentoAtivo: data.defaultClosingId !== null
+        })
+      }
+    ).catch(() => {}) // Falha silenciosa — não bloqueia nada
   } catch (e) {
     // Segurança extra: nunca propaga erro para o fluxo principal
   }
@@ -1095,16 +1105,18 @@ function reportarUsoSaudacaoEncerramento(data) {
 
 /**
  * Recupera as saudações e encerramentos salvos, incluindo os IDs padrão.
+ * Suporta categorias por classificação (Solução / Pedir mais informações).
+ * @param {string} classification - A classificação desejada ('solution' ou 'info').
  * @returns {Promise<{greetings: Array<object>, closings: Array<object>, defaultGreetingId: string|null, defaultClosingId: string|null}>}
  */
-async function getGreetingsAndClosings() {
+async function getGreetingsAndClosings(classification = 'solution') {
   try {
     // 1. Tenta ler do novo local de armazenamento (local)
     const localResult = await chrome.storage.local.get(GREETINGS_CLOSINGS_KEY)
-    let data = localResult[GREETINGS_CLOSINGS_KEY]
+    let rawData = localResult[GREETINGS_CLOSINGS_KEY]
 
     // 2. Se não encontrou dados no local, verifica o local antigo (sync)
-    if (!data) {
+    if (!rawData) {
       const syncResult = await chrome.storage.sync.get(GREETINGS_CLOSINGS_KEY)
       const syncData = syncResult[GREETINGS_CLOSINGS_KEY]
 
@@ -1115,54 +1127,128 @@ async function getGreetingsAndClosings() {
         )
         await chrome.storage.local.set({ [GREETINGS_CLOSINGS_KEY]: syncData }) // Salva no local
         await chrome.storage.sync.remove(GREETINGS_CLOSINGS_KEY) // Limpa o local antigo
-        data = syncData // Usa os dados migrados para continuar
+        rawData = syncData // Usa os dados migrados para continuar
       }
     }
 
-    // Se não houver dados, inicializa com exemplos e define o primeiro de cada lista como padrão
-    if (!data || !data.greetings || !data.closings) {
-      const initialGreetings = [
-        {
-          id: `grt-${Date.now()}`,
-          title: 'Simples',
-          content:
-            "[saudacao], [usuario]! Tudo bem? Espero que sim! <nobr style='font-size:18px;'>&#128516;</nobr>",
-          shortcut: ''
+    // Se não houver dados, inicializa a estrutura
+    if (!rawData) {
+      rawData = {
+        solution: {
+          greetings: [],
+          closings: [],
+          defaultGreetingId: null,
+          defaultClosingId: null
         },
-        {
-          id: `grt-${Date.now() + 1}`,
-          title: 'Contato e Acesso',
-          content:
-            "[saudacao], [usuario]! Tudo bem? Espero que sim!<nobr style='font-size:20px;'>&#128521;</nobr> \n \nConforme contato telefônico e conexão remota a máquina ",
-          shortcut: ''
+        info: {
+          greetings: [],
+          closings: [],
+          defaultGreetingId: null,
+          defaultClosingId: null
         },
-        {
-          id: `grt-${Date.now() + 3}`,
-          title: 'Agradecendo',
-          content:
-            "[saudacao], [usuario]! Tudo bem? \n \nAgradeço pelo envio das informações/arquivos. \nJá estou analisando o seu caso e em breve retorno com novidades. <nobr style='font-size:18px;'>👍</nobr>",
-          shortcut: ''
+        analysis: {
+          greetings: [],
+          closings: [],
+          defaultGreetingId: null,
+          defaultClosingId: null
         }
-      ]
-      const initialClosings = [
-        {
-          id: `cls-${Date.now()}`,
-          title: 'Simples',
-          content:
-            "Se surgir alguma dúvida sobre o atendimento, estou aqui para ajudar!\n\nSeguimos à disposição.\n[finalizacao]! <nobr style='font-size:18px;'>&#128075;</nobr>",
-          shortcut: ''
-        },
-        {
-          id: `cls-${Date.now() + 1}`,
-          title: 'Aguardando Retorno',
-          content:
-            "Fico no aguardo de seu Retorno, \n[finalizacao]! <nobr style='font-size:18px;'>&#128522;</nobr>",
-          shortcut: ''
-        },
-        {
-          id: `cls-${Date.now() + 2}`,
-          title: 'Com Reforma Tributária',
-          content: `Se surgir alguma dúvida sobre o atendimento, estou aqui para ajudar! Por favor, sinta-se à vontade para retornar.
+      }
+    }
+
+    // MIRAÇÃO: Se os dados estiverem no formato antigo (direto no objeto), move para 'solution'
+    if (rawData.greetings !== undefined || rawData.closings !== undefined) {
+      console.log(
+        'Editor SGD: Migrando dados de saudações para novo formato por classificação.'
+      )
+      const oldData = {
+        greetings: rawData.greetings || [],
+        closings: rawData.closings || [],
+        defaultGreetingId: rawData.defaultGreetingId || null,
+        defaultClosingId: rawData.defaultClosingId || null
+      }
+
+      // Se 'info' ou 'analysis' não tem nada, replica os de 'solution' inicialmente conforme solicitado
+      rawData = {
+        solution: oldData,
+        info: JSON.parse(JSON.stringify(oldData)),
+        analysis: JSON.parse(JSON.stringify(oldData))
+      }
+      // "Em Análise" não deve herdar os padrões habilitados (IDs default)
+      rawData.analysis.defaultGreetingId = null
+      rawData.analysis.defaultClosingId = null
+
+      await saveGreetingsAndClosings(rawData, true) // Salva a estrutura completa migrada
+    }
+
+    // Se a estrutura de uma classificação não existir ou estiver vazia, inicializa
+    if (
+      !rawData[classification] ||
+      (rawData[classification].greetings.length === 0 &&
+        rawData[classification].closings.length === 0)
+    ) {
+      if (
+        (classification === 'info' || classification === 'analysis') &&
+        rawData.solution &&
+        (rawData.solution.greetings.length > 0 ||
+          rawData.solution.closings.length > 0)
+      ) {
+        // Replica de solução para info ou analysis se estiverem vazios
+        rawData[classification] = JSON.parse(JSON.stringify(rawData.solution))
+
+        // Se for "Em Análise", limpa os IDs padrões na replicação inicial
+        if (classification === 'analysis') {
+          rawData.analysis.defaultGreetingId = null
+          rawData.analysis.defaultClosingId = null
+        }
+
+        await saveGreetingsAndClosings(rawData, true)
+      } else if (
+        classification === 'solution' &&
+        (!rawData.solution || rawData.solution.greetings.length === 0)
+      ) {
+        // Inicializa solução com padrões se estiver realmente vazio
+        const initialGreetings = [
+          {
+            id: `grt-${Date.now()}`,
+            title: 'Simples',
+            content:
+              "[saudacao], [usuario]! Tudo bem? Espero que sim! <nobr style='font-size:18px;'>&#128516;</nobr>",
+            shortcut: ''
+          },
+          {
+            id: `grt-${Date.now() + 1}`,
+            title: 'Contato e Acesso',
+            content:
+              "[saudacao], [usuario]! Tudo bem? Espero que sim!<nobr style='font-size:20px;'>&#128521;</nobr> \n \nConforme contato telefônico e conexão remota a máquina ",
+            shortcut: ''
+          },
+          {
+            id: `grt-${Date.now() + 3}`,
+            title: 'Agradecendo',
+            content:
+              "[saudacao], [usuario]! Tudo bem? \n \nAgradeço pelo envio das informações/arquivos. \nJá estou analisando o seu caso e em breve retorno com novidades. <nobr style='font-size:18px;'>👍</nobr>",
+            shortcut: ''
+          }
+        ]
+        const initialClosings = [
+          {
+            id: `cls-${Date.now()}`,
+            title: 'Simples',
+            content:
+              "Se surgir alguma dúvida sobre o atendimento, estou aqui para ajudar!\n\nSeguimos à disposição.\n[finalizacao]! <nobr style='font-size:18px;'>&#128075;</nobr>",
+            shortcut: ''
+          },
+          {
+            id: `cls-${Date.now() + 1}`,
+            title: 'Aguardando Retorno',
+            content:
+              "Fico no aguardo de seu Retorno, \n[finalizacao]! <nobr style='font-size:18px;'>&#128522;</nobr>",
+            shortcut: ''
+          },
+          {
+            id: `cls-${Date.now() + 2}`,
+            title: 'Com Reforma Tributária',
+            content: `Se surgir alguma dúvida sobre o atendimento, estou aqui para ajudar! Por favor, sinta-se à vontade para retornar.
 
 Agora, se tudo estiver resolvido, marque a situação como <strong><span style="color:#fa6400">'Atendimento Concluído'</span></strong> para nos ajudar a garantir a qualidade do suporte. Estamos aqui para você! &#x1F31F;	
    <span style="color:#FF7F00;"> __________________________________________________________________________________________________________________________________________________________________________</span>
@@ -1172,44 +1258,35 @@ Prepare-se para a <strong>Reforma Tributária</strong>! Ative o módulo da Domí
  
 Seguimos à disposição.
 [finalizacao]! <nobr style='font-size:19px;'>&#128075;</nobr>`,
-          shortcut: ''
-        },
-        {
-          id: `cls-${Date.now() + 6}`,
-          title: 'Feliz em ajudar',
-          content: `Fico feliz em ajudar! Se não houver mais nenhuma dúvida, peço a gentileza de avaliar meu atendimento marcando a situação como <strong><span style="color:#fa6400">'Atendimento Concluído'</span></strong>. \nSua opinião é muito importante para nós!\n\n[finalizacao]! <nobr style='font-size:18px;'>&#10024;</nobr>`,
-          shortcut: ''
-        },
-        {
-          id: `cls-${Date.now() + 7}`,
-          title: 'Acesso Remoto',
-          content: `<b>Você sabia?! Nosso suporte via acesso remoto pode ser ainda mais ágil! </b><nobr style='font-size:20px;'>&#9757;</nobr></b><nobr style='font-size:20px;'>&#129299;</nobr> 
- 
- Pesquise pela ferramenta “<b>Acesso Remoto - Domínio Sistemas</b>”, instalada em sua máquina: <img src="https://www.dropbox.com/scl/fi/495canzpdjs211hh6la45/acesso.gif?rlkey=5khplj8wi64db0xyv2rsrql5a&st=y923wzze&raw=1"  width="200" height="32" border="0" alt="iniciar"> ou clique na imagem abaixo para baixar e instalar! 
- 
- <a href="https://download.dominiosistemas.com.br/Suporte/AcessoRemoto/LogMeInRescueCallingCard.msi" target="_blank"> 
- 
- <img src="https://www.dropbox.com/scl/fi/byeq2k2diaqq9wqv2sk3r/acesso_icon.png?rlkey=qky0l9byalcwojsi04xpq7o88&st=ybvth8cw&raw=1"  width="250" height="118" border="0" alt="acesso_remoto"></a> 
- 
- [finalizacao]! <nobr style='font-size:18px;'>&#10024;</nobr>`,
-          shortcut: ''
+            shortcut: ''
+          }
+        ]
+        rawData.solution = {
+          greetings: initialGreetings,
+          closings: initialClosings,
+          defaultGreetingId: null,
+          defaultClosingId: null
         }
-      ]
-
-      data = {
-        greetings: initialGreetings,
-        closings: initialClosings,
-        defaultGreetingId: null,
-        defaultClosingId: null
+        // Após inicializar solução, se info estiver vazio, replica
+        if (
+          !rawData.info ||
+          (rawData.info.greetings.length === 0 &&
+            rawData.info.closings.length === 0)
+        ) {
+          rawData.info = JSON.parse(JSON.stringify(rawData.solution))
+        }
+        await saveGreetingsAndClosings(rawData, true)
+      } else if (!rawData[classification]) {
+        rawData[classification] = {
+          greetings: [],
+          closings: [],
+          defaultGreetingId: null,
+          defaultClosingId: null
+        }
       }
-      await saveGreetingsAndClosings(data)
     }
 
-    // Garante que as propriedades de ID padrão existam para dados antigos
-    if (data.defaultGreetingId === undefined) data.defaultGreetingId = null
-    if (data.defaultClosingId === undefined) data.defaultClosingId = null
-
-    return data
+    return rawData[classification]
   } catch (error) {
     console.error(
       'Editor SGD: Erro ao carregar saudações e encerramentos.',
@@ -1224,31 +1301,95 @@ Seguimos à disposição.
   }
 }
 
-
 /**
  * Salva o objeto de saudações e encerramentos.
- * @param {{greetings: Array<object>, closings: Array<object>}} data
+ * @param {object} data - Dados a serem salvos.
+ * @param {boolean} isFullStructure - Se 'data' já é a estrutura completa {solution, info}.
+ * @param {string} classification - Se 'isFullStructure' for false, qual classificação salvar.
  */
-async function saveGreetingsAndClosings(data) {
+async function saveGreetingsAndClosings(
+  data,
+  isFullStructure = false,
+  classification = 'solution'
+) {
   try {
-    // Garante que a propriedade 'order' exista para compatibilidade com drag-drop
-    if (data.greetings) {
-      data.greetings.forEach((item, index) => {
-        if (item.order === undefined) {
-          item.order = index
+    const createEmptyClassification = () => ({
+      greetings: [],
+      closings: [],
+      defaultGreetingId: null,
+      defaultClosingId: null
+    })
+
+    const normalizeStructure = raw => {
+      if (!raw) {
+        return {
+          solution: createEmptyClassification(),
+          info: createEmptyClassification(),
+          analysis: createEmptyClassification()
         }
-      })
-    }
-    if (data.closings) {
-      data.closings.forEach((item, index) => {
-        if (item.order === undefined) {
-          item.order = index
+      }
+
+      if (raw.greetings !== undefined || raw.closings !== undefined) {
+        const legacyData = {
+          greetings: raw.greetings || [],
+          closings: raw.closings || [],
+          defaultGreetingId: raw.defaultGreetingId || null,
+          defaultClosingId: raw.defaultClosingId || null
         }
-      })
+
+        const analysisData = JSON.parse(JSON.stringify(legacyData))
+        analysisData.defaultGreetingId = null
+        analysisData.defaultClosingId = null
+
+        return {
+          solution: legacyData,
+          info: JSON.parse(JSON.stringify(legacyData)),
+          analysis: analysisData
+        }
+      }
+
+      return {
+        solution: raw.solution || createEmptyClassification(),
+        info: raw.info || createEmptyClassification(),
+        analysis: raw.analysis || createEmptyClassification()
+      }
     }
 
-    await chrome.storage.local.set({ [GREETINGS_CLOSINGS_KEY]: data })
-    reportarUsoSaudacaoEncerramento(data)
+    let finalDataToSave
+
+    if (isFullStructure) {
+      finalDataToSave = normalizeStructure(data)
+    } else {
+      // Carrega o que já existe para não sobrescrever a outra categoria
+      const localResult = await chrome.storage.local.get(GREETINGS_CLOSINGS_KEY)
+      finalDataToSave = normalizeStructure(localResult[GREETINGS_CLOSINGS_KEY])
+      finalDataToSave[classification] = data
+    }
+
+    // Garante que a propriedade 'order' exista para compatibilidade com drag-drop em todas as categorias
+    ;['solution', 'info', 'analysis'].forEach(cat => {
+      if (finalDataToSave[cat]) {
+        if (finalDataToSave[cat].greetings) {
+          finalDataToSave[cat].greetings.forEach((item, index) => {
+            if (item.order === undefined) item.order = index
+          })
+        }
+        if (finalDataToSave[cat].closings) {
+          finalDataToSave[cat].closings.forEach((item, index) => {
+            if (item.order === undefined) item.order = index
+          })
+        }
+      }
+    })
+
+    await chrome.storage.local.set({
+      [GREETINGS_CLOSINGS_KEY]: finalDataToSave
+    })
+
+    // Para o reporte, enviamos a classificação ativa (ou a padrão)
+    reportarUsoSaudacaoEncerramento(
+      isFullStructure ? finalDataToSave.solution : data
+    )
   } catch (error) {
     console.error(
       'Editor SGD: Erro ao salvar saudações e encerramentos.',
@@ -1338,8 +1479,8 @@ async function saveFollowedAttendance(attendanceData) {
         attendanceData.status === 'updated'
           ? now
           : existing
-          ? existing.updatedAt
-          : null
+            ? existing.updatedAt
+            : null
     }
     await saveFollowedAttendances(attendances)
 

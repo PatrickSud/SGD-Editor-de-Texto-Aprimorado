@@ -2805,11 +2805,16 @@ async function savePreferencesSettings(modal) {
  * Renderiza as listas de saudações e encerramentos no modal de configurações.
  * @param {HTMLElement} modal - O elemento do modal.
  */
-async function renderGreetingsClosingsManagement(modal) {
+async function renderGreetingsClosingsManagement(
+  modal,
+  classification = typeof currentGcClassification !== 'undefined'
+    ? currentGcClassification
+    : 'solution'
+) {
   const container = modal.querySelector('#greetings-closings-container')
   if (!container) return
 
-  const data = await getGreetingsAndClosings()
+  const data = await getGreetingsAndClosings(classification)
 
   const createListHtml = (title, items, type) => {
     const defaultId =
@@ -2874,8 +2879,11 @@ async function renderGreetingsClosingsManagement(modal) {
           type === 'greetings' ? data.greetings : data.closings
         ).find(i => i.id === id)
         if (item) {
-          openGreetingClosingShortcutModal(item, type, () =>
-            renderGreetingsClosingsManagement(modal)
+          openGreetingClosingShortcutModal(
+            item,
+            type,
+            () => renderGreetingsClosingsManagement(modal, classification),
+            classification
           )
         }
       }
@@ -2891,7 +2899,7 @@ async function renderGreetingsClosingsManagement(modal) {
 
       const selectedId = e.target.dataset.id
       const type = e.target.dataset.type
-      const currentData = await getGreetingsAndClosings()
+      const currentData = await getGreetingsAndClosings(classification)
 
       if (type === 'greetings') {
         // Se o item clicado já era o padrão, define como nulo (desmarca). Senão, define como o novo padrão.
@@ -2902,10 +2910,10 @@ async function renderGreetingsClosingsManagement(modal) {
           currentData.defaultClosingId === selectedId ? null : selectedId
       }
 
-      await saveGreetingsAndClosings(currentData)
+      await saveGreetingsAndClosings(currentData, false, classification)
 
       // Re-renderiza a lista para atualizar visualmente a seleção
-      await renderGreetingsClosingsManagement(modal)
+      await renderGreetingsClosingsManagement(modal, classification)
     })
   })
 
@@ -2913,8 +2921,11 @@ async function renderGreetingsClosingsManagement(modal) {
   container.querySelectorAll('.add-item-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const type = btn.dataset.type
-      openGreetingClosingModal(null, type, () =>
-        renderGreetingsClosingsManagement(modal)
+      openGreetingClosingModal(
+        null,
+        type,
+        () => renderGreetingsClosingsManagement(modal, classification),
+        classification
       )
     })
   })
@@ -2929,8 +2940,11 @@ async function renderGreetingsClosingsManagement(modal) {
           type === 'greetings' ? data.greetings : data.closings
         ).find(i => i.id === id)
         if (item) {
-          openGreetingClosingModal(item, type, () =>
-            renderGreetingsClosingsManagement(modal)
+          openGreetingClosingModal(
+            item,
+            type,
+            () => renderGreetingsClosingsManagement(modal, classification),
+            classification
           )
         }
       }
@@ -2950,7 +2964,7 @@ async function renderGreetingsClosingsManagement(modal) {
           showConfirmDialog(
             `Excluir "${escapeHTML(item.title)}"?`,
             async () => {
-              const currentData = await getGreetingsAndClosings()
+              const currentData = await getGreetingsAndClosings(classification)
               currentData[type] = currentData[type].filter(i => i.id !== id)
               // Se o item excluído era o padrão, limpa a seleção
               if (
@@ -2964,8 +2978,12 @@ async function renderGreetingsClosingsManagement(modal) {
               ) {
                 currentData.defaultClosingId = null
               }
-              await saveGreetingsAndClosings(currentData)
-              await renderGreetingsClosingsManagement(modal)
+              await saveGreetingsAndClosings(
+                currentData,
+                false,
+                classification
+              )
+              await renderGreetingsClosingsManagement(modal, classification)
             }
           )
         }
@@ -2980,7 +2998,14 @@ async function renderGreetingsClosingsManagement(modal) {
  * @param {string} type - 'greetings' ou 'closings'.
  * @param {function} onComplete - Callback.
  */
-async function openGreetingClosingModal(item, type, onComplete) {
+async function openGreetingClosingModal(
+  item,
+  type,
+  onComplete,
+  classification = typeof currentGcClassification !== 'undefined'
+    ? currentGcClassification
+    : 'solution'
+) {
   const isEditing = item !== null
   const title = type === 'greetings' ? 'Saudação' : 'Encerramento'
 
@@ -3022,7 +3047,7 @@ async function openGreetingClosingModal(item, type, onComplete) {
         return
       }
 
-      const data = await getGreetingsAndClosings()
+      const data = await getGreetingsAndClosings(classification)
       const newItem = {
         id: isEditing ? item.id : `${type.slice(0, 3)}-${Date.now()}`,
         title: newTitle,
@@ -3037,7 +3062,7 @@ async function openGreetingClosingModal(item, type, onComplete) {
         data[type].push(newItem)
       }
 
-      await saveGreetingsAndClosings(data)
+      await saveGreetingsAndClosings(data, false, classification)
       showNotification('Item salvo com sucesso!', 'success')
       closeModal()
       if (onComplete) onComplete()
@@ -3045,7 +3070,7 @@ async function openGreetingClosingModal(item, type, onComplete) {
       // Recarrega os dropdowns em todas as barras de ferramentas
       document
         .querySelectorAll('.editor-container')
-        .forEach(loadGreetingClosingOptions)
+        .forEach(loadQuickChangeOptions)
     }
   )
 
@@ -3190,7 +3215,14 @@ function startInlineCategoryRename(nameElement, categoryId, options = {}) {
  * @param {string} type - 'greetings' ou 'closings'.
  * @param {function} onComplete - Callback para re-renderizar a lista.
  */
-function openGreetingClosingShortcutModal(item, type, onComplete) {
+function openGreetingClosingShortcutModal(
+  item,
+  type,
+  onComplete,
+  classification = typeof currentGcClassification !== 'undefined'
+    ? currentGcClassification
+    : 'solution'
+) {
   let capturedShortcut = null
   const initialShortcut = item.shortcut || ''
 
@@ -3208,7 +3240,7 @@ function openGreetingClosingShortcutModal(item, type, onComplete) {
     }
 
     try {
-      const data = await getGreetingsAndClosings()
+      const data = await getGreetingsAndClosings(classification)
 
       // Valida duplicatas
       const isDuplicate = [...data.greetings, ...data.closings].some(
@@ -3224,7 +3256,7 @@ function openGreetingClosingShortcutModal(item, type, onComplete) {
       const itemToUpdate = data[type].find(i => i.id === item.id)
       if (itemToUpdate) {
         itemToUpdate.shortcut = finalShortcut
-        await saveGreetingsAndClosings(data)
+        await saveGreetingsAndClosings(data, false, classification)
         showNotification('Atalho salvo com sucesso!', 'success')
         closeModalAndRemoveListener()
         if (onComplete) onComplete()

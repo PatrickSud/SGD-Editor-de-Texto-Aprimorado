@@ -2,6 +2,13 @@ const RELEASE_NOTES = {
   '3.0.5': {
     title: '✨ Novidades da Versão 3.0.5',
     features: [
+      '<b>📋 Classificação de Saudações e Encerramentos:</b>' +
+        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+        '<li><b>Novas Categorias:</b> Agora você pode salvar saudações e encerramentos específicos para três situações: <b>Solução</b>, <b>Pedir Informações</b> e <b>Em Análise</b>.</li>' +
+        '<li><b>Troca Inteligente:</b> Ao alternar entre as opções no SGD ou mudar a situação do trâmite, o editor troca automaticamente o texto pelos padrões definidos na categoria correspondente.</li>' +
+        '<li><b>Gestão Independente:</b> Cada aba permite definir favoritos, editar e excluir itens de forma isolada, garantindo a mensagem certa para cada contexto de atendimento.</li>' +
+        '</ul>',
+
       '<b>✨ Sugestor de SAM com IA:</b>' +
         '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
         '<li>Novo botão <b>Sugerir SAM</b> na toolbar da SSC, ao lado do Sugerir SS.</li>' +
