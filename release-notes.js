@@ -6,6 +6,12 @@ const RELEASE_NOTES = {
       '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
       '<li>Novo botão flutuante <b>Copiar Link SSC</b> disponível no menu de Acesso Rápido (FAB).</li>' +
       '<li>Permite copiar rapidamente o link da SSC, formatando um texto pronto para envio ao cliente em um novo trâmite que existe outra SSC de mesmo assunto.</li>' +
+      '</ul>',
+
+      '<b>↕️ Reordenação e PIN no FAB:</b>' +
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      '<li>Implementada a funcionalidade de reordenação por clique e arraste (Drag and Drop) para todos os botões do menu flutuante (FAB).</li>' +
+      '<li>Melhorado o funcionamento do PIN no FAB.</li>' +
       '</ul>'
     ]
   },

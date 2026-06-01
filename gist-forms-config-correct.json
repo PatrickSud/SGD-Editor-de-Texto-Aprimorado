@@ -62,20 +62,74 @@
       ]
     },
     {
-      "category": "AI Chains -> AT",
+      "category": "Apoio e Geral",
+      "items": [
+        {
+          "type": "link",
+          "title": "SGD Interno",
+          "description": "Dúvidas gerais",
+          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/1cea8592-8748-47bd-8c4b-5318d6599045?chain_builder=true",
+          "icon": "🤖"
+        },
+        {
+          "type": "link",
+          "title": "Analisador de SSCs Recentes",
+          "description": "Consultar SSCs recentes do mesmo cliente",
+          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/1c742809-5c60-4e38-9432-cd350906de7c?chain_builder=true",
+          "icon": "🤖"
+        },
+        {
+          "type": "link",
+          "title": "Apoio ao Suporte",
+          "description": "Boas práticas telefone/laptop",
+          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/4f0e3f37-e63f-4188-8c15-373eb75c77c8?chain_builder=true",
+          "icon": "🤖"
+        },
+        {
+          "type": "link",
+          "title": "Assistente Suporte",
+          "description": "Padrões e assuntos por fila",
+          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/bf79bed3-d1f2-4b9c-b08a-a7c0551eb4dc?chain_builder=true",
+          "icon": "🤖"
+        },
+        {
+          "type": "link",
+          "title": "Assistente - Conceitos",
+          "description": "Dúvidas conceituais",
+          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/32b16228-9d6f-4bf6-b9ce-18ea59c2095d?chain_builder=true",
+          "icon": "🤖"
+        },
+        {
+          "type": "link",
+          "title": "Assistente - Cadastro de SSs",
+          "description": "Manual Cadastro de SSs",
+          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/27921542-92d4-408a-a3cb-bb4372553e43?chain_builder=true",
+          "icon": "🤖"
+        },
+        {
+          "type": "link",
+          "title": "Assistente - Cadastro SA/NE",
+          "description": "Peça para a IA sugerir cadastro SAM/NE/SAL/SAIL para o modulo desejado.",
+          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/3ef5f8c0-721e-4ee1-bf3a-48e37ec9f9e2?sidebar=instructions_auto",
+          "icon": "🤖"
+        },
+        {
+          "type": "link",
+          "title": "Assistente - Pesquisa Central",
+          "description": "Pesquisa Central por imagens e texto",
+          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/60b4c57b-2858-460f-aaeb-65cb4cd100e1?chain_builder=true",
+          "icon": "🤖"
+        }
+      ]
+    },
+    {
+      "category": "Filas & Módulos",
       "items": [
         {
           "type": "link",
           "title": "Assuntos Fila 3",
           "description": "Onvio Gestão e Portal do Cliente",
           "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/ec6d18b1-955b-426a-a34d-622065fd982a?sidebar=instructions",
-          "icon": "🤖"
-        },
-        {
-          "type": "link",
-          "title": "Novo Portal do Empregado",
-          "description": "Domínio Para Você (Fila 3)",
-          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/9631a5ff-16d7-4f9b-b3f4-28f5562b8749?chain_builder=true&sidebar=instructions_auto",
           "icon": "🤖"
         },
         {
@@ -112,17 +166,153 @@
           "description": "Secundários (OnBalance, CCT, Busca, Sefaz, API)",
           "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/bdcf2679-98c5-4201-98bd-2c53ee07e63e",
           "icon": "🤖"
+        },
+        {
+          "type": "link",
+          "title": "Domínio Processos",
+          "description": "Dúvidas gerais",
+          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/98d8e94a-f795-44fe-aa86-ab8b4471e202?chain_builder=true",
+          "icon": "🤖"
+        },
+        {
+          "type": "link",
+          "title": "Domínio Cobranças",
+          "description": "Dúvidas gerais",
+          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/26858ea4-9ffd-479a-8125-5f127341d34d?chain_builder=true",
+          "icon": "🤖"
         }
       ]
     },
     {
-      "category": "Outros",
+      "category": "Folha de Pagamento",
       "items": [
         {
           "type": "link",
-          "title": "Assistente - Cadastro SA/NE",
-          "description": "Peça para a IA sugerir cadastro SAM/NE/SAL/SAIL para o modulo desejado.",
-          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/3ef5f8c0-721e-4ee1-bf3a-48e37ec9f9e2?sidebar=instructions_auto",
+          "title": "Novo Portal do Empregado",
+          "description": "Domínio Para Você (Fila 3)",
+          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/9631a5ff-16d7-4f9b-b3f4-28f5562b8749?chain_builder=true&sidebar=instructions_auto",
+          "icon": "🤖"
+        },
+        {
+          "type": "link",
+          "title": "FOLHA - Consulta SA/NE",
+          "description": "Extrator DIRF",
+          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/e68e988c-403d-4917-91e3-2b5344ac5e8a?chain_builder=true",
+          "icon": "🤖"
+        },
+        {
+          "type": "link",
+          "title": "FOLHA - Dúvidas Gerais",
+          "description": "Dúvidas gerais (sem anexos)",
+          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/0a365547-b3e1-4008-bbbd-afee1596dcf6?chain_builder=true",
+          "icon": "🤖"
+        },
+        {
+          "type": "link",
+          "title": "FOLHA - Rubricas com Fórmulas",
+          "description": "Consulta de Rubricas com Fórmulas",
+          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/b653d9c8-da78-4880-9347-e08a8c97c145?chain_builder=true",
+          "icon": "🤖"
+        },
+        {
+          "type": "link",
+          "title": "FOLHA - Analisador de INSS",
+          "description": "Analisador de arquivo de INSS",
+          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/efb4ae5e-191c-4cbe-9a68-8ef4ed3497af?chain_builder=true",
+          "icon": "🤖"
+        },
+        {
+          "type": "link",
+          "title": "FOLHA - Rubricas Fórmulas (5.2)",
+          "description": "Rúbricas com Fórmulas (GPT 5.2)",
+          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/9692b101-98e8-4d62-9948-918e90904e31?chain_builder=true",
+          "icon": "🤖"
+        }
+      ]
+    },
+    {
+      "category": "Fiscal & Contabilidade",
+      "items": [
+        {
+          "type": "link",
+          "title": "FISCONT - Soluções",
+          "description": "Buscador de Soluções e SA/NE",
+          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/a84ee410-18f0-4f99-bc65-566b8340e6f8?chain_builder=true",
+          "icon": "🤖"
+        },
+        {
+          "type": "link",
+          "title": "Contabilidade Digital",
+          "description": "Dúvidas gerais",
+          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/af573701-d00c-4fac-89c8-0e7ea6af3434?chain_builder=true",
+          "icon": "🤖"
+        },
+        {
+          "type": "link",
+          "title": "Contabilidade - ECF",
+          "description": "Análise erro ECF P200/P400",
+          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/d66d4161-c01a-498a-95d8-229a4a884e26?chain_builder=true",
+          "icon": "🤖"
+        },
+        {
+          "type": "link",
+          "title": "FISCONT - Assistente",
+          "description": "Assistente virtual FISCONT",
+          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/f4e61162-241e-477b-851e-c28e1470b519?chain_builder=true",
+          "icon": "🤖"
+        },
+        {
+          "type": "link",
+          "title": "FISCONT - Reforma Tributária",
+          "description": "Dúvidas sobre reforma tributária",
+          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/dbc04d2e-4157-4369-b8af-2877a798dba1?chain_builder=true",
+          "icon": "🤖"
+        },
+        {
+          "type": "link",
+          "title": "FISCONT - Kolossus Auditor",
+          "description": "Auditoria e análises",
+          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/0f1088b3-b410-468c-9039-00932d4c13df?chain_builder=true",
+          "icon": "🤖"
+        },
+        {
+          "type": "link",
+          "title": "Escrita/Contab/Lalur/Patrimônio",
+          "description": "Análise de embasamento legal",
+          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/7e04fbb6-cdef-450f-89b5-d83c392583ba?chain_builder=true",
+          "icon": "🤖"
+        }
+      ]
+    },
+    {
+      "category": "Relatórios & Utilitários",
+      "items": [
+        {
+          "type": "link",
+          "title": "Gerador de Relatórios - BGR",
+          "description": "Criar arquivo BGR com consultas SQL",
+          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/c5c03c64-1577-4e1d-bf7a-61723a450449?chain_builder=true",
+          "icon": "🤖"
+        },
+        {
+          "type": "link",
+          "title": "Gerador de Relatórios - Computados",
+          "description": "Criação de Computados",
+          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/7459b824-1a6b-4548-9a3a-6716e1dc5a79?chain_builder=true",
+          "icon": "🤖"
+        },
+        {
+          "type": "link",
+          "title": "Performance",
+          "description": "Dúvidas Gerais",
+          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/b2a13bb9-d13a-42d8-ad98-a77cd2a8eb10?chain_builder=true",
+          "icon": "🤖"
+        },
+        {
+          "type": "link",
+          "title": "Listagem de SANE's e SAIL's",
+          "description": "Geral",
+          "url": "https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/bcda651a-1518-4808-97b1-439ad9ca1306?chain_builder=true",
           "icon": "🤖"
         }
       ]

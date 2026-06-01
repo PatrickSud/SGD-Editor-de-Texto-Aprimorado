@@ -235,7 +235,20 @@ async function openInfoPanel() {
 
         if (targetId === 'pending') loadPendingItems(targetSection)
         if (targetId === 'forms') loadForms(targetSection, 'forms')
-        if (targetId === 'ai-chains') loadForms(targetSection, 'ai')
+        if (targetId === 'ai-chains') {
+          loadForms(targetSection, 'ai')
+          
+          const searchInput = targetSection.querySelector('#ai-chains-search')
+          if (searchInput && !searchInput.dataset.listenerSet) {
+            searchInput.addEventListener(
+              'input',
+              debounce(e => {
+                loadForms(targetSection, 'ai', e.target.value)
+              }, 300)
+            )
+            searchInput.dataset.listenerSet = 'true'
+          }
+        }
 
         // Lógica de Busca e Ordenação para Equipe AT (Team Status)
         if (targetId === 'team-status') {
@@ -2997,6 +3010,12 @@ function getSectionContent(sectionId) {
     case 'ai-chains':
       return `
          <p class="ip-section-desc">Assistentes inteligentes e padrões de fluxos.</p>
+         <div class="ip-pending-controls" style="margin-bottom: 12px; display: flex; gap: 8px;">
+           <div class="ip-search-wrapper" style="flex: 1; display: flex; align-items: center; gap: 8px;">
+             <span class="ip-search-icon">🔍</span>
+             <input type="text" id="ai-chains-search" placeholder="Buscar assistente..." class="ip-filter-input compact" style="flex: 1;">
+           </div>
+         </div>
          <div id="ai-chains-container" class="ip-forms-container">
            <div class="ip-loading-container">
              <div class="ip-spinner"></div>
@@ -3107,7 +3126,11 @@ function getSectionContent(sectionId) {
  * @param {HTMLElement} sectionElement - Elemento da seção de formulários
  * @param {string} filterType - Tipo de filtro ('forms' ou 'ai')
  */
-async function loadForms(sectionElement, filterType = 'forms') {
+async function loadForms(
+  sectionElement,
+  filterType = 'forms',
+  searchQuery = ''
+) {
   // Define o seletor do container baseado no filtro/seção
   const containerId =
     filterType === 'ai' ? '#ai-chains-container' : '#forms-container'
@@ -3183,17 +3206,33 @@ async function loadForms(sectionElement, filterType = 'forms') {
     // Filtragem simples baseada no título da categoria (Case Insensitive)
     // Se for 'ai', pega categorias que contenham "AI", "Chain" ou "Assistente"
     // Se for 'forms', pega o resto.
-    const filteredCategories = formsData.categories.filter(cat => {
-      const title = cat.category.toLowerCase()
-      const isAiCategory =
-        title.includes('ai') ||
-        title.includes('chain') ||
-        title.includes('assistente') ||
-        title === 'outros' ||
-        title === 'at'
+    const filteredCategories = formsData.categories
+      .filter(cat => {
+        const title = cat.category.toLowerCase()
+        const isAiCategory =
+          title.includes('ai') ||
+          title.includes('chain') ||
+          title.includes('assistente') ||
+          title === 'outros' ||
+          title === 'at'
 
-      return filterType === 'ai' ? isAiCategory : !isAiCategory
-    })
+        return filterType === 'ai' ? isAiCategory : !isAiCategory
+      })
+      .map(cat => {
+        if (searchQuery && searchQuery.trim() !== '') {
+          const query = searchQuery.toLowerCase().trim()
+          const filteredItems = cat.items.filter(item => {
+            return (
+              (item.title && item.title.toLowerCase().includes(query)) ||
+              (item.description &&
+                item.description.toLowerCase().includes(query))
+            )
+          })
+          return { ...cat, items: filteredItems }
+        }
+        return cat
+      })
+      .filter(cat => cat.items.length > 0)
 
     // Renderizar categorias e itens
     let html = ''
