@@ -9,18 +9,25 @@ const RELEASE_NOTES = {
         '</ul>',
 
       '<b>↕️ Reordenação e PIN no FAB:</b>' +
-      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-      '<li>Implementada a funcionalidade de reordenação por clique e arraste (Drag and Drop) para todos os botões do menu flutuante (FAB).</li>' +
-      '<li>Melhorado o funcionamento do PIN no FAB.</li>' +
-      '</ul>',
+        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+        '<li>Implementada a funcionalidade de reordenação por clique e arraste (Drag and Drop) para todos os botões do menu flutuante (FAB).</li>' +
+        '<li>Melhorado o funcionamento do PIN no FAB.</li>' +
+        '</ul>',
 
       '<b>📋 Sugestor de SAM com IA:</b>' +
-      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-      '<li>Novo botão <b>Sugerir SAM</b> na toolbar da SSC, ao lado do Sugerir SS.</li>' +
-      '<li>O técnico descreve o problema com suas próprias palavras e a IA estrutura a sugestão de SAM automaticamente.</li>' +
-      '<li>Opção de leitura do atendimento completo para geração da SAM sem precisar digitar nada.</li>' +
-      '<li>Busca automática por SAMs similares já cadastradas antes de gerar uma nova, evitando duplicatas.</li>' +
-      '</ul>'
+        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+        '<li>Novo botão <b>Sugerir SAM</b> na toolbar da SSC, ao lado do Sugerir SS.</li>' +
+        '<li>O técnico descreve o problema com suas próprias palavras e a IA estrutura a sugestão de SAM automaticamente.</li>' +
+        '<li>Opção de leitura do atendimento completo para geração da SAM sem precisar digitar nada.</li>' +
+        '<li>Busca automática por SAMs similares já cadastradas antes de gerar uma nova, evitando duplicatas.</li>' +
+        '</ul>',
+
+      '<b>🤖 Menu de Recursos de IA:</b>' +
+        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+        '<li><b>Integração:</b> Os botões Sugerir SS e Sugerir SAM agora estão organizados dentro de um novo menu suspenso chamado <b>Recursos de IA</b>.</li>' +
+        '<li><b>📌 Fixação (PIN) Individual:</b> Agora você pode fixar seus recursos de IA favoritos diretamente na toolbar! Basta clicar no ícone de pin 📌 dentro do menu para criar um atalho rápido.</li>' +
+        '<li><b>Visual Aprimorado:</b> Interface mais limpa e organizada com descrições textuais ao lado dos ícones para facilitar a identificação.</li>' +
+        '</ul>'
     ]
   },
   '3.0.4': {
