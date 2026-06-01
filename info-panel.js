@@ -3204,7 +3204,7 @@ async function loadForms(
     }
 
     // Filtragem simples baseada no título da categoria (Case Insensitive)
-    // Se for 'ai', pega categorias que contenham "AI", "Chain" ou "Assistente"
+    // Se for 'ai', pega categorias que contenham "AI", "Chain", "Assistente" ou termos associados de IA/Chain
     // Se for 'forms', pega o resto.
     const filteredCategories = formsData.categories
       .filter(cat => {
@@ -3213,8 +3213,17 @@ async function loadForms(
           title.includes('ai') ||
           title.includes('chain') ||
           title.includes('assistente') ||
+          title.includes('apoio') ||
+          title.includes('filas') ||
+          title.includes('módulo') ||
+          title.includes('folha') ||
+          title.includes('fiscal') ||
+          title.includes('contabilidade') ||
+          title.includes('relatório') ||
+          title.includes('utilitário') ||
           title === 'outros' ||
-          title === 'at'
+          title === 'at' ||
+          (cat.items && cat.items.some(item => item.url && (item.url.includes('aiplatform') || item.url.includes('ai-chains'))))
 
         return filterType === 'ai' ? isAiCategory : !isAiCategory
       })
