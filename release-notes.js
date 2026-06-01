@@ -12,6 +12,14 @@ const RELEASE_NOTES = {
       '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
       '<li>Implementada a funcionalidade de reordenação por clique e arraste (Drag and Drop) para todos os botões do menu flutuante (FAB).</li>' +
       '<li>Melhorado o funcionamento do PIN no FAB.</li>' +
+      '</ul>',
+
+      '<b>📋 Sugestor de SAM com IA:</b>' +
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      '<li>Novo botão <b>Sugerir SAM</b> na toolbar da SSC, ao lado do Sugerir SS.</li>' +
+      '<li>O técnico descreve o problema com suas próprias palavras e a IA estrutura a sugestão de SAM automaticamente.</li>' +
+      '<li>Opção de leitura do atendimento completo para geração da SAM sem precisar digitar nada.</li>' +
+      '<li>Busca automática por SAMs similares já cadastradas antes de gerar uma nova, evitando duplicatas.</li>' +
       '</ul>'
     ]
   },
