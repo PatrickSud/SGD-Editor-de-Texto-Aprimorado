@@ -2173,7 +2173,7 @@ function showWhatsNewModal(notes) {
         .signature-1 .author:hover::after {
           width: 100%;
         }
-        
+        .signature-1 .sep { color: var(--accent-color, #fa6400); }
       </style>
       <p class="signature-1"><span class="author">- Luiza Moro</span><span class="sep">&amp;</span><span class="author">Patrick Godoy</span></p>
     <div style="margin-top: 12px; text-align: center;">
