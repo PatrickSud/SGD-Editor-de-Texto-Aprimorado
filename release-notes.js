@@ -1,4 +1,13 @@
 const RELEASE_NOTES = {
+  '3.0.5.1': {
+    title: '🔧 Correções de Estabilidade — Versão 3.0.5.1',
+    features: [
+      '<b>🔄 Estabilidade em Saudações/Encerramentos:</b>' +
+        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+        '<li>Melhorada a sincronização com o SGD para evitar falhas na classificação ao carregar a página e garantida a preservação do conteúdo digitado ao alternar entre situações.' +
+        '</ul>'
+    ]
+  },
   '3.0.5': {
     title: '✨ Novidades da Versão 3.0.5',
     features: [
