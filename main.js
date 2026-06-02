@@ -231,23 +231,25 @@ function setupSituationListener(textArea) {
     if (!select) return
 
     select.addEventListener('change', async () => {
+      // Limpa cache temporário ao mudar de situação para evitar que padrões de uma situação
+      // (ex: Em Análise) sejam levados para outra (ex: Respondido ao Cliente)
+      temporaryGreetingClosing = { greeting: '', closing: '' }
+
+      // Pequeno delay para permitir que o SGD processe a mudança internamente
+      await new Promise(resolve => setTimeout(resolve, 100))
       const selectedValue = select.value
 
       // Aguarda a função nativa do SGD executar primeiro (carregaDescricaoTramiteSaudacaoBySituacaoTipoResposta)
       setTimeout(async () => {
         const currentText = textArea.value
+        const currentSelectValue = select.value // Re-checa o valor atual para evitar race conditions
 
         // Valor 3 = "Respondido ao Cliente"
         // Valor 2 = "Em Análise"
-        // Valor 14 = "Em Análise - Técnico"
-        if (
-          selectedValue === '3' ||
-          selectedValue === '2' ||
-          selectedValue === '14'
-        ) {
+        if (currentSelectValue === '3' || currentSelectValue === '2') {
           // Determina a classificação para buscar os padrões
           let classification = 'solution'
-          if (selectedValue === '3') {
+          if (currentSelectValue === '3') {
             // Se for respondido, verifica os rádios de Solução/Info
             const infoRadios = [
               document.getElementById('sscForm:tipoRespostaCliente:0'),
@@ -257,28 +259,8 @@ function setupSituationListener(textArea) {
               ? 'info'
               : 'solution'
           } else {
-            // Se for "Em Análise" ou "Em Análise - Técnico"
+            // Se for "Em Análise"
             classification = 'analysis'
-          }
-
-          // Adicionar saudação e encerramento baseados na classificação detectada
-          const data = await getGreetingsAndClosings(classification)
-          let greeting = ''
-          let closing = ''
-
-          if (data.defaultGreetingId) {
-            const defaultGreeting = data.greetings.find(
-              g => g.id === data.defaultGreetingId
-            )
-            if (defaultGreeting)
-              greeting = await resolveVariablesInText(defaultGreeting.content)
-          }
-          if (data.defaultClosingId) {
-            const defaultClosing = data.closings.find(
-              c => c.id === data.defaultClosingId
-            )
-            if (defaultClosing)
-              closing = await resolveVariablesInText(defaultClosing.content)
           }
 
           // Monta o novo texto (substituindo o que o SGD pode ter inserido)
@@ -287,7 +269,7 @@ function setupSituationListener(textArea) {
           // Se for "Em Análise", o comportamento padrão de limpar o conteúdo se mantém,
           // inserindo apenas saudação/encerramento se houver padrões definidos.
           let newText = ''
-          if (selectedValue === '3') {
+          if (currentSelectValue === '3') {
             newText = await addGreetingAndClosing(parts.content, true)
           } else {
             // Para "Em Análise", usamos o conteúdo vazio e forçamos a classificação 'analysis'
@@ -302,29 +284,25 @@ function setupSituationListener(textArea) {
           // Reforço: após o site terminar possíveis atualizações tardias, reaplica se necessário
           setTimeout(async () => {
             // Garante que a situação ainda é uma das parametrizadas
-            if (
-              select.value !== '3' &&
-              select.value !== '2' &&
-              select.value !== '14'
-            )
-              return
+            if (select.value !== '3' && select.value !== '2') return
             const latestText = textArea.value
             const latestParts = extractContentParts(latestText)
             // Se por acaso removido, reinsere saudação/encerramento
             if (!latestParts.greeting && !latestParts.closing) {
               const reapplied = await addGreetingAndClosing(
-                selectedValue === '3' ? latestParts.content : '',
-                selectedValue === '3',
-                selectedValue === '3' ? null : 'analysis'
+                select.value === '3' ? latestParts.content : '',
+                select.value === '3',
+                select.value === '3' ? null : 'analysis'
               )
               if (reapplied !== latestText) {
                 textArea.value = reapplied
                 textArea.dispatchEvent(new Event('input', { bubbles: true }))
               }
             }
-          }, 500)
+          }, 1000) // Aumentado para 1s para garantir que o SGD terminou (botão azul)
         } else {
           // Remover saudação e encerramento (manter apenas conteúdo)
+          // Inclui casos como 14 (Em Análise - Técnico), 6 (Aguardando Resposta - Interna) e 4 (Aguardando resposta do Suporte)
           const parts = extractContentParts(currentText)
 
           // Salva temporariamente se houver saudação ou encerramento
@@ -341,7 +319,7 @@ function setupSituationListener(textArea) {
             }
           }
         }
-      }, 600) // Aguarda mais para garantir que a função do SGD termine
+      }, 700) // Aumentado ligeiramente para dar tempo ao SGD
     })
   })
 }
@@ -1010,10 +988,11 @@ async function performAutoFill(textArea) {
     document.getElementById('ssForm:situacaoTramite')
   ]
 
-  // Checagem imediata do estado "Em análise"
+  // Checagem imediata do estado "Em análise" e outras situações que não devem ter saudação/encerramento
   let situationSelects = getSituationSelects()
-  if (situationSelects.some(s => s && s.value === '2')) {
-    // Se já estiver em "Em análise" ao carregar, garante remoção de saudação/encerramento
+  const restrictedValues = ['2', '14', '6', '4']
+  if (situationSelects.some(s => s && restrictedValues.includes(s.value))) {
+    // Se já estiver em uma situação restrita ao carregar, garante remoção de saudação/encerramento
     const parts = extractContentParts(textArea.value)
     if (parts.greeting || parts.closing) {
       textArea.value = parts.content
@@ -1023,9 +1002,9 @@ async function performAutoFill(textArea) {
   }
 
   // Aguarda o site aplicar a situação/descrição (carregamento dinâmico), então revalida
-  await new Promise(resolve => setTimeout(resolve, 400))
+  await new Promise(resolve => setTimeout(resolve, 800)) // Aumentado para 800ms
   situationSelects = getSituationSelects()
-  if (situationSelects.some(s => s && s.value === '2')) {
+  if (situationSelects.some(s => s && restrictedValues.includes(s.value))) {
     const parts = extractContentParts(textArea.value)
     if (parts.greeting || parts.closing) {
       textArea.value = parts.content
@@ -2832,11 +2811,10 @@ function observeForSolutionResponseRadio() {
                   document.getElementById('sscForm:situacaoTramite'),
                   document.getElementById('ssForm:situacaoTramite')
                 ]
-                const isRespondido = situationSelects.some(
-                  s => s && s.value === '3'
-                )
+                // Re-checa se ainda é Respondido ao Cliente
+                const currentSituation = situationSelects.find(s => s && s.value === '3')
 
-                if (isRespondido) {
+                if (currentSituation) {
                   const parts = extractContentParts(textArea.value)
                   // Forçamos o uso dos padrões da nova classificação (useTemporary = false)
                   const newText = await addGreetingAndClosing(
@@ -2851,7 +2829,7 @@ function observeForSolutionResponseRadio() {
                   }
                 }
               }
-            }, 500)
+            }, 800) // Aumentado para 800ms para sincronizar com outras partes do código
           })
         }
       })
