@@ -356,6 +356,25 @@ Conheça mais sobre como funciona a <img src="https://suporte.dominioatendimento
 
 Desejamos a todos uma ótima semana! <nobr style='font-size:19px;'>&#127775;</nobr> <nobr style='font-size:18px;'>&#128075;</nobr>`
           }
+        },
+        {
+          type: 'action-closing',
+          title: 'Encerramento - IA Suporte',
+          description: 'Encerramento com informações sobre o suporte via IA.',
+          icon: '🤖',
+          closingData: {
+            title: 'IA Suporte',
+            content: `<span style="color:#FF7F00;">_______________________________________________________________________________</span>  
+ A IA treinada com o melhor do conhecimento humano, pronta para resolver suas dúvidas na hora. 
+  
+ <nobr style='font-size:18px;'>&#128269;</nobr> Como acessar: 
+  
+ <b>No Domínio Contábil:</b> Clique no ícone <img src="https://www.dropbox.com/scl/fi/v3br46q5h440ybxqy41rd/baixados.png?rlkey=ox5zlti5ovpllfttaz9r4144v&st=trarz5yj&dl&raw=1" width="24" height="20" border="0" alt="iniciar"> e tire suas dúvidas agora mesmo 
+ <b>Fora do Domínio Contábil:</b> Dentro das Solicitações de Suporte ao Cliente no Onvio, clique no botão <b>[<img src="https://www.dropbox.com/scl/fi/v3br46q5h440ybxqy41rd/baixados.png?rlkey=ox5zlti5ovpllfttaz9r4144v&st=trarz5yj&dl&raw=1" width="24" height="20" border="0" alt="iniciar"> Suporte Chat]</b> — <a href="https://suporte.dominioatendimento.com/sgsc/faces/sscs.html" target="_blank">Clique aqui</a> 
+  
+ <nobr style='font-size:18px;'>&#128348;</nobr><b>Disponível 24h por dia, 7 dias por semana</b> — com especialista humano sempre disponível no horário comercial!Bom dia, <span data-variable="usuario">Jefferson</span>! Tudo bem? Espero que sim! <nobr style='font-size:18px;'>&#128516;</nobr><!--Saudação--> 
+ [finalizacao]! <nobr style='font-size:18px;'>&#10024;</nobr>`
+          }
         }
       ]
     }
