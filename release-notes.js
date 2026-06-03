@@ -4,7 +4,7 @@ const RELEASE_NOTES = {
     features: [
       '<b>🔄 Estabilidade em Saudações/Encerramentos:</b>' +
         '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-        '<li>Melhorada a sincronização com o SGD para evitar falhas na classificação ao carregar a página e garantida a preservação do conteúdo digitado ao alternar entre situações.' +
+        '<li>Melhorada a sincronização com o SGD para evitar falhas na classificação ao carregar a página e garantida a preservação integral do conteúdo digitado pelo usuário ao alternar entre situações.</li>' +
         '</ul>',
         
         '<b>🤖 Sugestor de SS:</b>' +

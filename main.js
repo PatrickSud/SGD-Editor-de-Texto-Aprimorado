@@ -266,14 +266,14 @@ function setupSituationListener(textArea) {
           // Monta o novo texto (substituindo o que o SGD pode ter inserido)
           const parts = extractContentParts(currentText)
 
-          // Se for "Em Análise", o comportamento padrão de limpar o conteúdo se mantém,
-          // inserindo apenas saudação/encerramento se houver padrões definidos.
+          // Se for "Em Análise", preservamos o conteúdo atual do usuário (parts.content)
+          // mas forçamos a classificação 'analysis' para buscar os padrões de saudação/encerramento.
           let newText = ''
           if (currentSelectValue === '3') {
             newText = await addGreetingAndClosing(parts.content, true)
           } else {
-            // Para "Em Análise", usamos o conteúdo vazio e forçamos a classificação 'analysis'
-            newText = await addGreetingAndClosing('', false, 'analysis')
+            // Para "Em Análise", agora mantemos o conteúdo (parts.content) em vez de limpar
+            newText = await addGreetingAndClosing(parts.content, false, 'analysis')
           }
 
           if (newText !== currentText) {
@@ -290,7 +290,7 @@ function setupSituationListener(textArea) {
             // Se por acaso removido, reinsere saudação/encerramento
             if (!latestParts.greeting && !latestParts.closing) {
               const reapplied = await addGreetingAndClosing(
-                select.value === '3' ? latestParts.content : '',
+                latestParts.content,
                 select.value === '3',
                 select.value === '3' ? null : 'analysis'
               )
