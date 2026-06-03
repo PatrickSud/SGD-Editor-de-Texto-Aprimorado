@@ -5,6 +5,11 @@ const RELEASE_NOTES = {
       '<b>🔄 Estabilidade em Saudações/Encerramentos:</b>' +
         '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
         '<li>Melhorada a sincronização com o SGD para evitar falhas na classificação ao carregar a página e garantida a preservação do conteúdo digitado ao alternar entre situações.' +
+        '</ul>',
+        
+        '<b>🤖 Sugestor de SS:</b>' +
+        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+        '<li>Corrigido erro que travava a geração de sugestão antes de enviar para a IA — o plugin voltou a funcionar normalmente.' +
         '</ul>'
     ]
   },
