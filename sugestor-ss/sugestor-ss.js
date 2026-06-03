@@ -692,11 +692,6 @@ ${transcricao}`;
   }
 
   const prompt = montarPrompt(cabecalho, tramites, anexosChatFinal, transcricaoFinal);
-  // ANTES (errado — prompt está undefined aqui):
-  console.log('[Sugestor SS] Prompt enviado para a IA:', prompt);
-  // DEPOIS (correto — a variável certa é promptComplemento):
-  console.log('[Sugestor SS] Prompt complemento enviado para a IA:', promptComplemento);
-
   atualizarMsgLoading('Enviando para a IA... aguarde ⏳');
   window._sscNumero = new URLSearchParams(window.location.search).get('ssc') || cabecalho.numero;
   chrome.runtime.sendMessage({ action: 'gerarSugestaoSS', markdownSSC: prompt });
