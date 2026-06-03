@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { width: 240px; font-family: system-ui, -apple-system, sans-serif; padding: 14px; margin: 0; background: #1e1e2e; color: #cdd6f4; }
+    h3 { margin-top: 0; margin-bottom: 14px; color: #f5c2e7; font-size: 16px; text-align: center; border-bottom: 1px solid #313244; padding-bottom: 8px; }
+    .row { margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
+    select { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #45475a; background: #313244; color: #cdd6f4; font-size: 13px; outline: none; cursor: pointer; }
+    select:hover { border-color: #f5c2e7; }
+    .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #45475a; transition: .3s; border-radius: 22px; }
+    .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: #cdd6f4; transition: .3s; border-radius: 50%; }
+    input:checked + .slider { background-color: #a6e3a1; }
+    input:checked + .slider:before { transform: translateX(18px); background-color: #11111b; }
+  </style>
+</head>
+<body>
+  <h3>Customizador SGD</h3>
+  
+  <div class="row">
+    <span>Ativar Customização:</span>
+    <label class="switch">
+      <input type="checkbox" id="ext-toggle" checked>
+      <span class="slider"></span>
+    </label>
+  </div>
+
+  <div class="row">
+    <select id="theme-select">
+      <option value="padrao-mode">Padrão (Glassmorphism)</option>
+      <option value="serenidade-mode">Serenidade</option>
+      <option value="lumen-mode">Lumen</option>
+      <option value="pink-mode">Cerejeira (Rosa Pink)</option>
+      <option value="forest-mode">Floresta</option>
+      <option value="dark-graphite-mode">Midnight (Grafite)</option>
+      <option value="dark-mode">Blue Night (Escuro)</option>
+      <option value="tokyo-night-mode">Tokyo Night</option>
+    </select>
+  </div>
+
+  <div class="row" title="Inverte cores de ícones legados para melhor visibilidade em temas escuros">
+    <span>Contraste Inteligente:</span>
+    <label class="switch">
+      <input type="checkbox" id="contrast-toggle">
+      <span class="slider"></span>
+    </label>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

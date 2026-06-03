@@ -1,0 +1,369 @@
+/* Variáveis de tema e cores */
+
+/* Cores de ação e estilos globais */
+:root {
+  --action-blue: #2563eb;
+  --action-blue-hover: #1d4ed8;
+  --action-lightblue: #b886fe;
+  --action-lightblue-hover: #8864bb;
+  --action-green: #16a34a;
+  --action-green-hover: #15803d;
+  --action-red: #dc2626;
+  --action-red-hover: #b91c1c;
+  --action-orange: #f97316;
+  --action-orange-hover: #ea580c;
+  --action-yellow: #f59e0b;
+  --action-yellow-hover: #d97706;
+  --border-radius-md: 8px;
+  --border-radius-sm: 6px;
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0px 8px 16px 0px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0px 12px 24px 0px rgba(0, 0, 0, 0.1);
+  --transition-fast: 0.2s ease;
+  --transition-theme: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+
+  /* --- NOVAS VARIÁVEIS DE TAMANHO --- */
+  --ui-icon-scale: 1; 
+  --ui-font-size: 14px; 
+  --editor-font-size: 14px; 
+}
+
+/* Fonte padrão da extensão */
+.editor-container,
+.editor-modal,
+.editor-preview-container,
+#shortcut-popup {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: var(--ui-font-size); 
+  line-height: 1.5;
+}
+
+/* Escopos de tema (Usando :where() para baixa especificidade) */
+:where(
+    .editor-container,
+    .editor-modal,
+    .editor-preview-container,
+    #shortcut-popup,
+    #notes-side-panel,
+    textarea[data-enhanced]
+  ) {
+  --primary-color: rgba(99, 102, 241, 0.8);
+  --primary-color-hover: rgba(79, 70, 229, 0.85);
+  --border-color: rgba(229, 231, 235, 0.4);
+  --background-main: rgba(255, 255, 255, 0.5);
+  --background-secondary: rgba(232, 233, 233, 0.45);
+  --background-hover: rgba(243, 244, 246, 0.45);
+  --text-color-main: #1f2937;
+  --text-color-muted: #6b7280;
+  --background-glass: rgba(255, 255, 255, 0.75);
+}
+
+/* --- TEMA PADRÃO (Glassmorphism) --- */
+.padrao-mode, html.padrao-mode {
+  --primary-color: rgba(99, 102, 241, 0.8);
+  --primary-color-hover: rgba(79, 70, 229, 0.85);
+  --border-color: rgba(184, 186, 190, 0.4);
+  --background-main: #ffffff;
+  --background-secondary: rgba(232, 233, 233, 0.45);
+  --background-hover: rgba(243, 244, 246, 0.45);
+  --text-color-main: #1f2937;
+  --text-color-muted: #6b7280;
+  --background-glass: rgba(255, 255, 255, 0.75);
+}
+
+/* --- TEMA SERENIDADE --- */
+.serenidade-mode, html.serenidade-mode {
+  --primary-color: #6f71ef;
+  --primary-color-hover: #5a53e7;
+  --border-color: #e5e7eb;
+  --background-main: #f5f3ff;
+  --background-secondary: #ede9fe;
+  --background-hover: #e0e7ff;
+  --text-color-main: #1f2937;
+  --text-color-muted: #6b7280;
+  --background-glass: rgba(211, 224, 252, 0.75);
+}
+
+/* --- TEMA LUMEN --- */
+.lumen-mode, html.lumen-mode {
+  --primary-color: #0ea5e9;
+  --primary-color-hover: #0369a1;
+  --border-color: #d8e5f3;
+  --background-main: #cde9f4;
+  --background-secondary: #e1eef7;
+  --background-hover: #eef9ff;
+  --text-color-main: #0f172a;
+  --text-color-muted: #475569;
+  --background-glass: rgba(207, 240, 251, 0.85);
+}
+
+/* --- TEMA ESCURO (Blue Night) --- */
+.dark-mode, html.dark-mode {
+  --primary-color: #246ada;
+  --primary-color-hover: #4b9afa;
+  --border-color: #374151;
+  --background-main: #111827;
+  --background-secondary: #1f2937;
+  --background-hover: #374151;
+  --text-color-main: #f9fafb;
+  --text-color-muted: #9ca3af;
+  --background-glass: rgba(17, 24, 39, 0.75);
+}
+
+/* --- TEMA FLORESTA --- */
+.forest-mode, html.forest-mode {
+  --primary-color: #0f9564;
+  --primary-color-hover: #0d6c46;
+  --border-color: #1a3b2d;
+  --background-main: #0d2b1f;
+  --background-secondary: #1a3b2d;
+  --background-hover: #2a4c3d;
+  --text-color-main: #ebf8f0;
+  --text-color-muted: #c0d7ca;
+  --background-glass: rgba(13, 43, 31, 0.75);
+}
+
+/* --- TEMA ROSA PINK (Cerejeira) --- */
+.pink-mode, html.pink-mode {
+  --primary-color: #da4789;
+  --primary-color-hover: #c23872;
+  --border-color: #fbcfe8;
+  --background-main: #f9b2d7;
+  --background-secondary: #f7d6e8;
+  --background-hover: #fcdff1;
+  --text-color-main: #790b37;
+  --text-color-muted: #8e3061;
+  --background-glass: rgba(250, 214, 233, 0.75);
+}
+
+/* --- TEMA DARK GRAFITE (Midnight) --- */
+.dark-graphite-mode, html.dark-graphite-mode {
+  --primary-color: #3b82f6;
+  --primary-color-hover: #333333;
+  --border-color: #404040;
+  --background-main: #121212;
+  --background-secondary: #1f1f1f;
+  --background-hover: #2e2e2e;
+  --text-color-main: #f5f5f5;
+  --text-color-muted: #bfbfbf;
+  --background-glass: rgba(18, 18, 18, 0.75);
+}
+
+/* --- TEMA TOKYO NIGHT --- */
+.tokyo-night-mode, html.tokyo-night-mode {
+  --primary-color: #f97140;
+  --primary-color-hover: #de4a14;
+  --border-color: #3b4261;
+  --background-main: #15121e;
+  --background-secondary: #1f1b2d;
+  --background-hover: #272d3f;
+  --text-color-main: #edeaf2;
+  --text-color-muted: #b7aeca;
+  --background-glass: rgba(21, 18, 30, 0.75);
+}
+
+/* Correção para visibilidade do ícone de calendário/relógio em temas escuros */
+.dark-mode input[type='datetime-local']::-webkit-calendar-picker-indicator,
+.dark-graphite-mode input[type='datetime-local']::-webkit-calendar-picker-indicator,
+.forest-mode input[type='datetime-local']::-webkit-calendar-picker-indicator,
+.tokyo-night-mode input[type='datetime-local']::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+/* --- SOMBRAS INTERNAS --- */
+.editor-toolbar button, .dropdown button, .action-btn {
+  box-shadow: inset 0 -1px 2px rgba(0, 0, 0, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+textarea[data-enhanced], .editor-preview-container {
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08), inset 0 -1px 1px rgba(255, 255, 255, 0.1), 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.html.dark-mode .editor-toolbar button, html.dark-graphite-mode .editor-toolbar button, html.forest-mode .editor-toolbar button, html.tokyo-night-mode .editor-toolbar button {
+  box-shadow: inset 0 -1px 2px rgba(255, 255, 255, 0.1), inset 0 1px 1px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* --- EFEITO DE VIDRO FOSCO (Glassmorphism) --- */
+.se-modal-content, #shortcut-popup, .dropdown-content, .picker, #notes-side-panel {
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  background-color: var(--background-glass);
+  background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.07"/%3E%3C/svg%3E');
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* --- CHECKBOX CUSTOMIZADO --- */
+:where(.editor-container, .editor-modal, .editor-preview-container, .se-modal-content, #notes-side-panel) input[type='checkbox'] {
+  position: absolute; opacity: 0; width: 0; height: 0;
+}
+:where(.editor-container, .editor-modal, .editor-preview-container, .se-modal-content, #notes-side-panel) input[type='checkbox'] + label {
+  position: relative; padding-left: 26px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+}
+:where(.editor-container, .editor-modal, .editor-preview-container, .se-modal-content, #notes-side-panel) input[type='checkbox'] + label::before {
+  content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; border: 1px solid var(--border-color); background-color: var(--background-secondary); border-radius: var(--border-radius-sm); box-sizing: border-box;
+}
+:where(.editor-container, .editor-modal, .editor-preview-container, .se-modal-content, #notes-side-panel) input[type='checkbox']:checked + label::before {
+  background-color: var(--primary-color); border-color: var(--primary-color);
+}
+:where(.editor-container, .editor-modal, .editor-preview-container, .se-modal-content, #notes-side-panel) input[type='checkbox']:checked + label::after {
+  content: '✔'; position: absolute; left: 9px; top: 50%; transform: translate(-50%, -50%); color: white; font-size: 13px; font-weight: 700; line-height: 1;
+}
+
+/* --- SCROLLBARS CUSTOMIZADOS --- */
+.quick-steps-list::-webkit-scrollbar, .se-modal-body::-webkit-scrollbar, .editor-preview-container::-webkit-scrollbar { width: 8px; }
+.quick-steps-list::-webkit-scrollbar-track, .se-modal-body::-webkit-scrollbar-track, .editor-preview-container::-webkit-scrollbar-track { background: var(--background-hover); border-radius: 10px; }
+.quick-steps-list::-webkit-scrollbar-thumb, .se-modal-body::-webkit-scrollbar-thumb, .editor-preview-container::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+
+/* --- BOTÕES APRIMORADOS --- */
+.enhanced-btn {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-color-hover));
+  color: white; border: 1px solid var(--primary-color); font-weight: 600; border-radius: var(--border-radius-sm); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); transition: all 0.3s ease; position: relative; overflow: hidden;
+}
+.enhanced-btn::before {
+  content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent); transition: left 0.5s;
+}
+.enhanced-btn:hover::before { left: 100%; }
+.enhanced-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
+
+/* Sliders */
+input[type='range'] {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 8px; background: var(--background-secondary); border-radius: 5px; outline: none; border: 1px solid var(--border-color);
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 20px; height: 20px; background: var(--primary-color); cursor: pointer; border-radius: 50%; border: 3px solid var(--background-main); box-shadow: var(--shadow-md);
+}
+
+/* ==========================================================================
+   MOTOR BRUTALISTA DE OVERRIDE PARA O SITE DO SGD (Mapeamento Automatizado)
+   ========================================================================== */
+
+/* Aplica o background principal em todas as estruturas de tabelas legadas */
+html[class*="-mode"] body,
+html[class*="-mode"] form,
+html[class*="-mode"] table,
+html[class*="-mode"] tbody,
+html[class*="-mode"] tr,
+html[class*="-mode"] td,
+html[class*="-mode"] div:not(.editor-container):not(.editor-modal):not(#notes-side-panel):not(.editor-preview-container):not([class*="se-"]) {
+  background-color: var(--background-main) !important;
+  color: var(--text-color-main) !important;
+  border-color: var(--border-color) !important;
+  transition: var(--transition-theme);
+}
+
+/* Força transparência em elementos com fundos inline que escaparam do JS */
+html[class*="-mode"] [style*="background-color: white"],
+html[class*="-mode"] [style*="background-color: #fff"],
+html[class*="-mode"] [style*="background-color: #ffffff"],
+html[class*="-mode"] [style*="background: white"],
+html[class*="-mode"] [style*="background: #fff"],
+html[class*="-mode"] [style*="background: #ffffff"] {
+  background-color: transparent !important;
+}
+
+/* Cabeçalho da página, barra de menu superior e divisores superiores de tabelas */
+html[class*="-mode"] .topo,
+html[class*="-mode"] header,
+html[class*="-mode"] tr:first-child,
+html[class*="-mode"] thead tr,
+html[class*="-mode"] th,
+html[class*="-mode"] [id*="topo"],
+html[class*="-mode"] [class*="menu"] {
+  background-color: var(--background-secondary) !important;
+  color: var(--text-color-main) !important;
+  transition: var(--transition-theme);
+}
+
+/* Títulos de seções e barras de destaque do SGD */
+html[class*="-mode"] .titulo,
+html[class*="-mode"] .subtitulo,
+html[class*="-mode"] [class*="header"],
+html[class*="-mode"] [id*="header"],
+html[class*="-mode"] .barratitulo {
+  background-color: var(--primary-color) !important;
+  color: #ffffff !important;
+  font-weight: bold !important;
+  text-transform: uppercase;
+  padding: 4px 10px !important;
+}
+
+/* Customização para os campos de texto nativos e inputs do SGD */
+html[class*="-mode"] input[type="text"],
+html[class*="-mode"] input[type="password"],
+html[class*="-mode"] select,
+html[class*="-mode"] textarea:not([data-enhanced]) {
+  background-color: var(--background-secondary) !important;
+  color: var(--text-color-main) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--border-radius-sm) !important;
+  padding: 4px 6px !important;
+}
+
+/* Customização em lote para os botões originais do SGD (Gravar, Voltar, etc.) */
+html[class*="-mode"] input[type="button"],
+html[class*="-mode"] input[type="submit"],
+html[class*="-mode"] button:not(.enhanced-btn) {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-color-hover)) !important;
+  color: #ffffff !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--border-radius-sm) !important;
+  font-weight: 600 !important;
+  padding: 5px 14px !important;
+  cursor: pointer !important;
+  box-shadow: var(--shadow-md) !important;
+  transition: var(--transition-fast) !important;
+}
+
+html[class*="-mode"] input[type="button"]:hover,
+html[class*="-mode"] input[type="submit"]:hover,
+html[class*="-mode"] button:not(.enhanced-btn):hover {
+  transform: translateY(-1px) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+/* Links estruturais, âncoras e textos explicativos em negrito */
+html[class*="-mode"] a {
+  color: var(--primary-color) !important;
+  text-decoration: none !important;
+}
+html[class*="-mode"] a:hover {
+  color: var(--primary-color-hover) !important;
+  text-decoration: underline !important;
+}
+html[class*="-mode"] td b, html[class*="-mode"] font {
+  color: var(--text-color-muted) !important;
+}
+
+/* ==========================================================================
+   Mapeamento de Componentes Específicos do SGD
+   ========================================================================== */
+
+/* Tabelas de Visualização e seus campos */
+html[class*="-mode"] .tableVisualizacao,
+html[class*="-mode"] .tableVisualizacaoField,
+html[class*="-mode"] .tableVisualizacaoLabel {
+  border-collapse: collapse !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+html[class*="-mode"] .tableVisualizacaoLabel {
+  background-color: var(--background-secondary) !important;
+  color: var(--primary-color) !important;
+  font-weight: bold !important;
+  min-width: 120px;
+}
+
+html[class*="-mode"] .tableVisualizacaoField {
+  background-color: var(--background-main) !important;
+  color: var(--text-color-main) !important;
+}
+
+/* Alternância de cores em tabelas para melhor leitura (Zebra Striping) */
+html[class*="-mode"] tr:nth-child(even) td:not(.titulo):not(.subtitulo) {
+  background-color: var(--background-hover) !important;
+}
+
+/* Garante que o texto de títulos em negrito dentro de tabelas não suma */
+html[class*="-mode"] td b, 
+html[class*="-mode"] td strong {
+  color: var(--primary-color) !important;
+}

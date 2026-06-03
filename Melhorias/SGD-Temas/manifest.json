@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "SGD Custom Themes & Enhanced UI",
+  "version": "1.0",
+  "description": "Altera dinamicamente o tema visual do portal SGD limpando estilos legados.",
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": ["https://sgd.dominiosistemas.com.br/*"],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://sgd.dominiosistemas.com.br/*"],
+      "js": ["content.js"],
+      "css": ["themes.css"],
+      "run_at": "document_start"
+    }
+  ]
+}
