@@ -1,4 +1,13 @@
 const RELEASE_NOTES = {
+  '3.0.5.2': {
+    title: '🔧 Correção no Editor — Versão 3.0.5.2',
+    features: [
+      '<b>🤖 Recursos de IA na Barra Simples:</b>' +
+        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+        '<li>Corrigido o comportamento onde botões de Recursos de IA fixados/com PIN apareciam indevidamente na barra de ferramentas simples flutuante.</li>' +
+        '</ul>'
+    ]
+  },
   '3.0.5.1': {
     title: '🔧 Correções de Estabilidade — Versão 3.0.5.1',
     features: [

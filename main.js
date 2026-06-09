@@ -881,21 +881,24 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
     `
   }
 
-  const pinnedAIButtonsHtml = pinnedAIButtons
-    .filter(action => {
-      if (action === 'ai-summarize' && instanceId !== 'main') return false
-      if (['sugerir-ss', 'sugerir-sam'].includes(action) && !isSscPage)
-        return false
-      if (action === 'sugerir-sam' && !FEATURE_SUGERIR_SAM) return false
-      return true
-    })
-    .map(action => {
-      const feature = AI_FEATURES[action]
-      return `<button type="button" data-action="${action}" class="shine-effect pinned-ai-button ai-master-button" title="${feature.title}">${feature.icon} <span class="btn-label">${feature.label}</span></button>`
-    })
-    .join('')
+  const pinnedAIButtonsHtml = includeAI
+    ? pinnedAIButtons
+        .filter(action => {
+          if (action === 'ai-summarize' && instanceId !== 'main') return false
+          if (['sugerir-ss', 'sugerir-sam'].includes(action) && !isSscPage)
+            return false
+          if (action === 'sugerir-sam' && !FEATURE_SUGERIR_SAM) return false
+          return true
+        })
+        .map(action => {
+          const feature = AI_FEATURES[action]
+          return `<button type="button" data-action="${action}" class="shine-effect pinned-ai-button ai-master-button" title="${feature.title}">${feature.icon} <span class="btn-label">${feature.label}</span></button>`
+        })
+        .join('')
+    : ''
 
-  const pinnedAIWrapperHtml = `
+  const pinnedAIWrapperHtml = includeAI
+    ? `
     <div class="pinned-ai-wrapper" style="display: ${
       pinnedAIButtonsHtml ? 'flex' : 'none'
     }; align-items: center;">
@@ -905,6 +908,7 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
       </div>
     </div>
   `
+    : ''
 
   const manageStepsButton = includeManageSteps
     ? '<button type="button" data-action="manage-steps" class="shine-effect" title="Configurações">⚙️</button>'
