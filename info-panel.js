@@ -91,8 +91,10 @@ async function handleDeveloperModeClick(event) {
 
 /**
  * Abre o Painel de Informações e Alertas.
+ * @param {string} initialTabId - ID da aba que deve ser aberta inicialmente
  */
-async function openInfoPanel() {
+async function openInfoPanel(initialTabId = 'pending') {
+  console.log('[DEBUG] openInfoPanel called with initialTabId:', initialTabId);
   // Injeta estilos necessários
   injectDevSwitchStyles()
 
@@ -134,6 +136,8 @@ async function openInfoPanel() {
     return publicSections.includes(section.id)
   })
 
+  const activeSectionId = sections.some(s => s.id === initialTabId) ? initialTabId : (sections[0] ? sections[0].id : 'pending')
+
   // HTML do rodapé da sidebar (Interruptores de Opções)
   const sidebarFooterHtml = `
     <div class="ip-sidebar-footer">
@@ -164,7 +168,7 @@ async function openInfoPanel() {
         ${sections
           .map(
             (s, index) => `
-          <div id="ip-nav-${s.id}" class="ip-nav-item ${index === 0 ? 'active' : ''}" data-target="${
+          <div id="ip-nav-${s.id}" class="ip-nav-item ${s.id === activeSectionId ? 'active' : ''}" data-target="${
             s.id
           }">
             <span class="ip-nav-icon">${s.icon}</span>
@@ -185,7 +189,7 @@ async function openInfoPanel() {
         .map(
           (s, index) => `
         <div id="ip-section-${s.id}" class="ip-section ${
-          index === 0 ? 'active' : ''
+          s.id === activeSectionId ? 'active' : ''
         }">
           ${s.id === 'team-status' ? '' : `<h3 class="ip-section-title">${s.icon} ${s.label}</h3>`}
           ${getSectionContent(s.id)}
@@ -221,6 +225,7 @@ async function openInfoPanel() {
       // Add active class
       item.classList.add('active')
       const targetId = item.dataset.target
+      console.log(`[DEBUG] Navigation item clicked. Target: ${targetId}`);
 
       // Indicador de lido/não lido para Avisos
       if (targetId === 'notices') {
@@ -392,10 +397,6 @@ async function openInfoPanel() {
         await chrome.storage.sync.set({ extensionSettingsData: settings })
         updateNotifyBtnState(newState)
       })
-    }
-
-    if (pendingSection.classList.contains('active')) {
-      loadPendingItems(pendingSection)
     }
 
     // Configurar listeners para os filtros
@@ -591,6 +592,12 @@ async function openInfoPanel() {
   }
 
   document.body.appendChild(modal)
+
+  // Dispara o clique na aba inicial para carregar seu conteúdo adequadamente
+  const initialNav = modal.querySelector(`#ip-nav-${activeSectionId}`);
+  if (initialNav) {
+    initialNav.click();
+  }
 }
 
 // Variável global para armazenar os itens pendentes carregados
@@ -2422,8 +2429,10 @@ function openCreateWarningModal(existingWarning = null) {
       if (notify) {
         chrome.runtime.sendMessage({
           action: 'SHOW_GENERIC_NOTIFICATION',
-          title: `📢 ${title}`,
-          message: message.replace(/<[^>]*>?/gm, '').substring(0, 100) // Remove HTML simples para notificação
+          id: `warning-preview-${Date.now()}`,
+          title: title,
+          message: message,
+          type: type
         })
       }
 

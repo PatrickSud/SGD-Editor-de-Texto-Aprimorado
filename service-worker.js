@@ -457,12 +457,12 @@ async function checkTeamStatusAndNotify(providedMembers = null) {
         const lastTime = lastAlerts[key] || 0;
         // Anti-spam: 10 minutos
         if (now - lastTime > 10 * 60 * 1000) {
-          chrome.notifications.create(`team-watch-${key}-${now}`, {
-            type: 'basic',
-            iconUrl: 'logo.png',
+          broadcastToSgdTabs({
+            action: 'SHOW_TOAST',
+            id: `team-watch-${key}-${now}`,
             title: 'Alerta de Indisponibilidade',
             message: `${m.name} ultrapassou o limite crítico (${m.percentFormatted})!`,
-            priority: 2
+            type: 'alert'
           });
           lastAlerts[key] = now;
           updatedAlerts = true;
@@ -715,17 +715,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           const notificationId = `pending-${Date.now()}`
 
           // Exibe uma notificação genérica do sistema
-          chrome.notifications.create(notificationId, {
-            type: 'basic',
-            iconUrl: 'logo.png',
+          broadcastToSgdTabs({
+            action: 'SHOW_TOAST',
             title: message.title,
             message: message.message,
-            priority: 2,
-            buttons: [
-              { title: 'Visualizar' },
-              { title: 'Dispensar' }
-            ],
-            requireInteraction: true // Mantém para controlar o tempo manualmente
+            type: message.type || 'warning'
           })
 
           // Fecha automaticamente após 60 segundos
@@ -754,25 +748,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           timestamp: now
         }
 
-        const notificationId = `generic-${Date.now()}`
-
-        // Exibe uma notificação genérica do sistema
-        chrome.notifications.create(notificationId, {
-          type: 'basic',
-          iconUrl: 'logo.png',
+        // --- NOTIFICAÇÕES GENÉRICAS SUBSTITUÍDAS ---
+        // Agora disparadas diretamente via Broadcast para exibição in-page (Toasts)
+        broadcastToSgdTabs({
+          action: 'SHOW_TOAST',
+          id: message.id || `generic-${Date.now()}`,
           title: message.title,
           message: message.message,
-          priority: 2,
-          buttons: [{ title: 'Dispensar' }],
-          requireInteraction: true // Mantém para controlar o tempo manualmente
-        })
-
-        // Fecha automaticamente após 60 segundos
-        chrome.alarms.create(`dismiss-notification-${notificationId}`, {
-          when: Date.now() + 60000
+          type: message.type || 'info'
         })
 
         sendResponse({ success: true })
+
       } else if (message.action === 'UPDATE_TEAM_STATUS') {
         // Handler para receber dados do Power BI Scraper (Master PC)
         try {

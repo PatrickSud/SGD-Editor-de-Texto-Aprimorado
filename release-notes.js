@@ -1,109 +1,111 @@
 const RELEASE_NOTES = {
   '3.0.5.2': {
-    title: '🔧 Correção no Editor — Versão 3.0.5.2',
+    title: '✨ Melhorias e Correções — Versão 3.0.5.2',
     features: [
       '<b>🤖 Recursos de IA na Barra Simples:</b>' +
-        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-        '<li>Corrigido o comportamento onde botões de Recursos de IA fixados/com PIN apareciam indevidamente na barra de ferramentas simples flutuante.</li>' +
-        '</ul>'
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      '<li>Corrigido o comportamento onde botões de Recursos de IA fixados/com PIN apareciam indevidamente na barra de ferramentas simples flutuante.</li>' +
+      '</ul>',
+
+      '<b>✨ Novo Visual e Comportamento de Notificações (Toasts):</b> Melhorado o design (Glassmorphism), adicionada barra de progresso (45s) e ação "Ver Mais" sincronizada entre as abas.'
     ]
   },
   '3.0.5.1': {
     title: '🔧 Correções de Estabilidade — Versão 3.0.5.1',
     features: [
       '<b>🔄 Estabilidade em Saudações/Encerramentos:</b>' +
-        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-        '<li>Melhorada a sincronização com o SGD para evitar falhas na classificação ao carregar a página e garantida a preservação integral do conteúdo digitado pelo usuário ao alternar entre situações.</li>' +
-        '</ul>',
-        
-        '<b>🤖 Sugestor de SS:</b>' +
-        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-        '<li>Corrigido erro que travava a geração de sugestão antes de enviar para a IA — o plugin voltou a funcionar normalmente.' +
-        '</ul>'
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      '<li>Melhorada a sincronização com o SGD para evitar falhas na classificação ao carregar a página e garantida a preservação integral do conteúdo digitado pelo usuário ao alternar entre situações.</li>' +
+      '</ul>',
+
+      '<b>🤖 Sugestor de SS:</b>' +
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      '<li>Corrigido erro que travava a geração de sugestão antes de enviar para a IA — o plugin voltou a funcionar normalmente.' +
+      '</ul>'
     ]
   },
   '3.0.5': {
     title: '✨ Novidades da Versão 3.0.5',
     features: [
       '<b>📋 Classificação de Saudações e Encerramentos:</b>' +
-        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-        '<li><b>Novas Categorias:</b> Agora você pode salvar saudações e encerramentos específicos para três situações: <b>Solução</b>, <b>Pedir Informações</b> e <b>Em Análise</b>.</li>' +
-        '<li><b>Troca Inteligente:</b> Ao alternar entre as opções no SGD ou mudar a situação do trâmite, o editor troca automaticamente o texto pelos padrões definidos na categoria correspondente.</li>' +
-        '<li><b>Gestão Independente:</b> Cada aba permite definir favoritos, editar e excluir itens de forma isolada, garantindo a mensagem certa para cada contexto de atendimento.</li>' +
-        '</ul>',
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      '<li><b>Novas Categorias:</b> Agora você pode salvar saudações e encerramentos específicos para três situações: <b>Solução</b>, <b>Pedir Informações</b> e <b>Em Análise</b>.</li>' +
+      '<li><b>Troca Inteligente:</b> Ao alternar entre as opções no SGD ou mudar a situação do trâmite, o editor troca automaticamente o texto pelos padrões definidos na categoria correspondente.</li>' +
+      '<li><b>Gestão Independente:</b> Cada aba permite definir favoritos, editar e excluir itens de forma isolada, garantindo a mensagem certa para cada contexto de atendimento.</li>' +
+      '</ul>',
 
       '<b>✨ Sugestor de SAM com IA:</b>' +
-        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-        '<li>Novo botão <b>Sugerir SAM</b> na toolbar da SSC, ao lado do Sugerir SS.</li>' +
-        '<li>O técnico descreve o problema com suas próprias palavras e a IA estrutura a sugestão de SAM automaticamente.</li>' +
-        '<li>Opção de leitura do atendimento completo para geração da SAM sem precisar digitar nada.</li>' +
-        '<li>Busca automática por SAMs similares já cadastradas antes de gerar uma nova, evitando duplicatas.</li>' +
-        '</ul>',
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      '<li>Novo botão <b>Sugerir SAM</b> na toolbar da SSC, ao lado do Sugerir SS.</li>' +
+      '<li>O técnico descreve o problema com suas próprias palavras e a IA estrutura a sugestão de SAM automaticamente.</li>' +
+      '<li>Opção de leitura do atendimento completo para geração da SAM sem precisar digitar nada.</li>' +
+      '<li>Busca automática por SAMs similares já cadastradas antes de gerar uma nova, evitando duplicatas.</li>' +
+      '</ul>',
 
       '<b>🤖 Menu de Recursos de IA:</b>' +
-        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-        '<li><b>Integração:</b> Os botões Sugerir SS e Sugerir SAM agora estão organizados dentro de um novo menu suspenso chamado <b>Recursos de IA</b>.</li>' +
-        '<li><b>📌 Fixação (PIN) Individual:</b> Agora você pode fixar seus recursos de IA favoritos diretamente na toolbar! Basta clicar no ícone de pin 📌 dentro do menu para criar um atalho rápido.</li>' +
-        '</ul>',
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      '<li><b>Integração:</b> Os botões Sugerir SS e Sugerir SAM agora estão organizados dentro de um novo menu suspenso chamado <b>Recursos de IA</b>.</li>' +
+      '<li><b>📌 Fixação (PIN) Individual:</b> Agora você pode fixar seus recursos de IA favoritos diretamente na toolbar! Basta clicar no ícone de pin 📌 dentro do menu para criar um atalho rápido.</li>' +
+      '</ul>',
 
       '<b>🔗 Copiar Link SSC diretamente do FAB (Menu Flutuante):</b>' +
-        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-        '<li>Novo botão flutuante <b>🔗 Copiar Link SSC</b> disponível no menu de Acesso Rápido (FAB).</li>' +
-        '<li>Permite copiar rapidamente o link da SSC, formatando um texto pronto para envio ao cliente em um novo trâmite que existe outra SSC de mesmo assunto.</li>' +
-        '</ul>',
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      '<li>Novo botão flutuante <b>🔗 Copiar Link SSC</b> disponível no menu de Acesso Rápido (FAB).</li>' +
+      '<li>Permite copiar rapidamente o link da SSC, formatando um texto pronto para envio ao cliente em um novo trâmite que existe outra SSC de mesmo assunto.</li>' +
+      '</ul>',
 
       '<b>↕️ Reordenação e PIN no FAB (Menu Flutuante):</b>' +
-        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-        '<li>Implementada a funcionalidade de reordenação por clique e arraste (Drag and Drop) para todos os botões do menu flutuante (FAB).</li>' +
-        '<li>Melhorado o funcionamento do PIN no FAB.</li>' +
-        '</ul>'
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      '<li>Implementada a funcionalidade de reordenação por clique e arraste (Drag and Drop) para todos os botões do menu flutuante (FAB).</li>' +
+      '<li>Melhorado o funcionamento do PIN no FAB.</li>' +
+      '</ul>'
     ]
   },
   '3.0.4': {
     title: '👁️ Melhorias no Preview — Versão 3.0.4',
     features: [
       '<b>🔄 Ocultação Inteligente do Preview do SGD:</b>' +
-        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-        '<li>Agora, ao clicar em <b>Mostrar Visualização</b> no editor da extensão, a pré-visualização nativa do SGD é automaticamente ocultada para evitar redundância.</li>' +
-        '<li>Ao fechar/ocultar a visualização da extensão, o preview nativo do SGD é exibido novamente de forma automática.</li>' +
-        '</ul>',
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      '<li>Agora, ao clicar em <b>Mostrar Visualização</b> no editor da extensão, a pré-visualização nativa do SGD é automaticamente ocultada para evitar redundância.</li>' +
+      '<li>Ao fechar/ocultar a visualização da extensão, o preview nativo do SGD é exibido novamente de forma automática.</li>' +
+      '</ul>',
 
       '<b>⚙️ Nova Preferência:</b>' +
-        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-        "<li>Nova opção de configuração <i><b>Ocultar o campo 'Pré-visualizar:' nativo do SGD</b></i> (desabilitada por padrão).</li>" +
-        '<li>Quando ativada pelo usuário, a pré-visualização do SGD permanecerá oculta mesmo que a visualização da extensão esteja fechada.</li>' +
-        '</ul>',
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      "<li>Nova opção de configuração <i><b>Ocultar o campo 'Pré-visualizar:' nativo do SGD</b></i> (desabilitada por padrão).</li>" +
+      '<li>Quando ativada pelo usuário, a pré-visualização do SGD permanecerá oculta mesmo que a visualização da extensão esteja fechada.</li>' +
+      '</ul>',
 
       '<b>🚨 Central de Informações SGD</b>' +
-        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-        '<li> <b>Instabilidades:</b> Adicionados novos sistemas à lista de monitoramento de instabilidades: <b>Processos</b>, <b>Messenger</b>, <b>FGTS</b> e <b>DCTFWeb</b>.</li>' +
-        '<li> <b>Modo Dev:</b> O interruptor do <b>Modo Dev</b> agora fica permanentemente visível no rodapé e requer autenticação com senha para ativação.</li>' +
-        '</ul>',
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      '<li> <b>Instabilidades:</b> Adicionados novos sistemas à lista de monitoramento de instabilidades: <b>Processos</b>, <b>Messenger</b>, <b>FGTS</b> e <b>DCTFWeb</b>.</li>' +
+      '<li> <b>Modo Dev:</b> O interruptor do <b>Modo Dev</b> agora fica permanentemente visível no rodapé e requer autenticação com senha para ativação.</li>' +
+      '</ul>',
 
       '<b>🔧 Correções e Melhorias:</b>' +
-        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-        '<li>Quando a fila do atendimento não é identificada automaticamente, a IA agora realiza uma <b>melhoria genérica do texto</b> em vez de exibir erro — garantindo que o técnico sempre receba uma resposta útil.</li>' +
-        '<li>Corrigido o funcionamento de chains específicas das filas de <b>ECD/ECF</b> e demais filas que não estavam respondendo corretamente.</li>' +
-        '<li>Corrigido problema onde o usuário "Não Informado" preenchia incorretamente a saudação como "Bom dia Não!".</li>' +
-        '</ul>'
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      '<li>Quando a fila do atendimento não é identificada automaticamente, a IA agora realiza uma <b>melhoria genérica do texto</b> em vez de exibir erro — garantindo que o técnico sempre receba uma resposta útil.</li>' +
+      '<li>Corrigido o funcionamento de chains específicas das filas de <b>ECD/ECF</b> e demais filas que não estavam respondendo corretamente.</li>' +
+      '<li>Corrigido problema onde o usuário "Não Informado" preenchia incorretamente a saudação como "Bom dia Não!".</li>' +
+      '</ul>'
     ]
   },
   '3.0.3': {
     title: '🤖 Novidades — Versão 3.0.3',
     features: [
       '<b>🪄 Melhorar Texto com IA:</b>' +
-        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-        '<li>O botão <b>Melhorar Texto</b> agora utiliza inteligência artificial das Thomson Reuters (Chains das filas) para completar e aprimorar o rascunho do técnico automaticamente.</li>' +
-        '<li>A IA identifica automaticamente a fila do atendimento e direciona para a chain especializada correta, sem necessidade de seleção manual.</li>' +
-        '<li>Atendimentos classificados como <b>Performance</b> são direcionados diretamente para a chain especializada, sem passar pela etapa de roteamento.</li>' +
-        '</ul>',
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      '<li>O botão <b>Melhorar Texto</b> agora utiliza inteligência artificial das Thomson Reuters (Chains das filas) para completar e aprimorar o rascunho do técnico automaticamente.</li>' +
+      '<li>A IA identifica automaticamente a fila do atendimento e direciona para a chain especializada correta, sem necessidade de seleção manual.</li>' +
+      '<li>Atendimentos classificados como <b>Performance</b> são direcionados diretamente para a chain especializada, sem passar pela etapa de roteamento.</li>' +
+      '</ul>',
 
       '<b>📄 Resumir Solicitação com IA:</b>' +
-        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-        '<li>Novo botão <b>Resumir Solicitação</b> analisa todo o histórico do atendimento e gera automaticamente um resumo estruturado com: Resumo do Problema, Fatos Relevantes e Próxima Ação Sugerida.</li>' +
-        '<li>Assim como o Melhorar Texto, o roteamento para a chain correta acontece de forma automática com base no conteúdo do atendimento.</li>' +
-        '<li>Para atendimentos de <b>Performance</b>, a análise é inserida diretamente no campo de descrição, sem abrir o modal.</li>' +
-        '</ul>',
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      '<li>Novo botão <b>Resumir Solicitação</b> analisa todo o histórico do atendimento e gera automaticamente um resumo estruturado com: Resumo do Problema, Fatos Relevantes e Próxima Ação Sugerida.</li>' +
+      '<li>Assim como o Melhorar Texto, o roteamento para a chain correta acontece de forma automática com base no conteúdo do atendimento.</li>' +
+      '<li>Para atendimentos de <b>Performance</b>, a análise é inserida diretamente no campo de descrição, sem abrir o modal.</li>' +
+      '</ul>',
 
       '<p style="margin-top: 8px; padding: 8px 12px; background: rgba(250, 100, 0, 0.1); border-left: 3px solid #fa6400; border-radius: 4px; font-size: 12px; max-width: 100%;">⚡ Estas funcionalidades utilizam as chains internas da Thomson Reuters, é necessário estar autenticado na plataforma de IA para utilizá-las.</p>'
     ]
@@ -112,19 +114,19 @@ const RELEASE_NOTES = {
     title: '🐛 Correções de Bugs — Versão 3.0.2',
     features: [
       '<b>📄 Leitura de chats e transcrições corrigida:</b>' +
-        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-        '<li>Corrigido problema onde chats longos não eram lidos corretamente devido ao tamanho do conteúdo. Agora tanto chats quanto transcrições são processados de forma completa e confiável.</li>' +
-        '</ul>',
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      '<li>Corrigido problema onde chats longos não eram lidos corretamente devido ao tamanho do conteúdo. Agora tanto chats quanto transcrições são processados de forma completa e confiável.</li>' +
+      '</ul>',
 
       '<b>🤖 Sugestor de SS — Coleta de trâmite confidencial:</b>' +
-        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-        '<li>O Sugestor de SS agora coleta corretamente as informações do trâmite confidencial, garantindo que o contexto completo do atendimento seja enviado para a IA.</li>' +
-        '</ul>',
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      '<li>O Sugestor de SS agora coleta corretamente as informações do trâmite confidencial, garantindo que o contexto completo do atendimento seja enviado para a IA.</li>' +
+      '</ul>',
 
       '<b>📋 Botão de validação com liderança:</b>' +
-        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-        '<li>Adicionado botão dentro da sugestão de SS para copiar e enviar a sugestão ao líder antes de abrir o chamado — especialmente útil para analistas em período de aprendizado.</li>' +
-        '</ul>',
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      '<li>Adicionado botão dentro da sugestão de SS para copiar e enviar a sugestão ao líder antes de abrir o chamado — especialmente útil para analistas em período de aprendizado.</li>' +
+      '</ul>',
 
       '<small>⚡ Em breve lançamos uma versão com novidades. Esta versão foi liberada antecipadamente para corrigir problemas que estavam impactando o uso.</small>'
     ]
@@ -133,12 +135,12 @@ const RELEASE_NOTES = {
     title: '✨ Novidades da Versão 3.0.1',
     features: [
       '<b>🤖 Sugestor de SS integrado ao Editor</b>' +
-        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-        '<li>Plugin que lê uma SSC no SGD, envia o conteúdo para uma chain de IA e preenche automaticamente o formulário de cadastro de SS — eliminando trabalho manual repetitivo.</li>' +
-        '<li>O botão <b>✨ Sugerir SS</b> agora aparece diretamente na <b>toolbar do editor</b>, disponível apenas nas páginas de SSC.</li>' +
-        '<li>Abaixo deixo um site sobre o manual de uso da nova funcionalidade.</li>' +
-        '<li><a href="https://sugestorss.netlify.app" target="_blank" style="color:#1565c0;">📖 Manual de uso</a></li>' +
-        '</ul>'
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      '<li>Plugin que lê uma SSC no SGD, envia o conteúdo para uma chain de IA e preenche automaticamente o formulário de cadastro de SS — eliminando trabalho manual repetitivo.</li>' +
+      '<li>O botão <b>✨ Sugerir SS</b> agora aparece diretamente na <b>toolbar do editor</b>, disponível apenas nas páginas de SSC.</li>' +
+      '<li>Abaixo deixo um site sobre o manual de uso da nova funcionalidade.</li>' +
+      '<li><a href="https://sugestorss.netlify.app" target="_blank" style="color:#1565c0;">📖 Manual de uso</a></li>' +
+      '</ul>'
     ]
   },
   '3.0.0': {
@@ -146,27 +148,27 @@ const RELEASE_NOTES = {
     features: [
       '<b>🧭 Central de Informações SGD & Produtividade</b>',
       '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-        '<li><b>Central de Informações SGD:</b> consolidação das abas e fluxos, incluindo <i>AI Chains</i> para assistentes inteligentes.</li>' +
-        '<li><b>Tags e Filtros:</b> gestão de TAGS, filtro por tags e <i>filtro por responsável</i> com persistência automática da escolha.</li>' +
-        '<li><b>SLA Inteligente:</b> cálculo por dias úteis, diferenciação entre tempo online (preciso) e offline (estimado), tooltip em <b>HH:MM</b> e exibição <b>~ XD</b> para estimados.</li>' +
-        '<li><b>Cronômetro no FAB:</b> ferramenta integrada com Pause/Reset/Edição, fixação individual (Pin) e persistência de estado.</li>' +
-        '<li><b>Layout & UX:</b> cards de pendência aprimorados e otimizações gerais de desempenho.</li>' +
-        '</ul>',
+      '<li><b>Central de Informações SGD:</b> consolidação das abas e fluxos, incluindo <i>AI Chains</i> para assistentes inteligentes.</li>' +
+      '<li><b>Tags e Filtros:</b> gestão de TAGS, filtro por tags e <i>filtro por responsável</i> com persistência automática da escolha.</li>' +
+      '<li><b>SLA Inteligente:</b> cálculo por dias úteis, diferenciação entre tempo online (preciso) e offline (estimado), tooltip em <b>HH:MM</b> e exibição <b>~ XD</b> para estimados.</li>' +
+      '<li><b>Cronômetro no FAB:</b> ferramenta integrada com Pause/Reset/Edição, fixação individual (Pin) e persistência de estado.</li>' +
+      '<li><b>Layout & UX:</b> cards de pendência aprimorados e otimizações gerais de desempenho.</li>' +
+      '</ul>',
       '<b>👥 Monitoramento & Equipe AT</b>',
       '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-        '<li><b>Monitor de Instabilidades:</b> acompanhamento em tempo real com histórico transparente, modelos inteligentes e hiperlinks nas orientações.</li>' +
-        '<li><b>Avisos Aprimorados:</b> identidade visual por tipo, ocultar avisos lidos, expiração automática em 7 dias e criação mais ágil.</li>' +
-        '<li><b>Publicação Automática:</b> geração de avisos ao alterar status de sistemas com títulos descritivos e autoria automática.</li>' +
-        '<li><b>Notificações Inteligentes:</b> monitor de segundo plano respeita o filtro de responsável e permite monitoramento flexível de toda a equipe.</li>' +
-        '<li><b>Detecção de Filtros:</b> alerta detalhado de filtros ativos e ocultação do seletor de responsável quando não necessário.</li>' +
-        '</ul>',
+      '<li><b>Monitor de Instabilidades:</b> acompanhamento em tempo real com histórico transparente, modelos inteligentes e hiperlinks nas orientações.</li>' +
+      '<li><b>Avisos Aprimorados:</b> identidade visual por tipo, ocultar avisos lidos, expiração automática em 7 dias e criação mais ágil.</li>' +
+      '<li><b>Publicação Automática:</b> geração de avisos ao alterar status de sistemas com títulos descritivos e autoria automática.</li>' +
+      '<li><b>Notificações Inteligentes:</b> monitor de segundo plano respeita o filtro de responsável e permite monitoramento flexível de toda a equipe.</li>' +
+      '<li><b>Detecção de Filtros:</b> alerta detalhado de filtros ativos e ocultação do seletor de responsável quando não necessário.</li>' +
+      '</ul>',
       '<b>⚙️ Automações</b>',
       '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-        '<li><b>Detecção & Limpeza de Filtros:</b> integração com filtros do SGD para carregar todas as pendências com um clique.</li>' +
-        '<li><b>Abertura Automática de Anotações:</b> notas rápidas vinculadas a links abrem automaticamente ao acessar páginas relacionadas.</li>' +
-        '<li><b>Encerramentos:</b> ajustes em mensagens automáticas ao anexar SS duplicada para uma comunicação mais clara.</li>' +
-        '<li><b>Navegação & Notificações:</b> cliques mais flexíveis nas notificações e seleção confiável da aba de pendências via links.</li>' +
-        '</ul>'
+      '<li><b>Detecção & Limpeza de Filtros:</b> integração com filtros do SGD para carregar todas as pendências com um clique.</li>' +
+      '<li><b>Abertura Automática de Anotações:</b> notas rápidas vinculadas a links abrem automaticamente ao acessar páginas relacionadas.</li>' +
+      '<li><b>Encerramentos:</b> ajustes em mensagens automáticas ao anexar SS duplicada para uma comunicação mais clara.</li>' +
+      '<li><b>Navegação & Notificações:</b> cliques mais flexíveis nas notificações e seleção confiável da aba de pendências via links.</li>' +
+      '</ul>'
     ]
   },
   '2.9.9': {
@@ -174,11 +176,11 @@ const RELEASE_NOTES = {
     features: [
       '<b>🚀 Central de Informações SGD (Em Desenvolvimento):</b>',
       '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-        '<li><b>🤖 Nova Aba AI Chains:</b> Assistentes inteligentes e fluxos agora têm sua própria seção dedicada.</li>' +
-        '<li><b>🏷️ Gestão de TAGS:</b> Classifique pendências com Tags coloridas (<i>Em SS</i>, <i>Em SA/NE</i>, <i>Prioridade</i> e personalizadas).</li>' +
-        '<li><b>🔍 Filtro por Tags:</b> Visualize rapida\mente chamados por categoria na lista de pendências.</li>' +
-        '<li><b>🔔 Controle de Notificações:</b> Ative/desative alertas visuais na tela (verificação continua em background).</li>' +
-        '</ul>'
+      '<li><b>🤖 Nova Aba AI Chains:</b> Assistentes inteligentes e fluxos agora têm sua própria seção dedicada.</li>' +
+      '<li><b>🏷️ Gestão de TAGS:</b> Classifique pendências com Tags coloridas (<i>Em SS</i>, <i>Em SA/NE</i>, <i>Prioridade</i> e personalizadas).</li>' +
+      '<li><b>🔍 Filtro por Tags:</b> Visualize rapida\mente chamados por categoria na lista de pendências.</li>' +
+      '<li><b>🔔 Controle de Notificações:</b> Ative/desative alertas visuais na tela (verificação continua em background).</li>' +
+      '</ul>'
     ]
   },
   '2.9.8': {
@@ -287,11 +289,11 @@ const MINOR_RELEASE_NOTES = {
         '<b>🎯 Monitoramento Flexível:</b> Ao selecionar "Todos Responsáveis", a extensão volta a monitorar e notificar sobre toda a equipe.',
         '<b>⏱️ SLA Inteligente e Dias Úteis:</b>',
         '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-          '<li><b>🧠 Adoção Inteligente:</b> Diferencia automaticamente chamados <u>precisos</u> (online) e <u>estimados</u> (offline) com base na chegada.</li>' +
-          '<li><b>⌚ Tooltip em HH:MM:</b> Exibição de tempo exato em <b>HH:MM</b> nos casos precisos diretamente no badge de SLA.</li>' +
-          '<li><b>📅 Dias Úteis:</b> Cálculo de SLA considera apenas dias úteis, com feriados recorrentes (01-01, 04-21, 05-01, 09-07, 10-12, 11-02, 11-15, 11-20, 12-25).</li>' +
-          '<li><b>~ XD para Offline:</b> Chamados estimados exibem <b>~ 1D, ~ 2D</b> com opacidade reduzida e tooltip explicativo.</li>' +
-          '</ul>',
+        '<li><b>🧠 Adoção Inteligente:</b> Diferencia automaticamente chamados <u>precisos</u> (online) e <u>estimados</u> (offline) com base na chegada.</li>' +
+        '<li><b>⌚ Tooltip em HH:MM:</b> Exibição de tempo exato em <b>HH:MM</b> nos casos precisos diretamente no badge de SLA.</li>' +
+        '<li><b>📅 Dias Úteis:</b> Cálculo de SLA considera apenas dias úteis, com feriados recorrentes (01-01, 04-21, 05-01, 09-07, 10-12, 11-02, 11-15, 11-20, 12-25).</li>' +
+        '<li><b>~ XD para Offline:</b> Chamados estimados exibem <b>~ 1D, ~ 2D</b> com opacidade reduzida e tooltip explicativo.</li>' +
+        '</ul>',
         '<b>⚡ Otimizações Gerais:</b> Ajustes de performance e correções visuais na extensão.'
       ]
     },

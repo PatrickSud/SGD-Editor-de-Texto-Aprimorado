@@ -4315,6 +4315,20 @@ function createAndInjectBellIcon() {
 }
 
 // --- LISTENER PARA NOTIFICAÇÕES DE LEMBRETES NA PÁGINA ---
+// Inicializa canal de sincronização de avisos entre abas
+const sgdChannel = new BroadcastChannel('sgd_warnings_channel');
+window.sgdChannel = sgdChannel;
+
+sgdChannel.onmessage = (event) => {
+  if (event.data.action === 'CLOSE_TOAST' && event.data.id) {
+    const toastEl = document.getElementById(`sgd-toast-${event.data.id}`);
+    if (toastEl) {
+      toastEl.style.animation = 'sgdToastOut 0.3s ease forwards';
+      setTimeout(() => toastEl.remove(), 300);
+    }
+  }
+};
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Adicionada nova condição para atualizar o badge
   if (message.action === 'UPDATE_NOTIFICATION_BADGE') {
@@ -4324,6 +4338,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Exibe notificação in-page quando um lembrete dispara
   if (message.action === 'SHOW_IN_PAGE_NOTIFICATION' && message.reminder) {
     showInPageNotification(message.reminder)
+  }
+
+  if (message.action === 'SHOW_TOAST' && message.id && message.title && message.message) {
+    showSgdToast(message.id, message.title, message.message, message.type || 'info', message.duration);
   }
 
   if (message.action === 'CLOSE_IN_PAGE_NOTIFICATION' && message.reminderId) {

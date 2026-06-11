@@ -92,6 +92,204 @@ function createReminderCardHtml(reminder, type) {
     </div>`
 }
 
+// Helper de segurança para evitar quebra do componente
+function _safeEscapeHTML(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>"']/g, m => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+  }[m]));
+}
+
+// Injeção única de estilos — remove versões antigas para evitar conflitos
+['sgd-toast-styles', 'sgd-toast-styles-v2', 'sgd-toast-styles-v3', 'sgd-toast-styles-v4', 'sgd-toast-styles-v5', 'sgd-toast-styles-v6', 'sgd-toast-styles-v7'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+});
+
+if (!document.getElementById('sgd-toast-styles-v8')) {
+  const style = document.createElement('style');
+  style.id = 'sgd-toast-styles-v8';
+  style.innerHTML = `
+    #sgd-toast-container { position: fixed; top: 24px; right: 24px; z-index: 999999; display: flex; flex-direction: column; gap: 16px; pointer-events: none; }
+    .sgd-toast { pointer-events: auto; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: 16px; padding: 20px; min-width: 320px; max-width: 400px; box-shadow: 0 10px 40px -10px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.1); position: relative; overflow: hidden; font-family: 'Inter', system-ui, sans-serif; animation: sgdToastIn 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+    
+    /* Type specific backgrounds and borders */
+    .sgd-toast-info { background: rgba(240, 248, 255, 0.85); border: 1px solid rgba(33, 150, 243, 0.3); }
+    .sgd-toast-success { background: rgba(240, 255, 240, 0.85); border: 1px solid rgba(76, 175, 80, 0.3); }
+    .sgd-toast-warning { background: rgba(255, 250, 240, 0.85); border: 1px solid rgba(255, 152, 0, 0.3); }
+    .sgd-toast-danger { background: rgba(255, 245, 245, 0.85); border: 1px solid rgba(244, 67, 54, 0.3); }
+    
+    .sgd-toast::before { content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 6px; }
+    .sgd-toast-info::before { background: linear-gradient(135deg, #2196F3, #1976D2); }
+    .sgd-toast-success::before { background: linear-gradient(135deg, #4CAF50, #388E3C); }
+    .sgd-toast-warning::before { background: linear-gradient(135deg, #FF9800, #F57C00); }
+    .sgd-toast-danger::before { background: linear-gradient(135deg, #F44336, #D32F2F); }
+    
+    .sgd-toast-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .sgd-toast-icon { font-size: 20px; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; }
+    .sgd-toast-info .sgd-toast-icon { background: rgba(33, 150, 243, 0.15); color: #1976D2; }
+    .sgd-toast-success .sgd-toast-icon { background: rgba(76, 175, 80, 0.15); color: #388E3C; }
+    .sgd-toast-warning .sgd-toast-icon { background: rgba(255, 152, 0, 0.15); color: #F57C00; }
+    .sgd-toast-danger .sgd-toast-icon { background: rgba(244, 67, 54, 0.15); color: #D32F2F; }
+    
+    .sgd-toast-title { font-weight: 700; font-size: 15px; color: #1f2937; margin: 0; letter-spacing: -0.3px; }
+    .sgd-toast-message-wrap { position: relative; margin-bottom: 20px; padding-left: 44px; max-height: 7.5em; overflow: hidden; }
+    .sgd-toast-message { font-size: 14px; color: #4b5563; line-height: 1.5; word-break: break-word; }
+    .sgd-toast-ellipsis { position: absolute; bottom: 0; right: 0; padding-left: 24px; font-size: 14px; color: #4b5563; font-weight: 700; }
+    .sgd-toast-info .sgd-toast-ellipsis { background: linear-gradient(to right, transparent, rgba(240,248,255,1) 40%); }
+    .sgd-toast-success .sgd-toast-ellipsis { background: linear-gradient(to right, transparent, rgba(240,255,240,1) 40%); }
+    .sgd-toast-warning .sgd-toast-ellipsis { background: linear-gradient(to right, transparent, rgba(255,250,240,1) 40%); }
+    .sgd-toast-danger .sgd-toast-ellipsis { background: linear-gradient(to right, transparent, rgba(255,245,245,1) 40%); }
+    .sgd-toast-footer { display: flex; justify-content: flex-end; gap: 10px; }
+    .sgd-btn { cursor: pointer; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 600; border: none; transition: all 0.2s ease; letter-spacing: -0.2px; }
+    .sgd-btn-secondary { background: rgba(0,0,0,0.05); color: #4b5563; }
+    .sgd-btn-secondary:hover { background: rgba(0,0,0,0.1); color: #1f2937; transform: translateY(-1px); }
+    
+    /* Type specific primary buttons */
+    .sgd-btn-primary { color: #ffffff; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    .sgd-toast-info .sgd-btn-primary { background: #2196F3; }
+    .sgd-toast-info .sgd-btn-primary:hover { background: #1976D2; transform: translateY(-1px); box-shadow: 0 6px 8px -2px rgba(33, 150, 243, 0.3); }
+    .sgd-toast-success .sgd-btn-primary { background: #4CAF50; }
+    .sgd-toast-success .sgd-btn-primary:hover { background: #388E3C; transform: translateY(-1px); box-shadow: 0 6px 8px -2px rgba(76, 175, 80, 0.3); }
+    .sgd-toast-warning .sgd-btn-primary { background: #FF9800; }
+    .sgd-toast-warning .sgd-btn-primary:hover { background: #F57C00; transform: translateY(-1px); box-shadow: 0 6px 8px -2px rgba(255, 152, 0, 0.3); }
+    .sgd-toast-danger .sgd-btn-primary { background: #F44336; }
+    .sgd-toast-danger .sgd-btn-primary:hover { background: #D32F2F; transform: translateY(-1px); box-shadow: 0 6px 8px -2px rgba(244, 67, 54, 0.3); }
+    
+    .sgd-toast-progress { position: absolute; bottom: 0; left: 0; height: 4px; background: rgba(0,0,0,0.05); width: 100%; }
+    .sgd-toast-progress-bar { height: 100%; width: 100%; transform-origin: left; animation: sgdToastProgress linear forwards; }
+    .sgd-toast-info .sgd-toast-progress-bar { background: linear-gradient(90deg, #2196F3, #64B5F6); }
+    .sgd-toast-success .sgd-toast-progress-bar { background: linear-gradient(90deg, #4CAF50, #81C784); }
+    .sgd-toast-warning .sgd-toast-progress-bar { background: linear-gradient(90deg, #FF9800, #FFCC80); }
+    .sgd-toast-danger .sgd-toast-progress-bar { background: linear-gradient(90deg, #F44336, #EF9A9A); }
+    
+    @keyframes sgdToastIn { from { transform: translateX(120%) scale(0.95); opacity: 0; } to { transform: translateX(0) scale(1); opacity: 1; } }
+    @keyframes sgdToastOut { from { transform: translateX(0) scale(1); opacity: 1; } to { transform: translateX(120%) scale(0.95); opacity: 0; } }
+    @keyframes sgdToastProgress { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+  `;
+  document.head.appendChild(style);
+}
+
+/**
+ * Cria e exibe um Toast moderno com pausa no hover e sincronização entre abas.
+ * @param {string} id - ID único do aviso.
+ * @param {string} title - Título.
+ * @param {string} message - Mensagem.
+ * @param {string} type - 'info' | 'success' | 'warning' | 'danger'.
+ * @param {number} duration - Tempo em ms (padrão 60000).
+ */
+function showSgdToast(id, title, message, type = 'info', duration = 60000) {
+  let container = document.getElementById('sgd-toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'sgd-toast-container';
+    document.body.appendChild(container);
+  }
+
+  const icons = { info: 'ℹ️', success: '✨', warning: '⚠️', danger: '🚨' };
+  const icon = icons[type] || 'ℹ️';
+
+  const toast = document.createElement('div');
+  toast.id = `sgd-toast-${id}`;
+  toast.className = `sgd-toast sgd-toast-${type}`;
+  toast.innerHTML = `
+    <div class="sgd-toast-header">
+      <div class="sgd-toast-icon">${icon}</div>
+      <div class="sgd-toast-title">${title}</div>
+    </div>
+    <div class="sgd-toast-message-wrap">
+      <div class="sgd-toast-message">${message}</div>
+    </div>
+    <div class="sgd-toast-footer">
+      <button class="sgd-btn sgd-btn-secondary btn-ver-mais">Ver Mais</button>
+      <button class="sgd-btn sgd-btn-primary btn-ciente">Estou Ciente</button>
+    </div>
+    ${duration > 0 ? `<div class="sgd-toast-progress"><div class="sgd-toast-progress-bar" style="animation-duration: ${duration}ms;"></div></div>` : ''}
+  `;
+
+
+  let remainingTime = duration;
+  let timerStart;
+  let timerId;
+
+  const removeToast = () => {
+    toast.style.animation = 'sgdToastOut 0.3s ease forwards';
+    setTimeout(() => toast.remove(), 300);
+  };
+
+  const startTimer = () => {
+    timerStart = Date.now();
+    timerId = setTimeout(removeToast, remainingTime);
+  };
+
+  const pauseTimer = () => {
+    clearTimeout(timerId);
+    remainingTime -= (Date.now() - timerStart);
+  };
+
+  if (duration > 0) {
+    startTimer();
+    toast.addEventListener('mouseenter', () => {
+      pauseTimer();
+      const progressBar = toast.querySelector('.sgd-toast-progress-bar');
+      if (progressBar) progressBar.style.animationPlayState = 'paused';
+    });
+    toast.addEventListener('mouseleave', () => {
+      startTimer();
+      const progressBar = toast.querySelector('.sgd-toast-progress-bar');
+      if (progressBar) progressBar.style.animationPlayState = 'running';
+    });
+  }
+
+  toast.querySelector('.btn-ver-mais').onclick = async () => {
+    if (typeof openInfoPanel === 'function') openInfoPanel('notices');
+    
+    const storage = await chrome.storage.local.get(['readWarnings']);
+    const read = storage.readWarnings || [];
+    if (!read.includes(id)) {
+      read.push(id);
+      await chrome.storage.local.set({ readWarnings: read });
+      if (typeof updateNotificationStatus === 'function') updateNotificationStatus();
+    }
+    
+    if (window.sgdChannel) {
+        window.sgdChannel.postMessage({ action: 'CLOSE_TOAST', id: id });
+    }
+    removeToast();
+  };
+
+  toast.querySelector('.btn-ciente').onclick = async () => {
+    const storage = await chrome.storage.local.get(['readWarnings']);
+    const read = storage.readWarnings || [];
+    if (!read.includes(id)) {
+      read.push(id);
+      await chrome.storage.local.set({ readWarnings: read });
+      if (typeof updateNotificationStatus === 'function') updateNotificationStatus();
+    }
+    
+    if (window.sgdChannel) {
+        window.sgdChannel.postMessage({ action: 'CLOSE_TOAST', id: id });
+    }
+    removeToast();
+  };
+
+  container.appendChild(toast);
+
+  // Detecta truncamento APÓS estar no DOM e injeta span real com "..."
+  requestAnimationFrame(() => {
+    const wrap = toast.querySelector('.sgd-toast-message-wrap');
+    const inner = toast.querySelector('.sgd-toast-message');
+    if (wrap && inner && inner.scrollHeight > wrap.clientHeight + 2) {
+      const ellipsis = document.createElement('span');
+      ellipsis.className = 'sgd-toast-ellipsis';
+      ellipsis.textContent = '...';
+      wrap.appendChild(ellipsis);
+    }
+  });
+}
+
+
+
 // --- FUNÇÕES UTILITÁRIAS DE UI ---
 
 /**
