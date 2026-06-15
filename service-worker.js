@@ -23,37 +23,37 @@ const FALLBACK_WORKFLOW_ID = '4b95e35f-e8ea-44e6-ad74-555bf39be13f' // Chain gen
  * Para remover: apague a entrada. A UI do select é gerada automaticamente.
  */
 const AI_CHAINS = {
-  'SGD Interno - Dúvidas gerais':                                                               '1cea8592-8748-47bd-8c4b-5318d6599045',
-  'ÁREA TÉCNICA (Instalação, Atualização, Backup) - Dúvidas gerais':                           'db7162a0-ad9b-4c19-85c4-315169a1ef43',
-  'FISCONT - Buscador de Soluções e SA/NE':                                                     'a84ee410-18f0-4f99-bc65-566b8340e6f8',
-  'FISCONT - Assistente':                                                                        'f4e61162-241e-477b-851e-c28e1470b519',
-  'FISCONT - Dúvidas sobre reforma tributária':                                                  'dbc04d2e-4157-4369-b8af-2877a798dba1',
-  'FISCONT - Kolossus Auditor':                                                                  '0f1088b3-b410-468c-9039-00932d4c13df',
-  'FOLHA - Dúvidas gerais (sem anexos)':                                                         '0a365547-b3e1-4008-bbbd-afee1596dcf6',
-  'FOLHA - Rubricas com Fórmulas':                                                               'b653d9c8-da78-4880-9347-e08a8c97c145',
-  'FOLHA - Rubricas com Fórmulas (GPT 5.2)':                                                    '9692b101-98e8-4d62-9948-918e90904e31',
-  'FOLHA - Consulta SA/NE Extrator DIRF':                                                        'e68e988c-403d-4917-91e3-2b5344ac5e8a',
-  'FOLHA - Analisador de arquivo de INSS':                                                       'efb4ae5e-191c-4cbe-9a68-8ef4ed3497af',
-  'CONTABILIDADE DIGITAL - Dúvidas gerais':                                                      'af573701-d00c-4fac-89c8-0e7ea6af3434',
-  'CONTABILIDADE - Análise erro ECF P200/P400':                                                   'd66d4161-c01a-498a-95d8-229a4a884e26',
-  'ESCRITA, CONTABILIDADE, LALUR E PATRIMÔNIO - Embasamento legal':                              '7e04fbb6-cdef-450f-89b5-d83c392583ab',
+  'SGD Interno - Dúvidas gerais': '1cea8592-8748-47bd-8c4b-5318d6599045',
+  'ÁREA TÉCNICA (Instalação, Atualização, Backup) - Dúvidas gerais': 'db7162a0-ad9b-4c19-85c4-315169a1ef43',
+  'FISCONT - Buscador de Soluções e SA/NE': 'a84ee410-18f0-4f99-bc65-566b8340e6f8',
+  'FISCONT - Assistente': 'f4e61162-241e-477b-851e-c28e1470b519',
+  'FISCONT - Dúvidas sobre reforma tributária': 'dbc04d2e-4157-4369-b8af-2877a798dba1',
+  'FISCONT - Kolossus Auditor': '0f1088b3-b410-468c-9039-00932d4c13df',
+  'FOLHA - Dúvidas gerais (sem anexos)': '0a365547-b3e1-4008-bbbd-afee1596dcf6',
+  'FOLHA - Rubricas com Fórmulas': 'b653d9c8-da78-4880-9347-e08a8c97c145',
+  'FOLHA - Rubricas com Fórmulas (GPT 5.2)': '9692b101-98e8-4d62-9948-918e90904e31',
+  'FOLHA - Consulta SA/NE Extrator DIRF': 'e68e988c-403d-4917-91e3-2b5344ac5e8a',
+  'FOLHA - Analisador de arquivo de INSS': 'efb4ae5e-191c-4cbe-9a68-8ef4ed3497af',
+  'CONTABILIDADE DIGITAL - Dúvidas gerais': 'af573701-d00c-4fac-89c8-0e7ea6af3434',
+  'CONTABILIDADE - Análise erro ECF P200/P400': 'd66d4161-c01a-498a-95d8-229a4a884e26',
+  'ESCRITA, CONTABILIDADE, LALUR E PATRIMÔNIO - Embasamento legal': '7e04fbb6-cdef-450f-89b5-d83c392583ab',
   'HONORÁRIOS, REGISTRO, PROTOCOLO, ADMINISTRAR, ATUALIZAR e CUSTOS - Dúvidas gerais e fórmulas': '01138fe4-aecd-48bc-a958-e8ef1006f487',
-  'DOMÍNIO PROCESSOS - Dúvidas gerais':                                                          '98d8e94a-f795-44fe-aa86-ab8b4471e202',
-  'DOMÍNIO MESSENGER - Dúvidas gerais':                                                          'b787e0c7-2608-4ae6-97e5-b128c205c194',
-  'DOMÍNIO COBRANÇAS - Dúvidas gerais':                                                          '26858ea4-9ffd-479a-8125-5f127341d34d',
-  'ONVIO GESTÃO/PORTAL DO CLIENTE - Dúvidas gerais':                                            'ec6d18b1-955b-426a-a34d-622065fd982a',
-  'ONBALANCE, CCT, BUSCA, SEFAZ, API - Dúvidas gerais':                                         'bdcf2679-98c5-4201-98bd-2c53ee07e63e',
-  'NOVO PORTAL DO EMPREGADO (Domínio Para Você) - Dúvidas Gerais':                              '9631a5ff-16d7-4f9b-b3f4-28f5562b8749',
-  'PERFORMANCE - Dúvidas Gerais':                                                                'b2a13bb9-d13a-42d8-ad98-a77cd2a8eb10',
-  'ASSISTENTE - Dúvidas conceituais':                                                            '32b16228-9d6f-4bf6-b9ce-18ea59c2095d',
-  'ASSISTENTE SUPORTE - Padrões e assuntos por fila':                                            'bf79bed3-d1f2-4b9c-b08a-a7c0551eb4dc',
-  'ASSISTENTE - Manual Cadastro de SSs':                                                         '27921542-92d4-408a-a3cb-bb4372553e43',
-  'ASSISTENTE: Cadastro de SA/NE':                                                               '3ef5f8c0-721e-4ee1-bf3a-48e37ec9f9e2',
-  'LISTAGEM DE SANES E SAILS - GERAL':                                                           'cb5f81b8-40eb-4f61-b155-e70a51525103',
-  'Analisador - Consultar SSCs recentes do mesmo cliente':                                       '1c742809-5c60-4e38-9432-cd350906de7c',
-  'APOIO AO SUPORTE - Boas práticas telefone/laptop':                                            '4f0e3f37-e63f-4188-8c15-373eb75c77c8',
-  'GERADOR DE RELATÓRIOS - Criar arquivo BGR com consultas SQL':                                 'c5c03c64-1577-4e1d-bf7a-61723a450449',
-  'GERADOR DE RELATÓRIOS - Criação de Computados':                                               '7459b824-1a6b-4548-9a3a-6716e1dc5a79',
+  'DOMÍNIO PROCESSOS - Dúvidas gerais': '98d8e94a-f795-44fe-aa86-ab8b4471e202',
+  'DOMÍNIO MESSENGER - Dúvidas gerais': 'b787e0c7-2608-4ae6-97e5-b128c205c194',
+  'DOMÍNIO COBRANÇAS - Dúvidas gerais': '26858ea4-9ffd-479a-8125-5f127341d34d',
+  'ONVIO GESTÃO/PORTAL DO CLIENTE - Dúvidas gerais': 'ec6d18b1-955b-426a-a34d-622065fd982a',
+  'ONBALANCE, CCT, BUSCA, SEFAZ, API - Dúvidas gerais': 'bdcf2679-98c5-4201-98bd-2c53ee07e63e',
+  'NOVO PORTAL DO EMPREGADO (Domínio Para Você) - Dúvidas Gerais': '9631a5ff-16d7-4f9b-b3f4-28f5562b8749',
+  'PERFORMANCE - Dúvidas Gerais': 'b2a13bb9-d13a-42d8-ad98-a77cd2a8eb10',
+  'ASSISTENTE - Dúvidas conceituais': '32b16228-9d6f-4bf6-b9ce-18ea59c2095d',
+  'ASSISTENTE SUPORTE - Padrões e assuntos por fila': 'bf79bed3-d1f2-4b9c-b08a-a7c0551eb4dc',
+  'ASSISTENTE - Manual Cadastro de SSs': '27921542-92d4-408a-a3cb-bb4372553e43',
+  'ASSISTENTE: Cadastro de SA/NE': '3ef5f8c0-721e-4ee1-bf3a-48e37ec9f9e2',
+  'LISTAGEM DE SANES E SAILS - GERAL': 'cb5f81b8-40eb-4f61-b155-e70a51525103',
+  'Analisador - Consultar SSCs recentes do mesmo cliente': '1c742809-5c60-4e38-9432-cd350906de7c',
+  'APOIO AO SUPORTE - Boas práticas telefone/laptop': '4f0e3f37-e63f-4188-8c15-373eb75c77c8',
+  'GERADOR DE RELATÓRIOS - Criar arquivo BGR com consultas SQL': 'c5c03c64-1577-4e1d-bf7a-61723a450449',
+  'GERADOR DE RELATÓRIOS - Criação de Computados': '7459b824-1a6b-4548-9a3a-6716e1dc5a79',
 }
 
 const GPT55_WORKFLOW_ID = '3a875be6-996a-4a44-b78d-d9aa2584f9a4'
@@ -65,22 +65,22 @@ const ROUTER_WORKFLOW_ID = '10a5378c-8777-4217-9cae-6b5a1dbfdb14'
  * A chave é exatamente o valor do campo "classificacao" retornado pelo JSON da roteadora.
  */
 const ROUTER_CHAIN_MAP = {
-  'FILA 41':                                    '98d8e94a-f795-44fe-aa86-ab8b4471e202', // DOMÍNIO PROCESSOS
-  'FILA 42':                                    'b787e0c7-2608-4ae6-97e5-b128c205c194', // DOMÍNIO MESSENGER
-  'REFORMA TRIBUTÁRIA':                         'dbc04d2e-4157-4369-b8af-2877a798dba1', // FISCONT - Reforma Tributária
-  'DOMINIO COBRANÇAS':                          '26858ea4-9ffd-479a-8125-5f127341d34d', // DOMÍNIO COBRANÇAS
-  'FILA 61':                                    '01138fe4-aecd-48bc-a958-e8ef1006f487', // HONORÁRIOS
-  'FILA 5':                                     'db7162a0-ad9b-4c19-85c4-315169a1ef43', // ÁREA TÉCNICA
-  'FILA 3':                                     'ec6d18b1-955b-426a-a34d-622065fd982a', // ONVIO GESTÃO/PORTAL DO CLIENTE
-  'CONTABILIDADE DIGITAL':                      'af573701-d00c-4fac-89c8-0e7ea6af3434', // CONTABILIDADE DIGITAL
-  'FILA 62':                                    'bdcf2679-98c5-4201-98bd-2c53ee07e63e', // ONBALANCE, CCT, BUSCA, SEFAZ, API
-  'DOMINIO PARA VOCÊ':                          '9631a5ff-16d7-4f9b-b3f4-28f5562b8749', // NOVO PORTAL DO EMPREGADO
-  'CONTABILIDADE ECF':                           'd66d4161-c01a-498a-95d8-229a4a884e26', // CONTABILIDADE - Análise ECF
-  'FOLHA':                                      '0a365547-b3e1-4008-bbbd-afee1596dcf6', // FOLHA - Dúvidas gerais
-  'PERFORMANCE':                                'f7ff4d6f-1847-463b-a6be-acc122a0fe01', // PERFORMANCE
-  'FISCONT KOLOSSUS':                            '0f1088b3-b410-468c-9039-00932d4c13df', // KOLOSSUS
-  'FISCONT':                                     'f4e61162-241e-477b-851e-c28e1470b519', // FISCONT - ASSISTENTE
-  'ESTOURO':                                      null, // Sem chain — dispara erro de fallback
+  'FILA 41': '98d8e94a-f795-44fe-aa86-ab8b4471e202', // DOMÍNIO PROCESSOS
+  'FILA 42': 'b787e0c7-2608-4ae6-97e5-b128c205c194', // DOMÍNIO MESSENGER
+  'REFORMA TRIBUTÁRIA': 'dbc04d2e-4157-4369-b8af-2877a798dba1', // FISCONT - Reforma Tributária
+  'DOMINIO COBRANÇAS': '26858ea4-9ffd-479a-8125-5f127341d34d', // DOMÍNIO COBRANÇAS
+  'FILA 61': '01138fe4-aecd-48bc-a958-e8ef1006f487', // HONORÁRIOS
+  'FILA 5': 'db7162a0-ad9b-4c19-85c4-315169a1ef43', // ÁREA TÉCNICA
+  'FILA 3': 'ec6d18b1-955b-426a-a34d-622065fd982a', // ONVIO GESTÃO/PORTAL DO CLIENTE
+  'CONTABILIDADE DIGITAL': 'af573701-d00c-4fac-89c8-0e7ea6af3434', // CONTABILIDADE DIGITAL
+  'FILA 62': 'bdcf2679-98c5-4201-98bd-2c53ee07e63e', // ONBALANCE, CCT, BUSCA, SEFAZ, API
+  'DOMINIO PARA VOCÊ': '9631a5ff-16d7-4f9b-b3f4-28f5562b8749', // NOVO PORTAL DO EMPREGADO
+  'CONTABILIDADE ECF': 'd66d4161-c01a-498a-95d8-229a4a884e26', // CONTABILIDADE - Análise ECF
+  'FOLHA': '0a365547-b3e1-4008-bbbd-afee1596dcf6', // FOLHA - Dúvidas gerais
+  'PERFORMANCE': 'f7ff4d6f-1847-463b-a6be-acc122a0fe01', // PERFORMANCE
+  'FISCONT KOLOSSUS': '0f1088b3-b410-468c-9039-00932d4c13df', // KOLOSSUS
+  'FISCONT': 'f4e61162-241e-477b-851e-c28e1470b519', // FISCONT - ASSISTENTE
+  'ESTOURO': null, // Sem chain — dispara erro de fallback
 }
 
 /**
@@ -280,6 +280,13 @@ const TEAM_API_KEY = 'AIzaSyBJgLpNfiycnIr-OybbfAOAuIa4ZU3nBbY';
 const TEAM_STATUS_URL = `https://firestore.googleapis.com/v1/projects/${TEAM_PROJECT_ID}/databases/(default)/documents/team_status/current`;
 const TEAM_STATUS_POLL_ALARM = 'team-status-poll';
 
+// Configurações de Avisos (Firestore)
+const WARNINGS_PROJECT_ID = "sgd-extension";
+const WARNINGS_API_KEY = "AIzaSyBJgLpNfiycnIr-OybbfAOAuIa4ZU3nBbY";
+const WARNINGS_METADATA_URL = `https://firestore.googleapis.com/v1/projects/${WARNINGS_PROJECT_ID}/databases/(default)/documents/metadata/warnings`;
+const WARNINGS_BASE_URL = `https://firestore.googleapis.com/v1/projects/${WARNINGS_PROJECT_ID}/databases/(default)/documents/warnings`;
+const WARNINGS_POLL_ALARM = 'warnings-poll';
+
 // --- FUNÇÕES DE ARMAZENAMENTO (STORAGE) ---
 
 /**
@@ -419,7 +426,7 @@ async function checkTeamStatusAndNotify(providedMembers = null) {
     // 1. Busca preferências
     const prefs = await chrome.storage.local.get(['watchedTechnicians', 'lastAlerts', 'equipeATEnabled']);
     const watchedList = Array.isArray(prefs.watchedTechnicians) ? prefs.watchedTechnicians : [];
-    
+
     // Se não houver ninguém vigiado, nem processa
     if (watchedList.length === 0) return;
 
@@ -479,6 +486,65 @@ async function checkTeamStatusAndNotify(providedMembers = null) {
   }
 }
 
+/**
+ * Verifica se há novos avisos na Central de Informações via Firestore REST API
+ */
+async function checkWarningsAndNotify() {
+  try {
+    const storage = await chrome.storage.local.get(['warningsMetaSignature', 'developerMode']);
+    const localSignature = storage.warningsMetaSignature;
+
+    // 1. Checa a data de última atualização (Metadado)
+    const metaResponse = await fetch(`${WARNINGS_METADATA_URL}?key=${WARNINGS_API_KEY}`, { cache: 'no-store' });
+    if (!metaResponse.ok) return;
+
+    const metaDoc = await metaResponse.json();
+    const serverSignature = metaDoc.fields?.lastUpdated?.timestampValue;
+
+    // Se não há data ou a data já é conhecida, ignora
+    if (!serverSignature || serverSignature === localSignature) {
+      return;
+    }
+
+    // 2. Se a assinatura mudou, busca o último aviso (1 apenas)
+    const response = await fetch(`${WARNINGS_BASE_URL}?key=${WARNINGS_API_KEY}&orderBy=date desc&pageSize=1`, { cache: 'no-store' });
+    if (!response.ok) return;
+
+    const result = await response.json();
+    if (!result.documents || result.documents.length === 0) return;
+
+    const doc = result.documents[0];
+    const fields = doc.fields || {};
+    const title = fields.title?.stringValue || 'Novo Aviso na Central';
+    const message = fields.message?.stringValue || 'Você tem um novo comunicado não lido na Central de Informações SGD.';
+    const isTest = fields.isTest?.booleanValue;
+
+    // Ignora avisos marcados como "Teste" se o usuário não for dev
+    if (isTest && !storage.developerMode) return;
+
+    // 3. Atualiza a assinatura local para não repetir a mesma notificação
+    await chrome.storage.local.set({ warningsMetaSignature: serverSignature });
+
+    // 4. Dispara a notificação nativa do Windows
+    const notificationId = `warning-${Date.now()}`;
+    chrome.notifications.create(notificationId, {
+      type: 'basic',
+      iconUrl: 'logo.png',
+      title: `📣 ${title}`,
+      message: message,
+      priority: 2,
+      buttons: [{ title: 'Abrir SGD e Ver Avisos' }, { title: 'Dispensar' }],
+      requireInteraction: true
+    });
+
+    // 5. Sinaliza abas ativas para atualizarem o badge do ícone se estiverem abertas
+    broadcastToSgdTabs({ action: 'UPDATE_NOTIFICATION_BADGE' });
+
+  } catch (err) {
+    console.error('[SW] Erro ao verificar novos avisos:', err);
+  }
+}
+
 // --- INICIALIZAÇÃO E LISTENERS DE EVENTOS DO CHROME ---
 
 /**
@@ -501,6 +567,15 @@ async function setupPendingPollAlarm() {
     chrome.alarms.create(TEAM_STATUS_POLL_ALARM, {
       delayInMinutes: 2, // Começa em 2 min
       periodInMinutes: 5  // Verifica a cada 5 min
+    })
+  }
+
+  // Alarme para verificação de novos avisos
+  const warningsAlarm = await chrome.alarms.get(WARNINGS_POLL_ALARM)
+  if (!warningsAlarm) {
+    chrome.alarms.create(WARNINGS_POLL_ALARM, {
+      delayInMinutes: 1,
+      periodInMinutes: 2  // Verifica a cada 60 min (1 hora)
     })
   }
 }
@@ -812,7 +887,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           }
 
           console.log(`Service Worker: Status da equipe atualizado com ${members.length} membros.`);
-          
+
           // ALÉM DE SALVAR, verifica imediatamente se tem alertas para o Master PC
           checkTeamStatusAndNotify(members);
 
@@ -917,21 +992,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       } else if (message.action === 'gerarSugestaoSS' && sender.tab?.id) {
         handleGerarSugestao(message.markdownSSC, sender.tab.id, CHAIN_SS_WORKFLOW_ID, 'sugestaoCompleta', 'sugestaoErro')
 
-      // ADICIONE ESTE BLOCO:
+        // ADICIONE ESTE BLOCO:
       } else if (message.action === 'gerarSugestaoSAM' && sender.tab?.id) {
         // ── Sugestor SAM — chain fixa "ASSISTENTE: Cadastro de SA/NE" ──────────
         const SAM_WORKFLOW_ID = AI_CHAINS['ASSISTENTE: Cadastro de SA/NE']
         handleGerarSugestao(message.prompt, sender.tab.id, SAM_WORKFLOW_ID, 'samCompleta', 'samErro')
-      
+
       } else if (message.action === 'buscarSAMSimilares' && sender.tab?.id) {
         // ── Busca SAMs similares antes de cadastrar ───────────────────────
         const BUSCA_SAM_WORKFLOW_ID = AI_CHAINS['LISTAGEM DE SANES E SAILS - GERAL']
-        
+
         handleGerarSugestao(message.prompt, sender.tab.id, BUSCA_SAM_WORKFLOW_ID, 'buscaSAMCompleta', 'buscaSAMErro')
       } else if (message.action === 'resumirChat' && sender.tab?.id) {
-      // ── Pré-resumo de chat ou transcrição via chain rápida (Gemini Flash) ──
-      const RESUMO_CHAT_WORKFLOW_ID = '4b95e35f-e8ea-44e6-ad74-555bf39be13f'
-      handleGerarSugestao(message.prompt, sender.tab.id, RESUMO_CHAT_WORKFLOW_ID, 'resumoChatCompleto', 'resumoChatErro')
+        // ── Pré-resumo de chat ou transcrição via chain rápida (Gemini Flash) ──
+        const RESUMO_CHAT_WORKFLOW_ID = '4b95e35f-e8ea-44e6-ad74-555bf39be13f'
+        handleGerarSugestao(message.prompt, sender.tab.id, RESUMO_CHAT_WORKFLOW_ID, 'resumoChatCompleto', 'resumoChatErro')
 
       } else if (message.action === 'resumirSolicitacao' && sender.tab?.id) {
         // ── Resumir Solicitação via chain da fila selecionada ────────────
@@ -964,205 +1039,205 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         } else {
           handleGerarSugestao(message.prompt, sender.tab.id, workflowId, 'rascunhoCompleto', 'rascunhoErro')
         }
-        
+
       } else if (message.action === 'rotearEMelhorar' && sender.tab?.id) {
         // ── Melhorar Texto com roteamento automático de fila ──────────────
         const { prompt, promptCompleto } = message
         const tabId = sender.tab.id
 
-        ;(async () => {
-          try {
-            const essoToken = await ensureValidToken()
-            const API_URL = `${WS_BASE_URL}/?Authorization=${essoToken}`
-            const ws = new WebSocket(API_URL)
-            let jsonBruto = ''
+          ; (async () => {
+            try {
+              const essoToken = await ensureValidToken()
+              const API_URL = `${WS_BASE_URL}/?Authorization=${essoToken}`
+              const ws = new WebSocket(API_URL)
+              let jsonBruto = ''
 
-            ws.onopen = () => {
-              ws.send(JSON.stringify({
-                action: 'SendMessage',
-                workflow_id: ROUTER_WORKFLOW_ID,
-                query: prompt,
-                is_persistence_allowed: false
-              }))
-            }
+              ws.onopen = () => {
+                ws.send(JSON.stringify({
+                  action: 'SendMessage',
+                  workflow_id: ROUTER_WORKFLOW_ID,
+                  query: prompt,
+                  is_persistence_allowed: false
+                }))
+              }
 
-            ws.onmessage = (event) => {
-              try {
-                const data = JSON.parse(event.data)
-                for (const key in data) {
-                  const val = data[key]
-                  if (typeof val !== 'object' || val === null) continue
-                  if ('answer' in val && val.answer) jsonBruto += val.answer
-                  if ('cost_track' in val) ws.close()
+              ws.onmessage = (event) => {
+                try {
+                  const data = JSON.parse(event.data)
+                  for (const key in data) {
+                    const val = data[key]
+                    if (typeof val !== 'object' || val === null) continue
+                    if ('answer' in val && val.answer) jsonBruto += val.answer
+                    if ('cost_track' in val) ws.close()
+                  }
+                } catch (e) {
+                  chrome.tabs.sendMessage(tabId, {
+                    action: 'rascunhoErro',
+                    data: `Erro ao processar resposta da roteadora: ${e.message}`
+                  })
+                  ws.close()
                 }
-              } catch (e) {
-                chrome.tabs.sendMessage(tabId, {
-                  action: 'rascunhoErro',
-                  data: `Erro ao processar resposta da roteadora: ${e.message}`
-                })
-                ws.close()
-              }
-            }
-
-            ws.onerror = () => {
-              chrome.tabs.sendMessage(tabId, {
-                action: 'rascunhoErro',
-                data: 'Erro na conexão com a chain roteadora.'
-              })
-            }
-
-            ws.onclose = async () => {
-            console.log('[ROUTER] jsonBruto recebido:', jsonBruto)
-            if (!jsonBruto) return
-
-              let classificacao
-              try {
-                const limpo = jsonBruto.replace(/```json|```/g, '').replace(/^json\s*/i, '').trim()
-                const parsed = JSON.parse(limpo)
-                classificacao = parsed.classificacao
-              } catch (e) {
-                chrome.tabs.sendMessage(tabId, {
-                  action: 'rascunhoErro',
-                  data: 'A roteadora retornou uma resposta inválida. Tente novamente com mais informações.'
-                })
-                return
               }
 
-              const workflowId = ROUTER_CHAIN_MAP[classificacao]
+              ws.onerror = () => {
+                chrome.tabs.sendMessage(tabId, {
+                  action: 'rascunhoErro',
+                  data: 'Erro na conexão com a chain roteadora.'
+                })
+              }
 
-              if (!workflowId) {
-                // ESTOURO — fallback para chain genérica
-                console.log('[ROTEADORA] Classificação não reconhecida. Usando fallback genérico.')
+              ws.onclose = async () => {
+                console.log('[ROUTER] jsonBruto recebido:', jsonBruto)
+                if (!jsonBruto) return
+
+                let classificacao
+                try {
+                  const limpo = jsonBruto.replace(/```json|```/g, '').replace(/^json\s*/i, '').trim()
+                  const parsed = JSON.parse(limpo)
+                  classificacao = parsed.classificacao
+                } catch (e) {
+                  chrome.tabs.sendMessage(tabId, {
+                    action: 'rascunhoErro',
+                    data: 'A roteadora retornou uma resposta inválida. Tente novamente com mais informações.'
+                  })
+                  return
+                }
+
+                const workflowId = ROUTER_CHAIN_MAP[classificacao]
+
+                if (!workflowId) {
+                  // ESTOURO — fallback para chain genérica
+                  console.log('[ROTEADORA] Classificação não reconhecida. Usando fallback genérico.')
+                  chrome.tabs.sendMessage(tabId, {
+                    action: 'filaIdentificada',
+                    fila: 'Melhoria Geral'
+                  })
+                  await handleGerarSugestao(
+                    promptCompleto,
+                    tabId,
+                    FALLBACK_WORKFLOW_ID,
+                    'rascunhoCompleto',
+                    'rascunhoErro'
+                  )
+                  return
+                }
+
                 chrome.tabs.sendMessage(tabId, {
                   action: 'filaIdentificada',
-                  fila: 'Melhoria Geral'
+                  fila: classificacao
                 })
+
                 await handleGerarSugestao(
                   promptCompleto,
                   tabId,
-                  FALLBACK_WORKFLOW_ID,
+                  workflowId,
                   'rascunhoCompleto',
                   'rascunhoErro'
                 )
-                return
               }
 
+            } catch (err) {
               chrome.tabs.sendMessage(tabId, {
-                action: 'filaIdentificada',
-                fila: classificacao
+                action: 'rascunhoErro',
+                data: `Erro de autenticação: ${err.message}`
               })
-
-              await handleGerarSugestao(
-                promptCompleto,
-                tabId,
-                workflowId,
-                'rascunhoCompleto',
-                'rascunhoErro'
-              )
             }
-
-          } catch (err) {
-            chrome.tabs.sendMessage(tabId, {
-              action: 'rascunhoErro',
-              data: `Erro de autenticação: ${err.message}`
-            })
-          }
-        })()
+          })()
       } else if (message.action === 'rotearEResumir' && sender.tab?.id) {
         // ── Resumir Solicitação com roteamento automático de fila ─────────
         const { prompt, promptCompleto } = message
         const tabId = sender.tab.id
 
-        ;(async () => {
-          try {
-            const essoToken = await ensureValidToken()
-            const API_URL = `${WS_BASE_URL}/?Authorization=${essoToken}`
-            const ws = new WebSocket(API_URL)
-            let jsonBruto = ''
+          ; (async () => {
+            try {
+              const essoToken = await ensureValidToken()
+              const API_URL = `${WS_BASE_URL}/?Authorization=${essoToken}`
+              const ws = new WebSocket(API_URL)
+              let jsonBruto = ''
 
-            ws.onopen = () => {
-              ws.send(JSON.stringify({
-                action: 'SendMessage',
-                workflow_id: ROUTER_WORKFLOW_ID,
-                query: prompt,
-                is_persistence_allowed: false
-              }))
-            }
+              ws.onopen = () => {
+                ws.send(JSON.stringify({
+                  action: 'SendMessage',
+                  workflow_id: ROUTER_WORKFLOW_ID,
+                  query: prompt,
+                  is_persistence_allowed: false
+                }))
+              }
 
-            ws.onmessage = (event) => {
-              try {
-                const data = JSON.parse(event.data)
-                for (const key in data) {
-                  const val = data[key]
-                  if (typeof val !== 'object' || val === null) continue
-                  if ('answer' in val && val.answer) jsonBruto += val.answer
-                  if ('cost_track' in val) ws.close()
+              ws.onmessage = (event) => {
+                try {
+                  const data = JSON.parse(event.data)
+                  for (const key in data) {
+                    const val = data[key]
+                    if (typeof val !== 'object' || val === null) continue
+                    if ('answer' in val && val.answer) jsonBruto += val.answer
+                    if ('cost_track' in val) ws.close()
+                  }
+                } catch (e) {
+                  chrome.tabs.sendMessage(tabId, {
+                    action: 'resumoErro',
+                    data: `Erro ao processar resposta da roteadora: ${e.message}`
+                  })
+                  ws.close()
                 }
-              } catch (e) {
+              }
+
+              ws.onerror = () => {
                 chrome.tabs.sendMessage(tabId, {
                   action: 'resumoErro',
-                  data: `Erro ao processar resposta da roteadora: ${e.message}`
+                  data: 'Erro na conexão com a chain roteadora.'
                 })
-                ws.close()
               }
-            }
 
-            ws.onerror = () => {
+              ws.onclose = async () => {
+                if (!jsonBruto) return
+
+                let classificacao
+                try {
+                  const limpo = jsonBruto.replace(/```json|```/g, '').replace(/^json\s*/i, '').trim()
+                  const parsed = JSON.parse(limpo)
+                  classificacao = parsed.classificacao
+                } catch (e) {
+                  chrome.tabs.sendMessage(tabId, {
+                    action: 'resumoErro',
+                    data: 'A roteadora retornou uma resposta inválida. Tente novamente com mais informações.'
+                  })
+                  return
+                }
+
+                const workflowId = ROUTER_CHAIN_MAP[classificacao]
+
+                if (!workflowId) {
+                  chrome.tabs.sendMessage(tabId, {
+                    action: 'resumoErro',
+                    data: `Não foi possível identificar a fila para este atendimento (classificação: "${classificacao}"). Adicione mais informações e tente novamente.`
+                  })
+                  return
+                }
+
+                chrome.tabs.sendMessage(tabId, {
+                  action: 'filaIdentificadaResumo',
+                  fila: classificacao
+                })
+
+                await handleGerarSugestao(
+                  promptCompleto,
+                  tabId,
+                  workflowId,
+                  'resumoCompleto',
+                  'resumoErro'
+                )
+              }
+
+            } catch (err) {
               chrome.tabs.sendMessage(tabId, {
                 action: 'resumoErro',
-                data: 'Erro na conexão com a chain roteadora.'
+                data: `Erro de autenticação: ${err.message}`
               })
             }
+          })()
 
-            ws.onclose = async () => {
-              if (!jsonBruto) return
-
-              let classificacao
-              try {
-                const limpo = jsonBruto.replace(/```json|```/g, '').replace(/^json\s*/i, '').trim()
-                const parsed = JSON.parse(limpo)
-                classificacao = parsed.classificacao
-              } catch (e) {
-                chrome.tabs.sendMessage(tabId, {
-                  action: 'resumoErro',
-                  data: 'A roteadora retornou uma resposta inválida. Tente novamente com mais informações.'
-                })
-                return
-              }
-
-              const workflowId = ROUTER_CHAIN_MAP[classificacao]
-
-              if (!workflowId) {
-                chrome.tabs.sendMessage(tabId, {
-                  action: 'resumoErro',
-                  data: `Não foi possível identificar a fila para este atendimento (classificação: "${classificacao}"). Adicione mais informações e tente novamente.`
-                })
-                return
-              }
-
-              chrome.tabs.sendMessage(tabId, {
-                action: 'filaIdentificadaResumo',
-                fila: classificacao
-              })
-
-              await handleGerarSugestao(
-                promptCompleto,
-                tabId,
-                workflowId,
-                'resumoCompleto',
-                'resumoErro'
-              )
-            }
-
-          } catch (err) {
-            chrome.tabs.sendMessage(tabId, {
-              action: 'resumoErro',
-              data: `Erro de autenticação: ${err.message}`
-            })
-          }
-        })()
-
-    } else if (message.action === 'resumirDireto' && sender.tab?.id) {
+      } else if (message.action === 'resumirDireto' && sender.tab?.id) {
         const workflowId = ROUTER_CHAIN_MAP[message.chainKey]
         if (!workflowId) {
           chrome.tabs.sendMessage(sender.tab.id, {
@@ -1219,6 +1294,11 @@ chrome.alarms.onAlarm.addListener(async alarm => {
   if (alarm.name === TEAM_STATUS_POLL_ALARM) {
     // Monitoramento em segundo plano para todos os usuários
     checkTeamStatusAndNotify();
+    return
+  }
+
+  if (alarm.name === WARNINGS_POLL_ALARM) {
+    checkWarningsAndNotify();
     return
   }
 
@@ -1315,6 +1395,18 @@ chrome.notifications.onButtonClicked.addListener(
       return
     }
 
+    // Tratamento para Avisos (prefixo 'warning-')
+    if (notificationId.startsWith('warning-')) {
+      if (buttonIndex === 0) {
+        // Abre o SGD e o painel focado na aba de Avisos
+        chrome.tabs.create({
+          url: 'https://sgd.dominiosistemas.com.br/sgpub/faces/filtro-listas.html?open_sgd_panel=true&target_tab=notices'
+        })
+      }
+      chrome.notifications.clear(notificationId)
+      return
+    }
+
     // Tratamento para outras notificações genéricas (prefixo 'generic-')
     if (notificationId.startsWith('generic-')) {
       if (buttonIndex === 0) {
@@ -1338,6 +1430,14 @@ chrome.notifications.onClicked.addListener((notificationId) => {
   if (notificationId.startsWith('pending-')) {
     chrome.tabs.create({
       url: 'https://sgd.dominiosistemas.com.br/sgpub/faces/filtro-listas.html?open_sgd_panel=true'
+    })
+    chrome.notifications.clear(notificationId)
+  }
+
+  // Se clicar no corpo da notificação de avisos, abre o painel focado na aba de Avisos
+  if (notificationId.startsWith('warning-')) {
+    chrome.tabs.create({
+      url: 'https://sgd.dominiosistemas.com.br/sgpub/faces/filtro-listas.html?open_sgd_panel=true&target_tab=notices'
     })
     chrome.notifications.clear(notificationId)
   }

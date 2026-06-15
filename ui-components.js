@@ -92,6 +92,29 @@ function createReminderCardHtml(reminder, type) {
     </div>`
 }
 
+function createWarningCardHtml(warning, isUnread) {
+  const statusText = isUnread ? 'Novo' : 'Lido'
+  const dateStr = warning.date ? new Date(warning.date).toLocaleDateString('pt-BR') : ''
+  const priorityClass = isUnread ? 'priority-high' : 'priority-low'
+  const titleColor = isUnread ? 'var(--action-orange)' : 'inherit'
+  const borderColor = isUnread ? 'var(--action-orange)' : 'var(--border-color)'
+
+  return `
+    <div class="reminder-card warning-card ${priorityClass}" style="cursor: pointer; border-color: ${borderColor};" data-warning-id="${warning.id || ''}">
+      <div class="card-header">
+        <div class="card-header-main">
+          <h5 class="card-title" style="color: ${titleColor};">📣 ${escapeHTML(warning.title || 'Aviso')}</h5>
+          <div class="card-details-row">
+            <span class="card-status">${statusText} ${dateStr}</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-content">
+        <p class="description-snippet">${escapeHTML(warning.message || '')}</p>
+      </div>
+    </div>`
+}
+
 // Helper de segurança para evitar quebra do componente
 function _safeEscapeHTML(str) {
   if (!str) return '';
@@ -1973,10 +1996,33 @@ async function openFiredRemindersPanel() {
     .filter(r => r.isFired === false && r.firedAt)
     .sort((a, b) => (b.firedAt || 0) - (a.firedAt || 0))
 
+  const data = await chrome.storage.local.get(['warningsMetaSignature', 'warningsLastReadTime', 'developerMode', 'cachedWarnings'])
+  let hasUnreadWarning = false
+  let warningTitle = 'Novo Aviso na Central'
+  let warningDesc = 'Você tem um comunicado não lido na Central de Informações SGD.'
+
+  if (data.warningsMetaSignature) {
+    const lastUpdatedDate = new Date(data.warningsMetaSignature).getTime()
+    const lastReadTime = data.warningsLastReadTime || 0
+    let isTest = false;
+    
+    if (data.cachedWarnings && data.cachedWarnings.data && data.cachedWarnings.data.length > 0) {
+      const latestWarning = data.cachedWarnings.data[0];
+      isTest = latestWarning.isTest;
+      if (latestWarning.title) warningTitle = latestWarning.title;
+      if (latestWarning.message) warningDesc = latestWarning.message;
+    }
+    
+    if (lastUpdatedDate > lastReadTime && (!isTest || data.developerMode)) {
+      hasUnreadWarning = true
+    }
+  }
+
   const isEmpty =
     pendingReminders.length === 0 &&
     acknowledgedReminders.length === 0 &&
-    activeReminders.length === 0
+    activeReminders.length === 0 &&
+    !hasUnreadWarning
 
   const panel = document.createElement('div')
   panel.id = 'fired-reminders-panel'
@@ -2011,7 +2057,26 @@ async function openFiredRemindersPanel() {
           .join('')
         : ''
 
-    const sections = [pendingHtml, activeHtml, acknowledgedHtml].filter(Boolean)
+    let warningHtml = ''
+    if (hasUnreadWarning) {
+      warningHtml = `
+        <h6>Avisos</h6>
+        <div class="reminder-card priority-high expanded" style="cursor: pointer; border-color: var(--action-orange);" id="warning-dropdown-card">
+          <div class="reminder-card-header" style="margin-bottom: 4px;">
+            <div class="reminder-title-group">
+              <span class="reminder-icon">📣</span>
+              <h6 class="reminder-title" style="color: var(--action-orange);">${escapeHTML(warningTitle)}</h6>
+            </div>
+          </div>
+          <div class="reminder-card-body" style="display: block;">
+            <p class="reminder-desc" style="font-size: 12px; margin-bottom: 8px;">${escapeHTML(warningDesc)}</p>
+            <button type="button" class="action-btn enhanced-btn" style="width: 100%; font-size: 12px; padding: 4px; background: var(--action-orange); color: white;" id="warning-dropdown-btn">Abrir SGD e Ver Avisos</button>
+          </div>
+        </div>
+      `
+    }
+
+    const sections = [warningHtml, pendingHtml, activeHtml, acknowledgedHtml].filter(Boolean)
     panelContentHtml = sections.join('<hr class="fired-reminders-separator">')
   }
 
@@ -2078,6 +2143,14 @@ async function openFiredRemindersPanel() {
     closePanelAndCleanup()
     openRemindersManagementModal()
   })
+
+  const warningCard = panel.querySelector('#warning-dropdown-card')
+  if (warningCard) {
+    warningCard.addEventListener('click', () => {
+      closePanelAndCleanup()
+      window.open('https://sgd.dominiosistemas.com.br/sgpub/faces/filtro-listas.html?open_sgd_panel=true&target_tab=notices', '_blank')
+    })
+  }
 
   panel.querySelectorAll('.reminder-card').forEach(card => {
     // Lógica de expansão do card

@@ -30,7 +30,7 @@ async function getWarnings(forceRefresh = false) {
 
     if (!forceRefresh) {
       try {
-        const metaResponse = await fetch(`${WARNINGS_METADATA_URL}?key=${WARNINGS_API_KEY}`);
+        const metaResponse = await fetch(`${WARNINGS_METADATA_URL}?key=${WARNINGS_API_KEY}`, { cache: 'no-store' });
         if (metaResponse.ok) {
           const metaDoc = await metaResponse.json();
           serverSignature = metaDoc.fields?.lastUpdated?.timestampValue;
@@ -42,7 +42,7 @@ async function getWarnings(forceRefresh = false) {
       }
     }
 
-    const response = await fetch(`${WARNINGS_BASE_URL}?key=${WARNINGS_API_KEY}&orderBy=date desc&pageSize=20`);
+    const response = await fetch(`${WARNINGS_BASE_URL}?key=${WARNINGS_API_KEY}&orderBy=date desc&pageSize=20`, { cache: 'no-store' });
     if (!response.ok) return cachedData || [];
 
     const result = await response.json();

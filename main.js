@@ -2424,20 +2424,21 @@ async function initializeExtension() {
 
           // Aguarda o modal ser injetado no DOM antes de tentar clicar na aba
           let attempts = 0
-          const clickPendingTab = () => {
-            const pendingTab = document.querySelector(
-              '.ip-nav-item[data-target="pending"]'
+          const targetTabName = urlParams.get('target_tab') || 'pending'
+          const clickTargetTab = () => {
+            const targetTab = document.querySelector(
+              `.ip-nav-item[data-target="${targetTabName}"]`
             )
-            if (pendingTab) {
-              pendingTab.click()
+            if (targetTab) {
+              targetTab.click()
             } else if (attempts < 10) {
               attempts++
-              setTimeout(clickPendingTab, 200)
+              setTimeout(clickTargetTab, 200)
             }
           }
 
-          // Inicia a tentativa de focar na aba de pendências
-          setTimeout(clickPendingTab, 300)
+          // Inicia a tentativa de focar na aba
+          setTimeout(clickTargetTab, 300)
         } catch (error) {
           console.error('Erro ao abrir painel via parâmetro URL:', error)
         }
@@ -4253,12 +4254,39 @@ async function updateNotificationStatus() {
   try {
     const reminders = await getReminders()
     const firedReminders = Object.values(reminders).filter(r => r.isFired)
-    const count = firedReminders.length
+    let count = firedReminders.length
+
+    // Verifica se há avisos não lidos
+    const data = await chrome.storage.local.get(['warningsMetaSignature', 'warningsLastReadTime', 'developerMode', 'cachedWarnings'])
+    let hasUnreadWarning = false
+    
+    if (data.warningsMetaSignature) {
+      const lastUpdatedDate = new Date(data.warningsMetaSignature).getTime()
+      const lastReadTime = data.warningsLastReadTime || 0
+      
+      // Previne notificar avisos de teste para usuários normais
+      let isTest = false;
+      if (data.cachedWarnings && data.cachedWarnings.data && data.cachedWarnings.data.length > 0) {
+        isTest = data.cachedWarnings.data[0].isTest;
+      }
+      
+      if (lastUpdatedDate > lastReadTime && (!isTest || data.developerMode)) {
+        hasUnreadWarning = true
+        count += 1
+      }
+    }
 
     if (count > 0) {
       badge.textContent = count
       badge.style.display = 'flex'
       bellIcon.classList.add('pulsing')
+      
+      // Destaca o sino em laranja se houver avisos (já que lembretes normalmente são prioridade diferente)
+      if (hasUnreadWarning && firedReminders.length === 0) {
+        badge.style.backgroundColor = 'var(--action-orange)';
+      } else {
+        badge.style.backgroundColor = 'var(--action-red)';
+      }
     } else {
       badge.style.display = 'none'
       bellIcon.classList.remove('pulsing')
