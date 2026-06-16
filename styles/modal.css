@@ -1801,7 +1801,7 @@ a.open-link-btn:hover {
 /* --- FIRED REMINDERS PANEL --- */
 #fired-reminders-panel {
   position: absolute;
-  width: 480px;
+  width: 540px;
   max-height: 520px;
   z-index: 2100;
   border-radius: var(--border-radius-md);
@@ -3100,4 +3100,98 @@ a.open-link-btn:hover {
 @keyframes samLinkPulse {
   0%, 100% { text-shadow: 0 0 6px rgba(250, 100, 0, 0.5); }
   50%       { text-shadow: 0 0 14px rgba(250, 100, 0, 0.95); color: #ff7a1a; }
+}
+
+/* --- ESTILOS DO PAINEL DE AVISOS E LEMBRETES (SINO) --- */
+
+.section-group-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-color-main);
+  opacity: 0.85;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 12px 8px 6px 8px;
+  padding-bottom: 4px;
+  border-bottom: 1.5px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.warnings-section-group,
+.reminders-section-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.warning-section-sub,
+.reminder-section-sub {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.warning-section-sub h6,
+.reminder-section-sub h6 {
+  margin: 4px 8px 2px 8px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: var(--text-color-muted) !important;
+}
+
+.warning-ignore-btn {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  color: var(--text-color-muted);
+  opacity: 0.5;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 10;
+  padding: 4px;
+  line-height: 1;
+}
+
+.warning-ignore-btn:hover {
+  opacity: 1;
+  color: var(--action-red);
+  transform: scale(1.1);
+}
+
+@keyframes cardSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card-stagger-in {
+  opacity: 0;
+  animation: cardSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes cardFadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+.warning-card.fade-out {
+  animation: cardFadeOut 0.3s ease forwards !important;
 }

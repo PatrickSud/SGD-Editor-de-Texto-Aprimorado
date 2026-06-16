@@ -304,14 +304,23 @@
 
 /* --- STANDALONE NOTIFICATION BELL --- */
 @keyframes bell-pulse {
-  0% {
-    text-shadow: 0 0 0 rgba(220, 38, 38, 0.7);
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
   }
-  70% {
-    text-shadow: 0 0 12px rgba(220, 38, 38, 0);
+  10% {
+    transform: scale(1.12) rotate(-8deg);
   }
-  100% {
-    text-shadow: 0 0 0 rgba(220, 38, 38, 0);
+  20% {
+    transform: scale(1.12) rotate(8deg);
+  }
+  30% {
+    transform: scale(1.12) rotate(-6deg);
+  }
+  40% {
+    transform: scale(1.12) rotate(6deg);
+  }
+  50% {
+    transform: scale(1) rotate(0deg);
   }
 }
 
@@ -325,7 +334,7 @@
   margin-right: 15px;
   padding: 5px;
   border-radius: 50%;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
 #sgd-notification-bell:hover {
@@ -334,7 +343,7 @@
 
 /* Aplica a animação de pulso apenas quando houver notificações pendentes */
 #sgd-notification-bell.pulsing {
-  animation: bell-pulse 1.5s infinite;
+  animation: bell-pulse 2s infinite ease-in-out;
 }
 
 /* Badge posicionado no canto do ícone de sino */

@@ -231,7 +231,7 @@ async function openInfoPanel(initialTabId = 'pending') {
       if (targetId === 'notices') {
         const noticeIcon = item.querySelector('.ip-nav-icon')
         if (noticeIcon) noticeIcon.classList.remove('has-unread-warnings')
-        chrome.storage.local.set({ warningsLastReadTime: Date.now() })
+        chrome.storage.local.set({ warningsLastReadTime: Date.now(), readWarningIds: [] })
       }
 
       const targetSection = modal.querySelector(`#ip-section-${targetId}`)

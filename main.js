@@ -4256,36 +4256,42 @@ async function updateNotificationStatus() {
     const firedReminders = Object.values(reminders).filter(r => r.isFired)
     let count = firedReminders.length
 
-    // Verifica se há avisos não lidos
-    const data = await chrome.storage.local.get(['warningsMetaSignature', 'warningsLastReadTime', 'developerMode', 'cachedWarnings'])
-    let hasUnreadWarning = false
-    
-    if (data.warningsMetaSignature) {
-      const lastUpdatedDate = new Date(data.warningsMetaSignature).getTime()
-      const lastReadTime = data.warningsLastReadTime || 0
-      
-      // Previne notificar avisos de teste para usuários normais
-      let isTest = false;
-      if (data.cachedWarnings && data.cachedWarnings.data && data.cachedWarnings.data.length > 0) {
-        isTest = data.cachedWarnings.data[0].isTest;
-      }
-      
-      if (lastUpdatedDate > lastReadTime && (!isTest || data.developerMode)) {
-        hasUnreadWarning = true
-        count += 1
-      }
-    }
+    // Contagem real de avisos não lidos (array direto, sem .data)
+    const data = await chrome.storage.local.get(['warningsLastReadTime', 'developerMode', 'cachedWarnings', 'ignoredWarnings'])
+    const rawWarnings = Array.isArray(data.cachedWarnings) ? data.cachedWarnings : []
+    const ignoredIds = Array.isArray(data.ignoredWarnings) ? data.ignoredWarnings : []
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
+    const nowMs = Date.now()
+    const lastReadTime = data.warningsLastReadTime || 0
+
+    const unreadWarnings = rawWarnings.filter(w => {
+      if (w.isTest && !data.developerMode) return false
+      if (ignoredIds.includes(w.id)) return false
+      if (!w.date) return false
+      const wTime = new Date(w.date).getTime()
+      return nowMs - wTime < SEVEN_DAYS_MS && wTime > lastReadTime
+    })
+    const unreadCount = unreadWarnings.length
+    const hasUnreadWarning = unreadCount > 0
+    count += unreadCount
 
     if (count > 0) {
       badge.textContent = count
       badge.style.display = 'flex'
       bellIcon.classList.add('pulsing')
-      
-      // Destaca o sino em laranja se houver avisos (já que lembretes normalmente são prioridade diferente)
-      if (hasUnreadWarning && firedReminders.length === 0) {
-        badge.style.backgroundColor = 'var(--action-orange)';
-      } else {
-        badge.style.backgroundColor = 'var(--action-red)';
+
+      // Vermelho: tem lembretes disparados | Azul: só avisos não lidos
+      if (firedReminders.length > 0) {
+        badge.style.backgroundColor = 'var(--action-red)'
+      } else if (hasUnreadWarning) {
+        // Cor baseada no tipo do aviso mais crítico
+        const hasDanger  = unreadWarnings.some(w => w.type === 'danger')
+        const hasWarning = unreadWarnings.some(w => w.type === 'warning')
+        const hasSuccess = unreadWarnings.some(w => w.type === 'success')
+        if (hasDanger)       badge.style.backgroundColor = 'var(--action-red)'
+        else if (hasWarning) badge.style.backgroundColor = 'var(--action-yellow)'
+        else if (hasSuccess) badge.style.backgroundColor = 'var(--action-green)'
+        else                 badge.style.backgroundColor = 'var(--action-blue)'
       }
     } else {
       badge.style.display = 'none'

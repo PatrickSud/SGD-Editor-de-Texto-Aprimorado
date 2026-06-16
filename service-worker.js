@@ -506,32 +506,58 @@ async function checkWarningsAndNotify() {
       return;
     }
 
-    // 2. Se a assinatura mudou, busca o último aviso (1 apenas)
-    const response = await fetch(`${WARNINGS_BASE_URL}?key=${WARNINGS_API_KEY}&orderBy=date desc&pageSize=1`, { cache: 'no-store' });
+    // 2. Se a assinatura mudou, busca os últimos avisos (20 para cachear)
+    const response = await fetch(`${WARNINGS_BASE_URL}?key=${WARNINGS_API_KEY}&orderBy=date desc&pageSize=20`, { cache: 'no-store' });
     if (!response.ok) return;
 
     const result = await response.json();
     if (!result.documents || result.documents.length === 0) return;
 
-    const doc = result.documents[0];
-    const fields = doc.fields || {};
-    const title = fields.title?.stringValue || 'Novo Aviso na Central';
-    const message = fields.message?.stringValue || 'Você tem um novo comunicado não lido na Central de Informações SGD.';
-    const isTest = fields.isTest?.booleanValue;
+    // Converte os documentos para o formato padrão do cache
+    const warnings = result.documents.map(doc => {
+      const fields = doc.fields || {};
+      const data = { id: doc.name.split('/').pop() };
+      for (const [key, value] of Object.entries(fields)) {
+        if (value.stringValue !== undefined) data[key] = value.stringValue;
+        else if (value.integerValue !== undefined) data[key] = parseInt(value.integerValue);
+        else if (value.doubleValue !== undefined) data[key] = parseFloat(value.doubleValue);
+        else if (value.booleanValue !== undefined) data[key] = value.booleanValue;
+        else if (value.timestampValue !== undefined) data[key] = value.timestampValue;
+      }
+      return data;
+    });
+
+    const newestWarning = warnings[0];
+    const title = newestWarning.title || 'Novo Aviso na Central';
+    const message = newestWarning.message || 'Você tem um novo comunicado não lido na Central de Informações SGD.';
+    const isTest = newestWarning.isTest;
+    const type = newestWarning.type || 'info';
 
     // Ignora avisos marcados como "Teste" se o usuário não for dev
     if (isTest && !storage.developerMode) return;
 
-    // 3. Atualiza a assinatura local para não repetir a mesma notificação
-    await chrome.storage.local.set({ warningsMetaSignature: serverSignature });
+    // 3. Atualiza a assinatura local e o cache de avisos para não repetir a mesma notificação
+    await chrome.storage.local.set({
+      warningsMetaSignature: serverSignature,
+      cachedWarnings: warnings
+    });
 
-    // 4. Dispara a notificação nativa do Windows
+    // 4. Dispara a notificação nativa do Windows com tipo e emoji, limpando tags HTML
+    const typeMap = {
+      danger:  { icon: '🚨', label: 'IMPORTANTE:' },
+      warning: { icon: '⚠️', label: 'Alerta:' },
+      success: { icon: '✅', label: 'Novidade:' },
+      info:    { icon: 'ℹ️', label: 'Informativo:' }
+    };
+    const meta = typeMap[type] || typeMap.info;
+    const cleanMessage = message.replace(/<[^>]+>/g, '').trim();
+
     const notificationId = `warning-${Date.now()}`;
     chrome.notifications.create(notificationId, {
       type: 'basic',
       iconUrl: 'logo.png',
-      title: `📣 ${title}`,
-      message: message,
+      title: `${meta.icon} ${meta.label} ${title}`,
+      message: cleanMessage,
       priority: 2,
       buttons: [{ title: 'Abrir SGD e Ver Avisos' }, { title: 'Dispensar' }],
       requireInteraction: true

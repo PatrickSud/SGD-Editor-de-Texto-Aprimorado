@@ -12,7 +12,7 @@ let notesDataCache = null
  * @param {string} type - O tipo de lembrete ('active', 'pending', 'acknowledged').
  * @returns {string} O HTML do card.
  */
-function createReminderCardHtml(reminder, type) {
+function createReminderCardHtml(reminder, type, index = 0) {
   const priorityClass = `priority-${reminder.priority || 'medium'}`
   const hasUrl = reminder.url && isValidUrl(reminder.url)
   const hasDescription =
@@ -69,8 +69,7 @@ function createReminderCardHtml(reminder, type) {
 
   // ESTRUTURA ATUALIZADA: Descrição movida para o seu próprio container de conteúdo.
   return `
-    <div class="reminder-card ${priorityClass} ${type}" data-id="${reminder.id
-    }">
+    <div class="reminder-card card-stagger-in ${priorityClass} ${type}" data-id="${reminder.id}" style="animation-delay: ${index * 40}ms;">
       <div class="card-header">
         <div class="card-header-main">
           <h5 class="card-title">${escapeHTML(reminder.title)}</h5>
@@ -92,7 +91,7 @@ function createReminderCardHtml(reminder, type) {
     </div>`
 }
 
-function createWarningCardHtml(warning, isUnread) {
+function createWarningCardHtml(warning, isUnread, index = 0) {
   // Mapeamento de tipo → metadados visuais
   const typeMap = {
     danger:  { color: 'var(--action-red)',    icon: '🚨', label: 'Importante' },
@@ -131,10 +130,11 @@ function createWarningCardHtml(warning, isUnread) {
   const safeMessage = sanitize(warning.message || '')
 
   return `
-    <div class="reminder-card warning-card ${priorityClass}" style="cursor: pointer; border-color: ${borderColor};" data-warning-id="${warning.id || ''}">
+    <div class="reminder-card warning-card card-stagger-in ${priorityClass}" style="cursor: pointer; border-color: ${borderColor}; animation-delay: ${index * 40}ms;" data-warning-id="${warning.id || ''}">
+      <button type="button" class="warning-ignore-btn" data-warning-id="${warning.id || ''}" title="Ignorar este aviso">✕</button>
       <div class="card-header">
         <div class="card-header-main">
-          <h5 class="card-title" style="color: ${titleColor}; display:flex; align-items:center; gap:5px; flex-wrap:wrap;">
+          <h5 class="card-title" style="color: ${titleColor}; display:flex; align-items:center; gap:5px; flex-wrap:wrap; padding-right: 20px;">
             <span>${meta.icon}</span>
             <span>${safeTitle}</span>
             ${tagHtml}
@@ -2032,24 +2032,33 @@ async function openFiredRemindersPanel() {
     .filter(r => r.isFired === false && r.firedAt)
     .sort((a, b) => (b.firedAt || 0) - (a.firedAt || 0))
 
-  const data = await chrome.storage.local.get(['warningsLastReadTime', 'developerMode', 'cachedWarnings'])
+  const data = await chrome.storage.local.get(['warningsLastReadTime', 'developerMode', 'cachedWarnings', 'ignoredWarnings', 'readWarningIds'])
+  const ignoredIds = Array.isArray(data.ignoredWarnings) ? data.ignoredWarnings : []
+  const readWarningIds = Array.isArray(data.readWarningIds) ? data.readWarningIds : []
 
   // cachedWarnings é um array direto (não um objeto com .data)
   const rawWarnings = Array.isArray(data.cachedWarnings) ? data.cachedWarnings : []
 
-  // Filtra: expirados (>7 dias) e avisos de teste (exceto em developerMode)
+  // Filtra: expirados (>7 dias), avisos de teste (exceto em developerMode) e ignorados
   const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
   const nowMs = Date.now()
   const visibleWarnings = rawWarnings.filter(w => {
     if (w.isTest && !data.developerMode) return false
+    if (ignoredIds.includes(w.id)) return false
     if (!w.date) return true
     return nowMs - new Date(w.date).getTime() < SEVEN_DAYS_MS
   })
 
-  // Classifica em não lidos (data > lastReadTime) e lidos
+  // Classifica em não lidos (data > lastReadTime e não marcados individualmente) e lidos
   const lastReadTime = data.warningsLastReadTime || 0
-  const unreadWarnings = visibleWarnings.filter(w => w.date && new Date(w.date).getTime() > lastReadTime)
-  const readWarnings   = visibleWarnings.filter(w => !w.date || new Date(w.date).getTime() <= lastReadTime)
+  const unreadWarnings = visibleWarnings.filter(w => {
+    if (!w.date) return false
+    return new Date(w.date).getTime() > lastReadTime && !readWarningIds.includes(w.id)
+  })
+  const readWarnings   = visibleWarnings.filter(w => {
+    if (!w.date) return true
+    return new Date(w.date).getTime() <= lastReadTime || readWarningIds.includes(w.id)
+  })
   const hasUnreadWarning = unreadWarnings.length > 0
 
   const isEmpty =
@@ -2071,39 +2080,76 @@ async function openFiredRemindersPanel() {
     panelContentHtml = `<div class="empty-reminders-message">Não existem notificações ou lembretes ativos.</div>`
     updateNotificationStatus() // Garante que o sino não fique pulsando
   } else {
-    const pendingHtml =
-      pendingReminders.length > 0
-        ? `<h6>Pendentes</h6>` +
-        pendingReminders
-          .map(r => createReminderCardHtml(r, 'pending'))
-          .join('')
-        : ''
-    const activeHtml =
-      activeReminders.length > 0
-        ? `<h6>Ativos</h6>` +
-        activeReminders.map(r => createReminderCardHtml(r, 'active')).join('')
-        : ''
-    const acknowledgedHtml =
-      acknowledgedReminders.length > 0
-        ? `<h6>Concluídos</h6>` +
-        acknowledgedReminders
-          .map(r => createReminderCardHtml(r, 'acknowledged'))
-          .join('')
-        : ''
+    let cardCount = 0
 
     // Avisos individuais categorizados em "Não Lidos" e "Lidos"
     let warningHtml = ''
     if (visibleWarnings.length > 0) {
       const unreadHtml = unreadWarnings.length > 0
-        ? `<h6>Não Lidos</h6>` + unreadWarnings.map(w => createWarningCardHtml(w, true)).join('')
+        ? `<div class="warning-section-sub"><h6>Não Lidos</h6>` + unreadWarnings.map(w => createWarningCardHtml(w, true, cardCount++)).join('') + `</div>`
         : ''
+
+      // Paginação dos avisos lidos (máximo 3 exibidos inicialmente)
+      const MAX_READ_VISIBLE = 3
+      const visibleRead = readWarnings.slice(0, MAX_READ_VISIBLE)
+      const hiddenRead = readWarnings.slice(MAX_READ_VISIBLE)
+
+      let readCardsHtml = visibleRead.map(w => createWarningCardHtml(w, false, cardCount++)).join('')
+      if (hiddenRead.length > 0) {
+        readCardsHtml += `
+          <div class="hidden-read-warnings" style="display: none;">
+            ${hiddenRead.map(w => createWarningCardHtml(w, false, cardCount++)).join('')}
+          </div>
+          <button type="button" class="action-btn small-btn load-more-read-btn" style="width: calc(100% - 16px); margin: 8px auto 0 auto; justify-content: center; display: flex;">
+            Ver mais lidos (+${hiddenRead.length})
+          </button>
+        `
+      }
+
       const readHtml = readWarnings.length > 0
-        ? `<h6>Lidos</h6>` + readWarnings.map(w => createWarningCardHtml(w, false)).join('')
+        ? `<div class="warning-section-sub"><h6>Lidos</h6>${readCardsHtml}</div>`
         : ''
-      warningHtml = `<h6>Avisos</h6>${unreadHtml}${readHtml}`
+
+      warningHtml = `
+        <div class="warnings-section-group">
+          <div class="section-group-label">📣 Avisos</div>
+          ${unreadHtml}
+          ${readHtml}
+        </div>
+      `
     }
 
-    const sections = [warningHtml, pendingHtml, activeHtml, acknowledgedHtml].filter(Boolean)
+    const pendingHtml =
+      pendingReminders.length > 0
+        ? `<div class="reminder-section-sub"><h6>Pendentes</h6>` +
+        pendingReminders
+          .map(r => createReminderCardHtml(r, 'pending', cardCount++))
+          .join('') + `</div>`
+        : ''
+    const activeHtml =
+      activeReminders.length > 0
+        ? `<div class="reminder-section-sub"><h6>Ativos</h6>` +
+        activeReminders.map(r => createReminderCardHtml(r, 'active', cardCount++)).join('') + `</div>`
+        : ''
+    const acknowledgedHtml =
+      acknowledgedReminders.length > 0
+        ? `<div class="reminder-section-sub"><h6>Concluídos</h6>` +
+        acknowledgedReminders
+          .map(r => createReminderCardHtml(r, 'acknowledged', cardCount++))
+          .join('') + `</div>`
+        : ''
+
+    const remindersGroupHtml = [pendingHtml, activeHtml, acknowledgedHtml].filter(Boolean).join('')
+    const remindersHtml = remindersGroupHtml
+      ? `
+        <div class="reminders-section-group">
+          <div class="section-group-label">⏰ Lembretes</div>
+          ${remindersGroupHtml}
+        </div>
+      `
+      : ''
+
+    const sections = [warningHtml, remindersHtml].filter(Boolean)
     panelContentHtml = sections.join('<hr class="fired-reminders-separator">')
   }
 
@@ -2176,9 +2222,59 @@ async function openFiredRemindersPanel() {
     if (typeof openInfoPanel === 'function') openInfoPanel('notices')
   })
 
+  // Listener do botão "Ver mais lidos"
+  const loadMoreBtn = panel.querySelector('.load-more-read-btn')
+  if (loadMoreBtn) {
+    loadMoreBtn.addEventListener('click', e => {
+      e.stopPropagation()
+      const hiddenContainer = panel.querySelector('.hidden-read-warnings')
+      if (hiddenContainer) {
+        hiddenContainer.style.display = 'flex'
+        hiddenContainer.style.flexDirection = 'column'
+        hiddenContainer.style.gap = '6px'
+        hiddenContainer.querySelectorAll('.warning-card').forEach((card, idx) => {
+          card.style.animationDelay = `${idx * 40}ms`
+        })
+      }
+      loadMoreBtn.remove()
+    })
+  }
+
+  // Listener para o botão Ignorar nos cards de aviso
+  panel.querySelectorAll('.warning-ignore-btn').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      e.stopPropagation()
+      const warningId = btn.dataset.warningId
+      if (!warningId) return
+
+      const card = btn.closest('.warning-card')
+
+      const storageData = await chrome.storage.local.get(['readWarningIds'])
+      const readWarningIds = Array.isArray(storageData.readWarningIds) ? storageData.readWarningIds : []
+      if (!readWarningIds.includes(warningId)) {
+        readWarningIds.push(warningId)
+        await chrome.storage.local.set({ readWarningIds })
+      }
+
+      chrome.runtime.sendMessage({ action: 'UPDATE_NOTIFICATION_BADGE' })
+
+      if (card) {
+        card.classList.add('fade-out')
+        setTimeout(async () => {
+          panel.remove()
+          await openFiredRemindersPanel()
+        }, 300)
+      } else {
+        panel.remove()
+        await openFiredRemindersPanel()
+      }
+    })
+  })
+
   // Listener para os cards de aviso individuais — abre a Central SGD na aba Avisos
   panel.querySelectorAll('.warning-card').forEach(card => {
-    card.addEventListener('click', () => {
+    card.addEventListener('click', e => {
+      if (e.target.closest('button')) return
       closePanelAndCleanup()
       if (typeof openInfoPanel === 'function') openInfoPanel('notices')
     })
