@@ -3195,3 +3195,45 @@ a.open-link-btn:hover {
 .warning-card.fade-out {
   animation: cardFadeOut 0.3s ease forwards !important;
 }
+
+/* Custom sizing and toolbar styles for Novo Aviso modal */
+#create-warning-modal .se-modal-content {
+  max-width: 850px;
+}
+.editor-toolbar.warn-toolbar button {
+  width: 32px;
+  height: 32px;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* WYSIWYG editor style for warning message */
+#warn-message[contenteditable="true"] {
+  min-height: 120px;
+  max-height: 250px;
+  overflow-y: auto;
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--background-main);
+  color: var(--text-color-main);
+  outline: none;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  cursor: text;
+  text-align: left;
+}
+#warn-message[contenteditable="true"]:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 20%, transparent);
+}
+#warn-message[contenteditable="true"]:empty::before {
+  content: attr(placeholder);
+  color: var(--text-color-muted);
+  opacity: 0.6;
+  pointer-events: none;
+  display: block;
+}

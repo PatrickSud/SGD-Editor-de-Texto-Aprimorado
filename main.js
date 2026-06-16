@@ -656,11 +656,10 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
       <button type="button" data-action="bold" class="shine-effect" title="Negrito (Ctrl+B)">${boldLabel}</button>
       <button type="button" data-action="italic" class="shine-effect" title="Itálico (Ctrl+I)">${italicLabel}</button>
       <button type="button" data-action="underline" class="shine-effect" title="Sublinhado (Ctrl+U)">${underlineLabel}</button>
-      ${
-        buttonsVisibility.separator2
-          ? '<div class="toolbar-separator" data-id="separator2"></div>'
-          : ''
-      }
+      ${buttonsVisibility.separator2
+      ? '<div class="toolbar-separator" data-id="separator2"></div>'
+      : ''
+    }
     `
     : ''
 
@@ -675,15 +674,13 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
           <button type="button" data-action="lettered">A. Letra</button>
         </div>
       </div>
-      ${
-        buttonsVisibility.bullet !== false
-          ? `<button type="button" data-action="bullet" class="shine-effect" title="Adicionar Marcador (Ctrl+M)">&bull;</button>`
-          : ''
+      ${buttonsVisibility.bullet !== false
+        ? `<button type="button" data-action="bullet" class="shine-effect" title="Adicionar Marcador (Ctrl+M)">&bull;</button>`
+        : ''
       }
-      ${
-        buttonsVisibility.separator3
-          ? '<div class="toolbar-separator" data-id="separator3"></div>'
-          : ''
+      ${buttonsVisibility.separator3
+        ? '<div class="toolbar-separator" data-id="separator3"></div>'
+        : ''
       }
     `
       : ''
@@ -691,66 +688,57 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
   const canInsertUsername = isUserNameInsertionAvailable()
   const insertButtons =
     (includeLink && buttonsVisibility.link !== false) ||
-    (includeImage && buttonsVisibility.insertImage !== false) ||
-    (includeUsername &&
-      buttonsVisibility.username !== false &&
-      canInsertUsername)
+      (includeImage && buttonsVisibility.insertImage !== false) ||
+      (includeUsername &&
+        buttonsVisibility.username !== false &&
+        canInsertUsername)
       ? `
-      ${
-        includeLink && buttonsVisibility.link !== false
-          ? `<button type="button" data-action="link" class="shine-effect" title="Inserir Hiperlink (Ctrl+Alt+H)">🔗</button>`
-          : ''
+      ${includeLink && buttonsVisibility.link !== false
+        ? `<button type="button" data-action="link" class="shine-effect" title="Inserir Hiperlink (Ctrl+Alt+H)">🔗</button>`
+        : ''
       }
-      ${
-        includeImage && buttonsVisibility.insertImage !== false
-          ? `<button type="button" data-action="insert-image" class="shine-effect" title="Inserir Imagem (Ctrl+V)">📸</button>`
-          : ''
+      ${includeImage && buttonsVisibility.insertImage !== false
+        ? `<button type="button" data-action="insert-image" class="shine-effect" title="Inserir Imagem (Ctrl+V)">📸</button>`
+        : ''
       }
-      ${
-        includeUsername &&
+      ${includeUsername &&
         buttonsVisibility.username !== false &&
         canInsertUsername
-          ? `<button type="button" data-action="username" class="shine-effect" title="Inserir Nome do Usuário (Alt+Shift+U)">🏷️</button>`
-          : ''
+        ? `<button type="button" data-action="username" class="shine-effect" title="Inserir Nome do Usuário (Alt+Shift+U)">🏷️</button>`
+        : ''
       }
-      ${
-        buttonsVisibility.separator4
-          ? '<div class="toolbar-separator" data-id="separator4"></div>'
-          : ''
+      ${buttonsVisibility.separator4
+        ? '<div class="toolbar-separator" data-id="separator4"></div>'
+        : ''
       }
     `
       : ''
 
   const colorButtons =
     includeColors &&
-    (buttonsVisibility.color !== false ||
-      buttonsVisibility.highlight !== false ||
-      (includeEmoji && buttonsVisibility.emoji !== false))
+      (buttonsVisibility.color !== false ||
+        buttonsVisibility.highlight !== false ||
+        (includeEmoji && buttonsVisibility.emoji !== false))
       ? `
-      ${
-        includeEmoji && buttonsVisibility.emoji !== false
-          ? `<button type="button" data-action="emoji" class="shine-effect" title="Emojis (Código HTML)">😀</button>`
-          : ''
+      ${includeEmoji && buttonsVisibility.emoji !== false
+        ? `<button type="button" data-action="emoji" class="shine-effect" title="Emojis (Código HTML)">😀</button>`
+        : ''
       }
-      ${
-        includeColors && buttonsVisibility.color !== false
-          ? `<button type="button" data-action="color" class="shine-effect" title="Cor do Texto">🎨</button>`
-          : ''
+      ${includeColors && buttonsVisibility.color !== false
+        ? `<button type="button" data-action="color" class="shine-effect" title="Cor do Texto">🎨</button>`
+        : ''
       }
-      ${
-        includeColors && buttonsVisibility.highlight !== false
-          ? `<button type="button" data-action="highlight" class="shine-effect" title="Cor de Destaque">🖌️</button>`
-          : ''
+      ${includeColors && buttonsVisibility.highlight !== false
+        ? `<button type="button" data-action="highlight" class="shine-effect" title="Cor de Destaque">🖌️</button>`
+        : ''
       }
-      ${
-        instanceId === 'shared-basic'
-          ? `<button type="button" data-action="move-toolbar" class="move-toolbar-btn" title="Mover Barra de Ferramentas">⇅</button>`
-          : ''
+      ${instanceId === 'shared-basic'
+        ? `<button type="button" data-action="move-toolbar" class="move-toolbar-btn" title="Mover Barra de Ferramentas">⇅</button>`
+        : ''
       }
-      ${
-        buttonsVisibility.separator5
-          ? '<div class="toolbar-separator" data-id="separator5"></div>'
-          : ''
+      ${buttonsVisibility.separator5
+        ? '<div class="toolbar-separator" data-id="separator5"></div>'
+        : ''
       }
     `
       : ''
@@ -769,8 +757,8 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
 
   const quickStepsHtml =
     includeQuickSteps &&
-    includeQuickStepsDropdown &&
-    buttonsVisibility.quickSteps
+      includeQuickStepsDropdown &&
+      buttonsVisibility.quickSteps
       ? `<div class="dropdown">
         <button type="button" data-action="quick-steps" class="shine-effect" title="Trâmites Rápidos">⚡</button>
         <div class="dropdown-content quick-steps-dropdown"></div>
@@ -829,14 +817,11 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
       const isPinned = pinnedAIButtons.includes(action)
       return `
         <div class="ai-option-wrapper">
-          <button type="button" data-action="${action}" class="${
-            isPinned ? 'is-pinned' : ''
-          }">${feature.icon} ${feature.label}</button>
-          <button type="button" class="pin-ai-btn ${
-            isPinned ? 'active' : ''
-          }" data-feature="${action}" title="${
-            isPinned ? 'Desafixar' : 'Fixar na toolbar'
-          }">📌</button>
+          <button type="button" data-action="${action}" class="${isPinned ? 'is-pinned' : ''
+        }">${feature.icon} ${feature.label}</button>
+          <button type="button" class="pin-ai-btn ${isPinned ? 'active' : ''
+        }" data-feature="${action}" title="${isPinned ? 'Desafixar' : 'Fixar na toolbar'
+        }">📌</button>
         </div>
       `
     }
@@ -874,34 +859,32 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
           ${aiDropdownContent}
         </div>
       </div>
-      ${
-        buttonsVisibility.separator1
-          ? '<div class="toolbar-separator" data-id="separator1"></div>'
-          : ''
+      ${buttonsVisibility.separator1
+        ? '<div class="toolbar-separator" data-id="separator1"></div>'
+        : ''
       }
     `
   }
 
   const pinnedAIButtonsHtml = includeAI
     ? pinnedAIButtons
-        .filter(action => {
-          if (action === 'ai-summarize' && instanceId !== 'main') return false
-          if (['sugerir-ss', 'sugerir-sam'].includes(action) && !isSscPage)
-            return false
-          if (action === 'sugerir-sam' && !FEATURE_SUGERIR_SAM) return false
-          return true
-        })
-        .map(action => {
-          const feature = AI_FEATURES[action]
-          return `<button type="button" data-action="${action}" class="shine-effect pinned-ai-button ai-master-button" title="${feature.title}">${feature.icon} <span class="btn-label">${feature.label}</span></button>`
-        })
-        .join('')
+      .filter(action => {
+        if (action === 'ai-summarize' && instanceId !== 'main') return false
+        if (['sugerir-ss', 'sugerir-sam'].includes(action) && !isSscPage)
+          return false
+        if (action === 'sugerir-sam' && !FEATURE_SUGERIR_SAM) return false
+        return true
+      })
+      .map(action => {
+        const feature = AI_FEATURES[action]
+        return `<button type="button" data-action="${action}" class="shine-effect pinned-ai-button ai-master-button" title="${feature.title}">${feature.icon} <span class="btn-label">${feature.label}</span></button>`
+      })
+      .join('')
     : ''
 
   const pinnedAIWrapperHtml = includeAI
     ? `
-    <div class="pinned-ai-wrapper" style="display: ${
-      pinnedAIButtonsHtml ? 'flex' : 'none'
+    <div class="pinned-ai-wrapper" style="display: ${pinnedAIButtonsHtml ? 'flex' : 'none'
     }; align-items: center;">
       <div class="toolbar-separator" data-id="separator-pinned-ai"></div>
       <div class="pinned-ai-list" style="display: flex; gap: 6px;">
@@ -917,7 +900,7 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
 
   const separator6 =
     (includeNotes || includeReminders || includeQuickSteps) &&
-    buttonsVisibility.separator6
+      buttonsVisibility.separator6
       ? '<div class="toolbar-separator" data-id="separator6"></div>'
       : ''
 
@@ -1123,14 +1106,11 @@ async function loadQuickChangeOptions(editorContainer) {
       .map(item => {
         const isActive = item.id === defaultId
         return `
-        <div class="quick-change-item gc-item" draggable="true" data-id="${
-          item.id
-        }" data-type="${type}" data-order="${item.order || 0}">
+        <div class="quick-change-item gc-item" draggable="true" data-id="${item.id
+          }" data-type="${type}" data-order="${item.order || 0}">
           <span class="drag-handle" title="Arraste para reordenar">⠿</span>
-          <button type="button" class="set-default-btn ${
-            isActive ? 'active' : ''
-          }" title="${
-            isActive ? 'Padrão atual' : 'Definir como padrão'
+          <button type="button" class="set-default-btn ${isActive ? 'active' : ''
+          }" title="${isActive ? 'Padrão atual' : 'Definir como padrão'
           }">⭐</button>
           <span class="quick-change-title" title="Inserir no texto">${escapeHTML(
             item.title
@@ -1671,8 +1651,7 @@ function setupEditorInstanceListeners(
       if (e.target.closest('.delete-item-btn')) {
         e.stopPropagation() // Impede o menu de fechar durante a confirmação
         showConfirmDialog(
-          `Excluir "${
-            itemElement.querySelector('.quick-change-title').textContent
+          `Excluir "${itemElement.querySelector('.quick-change-title').textContent
           }"?`,
           async () => {
             const data = await getGreetingsAndClosings(currentGcClassification)
@@ -2215,7 +2194,7 @@ function removeClickDropdowns() {
     dropdownClickHandlers.forEach(({ btn, handler }) => {
       try {
         btn.removeEventListener('click', handler)
-      } catch {}
+      } catch { }
     })
     dropdownClickHandlers = []
   }
@@ -3119,8 +3098,7 @@ async function createQuickChangePopup(type, triggerElement) {
 
   if (!items || items.length === 0) {
     showNotification(
-      `Nenhum(a) ${
-        type === 'greetings' ? 'saudação' : 'encerramento'
+      `Nenhum(a) ${type === 'greetings' ? 'saudação' : 'encerramento'
       } cadastrado(a).`,
       'info'
     )
@@ -3134,8 +3112,7 @@ async function createQuickChangePopup(type, triggerElement) {
   const buttonsHtml = items
     .map(
       item =>
-        `<button type="button" class="dropdown-option" data-id="${
-          item.id
+        `<button type="button" class="dropdown-option" data-id="${item.id
         }">${escapeHTML(item.title)}</button>`
     )
     .join('')
@@ -3228,8 +3205,7 @@ async function createInteractiveChangePopup(targetSpan) {
     .filter(item => item.id !== currentId)
     .map(
       item =>
-        `<button type="button" class="dropdown-option" data-id="${
-          item.id
+        `<button type="button" class="dropdown-option" data-id="${item.id
         }">${escapeHTML(item.title)}</button>`
     )
     .join('')
@@ -3784,9 +3760,8 @@ function setupFabListeners() {
     } else {
       const midX = window.innerWidth / 2,
         midY = window.innerHeight / 2
-      finalPosition = `${e.clientY < midY ? 'top' : 'bottom'}-${
-        e.clientX < midX ? 'left' : 'right'
-      }`
+      finalPosition = `${e.clientY < midY ? 'top' : 'bottom'}-${e.clientX < midX ? 'left' : 'right'
+        }`
     }
     fabContainer.className = `fab-container ${finalPosition}`
     await saveFabPosition(finalPosition)
@@ -4285,13 +4260,13 @@ async function updateNotificationStatus() {
         badge.style.backgroundColor = 'var(--action-red)'
       } else if (hasUnreadWarning) {
         // Cor baseada no tipo do aviso mais crítico
-        const hasDanger  = unreadWarnings.some(w => w.type === 'danger')
+        const hasDanger = unreadWarnings.some(w => w.type === 'danger')
         const hasWarning = unreadWarnings.some(w => w.type === 'warning')
         const hasSuccess = unreadWarnings.some(w => w.type === 'success')
-        if (hasDanger)       badge.style.backgroundColor = 'var(--action-red)'
+        if (hasDanger) badge.style.backgroundColor = 'var(--action-red)'
         else if (hasWarning) badge.style.backgroundColor = 'var(--action-yellow)'
         else if (hasSuccess) badge.style.backgroundColor = 'var(--action-green)'
-        else                 badge.style.backgroundColor = 'var(--action-blue)'
+        else badge.style.backgroundColor = 'var(--action-blue)'
       }
     } else {
       badge.style.display = 'none'

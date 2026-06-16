@@ -330,7 +330,21 @@ async function setStorageData(key, value, storageArea = 'local') {
  * @returns {Promise<object>} Um objeto com todos os lembretes.
  */
 async function getReminders() {
-  return (await getStorageData(REMINDERS_STORAGE_KEY, 'sync')) || {}
+  try {
+    const localResult = await getStorageData(REMINDERS_STORAGE_KEY, 'local')
+    if (localResult) return localResult
+    
+    const syncResult = await getStorageData(REMINDERS_STORAGE_KEY, 'sync')
+    if (syncResult) {
+      await setStorageData(REMINDERS_STORAGE_KEY, syncResult, 'local')
+      await chrome.storage.sync.remove(REMINDERS_STORAGE_KEY)
+      return syncResult
+    }
+    return {}
+  } catch (error) {
+    console.error('Erro ao buscar lembretes:', error)
+    return {}
+  }
 }
 
 /**
@@ -338,7 +352,7 @@ async function getReminders() {
  * @param {object} reminders O objeto de lembretes a ser salvo.
  */
 async function saveReminders(reminders) {
-  await setStorageData(REMINDERS_STORAGE_KEY, reminders, 'sync')
+  await setStorageData(REMINDERS_STORAGE_KEY, reminders, 'local')
 }
 
 // --- LÓGICA DE LEMBRETES E NOTIFICAÇÕES ---
@@ -530,17 +544,20 @@ async function checkWarningsAndNotify() {
     const newestWarning = warnings[0];
     const title = newestWarning.title || 'Novo Aviso na Central';
     const message = newestWarning.message || 'Você tem um novo comunicado não lido na Central de Informações SGD.';
-    const isTest = newestWarning.isTest;
+    const isTest = !!newestWarning.isTest;
+    const isDevMode = !!storage.developerMode;
     const type = newestWarning.type || 'info';
 
-    // Ignora avisos marcados como "Teste" se o usuário não for dev
-    if (isTest && !storage.developerMode) return;
-
-    // 3. Atualiza a assinatura local e o cache de avisos para não repetir a mesma notificação
+    // 3. Atualiza a assinatura local e o cache de avisos para não repetir a mesma notificação e requisições redundantes
     await chrome.storage.local.set({
       warningsMetaSignature: serverSignature,
       cachedWarnings: warnings
     });
+
+    // Se for aviso de teste (desenvolvimento), apenas usuários com o modo dev ativado a receberão
+    if (isTest && !isDevMode) {
+      return;
+    }
 
     // 4. Dispara a notificação nativa do Windows com tipo e emoji, limpando tags HTML
     const typeMap = {

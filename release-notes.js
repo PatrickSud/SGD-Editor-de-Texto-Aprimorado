@@ -1,4 +1,12 @@
 const RELEASE_NOTES = {
+  '3.0.5.3': {
+    title: '✨ Novo Editor de Avisos WYSIWYG — Versão 3.0.5.3',
+    features: [
+      '<b>📣 Editor de Avisos WYSIWYG:</b> Novo campo de mensagem com edição em tempo real (WYSIWYG) no modal de Avisos, suportando formatação, links, cores, destaques e emojis.',
+      '<b>🎯 Correção no Hover do FAB:</b> Corrigido o comportamento de expansão do menu de ações rápidas (FAB) para ativar apenas ao passar o mouse diretamente sobre o botão "+", prevenindo aberturas acidentais.',
+      '<b>⏰ Correção nos Lembretes:</b> Resolvido problema de sincronização de armazenamento que impedia o disparo de notificações internas de lembretes e avisos no SGD.'
+    ]
+  },
   '3.0.5.2': {
     title: '✨ Melhorias e Correções — Versão 3.0.5.2',
     features: [

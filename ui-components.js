@@ -1309,7 +1309,7 @@ function createEmojiPicker(pickerElement, onEmojiSelect) {
       e.preventDefault()
       const emojiHtmlToInsert = swatch.dataset.code
       if (emojiHtmlToInsert) {
-        onEmojiSelect(emojiHtmlToInsert)
+        onEmojiSelect(emojiHtmlToInsert, swatch.textContent.trim())
       }
       pickerElement.style.display = 'none'
     }

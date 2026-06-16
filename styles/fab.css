@@ -8,6 +8,7 @@
   /* Define um contexto de posicionamento e alinhamento */
   display: flex;
   justify-content: center;
+  pointer-events: none; /* Evita que o padding/espaço vazio do container capture hover */
 }
 
 /* Adiciona a "ponte" de hover com padding e alinha o botão principal */
@@ -108,6 +109,7 @@
   cursor: grab;
   background: rgba(0, 0, 0, 0.6); /* Fundo preto com 60% de opacidade */
   color: #fff; /* Ícones brancos para contraste */
+  pointer-events: auto; /* Garante que o botão principal sempre capture cliques/hover */
 }
 .main-fab:active {
   cursor: grabbing;
@@ -533,7 +535,7 @@
   bottom: -25px;
   width: 45px; /* Aumentado para cobrir o gap de 12px com muita folga e sobrepor o FAB */
   z-index: -1;
-  pointer-events: auto; /* CRÍTICO: Permite que a ponte capture o hover */
+  pointer-events: none; /* Inicia desativado para não abrir o FAB sem querer */
 }
 
 /* Ajusta a posição da ponte conforme o lado */
@@ -549,6 +551,12 @@
 
 /* Mostra apenas no Hover do Container */
 .fab-container:hover .fab-lateral-widgets {
+  pointer-events: auto;
+}
+
+/* Ativa a ponte de hover apenas quando o container ou os widgets já estão sob hover */
+.fab-container:hover .fab-lateral-widgets::before,
+.fab-lateral-widgets:hover::before {
   pointer-events: auto;
 }
 
@@ -770,8 +778,13 @@
 .fab-lateral-widgets:hover ~ .fab-options,
 .fab-options.has-pinned-items {
   opacity: 1;
-  pointer-events: auto;
   transform: translateY(0) scale(1);
+}
+
+/* O container de opções só aceita pointer-events na sua totalidade se o menu estiver ativamente sob hover */
+.fab-container:hover .fab-options,
+.fab-lateral-widgets:hover ~ .fab-options {
+  pointer-events: auto;
 }
 
 /* 2. Os wrappers individuais ficam visíveis se o container estiver em HOVER ou se o item estiver fixado */
@@ -833,11 +846,28 @@
   background: rgba(37, 99, 235, 0.1);
 }
 
-/* Garante que botões internos não interfiram no arraste do wrapper */
+/* Garante que botões internos não interfiram no arraste do wrapper e não ativem o hover acidentalmente quando ocultos */
 .fab-option-wrapper button,
 .fab-copy-ssc-wrapper button,
 .fab-stopwatch-wrapper button,
 .fab-stopwatch-wrapper span {
+  pointer-events: none;
+}
+
+/* Habilita pointer-events nos elementos internos apenas quando visíveis ou ativos */
+.fab-container:hover .fab-option-wrapper button,
+.fab-lateral-widgets:hover .fab-option-wrapper button,
+.fab-option-wrapper.is-pinned button,
+.fab-container:hover .fab-copy-ssc-wrapper button,
+.fab-container:hover .fab-stopwatch-wrapper button,
+.fab-container:hover .fab-stopwatch-wrapper span,
+.fab-copy-ssc-wrapper.is-pinned button,
+.fab-stopwatch-wrapper.is-pinned button,
+.fab-stopwatch-wrapper.is-pinned span,
+.fab-stopwatch-wrapper.is-running button,
+.fab-stopwatch-wrapper.is-running span,
+.fab-stopwatch-wrapper.is-editing button,
+.fab-stopwatch-wrapper.is-editing span {
   pointer-events: auto;
 }
 

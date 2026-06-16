@@ -2080,7 +2080,7 @@ function processSafeHTML(text) {
 
   // 2. Des-escapa tags permitidas (sem atributos, exceto A)
   // Tags simples: <b>, </b>, <strong>, </strong>, etc.
-  const tags = ['b', 'strong', 'i', 'em', 'u', 'br', 'p', 'ul', 'ol', 'li']
+  const tags = ['b', 'strong', 'i', 'em', 'u', 'br', 'p', 'ul', 'ol', 'li', 'div', 'span']
   tags.forEach(tag => {
     // Regex para abrir e fechar
     // <tag> -> &lt;tag&gt;
@@ -2118,6 +2118,17 @@ function processSafeHTML(text) {
       return '' // Recusa se tiver script
     }
     return `<img ${fixedAttrs}>`
+  })
+
+  // 5. Trata tag <span style="...">, <div style="..."> e <p style="..."> especificamente para cores, destaques e tamanhos de emoji
+  safe = safe.replace(/&lt;(span|div|p)\s+style=&quot;(.*?)&quot;\s*&gt;/gi, (match, tag, styleAttr) => {
+    const decodedStyle = styleAttr.replace(/&quot;/g, '"').trim()
+    const isStyleSafe = /^[a-zA-Z0-9\s\-:;.,()#"'&]+$/.test(decodedStyle) && 
+                        !/behavior|expression|url|javascript/i.test(decodedStyle)
+    if (isStyleSafe) {
+      return `<${tag} style="${decodedStyle}">`
+    }
+    return `<${tag}>`
   })
 
   // Mantém quebras de linha normais como <br> se não estiverem dentro de tags que já dão bloco?
@@ -2264,6 +2275,42 @@ function checkUnreadWarnings(warnings) {
 }
 
 /**
+ * Insere HTML na posição do cursor em um elemento contenteditable
+ * @param {HTMLElement} editor 
+ * @param {string} html 
+ */
+function insertHtmlAtContenteditable(editor, html) {
+  editor.focus()
+  const sel = window.getSelection()
+  if (sel.getRangeAt && sel.rangeCount) {
+    let range = sel.getRangeAt(0)
+    if (editor.contains(range.commonAncestorContainer)) {
+      range.deleteContents()
+      const el = document.createElement('div')
+      el.innerHTML = html
+      const frag = document.createDocumentFragment()
+      let node, lastNode
+      while ((node = el.firstChild)) {
+        lastNode = frag.appendChild(node)
+      }
+      range.insertNode(frag)
+      if (lastNode) {
+        range = range.cloneRange()
+        range.setStartAfter(lastNode)
+        range.collapse(true)
+        sel.removeAllRanges()
+        sel.addRange(range)
+      }
+    } else {
+      editor.innerHTML += html
+    }
+  } else {
+    editor.innerHTML += html
+  }
+  editor.dispatchEvent(new Event('input', { bubbles: true }))
+}
+
+/**
  * Abre modal para criar ou editar aviso
  * @param {Object} existingWarning - (Opcional) Objeto do aviso para edição
  */
@@ -2274,7 +2321,7 @@ function openCreateWarningModal(existingWarning = null) {
 
   const isEdit = !!existingWarning
   const titleVal = isEdit ? escapeHTML(existingWarning.title) : ''
-  const msgVal = isEdit ? escapeHTML(existingWarning.message) : ''
+  const msgVal = isEdit ? (existingWarning.message || '') : ''
   const typeVal = isEdit ? existingWarning.type : 'info'
   const isTestVal = isEdit ? existingWarning.isTest : false
   // Verifica se já estava marcado para notificar (em caso de edição)
@@ -2288,14 +2335,21 @@ function openCreateWarningModal(existingWarning = null) {
             <label style="display:block; margin-bottom:4px; font-size:12px;">Título</label>
             <input type="text" id="warn-title" style="${fieldStyle}" placeholder="Ex: Nova Atualização do Sistema Programada" value="${titleVal}">
 
-            
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <label style="font-size:12px;">Mensagem</label>
-                <button id="warn-add-link-btn" class="action-btn secondary-btn compact" style="font-size: 10px; padding: 2px 6px; background: transparent; border: 1px solid var(--border-color); cursor: pointer; border-radius: 4px;">🔗 Inserir Link</button>
+            <label style="display:block; margin-bottom:4px; font-size:12px;">Mensagem</label>
+            <div class="editor-toolbar warn-toolbar" style="margin-bottom: 4px; border: 1px solid var(--border-color); border-radius: 4px; display: flex; gap: 4px; padding: 4px; background: var(--background-secondary);">
+                <button type="button" class="warn-tool-btn" data-action="bold" title="Negrito"><b>B</b></button>
+                <button type="button" class="warn-tool-btn" data-action="italic" title="Itálico"><i>I</i></button>
+                <button type="button" class="warn-tool-btn" data-action="underline" title="Sublinhado"><u>U</u></button>
+                <button type="button" class="warn-tool-btn" data-action="link" title="Inserir Hiperlink">🔗</button>
+                <button type="button" class="warn-tool-btn" data-action="numbered" title="Lista Numerada">🔢</button>
+                <button type="button" class="warn-tool-btn" data-action="bullet" title="Marcador">&bull;</button>
+                <button type="button" class="warn-tool-btn" data-action="emoji" title="Emojis">😀</button>
+                <button type="button" class="warn-tool-btn" data-action="color" title="Cor do Texto">🎨</button>
+                <button type="button" class="warn-tool-btn" data-action="highlight" title="Cor de Destaque">🖌️</button>
             </div>
-            <textarea id="warn-message" rows="3" style="${fieldStyle} margin-bottom: 4px; resize: vertical;" placeholder="Detalhes do aviso...">${msgVal}</textarea>
+            <div id="warn-message" contenteditable="true" placeholder="Detalhes do aviso..." style="${fieldStyle} min-height: 120px; max-height: 250px; overflow-y: auto; margin-bottom: 4px; resize: vertical;">${msgVal}</div>
             <div style="font-size: 11px; color: var(--text-color-muted); margin-bottom: 12px; opacity: 0.8;">
-                Dica: Você poderá usar HTML para formatar sua mensagem.
+                Dica: Você poderá usar a barra de ferramentas acima para formatar sua mensagem.
             </div>
             
             <div style="display: flex; gap: 15px; margin-bottom: 12px;">
@@ -2313,10 +2367,10 @@ function openCreateWarningModal(existingWarning = null) {
             <div style="padding: 10px; background-color: var(--background-secondary); border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 15px;">
                 <div class="form-checkbox-group" style="margin-top: 0;">
                     <input type="checkbox" id="warn-notify" ${notifyVal}>
-                    <label for="warn-notify" style="font-weight: 600;">🔔 Enviar notificação push (Chrome)</label>
+                    <label for="warn-notify" style="font-weight: 600;">🔔 Enviar notificação</label>
                 </div>
                 <p style="font-size: 11px; color: var(--text-color-muted); margin: 4px 0 0 24px;">
-                    Se marcado, os usuários receberão um alerta visual no Windows/Navegador.
+                    Se marcado, os usuários receberão um alerta visual no SGD.
                 </p>
             </div>
 
@@ -2342,7 +2396,7 @@ function openCreateWarningModal(existingWarning = null) {
     modalHtml,
     null,
     {
-      isManagementModal: false, // Modal menor central
+      isManagementModal: false,
       modalId: 'create-warning-modal',
       showShareButton: false
     }
@@ -2352,50 +2406,164 @@ function openCreateWarningModal(existingWarning = null) {
   const defaultActions = modal.querySelector('.se-modal-actions')
   if (defaultActions) defaultActions.remove()
 
-  modal.style.zIndex = '10002' // Painel costuma ser alto
+  modal.style.zIndex = '10002'
+
+  // Pickers flutuantes locais
+  const emojiPickerDiv = document.createElement('div')
+  emojiPickerDiv.className = 'picker emoji-picker-warn'
+  emojiPickerDiv.style.cssText = 'position: absolute; display: none; grid-template-columns: repeat(8, 26px); gap: 2px; padding: 6px; background: var(--background-main); border: 1px solid var(--border-color); border-radius: 4px; max-height: 200px; overflow-y: auto; z-index: 10006; box-shadow: var(--shadow-md);'
+
+  const colorPickerDiv = document.createElement('div')
+  colorPickerDiv.className = 'picker color-picker-warn'
+  colorPickerDiv.style.cssText = 'position: absolute; display: none; grid-template-columns: repeat(4, 26px); gap: 4px; padding: 6px; background: var(--background-main); border: 1px solid var(--border-color); border-radius: 4px; z-index: 10006; box-shadow: var(--shadow-md);'
+
+  const highlightPickerDiv = document.createElement('div')
+  highlightPickerDiv.className = 'picker highlight-picker-warn'
+  highlightPickerDiv.style.cssText = 'position: absolute; display: none; grid-template-columns: repeat(4, 26px); gap: 4px; padding: 6px; background: var(--background-main); border: 1px solid var(--border-color); border-radius: 4px; z-index: 10006; box-shadow: var(--shadow-md);'
+
+  document.body.appendChild(emojiPickerDiv)
+  document.body.appendChild(colorPickerDiv)
+  document.body.appendChild(highlightPickerDiv)
 
   document.body.appendChild(modal)
 
-  // Handlers
-  const saveBtn = modal.querySelector('#save-warn-btn')
-  const cancelBtn = modal.querySelector('#cancel-warn-btn')
-  const addLinkBtn = modal.querySelector('#warn-add-link-btn')
-  const messageTextarea = modal.querySelector('#warn-message')
+  const messageEditor = modal.querySelector('#warn-message')
 
-  if (addLinkBtn && messageTextarea) {
-    addLinkBtn.addEventListener('click', () => {
-      if (typeof openLinkModal === 'function') {
-        openLinkModal(messageTextarea, {
-          hideButtonOption: true,
-          zIndex: 10005
-        })
-      } else {
-        const url = prompt('URL:', 'https://')
-        if (url) {
-          const text = prompt('Texto:', 'Clique aqui')
-          const linkHtml = `<a href="${url}" target="_blank">${text}</a>`
-          // Tenta usar insertAtCursor se existir, senão append
-          if (typeof insertAtCursor === 'function') {
-            insertAtCursor(messageTextarea, linkHtml)
-          } else {
-            messageTextarea.value += linkHtml
-          }
-        }
-      }
+  // Evitar que cliques nos pickers tirem o foco/seleção do contenteditable
+  colorPickerDiv.addEventListener('mousedown', e => e.preventDefault())
+  highlightPickerDiv.addEventListener('mousedown', e => e.preventDefault())
+  emojiPickerDiv.addEventListener('mousedown', e => e.preventDefault())
+
+  // Inicializa pickers com callbacks
+  if (typeof createColorPicker === 'function') {
+    createColorPicker(colorPickerDiv, (color) => {
+      messageEditor.focus()
+      document.execCommand('foreColor', false, color)
+    })
+    createColorPicker(highlightPickerDiv, (color) => {
+      messageEditor.focus()
+      document.execCommand('hiliteColor', false, color)
     })
   }
 
-  cancelBtn.addEventListener('click', () => modal.remove())
+  if (typeof createEmojiPicker === 'function') {
+    createEmojiPicker(emojiPickerDiv, (emojiHtml, emojiChar) => {
+      const emojiValue = emojiChar ? `<span style="font-size: 19px;">${emojiChar}</span>` : emojiHtml
+      insertHtmlAtContenteditable(messageEditor, emojiValue)
+    })
+  }
+
+  const showPicker = (btn, pickerDiv) => {
+    emojiPickerDiv.style.display = 'none'
+    colorPickerDiv.style.display = 'none'
+    highlightPickerDiv.style.display = 'none'
+
+    const rect = btn.getBoundingClientRect()
+    pickerDiv.style.top = `${rect.bottom + window.scrollY + 2}px`
+    pickerDiv.style.left = `${rect.left + window.scrollX}px`
+    pickerDiv.style.display = 'grid'
+
+    const closeHandler = (ev) => {
+      if (!pickerDiv.contains(ev.target) && !btn.contains(ev.target)) {
+        pickerDiv.style.display = 'none'
+        document.removeEventListener('click', closeHandler, true)
+      }
+    }
+    document.addEventListener('click', closeHandler, true)
+  }
+
+  const cleanup = () => {
+    emojiPickerDiv.remove()
+    colorPickerDiv.remove()
+    highlightPickerDiv.remove()
+    modal.remove()
+  }
+
+  // Handlers da barra de ferramentas
+  modal.querySelectorAll('.warn-tool-btn').forEach(btn => {
+    const action = btn.dataset.action
+    if (!action) return
+
+    // Evita perda de foco/seleção no contenteditable ao interagir com a barra
+    btn.addEventListener('mousedown', e => {
+      e.preventDefault()
+    })
+
+    btn.addEventListener('click', e => {
+      e.preventDefault()
+      messageEditor.focus()
+
+      switch (action) {
+        case 'bold':
+          document.execCommand('bold', false, null)
+          break
+        case 'italic':
+          document.execCommand('italic', false, null)
+          break
+        case 'underline':
+          document.execCommand('underline', false, null)
+          break
+        case 'link': {
+          const sel = window.getSelection()
+          let savedRange = null
+          if (sel.rangeCount > 0) {
+            savedRange = sel.getRangeAt(0).cloneRange()
+          }
+
+          const url = prompt('URL:', 'https://')
+          if (url) {
+            const text = prompt('Texto:', 'Clique aqui')
+            const linkHtml = `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: rgb(255, 128, 0); font-weight: bold;">${text}</a>`
+            
+            if (savedRange) {
+              sel.removeAllRanges()
+              sel.addRange(savedRange)
+            }
+            insertHtmlAtContenteditable(messageEditor, linkHtml)
+          }
+          break
+        }
+        case 'numbered':
+          document.execCommand('insertOrderedList', false, null)
+          break
+        case 'bullet':
+          document.execCommand('insertUnorderedList', false, null)
+          break
+        case 'emoji':
+          showPicker(btn, emojiPickerDiv)
+          break
+        case 'color':
+          showPicker(btn, colorPickerDiv)
+          break
+        case 'highlight':
+          showPicker(btn, highlightPickerDiv)
+          break
+      }
+    })
+  })
+
+  // Handlers padrão do modal
+  const saveBtn = modal.querySelector('#save-warn-btn')
+  const cancelBtn = modal.querySelector('#cancel-warn-btn')
+
+  cancelBtn.addEventListener('click', () => cleanup())
+
+  // Fechamento pelo botão X padrão do modal
+  const closeBtn = modal.querySelector('.se-close-modal-btn')
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => cleanup())
+  }
 
   saveBtn.addEventListener('click', async () => {
     const title = modal.querySelector('#warn-title').value.trim()
-    const message = modal.querySelector('#warn-message').value.trim()
+    const textContent = messageEditor.textContent.trim()
+    const message = messageEditor.innerHTML.trim()
     const type = modal.querySelector('#warn-type').value
     const isTest = modal.querySelector('#warn-is-test').checked
-    const notify = modal.querySelector('#warn-notify').checked // Captura o estado do checkbox
+    const notify = modal.querySelector('#warn-notify').checked
     const author = getCurrentUserName()
 
-    if (!title || !message) {
+    if (!title || !textContent) {
       alert('Preencha título e mensagem.')
       return
     }
@@ -2411,7 +2579,7 @@ function openCreateWarningModal(existingWarning = null) {
           type,
           author,
           isTest,
-          notify // Atualiza a flag de notificação
+          notify
         })
       } else {
         await window.warningsService.createWarning({
@@ -2420,12 +2588,11 @@ function openCreateWarningModal(existingWarning = null) {
           type,
           author,
           isTest,
-          notify, // Salva a flag de notificação
+          notify,
           date: new Date().toISOString()
         })
       }
 
-      // Dispara notificação de teste para o próprio criador se a opção foi marcada
       if (notify) {
         chrome.runtime.sendMessage({
           action: 'SHOW_GENERIC_NOTIFICATION',
@@ -2436,16 +2603,12 @@ function openCreateWarningModal(existingWarning = null) {
         })
       }
 
-      modal.remove()
+      cleanup()
 
-      // Recarregar lista se o painel de avisos estiver aberto no DOM
       const warningsSection = document.querySelector('#ip-section-notices')
       if (warningsSection) {
         loadWarnings(warningsSection)
       }
-
-      // Feedback omitido conforme solicitado
-      // alert(isEdit ? 'Aviso atualizado!' : 'Aviso publicado!');
     } catch (err) {
       console.error(err)
       alert('Erro ao salvar: ' + err.message)
