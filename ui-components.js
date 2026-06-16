@@ -93,27 +93,63 @@ function createReminderCardHtml(reminder, type) {
 }
 
 function createWarningCardHtml(warning, isUnread) {
-  const statusText = isUnread ? 'Novo' : 'Lido'
-  const dateStr = warning.date ? new Date(warning.date).toLocaleDateString('pt-BR') : ''
+  // Mapeamento de tipo → metadados visuais
+  const typeMap = {
+    danger:  { color: 'var(--action-red)',    icon: '🚨', label: 'Importante' },
+    warning: { color: 'var(--action-yellow)', icon: '⚠️', label: 'Alerta'     },
+    success: { color: 'var(--action-green)',  icon: '✅', label: 'Novidade'   },
+    info:    { color: 'var(--action-blue)',   icon: 'ℹ️', label: 'Informativo'}
+  }
+  const meta = typeMap[warning.type] || typeMap.info
+
+  const statusText    = isUnread ? 'Novo' : 'Lido'
+  const dateStr       = warning.date ? new Date(warning.date).toLocaleDateString('pt-BR') : ''
   const priorityClass = isUnread ? 'priority-high' : 'priority-low'
-  const titleColor = isUnread ? 'var(--action-orange)' : 'inherit'
-  const borderColor = isUnread ? 'var(--action-orange)' : 'var(--border-color)'
+
+  // Não lidos: cor do tipo. Lidos: cor do tipo diluída em cinza (~30% da cor, 70% cinza)
+  const titleColor  = isUnread
+    ? meta.color
+    : `color-mix(in srgb, ${meta.color} 30%, var(--text-color-muted))`
+  const borderColor = isUnread
+    ? meta.color
+    : `color-mix(in srgb, ${meta.color} 25%, var(--border-color))`
+
+  // Badge do tipo com fundo sutil na cor do tipo
+  const tagBg      = isUnread
+    ? `color-mix(in srgb, ${meta.color} 15%, transparent)`
+    : `color-mix(in srgb, ${meta.color} 8%, var(--background-secondary))`
+  const tagColor   = isUnread ? meta.color : titleColor
+  const tagHtml    = `<span style="font-size:10px; font-weight:600; padding:1px 6px; border-radius:4px; background:${tagBg}; color:${tagColor}; border:1px solid ${borderColor}; white-space:nowrap;">${meta.label}</span>`
+
+  // Sanitização básica: remove scripts/handlers e permite tags de formatação
+  const sanitize = str => (str || '')
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '')
+    .replace(/javascript:/gi, '')
+
+  const safeTitle   = sanitize(warning.title   || 'Aviso')
+  const safeMessage = sanitize(warning.message || '')
 
   return `
     <div class="reminder-card warning-card ${priorityClass}" style="cursor: pointer; border-color: ${borderColor};" data-warning-id="${warning.id || ''}">
       <div class="card-header">
         <div class="card-header-main">
-          <h5 class="card-title" style="color: ${titleColor};">📣 ${escapeHTML(warning.title || 'Aviso')}</h5>
+          <h5 class="card-title" style="color: ${titleColor}; display:flex; align-items:center; gap:5px; flex-wrap:wrap;">
+            <span>${meta.icon}</span>
+            <span>${safeTitle}</span>
+            ${tagHtml}
+          </h5>
           <div class="card-details-row">
             <span class="card-status">${statusText} ${dateStr}</span>
           </div>
         </div>
       </div>
       <div class="card-content">
-        <p class="description-snippet">${escapeHTML(warning.message || '')}</p>
+        <div class="description-snippet" style="font-size:12px;">${safeMessage}</div>
       </div>
     </div>`
 }
+
 
 // Helper de segurança para evitar quebra do componente
 function _safeEscapeHTML(str) {
@@ -1996,33 +2032,31 @@ async function openFiredRemindersPanel() {
     .filter(r => r.isFired === false && r.firedAt)
     .sort((a, b) => (b.firedAt || 0) - (a.firedAt || 0))
 
-  const data = await chrome.storage.local.get(['warningsMetaSignature', 'warningsLastReadTime', 'developerMode', 'cachedWarnings'])
-  let hasUnreadWarning = false
-  let warningTitle = 'Novo Aviso na Central'
-  let warningDesc = 'Você tem um comunicado não lido na Central de Informações SGD.'
+  const data = await chrome.storage.local.get(['warningsLastReadTime', 'developerMode', 'cachedWarnings'])
 
-  if (data.warningsMetaSignature) {
-    const lastUpdatedDate = new Date(data.warningsMetaSignature).getTime()
-    const lastReadTime = data.warningsLastReadTime || 0
-    let isTest = false;
-    
-    if (data.cachedWarnings && data.cachedWarnings.data && data.cachedWarnings.data.length > 0) {
-      const latestWarning = data.cachedWarnings.data[0];
-      isTest = latestWarning.isTest;
-      if (latestWarning.title) warningTitle = latestWarning.title;
-      if (latestWarning.message) warningDesc = latestWarning.message;
-    }
-    
-    if (lastUpdatedDate > lastReadTime && (!isTest || data.developerMode)) {
-      hasUnreadWarning = true
-    }
-  }
+  // cachedWarnings é um array direto (não um objeto com .data)
+  const rawWarnings = Array.isArray(data.cachedWarnings) ? data.cachedWarnings : []
+
+  // Filtra: expirados (>7 dias) e avisos de teste (exceto em developerMode)
+  const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
+  const nowMs = Date.now()
+  const visibleWarnings = rawWarnings.filter(w => {
+    if (w.isTest && !data.developerMode) return false
+    if (!w.date) return true
+    return nowMs - new Date(w.date).getTime() < SEVEN_DAYS_MS
+  })
+
+  // Classifica em não lidos (data > lastReadTime) e lidos
+  const lastReadTime = data.warningsLastReadTime || 0
+  const unreadWarnings = visibleWarnings.filter(w => w.date && new Date(w.date).getTime() > lastReadTime)
+  const readWarnings   = visibleWarnings.filter(w => !w.date || new Date(w.date).getTime() <= lastReadTime)
+  const hasUnreadWarning = unreadWarnings.length > 0
 
   const isEmpty =
     pendingReminders.length === 0 &&
     acknowledgedReminders.length === 0 &&
     activeReminders.length === 0 &&
-    !hasUnreadWarning
+    visibleWarnings.length === 0
 
   const panel = document.createElement('div')
   panel.id = 'fired-reminders-panel'
@@ -2032,7 +2066,7 @@ async function openFiredRemindersPanel() {
 
   let panelContentHtml
 
-  // NOVO: Lógica para exibir o painel mesmo quando vazio.
+  // Lógica para exibir o painel mesmo quando vazio.
   if (isEmpty) {
     panelContentHtml = `<div class="empty-reminders-message">Não existem notificações ou lembretes ativos.</div>`
     updateNotificationStatus() // Garante que o sino não fique pulsando
@@ -2057,23 +2091,16 @@ async function openFiredRemindersPanel() {
           .join('')
         : ''
 
+    // Avisos individuais categorizados em "Não Lidos" e "Lidos"
     let warningHtml = ''
-    if (hasUnreadWarning) {
-      warningHtml = `
-        <h6>Avisos</h6>
-        <div class="reminder-card priority-high expanded" style="cursor: pointer; border-color: var(--action-orange);" id="warning-dropdown-card">
-          <div class="reminder-card-header" style="margin-bottom: 4px;">
-            <div class="reminder-title-group">
-              <span class="reminder-icon">📣</span>
-              <h6 class="reminder-title" style="color: var(--action-orange);">${escapeHTML(warningTitle)}</h6>
-            </div>
-          </div>
-          <div class="reminder-card-body" style="display: block;">
-            <p class="reminder-desc" style="font-size: 12px; margin-bottom: 8px;">${escapeHTML(warningDesc)}</p>
-            <button type="button" class="action-btn enhanced-btn" style="width: 100%; font-size: 12px; padding: 4px; background: var(--action-orange); color: white;" id="warning-dropdown-btn">Abrir SGD e Ver Avisos</button>
-          </div>
-        </div>
-      `
+    if (visibleWarnings.length > 0) {
+      const unreadHtml = unreadWarnings.length > 0
+        ? `<h6>Não Lidos</h6>` + unreadWarnings.map(w => createWarningCardHtml(w, true)).join('')
+        : ''
+      const readHtml = readWarnings.length > 0
+        ? `<h6>Lidos</h6>` + readWarnings.map(w => createWarningCardHtml(w, false)).join('')
+        : ''
+      warningHtml = `<h6>Avisos</h6>${unreadHtml}${readHtml}`
     }
 
     const sections = [warningHtml, pendingHtml, activeHtml, acknowledgedHtml].filter(Boolean)
@@ -2086,6 +2113,7 @@ async function openFiredRemindersPanel() {
         <div class="fired-reminders-header-actions">
             <button type="button" class="action-btn small-btn new-reminder-btn" title="Novo Lembrete">⏰ Novo</button>
             <button type="button" class="action-btn small-btn manage-reminders-btn" title="Gerenciar Lembretes">⏳ Gerenciar</button>
+            <button type="button" class="action-btn small-btn open-notices-btn" title="Ver Avisos da Central">📣 Avisos</button>
         </div>
     </div>
     <div class="fired-reminders-list">${panelContentHtml}</div>`
@@ -2143,14 +2171,18 @@ async function openFiredRemindersPanel() {
     closePanelAndCleanup()
     openRemindersManagementModal()
   })
+  panel.querySelector('.open-notices-btn').addEventListener('click', () => {
+    closePanelAndCleanup()
+    if (typeof openInfoPanel === 'function') openInfoPanel('notices')
+  })
 
-  const warningCard = panel.querySelector('#warning-dropdown-card')
-  if (warningCard) {
-    warningCard.addEventListener('click', () => {
+  // Listener para os cards de aviso individuais — abre a Central SGD na aba Avisos
+  panel.querySelectorAll('.warning-card').forEach(card => {
+    card.addEventListener('click', () => {
       closePanelAndCleanup()
-      window.open('https://sgd.dominiosistemas.com.br/sgpub/faces/filtro-listas.html?open_sgd_panel=true&target_tab=notices', '_blank')
+      if (typeof openInfoPanel === 'function') openInfoPanel('notices')
     })
-  }
+  })
 
   panel.querySelectorAll('.reminder-card').forEach(card => {
     // Lógica de expansão do card

@@ -1801,8 +1801,8 @@ a.open-link-btn:hover {
 /* --- FIRED REMINDERS PANEL --- */
 #fired-reminders-panel {
   position: absolute;
-  width: 400px;
-  max-height: 450px;
+  width: 480px;
+  max-height: 520px;
   z-index: 2100;
   border-radius: var(--border-radius-md);
   box-shadow: var(--shadow-lg);
@@ -2472,6 +2472,12 @@ a.open-link-btn:hover {
   -webkit-line-clamp: 1;
   line-clamp: 1;
   -webkit-box-orient: vertical;
+}
+
+/* Avisos exibem 2 linhas de mensagem no sininho */
+.warning-card .description-snippet {
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 .reminder-card.expanded .description-snippet {
