@@ -1,4 +1,10 @@
 const RELEASE_NOTES = {
+  '3.0.5.4': {
+    title: '✨ Leitura Obrigatória nos Avisos — Versão 3.0.5.4',
+    features: [
+      '<b>⚠️ Leitura Obrigatória nos Avisos:</b> Adicionada a opção de leitura obrigatória para avisos críticos, exibindo apenas o botão "Ver Aviso (Obrigatório)" sem fechamento automático e abrindo em modal exclusivo com cronômetro de 10 segundos.'
+    ]
+  },
   '3.0.5.3': {
     title: '✨ Novo Editor de Avisos WYSIWYG — Versão 3.0.5.3',
     features: [
