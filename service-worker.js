@@ -280,11 +280,10 @@ const TEAM_API_KEY = 'AIzaSyBJgLpNfiycnIr-OybbfAOAuIa4ZU3nBbY';
 const TEAM_STATUS_URL = `https://firestore.googleapis.com/v1/projects/${TEAM_PROJECT_ID}/databases/(default)/documents/team_status/current`;
 const TEAM_STATUS_POLL_ALARM = 'team-status-poll';
 
-// Configurações de Avisos (Firestore)
-const WARNINGS_PROJECT_ID = "sgd-extension";
-const WARNINGS_API_KEY = "AIzaSyBJgLpNfiycnIr-OybbfAOAuIa4ZU3nBbY";
-const WARNINGS_METADATA_URL = `https://firestore.googleapis.com/v1/projects/${WARNINGS_PROJECT_ID}/databases/(default)/documents/metadata/warnings`;
-const WARNINGS_BASE_URL = `https://firestore.googleapis.com/v1/projects/${WARNINGS_PROJECT_ID}/databases/(default)/documents/warnings`;
+// Configurações de Avisos (Firebase Realtime Database)
+const RTDB_BASE_URL = 'https://sgd-extension-default-rtdb.firebaseio.com';
+const RTDB_WARNINGS_META_URL = `${RTDB_BASE_URL}/metadata/warnings`;
+const RTDB_WARNINGS_URL = `${RTDB_BASE_URL}/warnings`;
 const WARNINGS_POLL_ALARM = 'warnings-poll';
 
 // --- FUNÇÕES DE ARMAZENAMENTO (STORAGE) ---
@@ -508,12 +507,12 @@ async function checkWarningsAndNotify() {
     const storage = await chrome.storage.local.get(['warningsMetaSignature', 'developerMode']);
     const localSignature = storage.warningsMetaSignature;
 
-    // 1. Checa a data de última atualização (Metadado)
-    const metaResponse = await fetch(`${WARNINGS_METADATA_URL}?key=${WARNINGS_API_KEY}`, { cache: 'no-store' });
+    // 1. Checa a data de última atualização (Metadado) via Realtime Database
+    const metaResponse = await fetch(`${RTDB_WARNINGS_META_URL}.json`, { cache: 'no-store' });
     if (!metaResponse.ok) return;
 
     const metaDoc = await metaResponse.json();
-    const serverSignature = metaDoc.fields?.lastUpdated?.timestampValue;
+    const serverSignature = metaDoc?.lastUpdated;
 
     // Se não há data ou a data já é conhecida, ignora
     if (!serverSignature || serverSignature === localSignature) {
@@ -521,25 +520,18 @@ async function checkWarningsAndNotify() {
     }
 
     // 2. Se a assinatura mudou, busca os últimos avisos (20 para cachear)
-    const response = await fetch(`${WARNINGS_BASE_URL}?key=${WARNINGS_API_KEY}&orderBy=date desc&pageSize=20`, { cache: 'no-store' });
+    const response = await fetch(`${RTDB_WARNINGS_URL}.json?orderBy="date"&limitToLast=20`, { cache: 'no-store' });
     if (!response.ok) return;
 
     const result = await response.json();
-    if (!result.documents || result.documents.length === 0) return;
+    if (!result || typeof result !== 'object') return;
 
-    // Converte os documentos para o formato padrão do cache
-    const warnings = result.documents.map(doc => {
-      const fields = doc.fields || {};
-      const data = { id: doc.name.split('/').pop() };
-      for (const [key, value] of Object.entries(fields)) {
-        if (value.stringValue !== undefined) data[key] = value.stringValue;
-        else if (value.integerValue !== undefined) data[key] = parseInt(value.integerValue);
-        else if (value.doubleValue !== undefined) data[key] = parseFloat(value.doubleValue);
-        else if (value.booleanValue !== undefined) data[key] = value.booleanValue;
-        else if (value.timestampValue !== undefined) data[key] = value.timestampValue;
-      }
-      return data;
-    });
+    // Realtime DB retorna objeto { "-id1": { ... }, "-id2": { ... } }
+    // Converte para array e ordena por data (mais recente primeiro)
+    const warnings = Object.entries(result).map(([id, data]) => ({ id, ...data }));
+    warnings.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+    if (warnings.length === 0) return;
 
     const newestWarning = warnings[0];
     const title = newestWarning.title || 'Novo Aviso na Central';
@@ -583,6 +575,15 @@ async function checkWarningsAndNotify() {
     // 5. Sinaliza abas ativas para atualizarem o badge do ícone se estiverem abertas
     broadcastToSgdTabs({ action: 'UPDATE_NOTIFICATION_BADGE' });
 
+    // 6. Dispara o Toast in-page para todas as abas ativas do SGD
+    broadcastToSgdTabs({
+      action: 'SHOW_TOAST',
+      id: newestWarning.id || `warning-${Date.now()}`,
+      title: title,
+      message: message,
+      type: type
+    });
+
   } catch (err) {
     console.error('[SW] Erro ao verificar novos avisos:', err);
   }
@@ -613,12 +614,14 @@ async function setupPendingPollAlarm() {
     })
   }
 
-  // Alarme para verificação de novos avisos
+  // Alarme para verificação de novos avisos (Realtime Database — cota por bandwidth, não por leituras)
   const warningsAlarm = await chrome.alarms.get(WARNINGS_POLL_ALARM)
   if (!warningsAlarm) {
+    // Jitter aleatório de 0-1 minuto para distribuir as requisições dos 800 usuários
+    const jitterMinutes = Math.random() * 1;
     chrome.alarms.create(WARNINGS_POLL_ALARM, {
-      delayInMinutes: 1,
-      periodInMinutes: 2  // Verifica a cada 60 min (1 hora)
+      delayInMinutes: 0.5 + jitterMinutes,
+      periodInMinutes: 2  // Verifica a cada 2 minutos (~1.3 GB/mês dos 10 GB — cota RTDB)
     })
   }
 }
@@ -762,6 +765,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           action: 'UPDATE_NOTIFICATION_BADGE'
         })
         sendResponse({ success: true })
+      } else if (message.action === 'WARNING_CREATED') {
+        // Quando um aviso é criado pelo admin, verifica imediatamente para disparar toast
+        await checkWarningsAndNotify();
+        sendResponse({ success: true });
       } else if (message.action === 'BROADCAST_DISMISS' && message.reminderId) {
         // Ação para fechar a notificação em outras abas quando o usuário interage em uma delas
         await broadcastToSgdTabs({

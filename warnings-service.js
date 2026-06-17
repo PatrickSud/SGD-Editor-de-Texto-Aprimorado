@@ -1,22 +1,21 @@
 /**
  * @file warnings-service.js
- * Serviço para gerenciar avisos do sistema usando a API REST do Firestore
+ * Serviço para gerenciar avisos do sistema usando a API REST do Firebase Realtime Database
  * OTIMIZADO: Estratégia "Metadata Check" para avisos.
+ * Migrado do Firestore para o Realtime Database (cota por bandwidth em vez de contagem de leituras).
  */
 
-const WARNINGS_PROJECT_ID = "sgd-extension";
-const WARNINGS_API_KEY = "AIzaSyBJgLpNfiycnIr-OybbfAOAuIa4ZU3nBbY";
-const WARNINGS_BASE_URL = `https://firestore.googleapis.com/v1/projects/${WARNINGS_PROJECT_ID}/databases/(default)/documents/warnings`;
-const WARNINGS_METADATA_URL = `https://firestore.googleapis.com/v1/projects/${WARNINGS_PROJECT_ID}/databases/(default)/documents/metadata/warnings`;
+const RTDB_BASE_URL = 'https://sgd-extension-default-rtdb.firebaseio.com';
+const RTDB_WARNINGS_URL = `${RTDB_BASE_URL}/warnings`;
+const RTDB_WARNINGS_META_URL = `${RTDB_BASE_URL}/metadata/warnings`;
 
 async function touchWarningsMetadata() {
   try {
     const now = new Date().toISOString();
-    const fields = { lastUpdated: { timestampValue: now } };
-    await fetch(`${WARNINGS_METADATA_URL}?key=${WARNINGS_API_KEY}`, {
+    await fetch(`${RTDB_WARNINGS_META_URL}.json`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fields })
+      body: JSON.stringify({ lastUpdated: now })
     });
   } catch (e) { console.warn('Falha meta avisos:', e); }
 }
@@ -30,10 +29,10 @@ async function getWarnings(forceRefresh = false) {
 
     if (!forceRefresh) {
       try {
-        const metaResponse = await fetch(`${WARNINGS_METADATA_URL}?key=${WARNINGS_API_KEY}`, { cache: 'no-store' });
+        const metaResponse = await fetch(`${RTDB_WARNINGS_META_URL}.json`, { cache: 'no-store' });
         if (metaResponse.ok) {
           const metaDoc = await metaResponse.json();
-          serverSignature = metaDoc.fields?.lastUpdated?.timestampValue;
+          serverSignature = metaDoc?.lastUpdated;
         }
       } catch (e) { }
 
@@ -42,11 +41,16 @@ async function getWarnings(forceRefresh = false) {
       }
     }
 
-    const response = await fetch(`${WARNINGS_BASE_URL}?key=${WARNINGS_API_KEY}&orderBy=date desc&pageSize=20`, { cache: 'no-store' });
+    const response = await fetch(`${RTDB_WARNINGS_URL}.json?orderBy="date"&limitToLast=20`, { cache: 'no-store' });
     if (!response.ok) return cachedData || [];
 
     const result = await response.json();
-    const warnings = (result.documents || []).map(fromFirestoreWarning);
+    if (!result || typeof result !== 'object') return cachedData || [];
+
+    // Realtime DB retorna um objeto { "-id1": { ... }, "-id2": { ... } }
+    // Converte para array e ordena por data (mais recente primeiro)
+    const warnings = Object.entries(result).map(([id, data]) => ({ id, ...data }));
+    warnings.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
     await chrome.storage.local.set({
       cachedWarnings: warnings,
@@ -63,14 +67,17 @@ async function getWarnings(forceRefresh = false) {
 
 async function createWarning(warningData) {
   try {
-    const fields = toFirestoreWarning(warningData);
-    const response = await fetch(`${WARNINGS_BASE_URL}?key=${WARNINGS_API_KEY}`, {
+    // Remove o campo 'id' se existir (o RTDB gera automaticamente)
+    const { id, ...data } = warningData;
+    const response = await fetch(`${RTDB_WARNINGS_URL}.json`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(fields)
+      body: JSON.stringify(data)
     });
     if (!response.ok) throw new Error('Erro ao criar aviso');
     await touchWarningsMetadata();
+    // Notifica o service worker para verificar e disparar o toast imediatamente
+    chrome.runtime.sendMessage({ action: 'WARNING_CREATED' }).catch(() => {});
     return true;
   } catch (error) {
     console.error('Erro ao criar aviso:', error);
@@ -80,7 +87,7 @@ async function createWarning(warningData) {
 
 async function deleteWarning(id) {
   try {
-    const response = await fetch(`${WARNINGS_BASE_URL}/${id}?key=${WARNINGS_API_KEY}`, {
+    const response = await fetch(`${RTDB_WARNINGS_URL}/${id}.json`, {
       method: 'DELETE'
     });
     if (!response.ok) throw new Error('Erro ao deletar');
@@ -91,42 +98,17 @@ async function deleteWarning(id) {
 
 async function updateWarning(id, updates) {
   try {
-    const fields = toFirestoreWarning(updates);
-    const updateMask = Object.keys(updates).map(k => `updateMask.fieldPaths=${k}`).join('&');
-    const response = await fetch(`${WARNINGS_BASE_URL}/${id}?key=${WARNINGS_API_KEY}&${updateMask}`, {
+    // Remove o campo 'id' das atualizações se existir
+    const { id: _, ...data } = updates;
+    const response = await fetch(`${RTDB_WARNINGS_URL}/${id}.json`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(fields)
+      body: JSON.stringify(data)
     });
     if (!response.ok) throw new Error('Erro ao atualizar');
     await touchWarningsMetadata();
     return true;
   } catch (error) { throw error; }
-}
-
-function fromFirestoreWarning(doc) {
-  const fields = doc.fields || {};
-  const data = { id: doc.name.split('/').pop() };
-  for (const [key, value] of Object.entries(fields)) {
-    if (value.stringValue !== undefined) data[key] = value.stringValue;
-    else if (value.integerValue !== undefined) data[key] = parseInt(value.integerValue);
-    else if (value.doubleValue !== undefined) data[key] = parseFloat(value.doubleValue);
-    else if (value.booleanValue !== undefined) data[key] = value.booleanValue;
-    else if (value.timestampValue !== undefined) data[key] = value.timestampValue;
-  }
-  return data;
-}
-
-function toFirestoreWarning(obj) {
-  const fields = {};
-  for (const [key, value] of Object.entries(obj)) {
-    if (key === 'id') continue;
-    if (typeof value === 'string') fields[key] = { stringValue: value };
-    else if (typeof value === 'boolean') fields[key] = { booleanValue: value };
-    else if (Number.isInteger(value)) fields[key] = { integerValue: value.toString() };
-    else if (typeof value === 'number') fields[key] = { doubleValue: value };
-  }
-  return { fields };
 }
 
 window.warningsService = { getWarnings, createWarning, deleteWarning, updateWarning };

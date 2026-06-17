@@ -238,6 +238,26 @@ if (!document.getElementById('sgd-toast-styles-v8')) {
  * @param {number} duration - Tempo em ms (padrão 60000).
  */
 function showSgdToast(id, title, message, type = 'info', duration = 60000) {
+  // Evita toast duplicado: se já existe um toast com o mesmo ID, ignora
+  if (document.getElementById(`sgd-toast-${id}`)) return;
+
+  // Evita duplicado pelo conteúdo (título e mensagem), prevenindo corridas com IDs diferentes (como previews)
+  const cleanNewMsg = message.replace(/<[^>]+>/g, '').trim();
+  const cleanTitle = title.trim();
+  const existingToasts = document.querySelectorAll('.sgd-toast');
+  for (const t of existingToasts) {
+    const tTitle = t.querySelector('.sgd-toast-title')?.textContent?.trim() || '';
+    const tMsgEl = t.querySelector('.sgd-toast-message');
+    if (tMsgEl) {
+      const tMsgClean = tMsgEl.textContent?.trim() || '';
+      const tMsgHtml = tMsgEl.innerHTML.trim();
+      if (tTitle === cleanTitle && (tMsgClean === cleanNewMsg || tMsgHtml === message.trim())) {
+        console.log(`[Toast] Ignorado duplicado por conteúdo: "${title}"`);
+        return;
+      }
+    }
+  }
+
   let container = document.getElementById('sgd-toast-container');
   if (!container) {
     container = document.createElement('div');

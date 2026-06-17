@@ -166,17 +166,16 @@ async function openInfoPanel(initialTabId = 'pending') {
       </div>
       <div style="flex: 1; overflow-y: auto;">
         ${sections
-          .map(
-            (s, index) => `
-          <div id="ip-nav-${s.id}" class="ip-nav-item ${s.id === activeSectionId ? 'active' : ''}" data-target="${
-            s.id
+      .map(
+        (s, index) => `
+          <div id="ip-nav-${s.id}" class="ip-nav-item ${s.id === activeSectionId ? 'active' : ''}" data-target="${s.id
           }">
             <span class="ip-nav-icon">${s.icon}</span>
             <span class="ip-nav-label">${s.label}</span>
           </div>
         `
-          )
-          .join('')}
+      )
+      .join('')}
       </div>
       ${sidebarFooterHtml}
     </div>
@@ -186,17 +185,16 @@ async function openInfoPanel(initialTabId = 'pending') {
   const contentHtml = `
     <div class="ip-content-area">
       ${sections
-        .map(
-          (s, index) => `
-        <div id="ip-section-${s.id}" class="ip-section ${
-          s.id === activeSectionId ? 'active' : ''
-        }">
+      .map(
+        (s, index) => `
+        <div id="ip-section-${s.id}" class="ip-section ${s.id === activeSectionId ? 'active' : ''
+          }">
           ${s.id === 'team-status' ? '' : `<h3 class="ip-section-title">${s.icon} ${s.label}</h3>`}
           ${getSectionContent(s.id)}
         </div>
       `
-        )
-        .join('')}
+      )
+      .join('')}
     </div>
   `
 
@@ -242,7 +240,7 @@ async function openInfoPanel(initialTabId = 'pending') {
         if (targetId === 'forms') loadForms(targetSection, 'forms')
         if (targetId === 'ai-chains') {
           loadForms(targetSection, 'ai')
-          
+
           const searchInput = targetSection.querySelector('#ai-chains-search')
           if (searchInput && !searchInput.dataset.listenerSet) {
             searchInput.addEventListener(
@@ -626,7 +624,7 @@ document.addEventListener('click', e => {
         sessionId: 'debug-session',
         hypothesisId: 'A'
       })
-    }).catch(() => {})
+    }).catch(() => { })
   }
 })
 // #endregion
@@ -2123,8 +2121,8 @@ function processSafeHTML(text) {
   // 5. Trata tag <span style="...">, <div style="..."> e <p style="..."> especificamente para cores, destaques e tamanhos de emoji
   safe = safe.replace(/&lt;(span|div|p)\s+style=&quot;(.*?)&quot;\s*&gt;/gi, (match, tag, styleAttr) => {
     const decodedStyle = styleAttr.replace(/&quot;/g, '"').trim()
-    const isStyleSafe = /^[a-zA-Z0-9\s\-:;.,()#"'&]+$/.test(decodedStyle) && 
-                        !/behavior|expression|url|javascript/i.test(decodedStyle)
+    const isStyleSafe = /^[a-zA-Z0-9\s\-:;.,()#"'&]+$/.test(decodedStyle) &&
+      !/behavior|expression|url|javascript/i.test(decodedStyle)
     if (isStyleSafe) {
       return `<${tag} style="${decodedStyle}">`
     }
@@ -2176,7 +2174,7 @@ function createWarningCard(warning) {
         hour: '2-digit',
         minute: '2-digit'
       })
-    } catch (e) {}
+    } catch (e) { }
   }
 
   const messageHtml = processSafeHTML(warning.message || '')
@@ -2200,14 +2198,13 @@ function createWarningCard(warning) {
   const actionsHtml = `
         <div style="display:flex; gap:10px; align-items:center;">
             ${testBadge} ${ignoreBtn}
-            ${
-              developerMode
-                ? `
+            ${developerMode
+      ? `
                 <button class="ip-warn-edit-btn" style="background:none; border:none; cursor:pointer; font-size:14px; padding:0; line-height:1;" title="Editar">✏️</button>
                 <button class="ip-warn-delete-btn" style="background:none; border:none; cursor:pointer; font-size:14px; padding:0; line-height:1;" title="Excluir">🗑️</button>
             `
-                : ''
-            }
+      : ''
+    }
             <span class="ip-card-badge ${typeClass}">${escapeHTML(typeLabel)}</span>
         </div>
     `
@@ -2514,7 +2511,7 @@ function openCreateWarningModal(existingWarning = null) {
           if (url) {
             const text = prompt('Texto:', 'Clique aqui')
             const linkHtml = `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: rgb(255, 128, 0); font-weight: bold;">${text}</a>`
-            
+
             if (savedRange) {
               sel.removeAllRanges()
               sel.addRange(savedRange)
@@ -2632,7 +2629,7 @@ fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', {
     sessionId: 'debug-session',
     hypothesisId: 'C'
   })
-}).catch(() => {})
+}).catch(() => { })
 // #endregion
 
 /**
@@ -2653,7 +2650,7 @@ async function openTagManager(btnElement, pendingId) {
       sessionId: 'debug-session',
       hypothesisId: 'C'
     })
-  }).catch(() => {})
+  }).catch(() => { })
   // #endregion
 
   // Remove qualquer popup existente
@@ -3014,14 +3011,13 @@ function getSectionContent(sectionId) {
               <span>🔄</span>
             </button>
             <!-- Botão de teste de notificação (apenas modo dev) -->
-            ${
-              developerMode
-                ? `
+            ${developerMode
+          ? `
             <button id="test-notification-btn" class="action-btn secondary-btn compact" title="Testar Notificação" style="color: var(--action-blue);">
               <span>🔔</span>
             </button>`
-                : ''
-            }
+          : ''
+        }
             
             <!-- Timestamp movido para o topo -->
             <span id="team-status-timestamp" style="font-size: 11px; color: var(--text-color-muted); margin-left: 6px; white-space: nowrap;"></span>
@@ -3324,7 +3320,7 @@ async function loadForms(
         runId: 'run1',
         hypothesisId: 'A'
       })
-    }).catch(() => {})
+    }).catch(() => { })
     // #endregion
 
     const formsData = await fetchFormsData()
@@ -3347,7 +3343,7 @@ async function loadForms(
         runId: 'run1',
         hypothesisId: 'A'
       })
-    }).catch(() => {})
+    }).catch(() => { })
     // #endregion
 
     if (!formsData || !formsData.categories) {
@@ -3370,7 +3366,7 @@ async function loadForms(
             hypothesisId: 'A'
           })
         }
-      ).catch(() => {})
+      ).catch(() => { })
       // #endregion
       throw new Error('Dados de formulários inválidos')
     }
@@ -3429,8 +3425,8 @@ async function loadForms(
         html += `
             <div class="ip-forms-category">
               <h4 class="ip-forms-category-title">${escapeHTML(
-                category.category
-              )}</h4>
+          category.category
+        )}</h4>
               <div class="ip-forms-grid">
           `
 
@@ -3457,14 +3453,14 @@ async function loadForms(
                 hypothesisId: 'C'
               })
             }
-          ).catch(() => {})
+          ).catch(() => { })
           // #endregion
 
           if (item.type === 'link') {
             html += `
                 <a href="${escapeHTML(
-                  item.url
-                )}" target="_blank" class="ip-form-card">
+              item.url
+            )}" target="_blank" class="ip-form-card">
                   <div class="ip-form-icon">${item.icon}</div>
                   <div class="ip-form-content">
                     <h5 class="ip-form-title">${escapeHTML(item.title)}</h5>
@@ -3476,8 +3472,8 @@ async function loadForms(
           } else if (item.type === 'document') {
             html += `
                 <div class="ip-form-card ip-form-document" data-content="${escapeHTML(
-                  item.content
-                )}">
+              item.content
+            )}">
                   <div class="ip-form-icon">${item.icon}</div>
                   <div class="ip-form-content">
                     <h5 class="ip-form-title">${escapeHTML(item.title)}</h5>
@@ -3513,7 +3509,7 @@ async function loadForms(
                     hypothesisId: 'C'
                   })
                 }
-              ).catch(() => {})
+              ).catch(() => { })
 
               if (!item.closingData) {
                 throw new Error('closingData is missing')
@@ -3538,7 +3534,7 @@ async function loadForms(
                     hypothesisId: 'E'
                   })
                 }
-              ).catch(() => {})
+              ).catch(() => { })
             } catch (error) {
               fetch(
                 'http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',
@@ -3555,7 +3551,7 @@ async function loadForms(
                     hypothesisId: 'E'
                   })
                 }
-              ).catch(() => {})
+              ).catch(() => { })
               throw error
             }
             // #endregion
@@ -3878,18 +3874,17 @@ function renderSystemsStatus(container, systems, userReports = {}) {
 
         <div class="ip-system-footer">
             <div class="ip-footer-left">
-                ${
-                  system.updatedAt
-                    ? `<div class="ip-card-updated" title="Última Atualização Oficial"><span>🕒</span> ${new Date(
-                        system.updatedAt
-                      ).toLocaleString('pt-BR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}</div>`
-                    : ''
-                }
+                ${system.updatedAt
+        ? `<div class="ip-card-updated" title="Última Atualização Oficial"><span>🕒</span> ${new Date(
+          system.updatedAt
+        ).toLocaleString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        })}</div>`
+        : ''
+      }
             </div>
             <div class="ip-reports-actions">
                 ${reportBtnHtml}
