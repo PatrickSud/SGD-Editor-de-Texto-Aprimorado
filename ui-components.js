@@ -94,19 +94,19 @@ function createReminderCardHtml(reminder, type, index = 0) {
 function createWarningCardHtml(warning, isUnread, index = 0) {
   // Mapeamento de tipo → metadados visuais
   const typeMap = {
-    danger:  { color: 'var(--action-red)',    icon: '🚨', label: 'Importante' },
-    warning: { color: 'var(--action-yellow)', icon: '⚠️', label: 'Alerta'     },
-    success: { color: 'var(--action-green)',  icon: '✅', label: 'Novidade'   },
-    info:    { color: 'var(--action-blue)',   icon: 'ℹ️', label: 'Informativo'}
+    danger: { color: 'var(--action-red)', icon: '🚨', label: 'Importante' },
+    warning: { color: 'var(--action-yellow)', icon: '⚠️', label: 'Alerta' },
+    success: { color: 'var(--action-green)', icon: '✅', label: 'Novidade' },
+    info: { color: 'var(--action-blue)', icon: 'ℹ️', label: 'Informativo' }
   }
   const meta = typeMap[warning.type] || typeMap.info
 
-  const statusText    = isUnread ? 'Novo' : 'Lido'
-  const dateStr       = warning.date ? new Date(warning.date).toLocaleDateString('pt-BR') : ''
+  const statusText = isUnread ? 'Novo' : 'Lido'
+  const dateStr = warning.date ? new Date(warning.date).toLocaleDateString('pt-BR') : ''
   const priorityClass = isUnread ? 'priority-high' : 'priority-low'
 
   // Não lidos: cor do tipo. Lidos: cor do tipo diluída em cinza (~30% da cor, 70% cinza)
-  const titleColor  = isUnread
+  const titleColor = isUnread
     ? meta.color
     : `color-mix(in srgb, ${meta.color} 30%, var(--text-color-muted))`
   const borderColor = isUnread
@@ -114,11 +114,11 @@ function createWarningCardHtml(warning, isUnread, index = 0) {
     : `color-mix(in srgb, ${meta.color} 25%, var(--border-color))`
 
   // Badge do tipo com fundo sutil na cor do tipo
-  const tagBg      = isUnread
+  const tagBg = isUnread
     ? `color-mix(in srgb, ${meta.color} 15%, transparent)`
     : `color-mix(in srgb, ${meta.color} 8%, var(--background-secondary))`
-  const tagColor   = isUnread ? meta.color : titleColor
-  const tagHtml    = `<span style="font-size:10px; font-weight:600; padding:1px 6px; border-radius:4px; background:${tagBg}; color:${tagColor}; border:1px solid ${borderColor}; white-space:nowrap;">${meta.label}</span>`
+  const tagColor = isUnread ? meta.color : titleColor
+  const tagHtml = `<span style="font-size:10px; font-weight:600; padding:1px 6px; border-radius:4px; background:${tagBg}; color:${tagColor}; border:1px solid ${borderColor}; white-space:nowrap;">${meta.label}</span>`
 
   // Sanitização básica: remove scripts/handlers e permite tags de formatação
   const sanitize = str => (str || '')
@@ -126,7 +126,7 @@ function createWarningCardHtml(warning, isUnread, index = 0) {
     .replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '')
     .replace(/javascript:/gi, '')
 
-  const safeTitle   = sanitize(warning.title   || 'Aviso')
+  const safeTitle = sanitize(warning.title || 'Aviso')
   const safeMessage = sanitize(warning.message || '')
 
   return `
@@ -241,23 +241,6 @@ function showSgdToast(id, title, message, type = 'info', duration = 60000) {
   // Evita toast duplicado: se já existe um toast com o mesmo ID, ignora
   if (document.getElementById(`sgd-toast-${id}`)) return;
 
-  // Evita duplicado pelo conteúdo (título e mensagem), prevenindo corridas com IDs diferentes (como previews)
-  const cleanNewMsg = message.replace(/<[^>]+>/g, '').trim();
-  const cleanTitle = title.trim();
-  const existingToasts = document.querySelectorAll('.sgd-toast');
-  for (const t of existingToasts) {
-    const tTitle = t.querySelector('.sgd-toast-title')?.textContent?.trim() || '';
-    const tMsgEl = t.querySelector('.sgd-toast-message');
-    if (tMsgEl) {
-      const tMsgClean = tMsgEl.textContent?.trim() || '';
-      const tMsgHtml = tMsgEl.innerHTML.trim();
-      if (tTitle === cleanTitle && (tMsgClean === cleanNewMsg || tMsgHtml === message.trim())) {
-        console.log(`[Toast] Ignorado duplicado por conteúdo: "${title}"`);
-        return;
-      }
-    }
-  }
-
   let container = document.getElementById('sgd-toast-container');
   if (!container) {
     container = document.createElement('div');
@@ -322,7 +305,7 @@ function showSgdToast(id, title, message, type = 'info', duration = 60000) {
 
   toast.querySelector('.btn-ver-mais').onclick = async () => {
     if (typeof openInfoPanel === 'function') openInfoPanel('notices');
-    
+
     const storage = await chrome.storage.local.get(['readWarnings']);
     const read = storage.readWarnings || [];
     if (!read.includes(id)) {
@@ -330,9 +313,9 @@ function showSgdToast(id, title, message, type = 'info', duration = 60000) {
       await chrome.storage.local.set({ readWarnings: read });
       if (typeof updateNotificationStatus === 'function') updateNotificationStatus();
     }
-    
+
     if (window.sgdChannel) {
-        window.sgdChannel.postMessage({ action: 'CLOSE_TOAST', id: id });
+      window.sgdChannel.postMessage({ action: 'CLOSE_TOAST', id: id });
     }
     removeToast();
   };
@@ -345,9 +328,9 @@ function showSgdToast(id, title, message, type = 'info', duration = 60000) {
       await chrome.storage.local.set({ readWarnings: read });
       if (typeof updateNotificationStatus === 'function') updateNotificationStatus();
     }
-    
+
     if (window.sgdChannel) {
-        window.sgdChannel.postMessage({ action: 'CLOSE_TOAST', id: id });
+      window.sgdChannel.postMessage({ action: 'CLOSE_TOAST', id: id });
     }
     removeToast();
   };
@@ -2075,7 +2058,7 @@ async function openFiredRemindersPanel() {
     if (!w.date) return false
     return new Date(w.date).getTime() > lastReadTime && !readWarningIds.includes(w.id)
   })
-  const readWarnings   = visibleWarnings.filter(w => {
+  const readWarnings = visibleWarnings.filter(w => {
     if (!w.date) return true
     return new Date(w.date).getTime() <= lastReadTime || readWarningIds.includes(w.id)
   })

@@ -989,6 +989,12 @@ async function openManagementModal() {
                         <label for="dropdown-click">Abrir ao clicar</label>
                     </div>
                 </div>
+                <hr style="margin: 15px 0;">
+                <h5>Detector de Duplicatas (Em Desenvolvimento)</h5>
+                <div class="form-checkbox-group">
+                    <input type="checkbox" id="enable-duplicate-checker" ${preferences.enableDuplicateChecker ? 'checked' : ''}>
+                    <label for="enable-duplicate-checker">Verificar atendimentos similares em aberto do cliente</label>
+                </div>
             </div>
         </div>
     `
@@ -2781,6 +2787,12 @@ async function savePreferencesSettings(modal) {
   const selectedBehavior = container.querySelector('input[name="dropdownBehavior"]:checked');
   if (selectedBehavior) {
     newPreferences.dropdownBehavior = selectedBehavior.value;
+  }
+
+  // NOVO: Ler preferência para habilitar o duplicate checker
+  const enableDuplicateCheckerCheckbox = container.querySelector('#enable-duplicate-checker');
+  if (enableDuplicateCheckerCheckbox) {
+    newPreferences.enableDuplicateChecker = enableDuplicateCheckerCheckbox.checked;
   }
 
   try {

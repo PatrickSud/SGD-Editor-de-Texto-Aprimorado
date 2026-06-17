@@ -199,6 +199,13 @@ function _exibirModalDuplicatas(duplicatas, assuntoAtual) {
 async function verificarDuplicatas() {
   if (!window.location.pathname.includes('/sgsc/faces/ssc.html')) return
 
+  // Verifica se o recurso está ativado nas configurações
+  const settings = await getSettings()
+  if (settings.preferences?.enableDuplicateChecker !== true) {
+    console.log('[DuplicateChecker] Detector de duplicatas desativado nas preferências.')
+    return
+  }
+
   // Lê dados do ticket atual
   const clienteLink = document.querySelector('#td\\:cliente a')
   if (!clienteLink) return

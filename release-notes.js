@@ -1,10 +1,4 @@
 const RELEASE_NOTES = {
-  '3.0.5.4': {
-    title: '✨ Otimização de Avisos e Notificações — Versão 3.0.5.4',
-    features: [
-      '<b>🔔 Otimização de Avisos:</b> Migrado o serviço de avisos do Firestore para o Firebase Realtime Database e implementado a desduplicação de toasts'
-    ]
-  },
   '3.0.5.3': {
     title: '✨ Novo Editor de Avisos WYSIWYG — Versão 3.0.5.3',
     features: [

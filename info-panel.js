@@ -2078,7 +2078,7 @@ function processSafeHTML(text) {
 
   // 2. Des-escapa tags permitidas (sem atributos, exceto A)
   // Tags simples: <b>, </b>, <strong>, </strong>, etc.
-  const tags = ['b', 'strong', 'i', 'em', 'u', 'br', 'p', 'ul', 'ol', 'li', 'div', 'span']
+  const tags = ['b', 'strong', 'i', 'em', 'u', 'br', 'p', 'ul', 'ol', 'li', 'div', 'span', 'font', 'hr', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']
   tags.forEach(tag => {
     // Regex para abrir e fechar
     // <tag> -> &lt;tag&gt;
@@ -2118,15 +2118,14 @@ function processSafeHTML(text) {
     return `<img ${fixedAttrs}>`
   })
 
-  // 5. Trata tag <span style="...">, <div style="..."> e <p style="..."> especificamente para cores, destaques e tamanhos de emoji
-  safe = safe.replace(/&lt;(span|div|p)\s+style=&quot;(.*?)&quot;\s*&gt;/gi, (match, tag, styleAttr) => {
-    const decodedStyle = styleAttr.replace(/&quot;/g, '"').trim()
-    const isStyleSafe = /^[a-zA-Z0-9\s\-:;.,()#"'&]+$/.test(decodedStyle) &&
-      !/behavior|expression|url|javascript/i.test(decodedStyle)
-    if (isStyleSafe) {
-      return `<${tag} style="${decodedStyle}">`
+  // 5. Trata tags com atributos específicos para estilização e estrutura (como style, color, size, data-teams, etc.)
+  safe = safe.replace(/&lt;(span|div|p|font|h1|h2|h3|h4|h5|h6|hr)\s+(.*?)&gt;/gi, (match, tag, attrs) => {
+    const decodedAttrs = attrs.replace(/&quot;/g, '"').replace(/&amp;/g, '&').trim()
+    // Segurança: se tiver eventos on... ou link de javascript:, remove atributos
+    if (/on\w+\s*=/i.test(decodedAttrs) || /javascript:/i.test(decodedAttrs)) {
+      return `<${tag}>`
     }
-    return `<${tag}>`
+    return `<${tag} ${decodedAttrs}>`
   })
 
   // Mantém quebras de linha normais como <br> se não estiverem dentro de tags que já dão bloco?
@@ -2333,7 +2332,7 @@ function openCreateWarningModal(existingWarning = null) {
             <input type="text" id="warn-title" style="${fieldStyle}" placeholder="Ex: Nova Atualização do Sistema Programada" value="${titleVal}">
 
             <label style="display:block; margin-bottom:4px; font-size:12px;">Mensagem</label>
-            <div class="editor-toolbar warn-toolbar" style="margin-bottom: 4px; border: 1px solid var(--border-color); border-radius: 4px; display: flex; gap: 4px; padding: 4px; background: var(--background-secondary);">
+            <div class="editor-toolbar warn-toolbar" style="margin-bottom: 4px; border: 1px solid var(--border-color); border-radius: 4px; display: flex; align-items: center; gap: 4px; padding: 4px; background: var(--background-secondary);">
                 <button type="button" class="warn-tool-btn" data-action="bold" title="Negrito"><b>B</b></button>
                 <button type="button" class="warn-tool-btn" data-action="italic" title="Itálico"><i>I</i></button>
                 <button type="button" class="warn-tool-btn" data-action="underline" title="Sublinhado"><u>U</u></button>
@@ -2343,6 +2342,13 @@ function openCreateWarningModal(existingWarning = null) {
                 <button type="button" class="warn-tool-btn" data-action="emoji" title="Emojis">😀</button>
                 <button type="button" class="warn-tool-btn" data-action="color" title="Cor do Texto">🎨</button>
                 <button type="button" class="warn-tool-btn" data-action="highlight" title="Cor de Destaque">🖌️</button>
+                <span style="border-left: 1px solid var(--border-color); height: 16px; margin: 0 4px; display: inline-block;"></span>
+                <select id="warn-font-size" style="padding: 2px 4px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); font-size: 11px; cursor: pointer; outline: none; height: 26px;">
+                    <option value="" disabled selected>Tamanho</option>
+                    <option value="2">Pequeno</option>
+                    <option value="3">Médio</option>
+                    <option value="5">Grande</option>
+                </select>
             </div>
             <div id="warn-message" contenteditable="true" placeholder="Detalhes do aviso..." style="${fieldStyle} min-height: 120px; max-height: 250px; overflow-y: auto; margin-bottom: 4px; resize: vertical;">${msgVal}</div>
             <div style="font-size: 11px; color: var(--text-color-muted); margin-bottom: 12px; opacity: 0.8;">
@@ -2425,6 +2431,22 @@ function openCreateWarningModal(existingWarning = null) {
   document.body.appendChild(modal)
 
   const messageEditor = modal.querySelector('#warn-message')
+
+  // Handler para tamanho da fonte
+  const fontSizeSelect = modal.querySelector('#warn-font-size')
+  if (fontSizeSelect) {
+    fontSizeSelect.addEventListener('mousedown', e => {
+      e.stopPropagation() // Impede a perda de foco do contenteditable ao clicar no select
+    })
+    fontSizeSelect.addEventListener('change', () => {
+      messageEditor.focus()
+      const size = fontSizeSelect.value
+      if (size) {
+        document.execCommand('fontSize', false, size)
+        fontSizeSelect.value = "" // Reseta para a opção padrão
+      }
+    })
+  }
 
   // Evitar que cliques nos pickers tirem o foco/seleção do contenteditable
   colorPickerDiv.addEventListener('mousedown', e => e.preventDefault())
@@ -2590,15 +2612,7 @@ function openCreateWarningModal(existingWarning = null) {
         })
       }
 
-      if (notify) {
-        chrome.runtime.sendMessage({
-          action: 'SHOW_GENERIC_NOTIFICATION',
-          id: `warning-preview-${Date.now()}`,
-          title: title,
-          message: message,
-          type: type
-        })
-      }
+
 
       cleanup()
 
