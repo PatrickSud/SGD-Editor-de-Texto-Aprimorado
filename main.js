@@ -4232,16 +4232,19 @@ async function updateNotificationStatus() {
     let count = firedReminders.length
 
     // Contagem real de avisos não lidos (array direto, sem .data)
-    const data = await chrome.storage.local.get(['warningsLastReadTime', 'developerMode', 'cachedWarnings', 'ignoredWarnings'])
+    const data = await chrome.storage.local.get(['warningsLastReadTime', 'developerMode', 'infoDevMode', 'developerModeEnabled', 'cachedWarnings', 'ignoredWarnings', 'subscribedChannels'])
     const rawWarnings = Array.isArray(data.cachedWarnings) ? data.cachedWarnings : []
     const ignoredIds = Array.isArray(data.ignoredWarnings) ? data.ignoredWarnings : []
+    const subscribed = data.subscribedChannels || WARNING_CHANNELS;
     const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
     const nowMs = Date.now()
     const lastReadTime = data.warningsLastReadTime || 0
 
     const unreadWarnings = rawWarnings.filter(w => {
-      if (w.isTest && !data.developerMode) return false
+      if (w.isTest && !(data.developerMode || data.infoDevMode || data.developerModeEnabled)) return false
       if (ignoredIds.includes(w.id)) return false
+      const wChannel = w.channel || 'Geral';
+      if (!subscribed.includes(wChannel)) return false;
       if (!w.date) return false
       const wTime = new Date(w.date).getTime()
       return nowMs - wTime < SEVEN_DAYS_MS && wTime > lastReadTime

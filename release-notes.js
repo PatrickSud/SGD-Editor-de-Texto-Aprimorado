@@ -1,4 +1,10 @@
 const RELEASE_NOTES = {
+  '3.0.5.5': {
+    title: '✨ Correção nas Notificações do Modo Dev — Versão 3.0.5.5',
+    features: [
+      '<b>🚀 Correção do Modo Dev nos Avisos:</b> Corrigida a sincronização de chaves de storage (`infoDevMode`, `developerMode` e `developerModeEnabled`) e a associação do clique secreto para garantir que usuários em Modo Dev recebam corretamente as notificações de teste e visualizem avisos em Modo de Teste/Demonstração.'
+    ]
+  },
   '3.0.5.4': {
     title: '✨ Leitura Obrigatória nos Avisos — Versão 3.0.5.4',
     features: [

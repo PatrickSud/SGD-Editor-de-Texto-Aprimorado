@@ -2251,19 +2251,22 @@ async function openFiredRemindersPanel() {
     .filter(r => r.isFired === false && r.firedAt)
     .sort((a, b) => (b.firedAt || 0) - (a.firedAt || 0))
 
-  const data = await chrome.storage.local.get(['warningsLastReadTime', 'developerMode', 'cachedWarnings', 'ignoredWarnings', 'readWarningIds'])
+  const data = await chrome.storage.local.get(['warningsLastReadTime', 'developerMode', 'infoDevMode', 'developerModeEnabled', 'cachedWarnings', 'ignoredWarnings', 'readWarningIds', 'subscribedChannels'])
   const ignoredIds = Array.isArray(data.ignoredWarnings) ? data.ignoredWarnings : []
   const readWarningIds = Array.isArray(data.readWarningIds) ? data.readWarningIds : []
+  const subscribed = data.subscribedChannels || WARNING_CHANNELS;
 
   // cachedWarnings é um array direto (não um objeto com .data)
   const rawWarnings = Array.isArray(data.cachedWarnings) ? data.cachedWarnings : []
 
-  // Filtra: expirados (>7 dias), avisos de teste (exceto em developerMode) e ignorados
+  // Filtra: expirados (>7 dias), avisos de teste (exceto em developerMode), ignorados e canais não assinados
   const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
   const nowMs = Date.now()
   const visibleWarnings = rawWarnings.filter(w => {
-    if (w.isTest && !data.developerMode) return false
+    if (w.isTest && !(data.developerMode || data.infoDevMode || data.developerModeEnabled)) return false
     if (ignoredIds.includes(w.id)) return false
+    const wChannel = w.channel || 'Geral';
+    if (!subscribed.includes(wChannel)) return false
     if (!w.date) return true
     return nowMs - new Date(w.date).getTime() < SEVEN_DAYS_MS
   })

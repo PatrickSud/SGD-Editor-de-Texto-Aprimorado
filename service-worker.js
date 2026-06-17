@@ -499,12 +499,25 @@ async function checkTeamStatusAndNotify(providedMembers = null) {
   }
 }
 
+const WARNING_CHANNELS = [
+  'Geral',
+  'AT',
+  'Onvio',
+  'Onvio Processos/Messenger',
+  'Folha de pagamento',
+  'Escrita Fiscal',
+  'Contabilidade',
+  'Serviços Digitais',
+  'Fila 61',
+  'Fila 62'
+];
+
 /**
  * Verifica se há novos avisos na Central de Informações via Firestore REST API
  */
 async function checkWarningsAndNotify() {
   try {
-    const storage = await chrome.storage.local.get(['warningsMetaSignature', 'developerMode']);
+    const storage = await chrome.storage.local.get(['warningsMetaSignature', 'developerMode', 'infoDevMode', 'developerModeEnabled']);
     const localSignature = storage.warningsMetaSignature;
 
     // 1. Checa a data de última atualização (Metadado) via Realtime Database
@@ -534,10 +547,25 @@ async function checkWarningsAndNotify() {
     if (warnings.length === 0) return;
 
     const newestWarning = warnings[0];
+    const wChannel = newestWarning.channel || 'Geral';
+
+    // Filtro por canais de inscrição do usuário
+    const subStorage = await chrome.storage.local.get(['subscribedChannels']);
+    const subscribed = subStorage.subscribedChannels || WARNING_CHANNELS;
+
+    // Se não estiver inscrito neste canal, salvamos a assinatura/cache no storage para evitar loops, mas não exibimos a notificação
+    if (!subscribed.includes(wChannel)) {
+      await chrome.storage.local.set({
+        warningsMetaSignature: serverSignature,
+        cachedWarnings: warnings
+      });
+      return;
+    }
+
     const title = newestWarning.title || 'Novo Aviso na Central';
     const message = newestWarning.message || 'Você tem um novo comunicado não lido na Central de Informações SGD.';
     const isTest = !!newestWarning.isTest;
-    const isDevMode = !!storage.developerMode;
+    const isDevMode = !!(storage.developerMode || storage.infoDevMode || storage.developerModeEnabled);
     const type = newestWarning.type || 'info';
 
     // 3. Atualiza a assinatura local e o cache de avisos para não repetir a mesma notificação e requisições redundantes

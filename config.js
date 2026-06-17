@@ -277,3 +277,16 @@ const PROTECTED_SHORTCUTS = [
   'ctrl+shift+c',
   'ctrl+u'
 ]
+
+const WARNING_CHANNELS = [
+  'Geral',
+  'AT',
+  'Onvio',
+  'Onvio Processos/Messenger',
+  'Folha de pagamento',
+  'Escrita Fiscal',
+  'Contabilidade',
+  'Serviços Digitais',
+  'Fila 61',
+  'Fila 62'
+]

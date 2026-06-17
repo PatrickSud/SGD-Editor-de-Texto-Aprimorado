@@ -61,7 +61,11 @@ async function handleDeveloperModeClick(event) {
     const currentState = await isInfoDevModeEnabled()
     const newState = !currentState
 
-    await chrome.storage.local.set({ infoDevMode: newState })
+    await chrome.storage.local.set({ 
+      infoDevMode: newState,
+      developerMode: newState,
+      developerModeEnabled: newState
+    })
 
     clickCount = 0
 
@@ -209,6 +213,12 @@ async function openInfoPanel(initialTabId = 'pending') {
       showShareButton: false
     }
   )
+
+  // --- Lógica de Cliques Secretos no Cabeçalho (Modo Dev) ---
+  const devTrigger = modal.querySelector('#developer-mode-trigger')
+  if (devTrigger) {
+    devTrigger.addEventListener('click', handleDeveloperModeClick)
+  }
 
   // --- Lógica de Navegação ---
   const navItems = modal.querySelectorAll('.ip-nav-item')
@@ -533,7 +543,11 @@ async function openInfoPanel(initialTabId = 'pending') {
             const password = input.value
 
             if (password === 'Dominio@2026') {
-              await chrome.storage.local.set({ infoDevMode: true })
+              await chrome.storage.local.set({ 
+                infoDevMode: true,
+                developerMode: true,
+                developerModeEnabled: true
+              })
               closePasswordModal()
               modal.remove() // Fecha o painel de info principal
               openInfoPanel() // Reabre para mostrar os recursos de desenvolvimento
@@ -571,7 +585,11 @@ async function openInfoPanel(initialTabId = 'pending') {
         }, 100)
       } else {
         // Desativando (sem senha)
-        await chrome.storage.local.set({ infoDevMode: false })
+        await chrome.storage.local.set({ 
+          infoDevMode: false,
+          developerMode: false,
+          developerModeEnabled: false
+        })
         // Recarrega o painel para refletir a mudança
         modal.remove()
         openInfoPanel()
@@ -639,36 +657,16 @@ let clickCount = 0
 let lastClickTime = 0
 
 /**
- * Verifica se o modo desenvolvedor está ativo no storage
- */
-/**
- * Verifica se o modo desenvolvedor está ativo no storage
- */
-function isDevModeEnabled() {
-  return new Promise(resolve => {
-    chrome.storage.local.get(['developerMode'], result => {
-      resolve(result.developerMode === true)
-    })
-  })
-}
-
-/**
- * Alterna o estado do modo desenvolvedor no storage
- */
-async function toggleDevMode() {
-  const currentState = await isDevModeEnabled()
-  const newState = !currentState
-  await chrome.storage.local.set({ developerMode: newState })
-  return newState
-}
-
-/**
  * Verifica se o modo desenvolvedor específico do painel está ativo
  */
 function isInfoDevModeEnabled() {
   return new Promise(resolve => {
-    chrome.storage.local.get(['infoDevMode'], result => {
-      resolve(result.infoDevMode === true)
+    chrome.storage.local.get(['infoDevMode', 'developerMode', 'developerModeEnabled'], result => {
+      resolve(
+        result.infoDevMode === true ||
+        result.developerMode === true ||
+        result.developerModeEnabled === true
+      )
     })
   })
 }
@@ -1402,6 +1400,83 @@ function createPendingCard(item, showResponsible = false) {
  * Carrega e renderiza os avisos.
  * ATUALIZADO: Suporta forceRefresh
  */
+/**
+ * Renderiza as tags/pills interativas de canais de avisos.
+ */
+async function renderChannelPills(sectionElement) {
+  const container = sectionElement.querySelector('.warnings-channels-filter')
+  if (!container) return
+
+  const storage = await chrome.storage.local.get(['subscribedChannels'])
+  let subscribed = storage.subscribedChannels || WARNING_CHANNELS
+  
+  // Geral é sempre selecionado e não pode ser desativado
+  if (!subscribed.includes('Geral')) {
+    subscribed.push('Geral')
+  }
+
+  // Remove pills antigas mantendo o cabeçalho/span
+  container.querySelectorAll('.channel-pill').forEach(el => el.remove())
+
+  WARNING_CHANNELS.forEach(channel => {
+    const isSub = subscribed.includes(channel)
+    const pill = document.createElement('button')
+    pill.type = 'button'
+    pill.className = `channel-pill ${isSub ? 'active' : ''}`
+    pill.textContent = (isSub ? '✓ ' : '') + channel
+    
+    // Estilos inline para visual premium de acordo com o tema
+    pill.style.cssText = `
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 20px;
+      border: 1px solid var(--border-color);
+      background: ${isSub ? 'var(--primary-color)' : 'var(--background-main)'};
+      color: ${isSub ? '#ffffff' : 'var(--text-color-muted)'};
+      cursor: ${channel === 'Geral' ? 'default' : 'pointer'};
+      transition: all 0.2s ease;
+      opacity: ${channel === 'Geral' ? '0.8' : '1'};
+      font-family: inherit;
+    `
+
+    if (channel !== 'Geral') {
+      pill.style.cursor = 'pointer';
+      pill.addEventListener('mouseenter', () => {
+        if (!subscribed.includes(channel)) {
+          pill.style.background = 'var(--background-hover)'
+          pill.style.color = 'var(--text-color-main)'
+        }
+      })
+      pill.addEventListener('mouseleave', () => {
+        const activeNow = subscribed.includes(channel)
+        pill.style.background = activeNow ? 'var(--primary-color)' : 'var(--background-main)'
+        pill.style.color = activeNow ? '#ffffff' : 'var(--text-color-muted)'
+      })
+
+      pill.addEventListener('click', async (e) => {
+        e.preventDefault();
+        const idx = subscribed.indexOf(channel)
+        if (idx > -1) {
+          subscribed.splice(idx, 1)
+        } else {
+          subscribed.push(channel)
+        }
+        await chrome.storage.local.set({ subscribedChannels: subscribed })
+        
+        // Dispara sincronização com o badge
+        chrome.runtime.sendMessage({ action: 'UPDATE_NOTIFICATION_BADGE' }).catch(() => {})
+        
+        // Atualiza botões e recarrega a lista com os filtros atualizados
+        await renderChannelPills(sectionElement)
+        await loadWarnings(sectionElement, false)
+      })
+    }
+
+    container.appendChild(pill)
+  })
+}
+
 async function loadWarnings(sectionElement, forceRefresh = false) {
   let listContainer = sectionElement.querySelector('#warnings-list')
 
@@ -1409,9 +1484,17 @@ async function loadWarnings(sectionElement, forceRefresh = false) {
   if (!listContainer) {
     // Cabeçalho da seção com botão de novo aviso (se dev)
     const headerHtml = `
-            <div class="ip-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <div class="ip-section-desc" style="margin-bottom: 0;">Fique por dentro dos comunicados e avisos importantes.</div>
-                ${developerMode ? `<button id="new-warning-btn" class="ip-add-closing-btn" style="width: auto;">+ Novo Aviso</button>` : ''}
+            <div class="ip-section-header" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <div class="ip-section-desc" style="margin-bottom: 0;">Fique por dentro dos comunicados e avisos importantes.</div>
+                    ${developerMode ? `<button id="new-warning-btn" class="ip-add-closing-btn" style="width: auto;">+ Novo Aviso</button>` : ''}
+                </div>
+                <!-- Canais de Notificação -->
+                <div class="warnings-channels-filter" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding: 12px; background: var(--background-secondary); border: 1px solid var(--border-color); border-radius: 8px; width: 100%;">
+                    <span style="font-size: 12px; font-weight: 600; color: var(--text-color-main); width: 100%; margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
+                      📬 Meus Canais (Selecione para receber notificações):
+                    </span>
+                </div>
             </div>
             <div id="warnings-list" class="ip-grid">
                  <div class="ip-loading-container">
@@ -1429,7 +1512,12 @@ async function loadWarnings(sectionElement, forceRefresh = false) {
     if (newBtn) {
       newBtn.addEventListener('click', () => openCreateWarningModal(null))
     }
-  } else if (forceRefresh) {
+  }
+
+  // Renderiza/Atualiza as pills de canais
+  await renderChannelPills(sectionElement)
+
+  if (forceRefresh) {
     // Mostra loading se for refresh forçado
     listContainer.innerHTML = `
             <div class="ip-loading-container">
@@ -1468,6 +1556,14 @@ async function loadWarnings(sectionElement, forceRefresh = false) {
     )
     const ignoredIds = storage.ignoredWarnings || []
     warnings = warnings.filter(w => !ignoredIds.includes(w.id))
+
+    // --- 2.5 Filtro de Canais Assinados ---
+    const subStorage = await chrome.storage.local.get(['subscribedChannels'])
+    const subscribed = subStorage.subscribedChannels || WARNING_CHANNELS
+    warnings = warnings.filter(w => {
+      const wChannel = w.channel || 'Geral'
+      return subscribed.includes(wChannel)
+    })
 
     const listContainer = sectionElement.querySelector('#warnings-list')
     if (!listContainer) return
@@ -2194,6 +2290,8 @@ function createWarningCard(warning) {
     ? `<span style="background-color: #607d8b; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-right: 6px; border: 1px dashed white;">TESTE / DEV</span>`
     : ''
 
+  const channelBadge = `<span class="ip-card-badge" style="background-color: var(--background-secondary); border: 1px solid var(--border-color); color: var(--text-color-muted); font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: normal; margin-left: 4px;">${escapeHTML(warning.channel || 'Geral')}</span>`
+
   const actionsHtml = `
         <div style="display:flex; gap:10px; align-items:center;">
             ${testBadge} ${ignoreBtn}
@@ -2204,6 +2302,7 @@ function createWarningCard(warning) {
             `
       : ''
     }
+            ${channelBadge}
             <span class="ip-card-badge ${typeClass}">${escapeHTML(typeLabel)}</span>
         </div>
     `
@@ -2323,6 +2422,7 @@ function openCreateWarningModal(existingWarning = null) {
   // Verifica se já estava marcado para notificar (em caso de edição)
   const notifyVal = isEdit && existingWarning.notify ? 'checked' : ''
   const requiredReadingVal = isEdit && existingWarning.requiredReading ? 'checked' : ''
+  const channelVal = isEdit ? (existingWarning.channel || 'Geral') : 'Geral'
 
   const fieldStyle =
     'display: block; width: 100%; margin-bottom: 12px; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main);'
@@ -2367,6 +2467,12 @@ function openCreateWarningModal(existingWarning = null) {
                         <option value="success" ${typeVal === 'success' ? 'selected' : ''}>✨ Novidade</option>
                         <option value="warning" ${typeVal === 'warning' ? 'selected' : ''}>⚠️ Alerta</option>
                         <option value="danger" ${typeVal === 'danger' ? 'selected' : ''}>🚨 Importante</option>
+                    </select>
+                </div>
+                <div style="flex: 1;">
+                    <label style="display:block; margin-bottom:4px; font-size:12px;">Canal de Comunicação</label>
+                    <select id="warn-channel" style="${fieldStyle}">
+                        ${WARNING_CHANNELS.map(ch => `<option value="${ch}" ${channelVal === ch ? 'selected' : ''}>${ch}</option>`).join('')}
                     </select>
                 </div>
             </div>
@@ -2594,6 +2700,7 @@ function openCreateWarningModal(existingWarning = null) {
     const textContent = messageEditor.textContent.trim()
     const message = messageEditor.innerHTML.trim()
     const type = modal.querySelector('#warn-type').value
+    const channel = modal.querySelector('#warn-channel').value
     const isTest = modal.querySelector('#warn-is-test').checked
     const notify = modal.querySelector('#warn-notify').checked
     const requiredReading = modal.querySelector('#warn-required-reading').checked
@@ -2616,7 +2723,8 @@ function openCreateWarningModal(existingWarning = null) {
           author,
           isTest,
           notify,
-          requiredReading
+          requiredReading,
+          channel
         })
       } else {
         await window.warningsService.createWarning({
@@ -2627,6 +2735,7 @@ function openCreateWarningModal(existingWarning = null) {
           isTest,
           notify,
           requiredReading,
+          channel,
           date: new Date().toISOString()
         })
       }
