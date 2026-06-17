@@ -4351,7 +4351,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.action === 'SHOW_TOAST' && message.id && message.title && message.message) {
-    showSgdToast(message.id, message.title, message.message, message.type || 'info', message.duration);
+    showSgdToast(message.id, message.title, message.message, message.type || 'info', message.duration, message.requiredReading);
   }
 
   if (message.action === 'CLOSE_IN_PAGE_NOTIFICATION' && message.reminderId) {

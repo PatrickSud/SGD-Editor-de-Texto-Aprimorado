@@ -160,14 +160,14 @@ function _safeEscapeHTML(str) {
 }
 
 // Injeção única de estilos — remove versões antigas para evitar conflitos
-['sgd-toast-styles', 'sgd-toast-styles-v2', 'sgd-toast-styles-v3', 'sgd-toast-styles-v4', 'sgd-toast-styles-v5', 'sgd-toast-styles-v6', 'sgd-toast-styles-v7'].forEach(id => {
+['sgd-toast-styles', 'sgd-toast-styles-v2', 'sgd-toast-styles-v3', 'sgd-toast-styles-v4', 'sgd-toast-styles-v5', 'sgd-toast-styles-v6', 'sgd-toast-styles-v7', 'sgd-toast-styles-v8'].forEach(id => {
   const el = document.getElementById(id);
   if (el) el.remove();
 });
 
-if (!document.getElementById('sgd-toast-styles-v8')) {
+if (!document.getElementById('sgd-toast-styles-v9')) {
   const style = document.createElement('style');
-  style.id = 'sgd-toast-styles-v8';
+  style.id = 'sgd-toast-styles-v9';
   style.innerHTML = `
     #sgd-toast-container { position: fixed; top: 24px; right: 24px; z-index: 999999; display: flex; flex-direction: column; gap: 16px; pointer-events: none; }
     .sgd-toast { pointer-events: auto; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: 16px; padding: 20px; min-width: 320px; max-width: 400px; box-shadow: 0 10px 40px -10px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.1); position: relative; overflow: hidden; font-family: 'Inter', system-ui, sans-serif; animation: sgdToastIn 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
@@ -225,8 +225,213 @@ if (!document.getElementById('sgd-toast-styles-v8')) {
     @keyframes sgdToastIn { from { transform: translateX(120%) scale(0.95); opacity: 0; } to { transform: translateX(0) scale(1); opacity: 1; } }
     @keyframes sgdToastOut { from { transform: translateX(0) scale(1); opacity: 1; } to { transform: translateX(120%) scale(0.95); opacity: 0; } }
     @keyframes sgdToastProgress { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+    #warn-detail-close-btn { transition: all 0.2s ease; font-family: 'Inter', system-ui, sans-serif; font-weight: 600; }
+    #warn-detail-close-btn:hover:not(:disabled) { transform: translateY(-1.5px); filter: brightness(0.95); box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+    #warn-detail-close-btn:active:not(:disabled) { transform: translateY(0.5px); }
   `;
   document.head.appendChild(style);
+}
+
+/**
+ * Marca um aviso como lido localmente e atualiza o badge do sininho em todas as abas.
+ * @param {string} id - ID do aviso.
+ */
+async function markWarningAsRead(id) {
+  try {
+    const storage = await chrome.storage.local.get(['readWarnings', 'readWarningIds']);
+    const read = storage.readWarnings || [];
+    const readIds = storage.readWarningIds || [];
+    
+    let updated = false;
+    if (!read.includes(id)) {
+      read.push(id);
+      updated = true;
+    }
+    if (!readIds.includes(id)) {
+      readIds.push(id);
+      updated = true;
+    }
+    
+    if (updated) {
+      await chrome.storage.local.set({ readWarnings: read, readWarningIds: readIds });
+      if (typeof updateNotificationStatus === 'function') {
+        updateNotificationStatus();
+      }
+      chrome.runtime.sendMessage({ action: 'UPDATE_NOTIFICATION_BADGE' }).catch(() => {});
+    }
+  } catch (err) {
+    console.error('Erro ao marcar aviso como lido:', err);
+  }
+}
+
+/**
+ * Processa HTML seguro local para o modal de avisos (White-list simples)
+ */
+function processWarningMessageHTML(text) {
+  if (!text) return '';
+  // Escapa tudo para neutralizar scripts e tags não permitidas
+  let safe = typeof escapeHTML === 'function' ? escapeHTML(text) : text.replace(/[&<>"']/g, m => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+  }[m]));
+
+  // Des-escapa tags permitidas
+  const tags = ['b', 'strong', 'i', 'em', 'u', 'br', 'p', 'ul', 'ol', 'li', 'div', 'span', 'font', 'hr', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+  tags.forEach(tag => {
+    const regexOpen = new RegExp(`&lt;${tag}&gt;`, 'gi');
+    safe = safe.replace(regexOpen, `<${tag}>`);
+    const regexClose = new RegExp(`&lt;/${tag}&gt;`, 'gi');
+    safe = safe.replace(regexClose, `</${tag}>`);
+  });
+
+  // Trata tag <a href="..."> especificamente
+  safe = safe.replace(
+    /&lt;a\s+href=&quot;(.*?)&quot;.*?&gt;/gi,
+    (match, url) => {
+      let fixedUrl = url.trim();
+      if (fixedUrl && !/^(https?:\/\/|mailto:|tel:|\/|#)/i.test(fixedUrl)) {
+        fixedUrl = 'https://' + fixedUrl;
+      }
+      return `<a href="${fixedUrl}" target="_blank">`;
+    }
+  );
+  safe = safe.replace(/&lt;\/a&gt;/gi, '</a>');
+
+  // Trata tag <img ...> especificamente
+  safe = safe.replace(/&lt;img\s+(.*?)&gt;/gi, (match, attrs) => {
+    let fixedAttrs = attrs.replace(/&quot;/g, '"');
+    if (/on\w+\s*=/i.test(fixedAttrs) || /javascript:/i.test(fixedAttrs)) {
+      return '';
+    }
+    return `<img ${fixedAttrs}>`;
+  });
+
+  // Trata tags com atributos específicos para estilização
+  safe = safe.replace(/&lt;(span|div|p|font|h1|h2|h3|h4|h5|h6|hr|ul|ol|li)\s+(.*?)&gt;/gi, (match, tag, attrs) => {
+    const decodedAttrs = attrs.replace(/&quot;/g, '"').replace(/&amp;/g, '&').trim();
+    if (/on\w+\s*=/i.test(decodedAttrs) || /javascript:/i.test(decodedAttrs)) {
+      return `<${tag}>`;
+    }
+    return `<${tag} ${decodedAttrs}>`;
+  });
+
+  safe = safe.replace(/\n/g, '<br>');
+  return safe;
+}
+
+/**
+ * Abre o modal exclusivo contendo apenas a mensagem de um aviso específico.
+ */
+function openWarningDetailModal(id, title, message, type, isRequired = false) {
+  const existing = document.getElementById('warning-detail-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'warning-detail-modal';
+  modal.className = 'editor-modal';
+  modal.style.zIndex = '10005';
+  
+  applyCurrentTheme(modal);
+
+  const typeMap = {
+    danger: { color: 'var(--action-red)', icon: '🚨', label: 'Importante' },
+    warning: { color: 'var(--action-yellow)', icon: '⚠️', label: 'Alerta' },
+    success: { color: 'var(--action-green)', icon: '✅', label: 'Novidade' },
+    info: { color: 'var(--action-blue)', icon: 'ℹ️', label: 'Informativo' }
+  };
+  const meta = typeMap[type] || typeMap.info;
+
+  const safeTitle = typeof escapeHTML === 'function' ? escapeHTML(title) : title;
+  const safeMessageHtml = processWarningMessageHTML(message);
+
+  const headerCloseBtnHtml = isRequired
+    ? ''
+    : `<button type="button" class="se-close-modal-btn" title="Fechar" id="warn-detail-close-x-btn">&times;</button>`;
+
+  modal.innerHTML = `
+    <div class="se-modal-content" style="max-width: 850px; width: 90%; border-color: ${meta.color}; border-width: 1.5px;">
+      <div class="se-modal-header" style="border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; padding: 12px 16px;">
+        <h3 style="color: ${meta.color}; margin: 0; font-size: 18px; display: flex; align-items: center; gap: 8px;">
+          <span>${meta.icon}</span>
+          <span>${safeTitle}</span>
+        </h3>
+        ${headerCloseBtnHtml}
+      </div>
+      <div class="se-modal-body" style="padding: 20px; font-size: 15px; line-height: 1.6; max-height: 60vh; overflow-y: auto;">
+        <div class="warning-detail-message-body" style="word-break: break-word; color: var(--text-color-main);">
+          ${safeMessageHtml}
+        </div>
+      </div>
+      <div class="se-modal-actions" style="display: flex; justify-content: center; padding: 16px; border-top: 1px solid var(--border-color); background: transparent;">
+        <button type="button" id="warn-detail-close-btn" class="sgd-btn sgd-btn-primary" style="min-width: 150px; font-size: 14px; padding: 10px 24px; text-align: center; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s ease;">
+          Fechar
+        </button>
+      </div>
+    </div>
+  `;
+
+  const closeBtn = modal.querySelector('#warn-detail-close-btn');
+  const setButtonStyles = (disabled) => {
+    if (disabled) {
+      closeBtn.disabled = true;
+      closeBtn.style.background = 'var(--background-secondary)';
+      closeBtn.style.color = 'var(--text-color-muted)';
+      closeBtn.style.cursor = 'not-allowed';
+      closeBtn.style.opacity = '0.6';
+    } else {
+      closeBtn.disabled = false;
+      closeBtn.style.background = meta.color;
+      closeBtn.style.color = '#ffffff';
+      closeBtn.style.cursor = 'pointer';
+      closeBtn.style.opacity = '1';
+    }
+  };
+
+  const closeModal = () => {
+    if (document.body.contains(modal)) {
+      document.body.removeChild(modal);
+    }
+  };
+
+  if (isRequired) {
+    setButtonStyles(true);
+    let secondsLeft = 10;
+    closeBtn.textContent = `Fechar (${secondsLeft}s)`;
+
+    const timer = setInterval(() => {
+      secondsLeft--;
+      if (secondsLeft <= 0) {
+        clearInterval(timer);
+        closeBtn.textContent = 'Fechar';
+        setButtonStyles(false);
+      } else {
+        closeBtn.textContent = `Fechar (${secondsLeft}s)`;
+      }
+    }, 1000);
+
+    closeBtn.onclick = () => {
+      clearInterval(timer);
+      closeModal();
+    };
+  } else {
+    setButtonStyles(false);
+    closeBtn.onclick = () => {
+      closeModal();
+    };
+
+    const xBtn = modal.querySelector('#warn-detail-close-x-btn');
+    if (xBtn) {
+      xBtn.onclick = () => {
+        closeModal();
+      };
+    }
+  }
+
+  document.body.appendChild(modal);
+
+  requestAnimationFrame(() => {
+    closeBtn.focus();
+  });
 }
 
 /**
@@ -236,8 +441,14 @@ if (!document.getElementById('sgd-toast-styles-v8')) {
  * @param {string} message - Mensagem.
  * @param {string} type - 'info' | 'success' | 'warning' | 'danger'.
  * @param {number} duration - Tempo em ms (padrão 60000).
+ * @param {boolean} requiredReading - Se o aviso é de leitura obrigatória.
  */
-function showSgdToast(id, title, message, type = 'info', duration = 60000) {
+function showSgdToast(id, title, message, type = 'info', duration = 60000, requiredReading = false) {
+  // Se for leitura obrigatória, o toast não deve fechar automaticamente
+  if (requiredReading) {
+    duration = 0;
+  }
+
   // Evita toast duplicado: se já existe um toast com o mesmo ID, ignora
   if (document.getElementById(`sgd-toast-${id}`)) return;
 
@@ -254,6 +465,14 @@ function showSgdToast(id, title, message, type = 'info', duration = 60000) {
   const toast = document.createElement('div');
   toast.id = `sgd-toast-${id}`;
   toast.className = `sgd-toast sgd-toast-${type}`;
+
+  const footerHtml = requiredReading
+    ? `<button class="sgd-btn sgd-btn-primary btn-ver-aviso-obrigatorio">Ver Aviso (Obrigatório)</button>`
+    : `
+      <button class="sgd-btn sgd-btn-secondary btn-ver-mais">Ver Mais</button>
+      <button class="sgd-btn sgd-btn-primary btn-ciente">Estou Ciente</button>
+    `;
+
   toast.innerHTML = `
     <div class="sgd-toast-header">
       <div class="sgd-toast-icon">${icon}</div>
@@ -263,12 +482,10 @@ function showSgdToast(id, title, message, type = 'info', duration = 60000) {
       <div class="sgd-toast-message">${message}</div>
     </div>
     <div class="sgd-toast-footer">
-      <button class="sgd-btn sgd-btn-secondary btn-ver-mais">Ver Mais</button>
-      <button class="sgd-btn sgd-btn-primary btn-ciente">Estou Ciente</button>
+      ${footerHtml}
     </div>
     ${duration > 0 ? `<div class="sgd-toast-progress"><div class="sgd-toast-progress-bar" style="animation-duration: ${duration}ms;"></div></div>` : ''}
   `;
-
 
   let remainingTime = duration;
   let timerStart;
@@ -303,37 +520,36 @@ function showSgdToast(id, title, message, type = 'info', duration = 60000) {
     });
   }
 
-  toast.querySelector('.btn-ver-mais').onclick = async () => {
-    if (typeof openInfoPanel === 'function') openInfoPanel('notices');
-
-    const storage = await chrome.storage.local.get(['readWarnings']);
-    const read = storage.readWarnings || [];
-    if (!read.includes(id)) {
-      read.push(id);
-      await chrome.storage.local.set({ readWarnings: read });
-      if (typeof updateNotificationStatus === 'function') updateNotificationStatus();
+  if (requiredReading) {
+    const btnObrigatorio = toast.querySelector('.btn-ver-aviso-obrigatorio');
+    if (btnObrigatorio) {
+      btnObrigatorio.onclick = async () => {
+        await markWarningAsRead(id);
+        if (window.sgdChannel) {
+          window.sgdChannel.postMessage({ action: 'CLOSE_TOAST', id: id });
+        }
+        removeToast();
+        openWarningDetailModal(id, title, message, type, true);
+      };
     }
+  } else {
+    toast.querySelector('.btn-ver-mais').onclick = async () => {
+      openWarningDetailModal(id, title, message, type, false);
+      await markWarningAsRead(id);
+      if (window.sgdChannel) {
+        window.sgdChannel.postMessage({ action: 'CLOSE_TOAST', id: id });
+      }
+      removeToast();
+    };
 
-    if (window.sgdChannel) {
-      window.sgdChannel.postMessage({ action: 'CLOSE_TOAST', id: id });
-    }
-    removeToast();
-  };
-
-  toast.querySelector('.btn-ciente').onclick = async () => {
-    const storage = await chrome.storage.local.get(['readWarnings']);
-    const read = storage.readWarnings || [];
-    if (!read.includes(id)) {
-      read.push(id);
-      await chrome.storage.local.set({ readWarnings: read });
-      if (typeof updateNotificationStatus === 'function') updateNotificationStatus();
-    }
-
-    if (window.sgdChannel) {
-      window.sgdChannel.postMessage({ action: 'CLOSE_TOAST', id: id });
-    }
-    removeToast();
-  };
+    toast.querySelector('.btn-ciente').onclick = async () => {
+      await markWarningAsRead(id);
+      if (window.sgdChannel) {
+        window.sgdChannel.postMessage({ action: 'CLOSE_TOAST', id: id });
+      }
+      removeToast();
+    };
+  }
 
   container.appendChild(toast);
 
@@ -2274,12 +2490,20 @@ async function openFiredRemindersPanel() {
     })
   })
 
-  // Listener para os cards de aviso individuais — abre a Central SGD na aba Avisos
+  // Listener para os cards de aviso individuais — abre o modal de exibição exclusivo do aviso
   panel.querySelectorAll('.warning-card').forEach(card => {
-    card.addEventListener('click', e => {
+    card.addEventListener('click', async e => {
       if (e.target.closest('button')) return
       closePanelAndCleanup()
-      if (typeof openInfoPanel === 'function') openInfoPanel('notices')
+      
+      const warningId = card.dataset.warningId
+      if (warningId) {
+        const warning = visibleWarnings.find(w => w.id === warningId)
+        if (warning) {
+          await markWarningAsRead(warningId)
+          openWarningDetailModal(warning.id, warning.title, warning.message, warning.type || 'info', !!warning.requiredReading)
+        }
+      }
     })
   })
 

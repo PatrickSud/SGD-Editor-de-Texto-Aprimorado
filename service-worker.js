@@ -581,7 +581,8 @@ async function checkWarningsAndNotify() {
       id: newestWarning.id || `warning-${Date.now()}`,
       title: title,
       message: message,
-      type: type
+      type: type,
+      requiredReading: !!newestWarning.requiredReading
     });
 
   } catch (err) {
@@ -880,7 +881,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           id: message.id || `generic-${Date.now()}`,
           title: message.title,
           message: message.message,
-          type: message.type || 'info'
+          type: message.type || 'info',
+          requiredReading: !!message.requiredReading
         })
 
         sendResponse({ success: true })

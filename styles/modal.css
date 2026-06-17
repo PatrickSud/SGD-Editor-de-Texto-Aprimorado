@@ -3198,7 +3198,7 @@ a.open-link-btn:hover {
 
 /* Custom sizing and toolbar styles for Novo Aviso modal */
 #create-warning-modal .se-modal-content {
-  max-width: 850px;
+  max-width: 950px;
 }
 .editor-toolbar.warn-toolbar button {
   width: 32px;

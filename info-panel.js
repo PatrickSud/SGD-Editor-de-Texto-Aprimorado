@@ -2119,7 +2119,7 @@ function processSafeHTML(text) {
   })
 
   // 5. Trata tags com atributos específicos para estilização e estrutura (como style, color, size, data-teams, etc.)
-  safe = safe.replace(/&lt;(span|div|p|font|h1|h2|h3|h4|h5|h6|hr)\s+(.*?)&gt;/gi, (match, tag, attrs) => {
+  safe = safe.replace(/&lt;(span|div|p|font|h1|h2|h3|h4|h5|h6|hr|ul|ol|li)\s+(.*?)&gt;/gi, (match, tag, attrs) => {
     const decodedAttrs = attrs.replace(/&quot;/g, '"').replace(/&amp;/g, '&').trim()
     // Segurança: se tiver eventos on... ou link de javascript:, remove atributos
     if (/on\w+\s*=/i.test(decodedAttrs) || /javascript:/i.test(decodedAttrs)) {
@@ -2322,6 +2322,7 @@ function openCreateWarningModal(existingWarning = null) {
   const isTestVal = isEdit ? existingWarning.isTest : false
   // Verifica se já estava marcado para notificar (em caso de edição)
   const notifyVal = isEdit && existingWarning.notify ? 'checked' : ''
+  const requiredReadingVal = isEdit && existingWarning.requiredReading ? 'checked' : ''
 
   const fieldStyle =
     'display: block; width: 100%; margin-bottom: 12px; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main);'
@@ -2333,22 +2334,25 @@ function openCreateWarningModal(existingWarning = null) {
 
             <label style="display:block; margin-bottom:4px; font-size:12px;">Mensagem</label>
             <div class="editor-toolbar warn-toolbar" style="margin-bottom: 4px; border: 1px solid var(--border-color); border-radius: 4px; display: flex; align-items: center; gap: 4px; padding: 4px; background: var(--background-secondary);">
+                <div class="dropdown">
+                    <button type="button" class="warn-tool-btn" data-action="font-size-menu" title="Tamanho da Fonte" style="font-size: 13px; font-weight: 600; padding: 4px 8px;">Aa</button>
+                    <div class="dropdown-content">
+                        <button type="button" class="warn-font-size-btn" data-size="2" style="font-size: 11px;">Pequeno</button>
+                        <button type="button" class="warn-font-size-btn" data-size="3" style="font-size: 13px;">Médio</button>
+                        <button type="button" class="warn-font-size-btn" data-size="5" style="font-size: 16px;">Grande</button>
+                    </div>
+                </div>
                 <button type="button" class="warn-tool-btn" data-action="bold" title="Negrito"><b>B</b></button>
                 <button type="button" class="warn-tool-btn" data-action="italic" title="Itálico"><i>I</i></button>
                 <button type="button" class="warn-tool-btn" data-action="underline" title="Sublinhado"><u>U</u></button>
+                <div class="toolbar-separator"></div>
                 <button type="button" class="warn-tool-btn" data-action="link" title="Inserir Hiperlink">🔗</button>
                 <button type="button" class="warn-tool-btn" data-action="numbered" title="Lista Numerada">🔢</button>
                 <button type="button" class="warn-tool-btn" data-action="bullet" title="Marcador">&bull;</button>
+                <div class="toolbar-separator"></div>
                 <button type="button" class="warn-tool-btn" data-action="emoji" title="Emojis">😀</button>
                 <button type="button" class="warn-tool-btn" data-action="color" title="Cor do Texto">🎨</button>
                 <button type="button" class="warn-tool-btn" data-action="highlight" title="Cor de Destaque">🖌️</button>
-                <span style="border-left: 1px solid var(--border-color); height: 16px; margin: 0 4px; display: inline-block;"></span>
-                <select id="warn-font-size" style="padding: 2px 4px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); font-size: 11px; cursor: pointer; outline: none; height: 26px;">
-                    <option value="" disabled selected>Tamanho</option>
-                    <option value="2">Pequeno</option>
-                    <option value="3">Médio</option>
-                    <option value="5">Grande</option>
-                </select>
             </div>
             <div id="warn-message" contenteditable="true" placeholder="Detalhes do aviso..." style="${fieldStyle} min-height: 120px; max-height: 250px; overflow-y: auto; margin-bottom: 4px; resize: vertical;">${msgVal}</div>
             <div style="font-size: 11px; color: var(--text-color-muted); margin-bottom: 12px; opacity: 0.8;">
@@ -2367,13 +2371,23 @@ function openCreateWarningModal(existingWarning = null) {
                 </div>
             </div>
 
-            <div style="padding: 10px; background-color: var(--background-secondary); border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 15px;">
+            <div style="padding: 10px; background-color: var(--background-secondary); border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 12px;">
                 <div class="form-checkbox-group" style="margin-top: 0;">
                     <input type="checkbox" id="warn-notify" ${notifyVal}>
                     <label for="warn-notify" style="font-weight: 600;">🔔 Enviar notificação</label>
                 </div>
                 <p style="font-size: 11px; color: var(--text-color-muted); margin: 4px 0 0 24px;">
                     Se marcado, os usuários receberão um alerta visual no SGD.
+                </p>
+            </div>
+
+            <div style="padding: 10px; background-color: var(--background-secondary); border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 15px;">
+                <div class="form-checkbox-group" style="margin-top: 0;">
+                    <input type="checkbox" id="warn-required-reading" ${requiredReadingVal}>
+                    <label for="warn-required-reading" style="font-weight: 600;">⚠️ Leitura Obrigatória</label>
+                </div>
+                <p style="font-size: 11px; color: var(--text-color-muted); margin: 4px 0 0 24px;">
+                    Se marcado, os usuários deverão visualizar o aviso em tela cheia por pelo menos 10 segundos antes de fechar.
                 </p>
             </div>
 
@@ -2432,21 +2446,23 @@ function openCreateWarningModal(existingWarning = null) {
 
   const messageEditor = modal.querySelector('#warn-message')
 
-  // Handler para tamanho da fonte
-  const fontSizeSelect = modal.querySelector('#warn-font-size')
-  if (fontSizeSelect) {
-    fontSizeSelect.addEventListener('mousedown', e => {
-      e.stopPropagation() // Impede a perda de foco do contenteditable ao clicar no select
-    })
-    fontSizeSelect.addEventListener('change', () => {
+  // Handler para tamanho da fonte no dropdown
+  modal.querySelectorAll('.warn-font-size-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.preventDefault()
+      e.stopPropagation()
       messageEditor.focus()
-      const size = fontSizeSelect.value
+      const size = btn.dataset.size
       if (size) {
         document.execCommand('fontSize', false, size)
-        fontSizeSelect.value = "" // Reseta para a opção padrão
+      }
+      // Fecha o dropdown removendo a classe open do dropdown pai
+      const dropdown = btn.closest('.dropdown')
+      if (dropdown) {
+        dropdown.classList.remove('open')
       }
     })
-  }
+  })
 
   // Evitar que cliques nos pickers tirem o foco/seleção do contenteditable
   colorPickerDiv.addEventListener('mousedown', e => e.preventDefault())
@@ -2580,6 +2596,7 @@ function openCreateWarningModal(existingWarning = null) {
     const type = modal.querySelector('#warn-type').value
     const isTest = modal.querySelector('#warn-is-test').checked
     const notify = modal.querySelector('#warn-notify').checked
+    const requiredReading = modal.querySelector('#warn-required-reading').checked
     const author = getCurrentUserName()
 
     if (!title || !textContent) {
@@ -2598,7 +2615,8 @@ function openCreateWarningModal(existingWarning = null) {
           type,
           author,
           isTest,
-          notify
+          notify,
+          requiredReading
         })
       } else {
         await window.warningsService.createWarning({
@@ -2608,6 +2626,7 @@ function openCreateWarningModal(existingWarning = null) {
           author,
           isTest,
           notify,
+          requiredReading,
           date: new Date().toISOString()
         })
       }
