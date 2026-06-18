@@ -517,7 +517,7 @@ const WARNING_CHANNELS = [
  */
 async function checkWarningsAndNotify() {
   try {
-    const storage = await chrome.storage.local.get(['warningsMetaSignature', 'infoDevMode']);
+    const storage = await chrome.storage.local.get(['warningsMetaSignature', 'infoDevMode', 'currentUser']);
     const localSignature = storage.warningsMetaSignature;
 
     // 1. Checa a data de última atualização (Metadado) via Realtime Database
@@ -554,13 +554,21 @@ async function checkWarningsAndNotify() {
     // Filtra avisos válidos ativos para notificação
     const activeWarnings = warnings.filter(w => {
       if (w.archived) return false;
-      if (w.isTest && !isDevMode) return false;
+      if (w.isTest && !isDevMode && !w.onlySelf) return false;
       if (w.publishedAt && nowIso < w.publishedAt) return false;
       
       if (w.expiresAt) {
         if (nowMs > new Date(w.expiresAt).getTime()) return false;
       } else if (w.date) {
         if (nowMs - new Date(w.date).getTime() >= SEVEN_DAYS_MS) return false;
+      }
+
+      // Se for apenas para o autor, valida se o usuário atual é o autor
+      if (w.onlySelf) {
+        const currentUser = storage.currentUser;
+        if (!w.author || !currentUser || w.author.trim().toLowerCase() !== currentUser.trim().toLowerCase()) {
+          return false;
+        }
       }
       return true;
     });
@@ -602,6 +610,45 @@ async function checkWarningsAndNotify() {
       cachedWarnings: warnings
     });
 
+    // Evita duplicar notificações se o aviso já foi notificado anteriormente com a mesma data/versão
+    const notifiedStorage = await chrome.storage.local.get(['notifiedWarnings', 'readWarningIds', 'ignoredWarnings']);
+    const notifiedWarnings = notifiedStorage.notifiedWarnings || {};
+    
+    if (notifiedWarnings[newestWarning.id] === newestWarning.date) {
+      return;
+    }
+
+    // Se o aviso foi marcado para não notificar, apenas registra no controle para evitar re-verificações e encerra
+    if (newestWarning.notify === false) {
+      notifiedWarnings[newestWarning.id] = newestWarning.date;
+      await chrome.storage.local.set({ notifiedWarnings });
+      return;
+    }
+
+    // Atualiza o controle de notificações enviadas
+    notifiedWarnings[newestWarning.id] = newestWarning.date;
+
+    // Se o aviso é novo ou foi reenviado (a data mudou), remove das listas de lidos e ignorados para que seja exibido novamente
+    let readWarningIds = notifiedStorage.readWarningIds || [];
+    let ignoredWarnings = notifiedStorage.ignoredWarnings || [];
+    let storageUpdated = false;
+
+    if (readWarningIds.includes(newestWarning.id)) {
+      readWarningIds = readWarningIds.filter(id => id !== newestWarning.id);
+      storageUpdated = true;
+    }
+    if (ignoredWarnings.includes(newestWarning.id)) {
+      ignoredWarnings = ignoredWarnings.filter(id => id !== newestWarning.id);
+      storageUpdated = true;
+    }
+
+    const setToStorage = { notifiedWarnings };
+    if (storageUpdated) {
+      setToStorage.readWarningIds = readWarningIds;
+      setToStorage.ignoredWarnings = ignoredWarnings;
+    }
+    await chrome.storage.local.set(setToStorage);
+
     // Se for aviso de teste (desenvolvimento), apenas usuários com o modo dev ativado a receberão
     if (isTest && !isDevMode) {
       return;
@@ -638,7 +685,9 @@ async function checkWarningsAndNotify() {
       title: title,
       message: message,
       type: type,
-      requiredReading: !!newestWarning.requiredReading
+      requiredReading: !!newestWarning.requiredReading,
+      onlySelf: !!newestWarning.onlySelf,
+      author: newestWarning.author
     });
 
   } catch (err) {

@@ -239,8 +239,8 @@
    * @returns {Promise<boolean>}
    */
   async function isCurrentUserEditor() {
-    const devData = await chrome.storage.local.get(['infoDevMode', 'developerModeEnabled'])
-    const isDevMode = !!(devData.infoDevMode || devData.developerModeEnabled)
+    const devData = await chrome.storage.local.get(['developerModeEnabled'])
+    const isDevMode = devData.developerModeEnabled === true
 
     if (isDevMode) {
       window.sgdPermissions.isDevMode = true
@@ -276,7 +276,27 @@
       matchedEditor = editors.find(editor => normalizeName(editor.name) === normalizedUserName)
     }
 
-    const found = !!matchedEditor || isDevMode
+    // Verifica se o usuário tem solicitação de Modo Dev aprovada no Firebase
+    const infoDevData = await chrome.storage.local.get(['infoDevMode'])
+    const hasLocalInfoDev = infoDevData.infoDevMode === true
+    let isApprovedDev = false
+    const userKey = userId || cleanFirebaseKey(userName)
+
+    if (hasLocalInfoDev) {
+      try {
+        const res = await fetch(`${RTDB_BASE_URL}/dev_requests/${userKey}.json`, { cache: 'no-store' })
+        if (res.ok) {
+          const reqData = await res.json()
+          if (reqData && reqData.status === 'approved') {
+            isApprovedDev = true
+          }
+        }
+      } catch (err) {
+        console.warn('[SGD Permissions] Erro ao verificar solicitação do Modo Dev:', err)
+      }
+    }
+
+    const found = !!matchedEditor || isDevMode || isApprovedDev
     window.sgdPermissions.isEditor = found
     
     let allowed = getChannelsFallback()
@@ -293,6 +313,25 @@
     } else if (isDevMode) {
       allowed = getChannelsFallback()
       role = 'master'
+      window.sgdPermissions.isDevMode = true
+    } else if (isApprovedDev) {
+      // Usuário comum aprovado no modo Dev
+      const viewers = await getViewersList()
+      let matchedViewer = null
+      if (userId) {
+        matchedViewer = viewers.find(v => v.id === userId)
+      }
+      if (!matchedViewer) {
+        matchedViewer = viewers.find(v => normalizeName(v.name) === normalizedUserName)
+      }
+      if (matchedViewer) {
+        allowed = matchedViewer.allowedChannels || getChannelsFallback()
+      }
+      role = 'comum'
+      window.sgdPermissions.isDevMode = true
+      await chrome.storage.local.set({ 
+        infoDevMode: true
+      })
     } else {
       const viewers = await getViewersList()
       let matchedViewer = null
@@ -305,6 +344,11 @@
       if (matchedViewer) {
         allowed = matchedViewer.allowedChannels || getChannelsFallback()
       }
+      // Se não é editor nem tem dev mode manual, garante limpeza do infoDevMode
+      await chrome.storage.local.set({ 
+        infoDevMode: false
+      })
+      window.sgdPermissions.isDevMode = false
     }
     
     window.sgdPermissions.allowedChannels = allowed
@@ -350,10 +394,6 @@
     const userKey = userId || cleanFirebaseKey(userName)
     
     try {
-      // Obter estado atual do Modo Dev
-      const devData = await chrome.storage.local.get(['infoDevMode', 'developerModeEnabled'])
-      const isDevMode = !!(devData.infoDevMode || devData.developerModeEnabled)
-
       // 1. Busca listas atualizadas
       const editors = await getEditorsList(true)
       let matchedEditor = null
@@ -362,55 +402,6 @@
       }
       if (!matchedEditor) {
         matchedEditor = editors.find(e => normalizeName(e.name) === normalizedUser)
-      }
-      
-      if (isDevMode) {
-        const targetKey = matchedEditor ? matchedEditor.id : userKey
-        const existingChannels = matchedEditor ? (matchedEditor.allowedChannels || getChannelsFallback()) : getChannelsFallback()
-        const existingRole = matchedEditor ? (matchedEditor.role || 'master') : 'master'
-        
-        const editorBody = {
-          name: userName.trim(),
-          allowedChannels: existingChannels,
-          lastSeen: nowStr,
-          role: existingRole
-        }
-        if (!matchedEditor) {
-          editorBody.addedAt = nowStr
-          editorBody.addedBy = 'Auto Dev Mode'
-        }
-
-        await fetch(`${RTDB_EDITORS_URL}/${targetKey}.json`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(editorBody)
-        })
-        
-        await chrome.storage.local.set({ 
-          allowedChannels: existingChannels,
-          isCurrentUserEditor: true
-        })
-        window.sgdPermissions.allowedChannels = existingChannels
-        window.sgdPermissions.isEditor = true
-        window.sgdPermissions.role = existingRole
-        window.sgdPermissions.isMaster = (existingRole === 'master')
-
-        // Remove do viewers se existir duplicata
-        const viewers = await getViewersList(true)
-        let matchedViewer = null
-        if (userId) {
-          matchedViewer = viewers.find(v => v.id === userId)
-        }
-        if (!matchedViewer) {
-          matchedViewer = viewers.find(v => normalizeName(v.name) === normalizedUser)
-        }
-        const viewerKeyToDelete = matchedViewer ? matchedViewer.id : userKey
-        await fetch(`${RTDB_VIEWERS_URL}/${viewerKeyToDelete}.json`, {
-          method: 'DELETE'
-        })
-        
-        await invalidatePermissionsCache()
-        return
       }
       
       if (matchedEditor) {
@@ -904,6 +895,9 @@
     const userId = captureLoggedUserId()
     window.sgdPermissions.currentUser = userName
     window.sgdPermissions.currentUserId = userId
+    if (userName) {
+      chrome.storage.local.set({ currentUser: userName }).catch(() => {});
+    }
 
     // Carrega canais dinâmicos antes de mais nada
     await loadActiveChannels()
@@ -921,24 +915,11 @@
 
     // Heartbeat / Registro Automático
     if (userName) {
-      const devData = await chrome.storage.local.get(['infoDevMode', 'developerModeEnabled'])
-      const isDevMode = !!(devData.infoDevMode || devData.developerModeEnabled)
-
       const heartbeat = await chrome.storage.local.get(['lastPermissionsHeartbeat', 'lastPermissionsHeartbeatUser'])
       const lastTime = heartbeat.lastPermissionsHeartbeat || 0
       const lastUser = heartbeat.lastPermissionsHeartbeatUser || ''
       
-      let forceRegistration = false
-      if (isDevMode) {
-        const editors = await getEditorsList()
-        const normalizedUserName = normalizeName(userName)
-        const isAlreadyEditor = editors.some(e => normalizeName(e.name) === normalizedUserName)
-        if (!isAlreadyEditor) {
-          forceRegistration = true
-        }
-      }
-      
-      if ((Date.now() - lastTime) > 24 * 60 * 60 * 1000 || lastUser !== userName || forceRegistration) {
+      if ((Date.now() - lastTime) > 24 * 60 * 60 * 1000 || lastUser !== userName) {
         await registerUserActivity(userName)
         await chrome.storage.local.set({
           lastPermissionsHeartbeat: Date.now(),

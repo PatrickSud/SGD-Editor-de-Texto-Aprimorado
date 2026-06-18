@@ -126,6 +126,8 @@ async function updateWarning(id, updates) {
     });
     if (!response.ok) throw new Error('Erro ao atualizar');
     await touchWarningsMetadata();
+    // Notifica o service worker para verificar e disparar o toast imediatamente se necessário
+    chrome.runtime.sendMessage({ action: 'WARNING_CREATED' }).catch(() => {});
 
     // Grava Log de Auditoria
     if (window.sgdPermissions?.writeAuditLog) {

@@ -2327,6 +2327,7 @@ async function initializeExtension() {
 
   createAndInjectBellIcon()
   await updateNotificationStatus()
+  await checkAndShowPendingWarningToasts()
   createSpeechCommandHint()
 
   // --- NOVA LÓGICA DO EDITOR BÁSICO GLOBAL ---
@@ -4256,7 +4257,7 @@ async function updateNotificationStatus() {
 
     const nowIso = new Date().toISOString()
     const unreadWarnings = rawWarnings.filter(w => {
-      if (w.isTest && !data.infoDevMode) return false
+      if (w.isTest && !data.infoDevMode && !w.onlySelf) return false
       if (ignoredIds.includes(w.id)) return false
       const wChannel = w.channel || 'Geral';
       if (!subscribed.includes(wChannel)) return false;
@@ -4304,6 +4305,82 @@ async function updateNotificationStatus() {
     }
   } catch (error) {
     console.error('Editor SGD: Erro ao atualizar status de notificação.', error)
+  }
+}
+
+/**
+ * Verifica e exibe alertas flutuantes (toasts) para avisos ativos e pendentes de visualização ou leitura.
+ */
+async function checkAndShowPendingWarningToasts() {
+  if (typeof showSgdToast !== 'function') return;
+  try {
+    const data = await chrome.storage.local.get([
+      'warningsLastReadTime',
+      'infoDevMode',
+      'cachedWarnings',
+      'ignoredWarnings',
+      'subscribedChannels',
+      'warningChannels',
+      'readWarningIds'
+    ]);
+
+    const rawWarnings = Array.isArray(data.cachedWarnings) ? data.cachedWarnings : [];
+    const ignoredIds = Array.isArray(data.ignoredWarnings) ? data.ignoredWarnings : [];
+    const readWarningIds = Array.isArray(data.readWarningIds) ? data.readWarningIds : [];
+    const currentChannels = data.warningChannels || WARNING_CHANNELS;
+    const subscribed = data.subscribedChannels ? [...data.subscribedChannels] : [...currentChannels];
+
+    const nowMs = Date.now();
+    const nowIso = new Date().toISOString();
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+    for (const w of rawWarnings) {
+      if (w.archived) continue;
+      if (w.isTest && !data.infoDevMode && !w.onlySelf) continue;
+      if (w.publishedAt && nowIso < w.publishedAt) continue;
+
+      if (!w.date) continue;
+      const wTime = new Date(w.date).getTime();
+
+      let isExpired = false;
+      if (w.expiresAt) {
+        isExpired = nowMs > new Date(w.expiresAt).getTime();
+      } else {
+        isExpired = nowMs - wTime >= SEVEN_DAYS_MS;
+      }
+      if (isExpired) continue;
+
+      const wChannel = w.channel || 'Geral';
+      const isAllowed = window.sgdPermissions?.allowedChannels?.includes(wChannel) ?? true;
+      if (!subscribed.includes(wChannel) || !isAllowed) continue;
+
+      // Se for apenas para o autor, valida se o usuário atual é o autor
+      if (w.onlySelf) {
+        const currentUserName = window.sgdPermissions?.currentUser;
+        if (!w.author || !currentUserName || w.author.trim().toLowerCase() !== currentUserName.trim().toLowerCase()) {
+          continue;
+        }
+      }
+
+      // Se já foi lido ou ignorado
+      if (readWarningIds.includes(w.id) || ignoredIds.includes(w.id)) continue;
+
+      const requiredReading = !!w.requiredReading;
+      if (requiredReading) {
+        // Leitura obrigatória: exibe indefinidamente (duração 0) até interação
+        showSgdToast(w.id, w.title, w.message, w.type || 'info', 0, true);
+      } else {
+        // Aviso comum: exibe se estiver dentro do tempo de visualização (3 minutos)
+        const toastDuration = 180000; // 3 minutos
+        const ageMs = nowMs - wTime;
+        if (ageMs < toastDuration) {
+          const remainingDuration = toastDuration - ageMs;
+          showSgdToast(w.id, w.title, w.message, w.type || 'info', remainingDuration, false);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Editor SGD: Erro ao verificar avisos pendentes na inicialização.', error);
   }
 }
 
@@ -4381,6 +4458,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.action === 'SHOW_TOAST' && message.id && message.title && message.message) {
+    if (message.onlySelf) {
+      const currentUserName = window.sgdPermissions?.currentUser;
+      if (!message.author || !currentUserName || message.author.trim().toLowerCase() !== currentUserName.trim().toLowerCase()) {
+        return;
+      }
+    }
     showSgdToast(message.id, message.title, message.message, message.type || 'info', message.duration, message.requiredReading);
   }
 

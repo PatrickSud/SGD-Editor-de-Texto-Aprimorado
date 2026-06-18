@@ -281,6 +281,9 @@ function processWarningMessageHTML(text) {
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
   }[m]));
 
+  // Restaura entidades HTML originais (ex: &nbsp;, &amp;, &lt;, &gt;) para evitar exibição de caracteres indesejados
+  safe = safe.replace(/&amp;([a-zA-Z0-9#]+);/g, '&$1;');
+
   // Des-escapa tags permitidas
   const tags = ['b', 'strong', 'i', 'em', 'u', 'br', 'p', 'ul', 'ol', 'li', 'div', 'span', 'font', 'hr', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
   tags.forEach(tag => {
@@ -446,10 +449,10 @@ function openWarningDetailModal(id, title, message, type, isRequired = false) {
  * @param {string} title - Título.
  * @param {string} message - Mensagem.
  * @param {string} type - 'info' | 'success' | 'warning' | 'danger'.
- * @param {number} duration - Tempo em ms (padrão 60000).
+ * @param {number} duration - Tempo em ms (padrão 180000).
  * @param {boolean} requiredReading - Se o aviso é de leitura obrigatória.
  */
-function showSgdToast(id, title, message, type = 'info', duration = 60000, requiredReading = false) {
+function showSgdToast(id, title, message, type = 'info', duration = 180000, requiredReading = false) {
   // Se for leitura obrigatória, o toast não deve fechar automaticamente
   if (requiredReading) {
     duration = 0;
@@ -2271,7 +2274,7 @@ async function openFiredRemindersPanel() {
   const nowMs = Date.now()
   const nowIso = new Date().toISOString()
   const visibleWarnings = rawWarnings.filter(w => {
-    if (w.isTest && !data.infoDevMode) return false
+    if (w.isTest && !data.infoDevMode && !w.onlySelf) return false
     if (ignoredIds.includes(w.id)) return false
     const wChannel = w.channel || 'Geral';
     if (!subscribed.includes(wChannel)) return false
@@ -2283,6 +2286,14 @@ async function openFiredRemindersPanel() {
       if (nowMs > new Date(w.expiresAt).getTime()) return false
     } else if (w.date) {
       if (nowMs - new Date(w.date).getTime() >= SEVEN_DAYS_MS) return false
+    }
+
+    // Se for apenas para o autor, valida se o usuário atual é o autor
+    if (w.onlySelf) {
+      const activeUserName = window.sgdPermissions?.currentUser;
+      if (!w.author || !activeUserName || w.author.trim().toLowerCase() !== activeUserName.trim().toLowerCase()) {
+        return false;
+      }
     }
     return true
   })

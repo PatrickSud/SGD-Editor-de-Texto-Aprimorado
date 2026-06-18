@@ -24,6 +24,22 @@ function escapeHTML(str) {
 }
 
 /**
+ * Limpa uma string para ser usada com segurança como chave do Firebase.
+ * @param {string} str 
+ * @returns {string}
+ */
+function cleanFirebaseKey(str) {
+  if (!str) return 'unknown_user'
+  return str
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '_')
+    .replace(/_+/g, '_')
+}
+
+/**
  * Função debounce para limitar a frequência de execução de funções.
  * @param {Function} func - Função a ser executada.
  * @param {number} wait - Tempo de espera em milissegundos.
@@ -501,83 +517,172 @@ async function openInfoPanel(initialTabId = 'pending') {
   if (devModeSwitch) {
     devModeSwitch.addEventListener('click', async e => {
       const isChecking = e.target.checked
+      const RTDB_BASE_URL = 'https://sgd-extension-default-rtdb.firebaseio.com'
 
       if (isChecking) {
-        // Previne a mudança imediata até a senha ser validada
+        // Previne a mudança imediata até a verificação/solicitação
         e.preventDefault()
 
-        const passwordModalHtml = `
-          <div style="padding: 10px;">
-            <p style="margin-bottom: 12px; font-size: 13px; color: var(--text-color-main);">Esta seção é de acesso restrito. Por favor, insira a senha do Modo Dev para continuar.</p>
-            <input type="password" id="dev-password-input" 
-              style="display: block; width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); font-size: 14px;" 
-              placeholder="Digite a senha...">
-          </div>
-        `
+        const userName = window.sgdPermissions?.currentUser
+        const userId = window.sgdPermissions?.currentUserId
+        const userKey = userId || (window.sgdPermissions ? cleanFirebaseKey(userName) : 'unknown_user')
 
-        const passwordModal = createModal(
-          'Acesso Protegido',
-          passwordModalHtml,
-          async (content, closePasswordModal) => {
-            const input = content.querySelector('#dev-password-input')
-            const password = input.value
+        if (!userName) {
+          showNotification('Erro: Nome do usuário não identificado.', 'error')
+          return
+        }
 
-            if (password === 'Dominio@2026') {
-              await chrome.storage.local.set({ 
-                infoDevMode: true
-              })
-              
-              if (window.sgdPermissions && window.sgdPermissions.currentUser) {
-                if (typeof window.sgdPermissions.registerUserActivity === 'function') {
-                  await window.sgdPermissions.registerUserActivity(window.sgdPermissions.currentUser)
-                  await chrome.storage.local.set({
-                    lastPermissionsHeartbeat: Date.now(),
-                    lastPermissionsHeartbeatUser: window.sgdPermissions.currentUser
+        // Exibe status de carregamento no interruptor ou via notificação
+        showNotification('Verificando status de solicitação...', 'info')
+
+        try {
+          const res = await fetch(`${RTDB_BASE_URL}/dev_requests/${userKey}.json`, { cache: 'no-store' })
+          let reqData = null
+          if (res.ok) {
+            reqData = await res.json()
+          }
+
+          if (reqData && reqData.status === 'approved') {
+            // Se já está aprovado, ativa o modo dev
+            await chrome.storage.local.set({ 
+              infoDevMode: true
+            })
+            
+            if (window.sgdPermissions) {
+              window.sgdPermissions.isDevMode = true
+              window.sgdPermissions.isEditor = true
+              if (typeof window.sgdPermissions.registerUserActivity === 'function') {
+                await window.sgdPermissions.registerUserActivity(userName)
+              }
+            }
+            
+            modal.remove()
+            openInfoPanel()
+            showNotification('Modo desenvolvedor ativado com sucesso!', 'success')
+            return
+          }
+
+          if (reqData && reqData.status === 'pending') {
+            // Se está pendente
+            const pendingModalHtml = `
+              <div style="padding: 10px; color: var(--text-color-main); font-size: 13px; line-height: 1.5;">
+                <p style="margin-bottom: 12px;">Sua solicitação de acesso ao <strong>Modo Desenvolvedor</strong> foi enviada e está atualmente <strong>pendente</strong> de aprovação por um Editor Master.</p>
+                <div style="padding: 10px; background: color-mix(in srgb, var(--action-yellow, #eab308) 10%, var(--background-secondary)); border: 1px solid color-mix(in srgb, var(--action-yellow, #eab308) 30%, var(--border-color)); border-radius: 4px; display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 18px;">⏳</span>
+                  <span>Solicitação enviada em ${new Date(reqData.requestedAt).toLocaleDateString('pt-BR')} às ${new Date(reqData.requestedAt).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</span>
+                </div>
+              </div>
+            `
+            const pendingModal = createModal(
+              'Solicitação Pendente',
+              pendingModalHtml,
+              (content, closePendingModal) => {
+                closePendingModal()
+              },
+              {
+                isManagementModal: false,
+                modalId: 'dev-pending-modal'
+              }
+            )
+            const saveBtn = pendingModal.querySelector('#modal-save-btn')
+            if (saveBtn) saveBtn.style.display = 'none' // Não precisa de botão salvar
+            const cancelBtn = pendingModal.querySelector('#modal-cancel-btn')
+            if (cancelBtn) cancelBtn.textContent = 'Fechar'
+
+            document.body.appendChild(pendingModal)
+            return
+          }
+
+          // Se não há solicitação ou foi rejeitada
+          const isRejected = reqData && reqData.status === 'rejected'
+          const requestModalHtml = `
+            <div style="padding: 10px; color: var(--text-color-main); font-size: 13px; line-height: 1.5;">
+              <p style="margin-bottom: 12px;">
+                O <strong>Modo Desenvolvedor</strong> é um ambiente restrito que permite acesso a recursos experimentais, gerenciamento avançado de avisos e ferramentas de depuração do sistema.
+              </p>
+              <p style="margin-bottom: 16px;">
+                Se você precisa de acesso a essas ferramentas, poderá enviar uma solicitação que será avaliada pelos editores do sistema.
+              </p>
+              ${isRejected ? `
+                <div style="padding: 10px; background: color-mix(in srgb, var(--action-red, #ef4444) 10%, var(--background-secondary)); border: 1px solid color-mix(in srgb, var(--action-red, #ef4444) 30%, var(--border-color)); border-radius: 4px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: var(--action-red, #ef4444);">
+                  <span style="font-size: 18px;">⚠️</span>
+                  <span>Sua solicitação anterior foi rejeitada em ${new Date(reqData.rejectedAt).toLocaleDateString('pt-BR')}. Você pode enviar uma nova solicitação caso necessário.</span>
+                </div>
+              ` : ''}
+              <p style="font-weight: bold; margin-bottom: 8px;">Deseja enviar uma solicitação de acesso?</p>
+            </div>
+          `
+
+          const requestModal = createModal(
+            'Solicitação de Acesso',
+            requestModalHtml,
+            async (content, closeRequestModal) => {
+              const confirmBtn = requestModal.querySelector('#modal-save-btn')
+              if (confirmBtn) {
+                confirmBtn.disabled = true
+                confirmBtn.textContent = 'Enviando...'
+              }
+
+              try {
+                const patchRes = await fetch(`${RTDB_BASE_URL}/dev_requests/${userKey}.json`, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    userName: userName,
+                    userId: userId || '',
+                    status: 'pending',
+                    requestedAt: new Date().toISOString()
                   })
+                })
+
+                if (patchRes.ok) {
+                  showNotification('Solicitação enviada com sucesso! Um Editor Master irá avaliar.', 'success')
+                  closeRequestModal()
+                } else {
+                  showNotification('Erro ao enviar solicitação.', 'error')
+                  if (confirmBtn) {
+                    confirmBtn.disabled = false
+                    confirmBtn.textContent = 'Solicitar Acesso'
+                  }
+                }
+              } catch (err) {
+                console.error(err)
+                showNotification('Erro ao conectar com o servidor.', 'error')
+                if (confirmBtn) {
+                  confirmBtn.disabled = false
+                  confirmBtn.textContent = 'Solicitar Acesso'
                 }
               }
-              
-              closePasswordModal()
-              modal.remove() // Fecha o painel de info principal
-              openInfoPanel() // Reabre para mostrar os recursos de desenvolvimento
-              showNotification(
-                'Acesso concedido! Modo desenvolvedor habilitado.',
-                'success'
-              )
-            } else {
-              showNotification('Senha incorreta', 'error')
+            },
+            {
+              isManagementModal: false,
+              modalId: 'dev-request-modal'
             }
-          },
-          {
-            isManagementModal: false,
-            modalId: 'dev-password-modal'
+          )
+
+          const saveBtn = requestModal.querySelector('#modal-save-btn')
+          if (saveBtn) {
+            saveBtn.textContent = 'Solicitar Acesso'
+            saveBtn.style.background = 'var(--primary-color, #6366f1)'
+            saveBtn.style.color = '#fff'
           }
-        )
 
-        // Personalizar botão de salvar
-        const confirmBtn = passwordModal.querySelector('#modal-save-btn')
-        if (confirmBtn) confirmBtn.textContent = 'Confirmar'
+          document.body.appendChild(requestModal)
 
-        document.body.appendChild(passwordModal)
-
-        // Foco no input e suporte ao Enter
-        setTimeout(() => {
-          const input = passwordModal.querySelector('#dev-password-input')
-          if (input) {
-            input.focus()
-            input.addEventListener('keypress', event => {
-              if (event.key === 'Enter') {
-                confirmBtn.click()
-              }
-            })
-          }
-        }, 100)
+        } catch (error) {
+          console.error(error)
+          showNotification('Erro ao verificar status com o servidor.', 'error')
+        }
       } else {
         // Desativando (sem senha)
         await chrome.storage.local.set({ 
           infoDevMode: false
         })
-        // Recarrega o painel para refletir a mudança
+        if (window.sgdPermissions) {
+          window.sgdPermissions.isDevMode = false
+          // Recarrega permissões locais sem forçar refetch para atualizar isEditor
+          await window.sgdPermissions.init()
+        }
         modal.remove()
         openInfoPanel()
       }
@@ -838,6 +943,34 @@ function injectDevSwitchStyles() {
     .ip-access-add-section {
       padding: 4px 0;
     }
+    @keyframes acBlink {
+      0% {
+        opacity: 0.7;
+        box-shadow: 0 0 4px rgba(234, 179, 8, 0.3);
+      }
+      100% {
+        opacity: 1;
+        box-shadow: 0 0 12px rgba(234, 179, 8, 0.7);
+      }
+    }
+    .ac-pending-dev-request-row {
+      animation: acBlink 1.5s infinite alternate;
+      border: 1px solid var(--action-yellow, #eab308) !important;
+      background: color-mix(in srgb, var(--action-yellow, #eab308) 12%, var(--background-secondary, #f3f4f6)) !important;
+    }
+    .ac-channel-checkbox, 
+    .ac-new-profile-channel-checkbox, 
+    .ac-viewer-select-checkbox {
+      position: static !important;
+      opacity: 1 !important;
+      width: 14px !important;
+      height: 14px !important;
+      appearance: checkbox !important;
+      -webkit-appearance: checkbox !important;
+      cursor: pointer !important;
+      margin: 0 4px 0 0 !important;
+      display: inline-block !important;
+    }
   `
   document.head.appendChild(style)
 }
@@ -847,6 +980,9 @@ function injectDevSwitchStyles() {
  * @returns {string} Nome do usuário
  */
 function getCurrentUserName() {
+  if (window.sgdPermissions && window.sgdPermissions.currentUser) {
+    return window.sgdPermissions.currentUser
+  }
   // Tenta obter o nome do usuário do elemento do topo do SGD (navbar-link b)
   const userNameElement = document.querySelector('.navbar-link b')
 
@@ -1641,8 +1777,17 @@ async function loadWarnings(sectionElement, forceRefresh = false) {
 
     // [NOVO] Filtro de Teste
     if (!developerMode) {
-      warnings = warnings.filter(w => !w.isTest)
+      warnings = warnings.filter(w => !w.isTest || w.onlySelf)
     }
+
+    // [NOVO] Filtro Apenas para o Autor
+    const activeUserName = getCurrentUserName();
+    warnings = warnings.filter(w => {
+      if (w.onlySelf) {
+        return w.author && activeUserName && w.author.trim().toLowerCase() === activeUserName.trim().toLowerCase()
+      }
+      return true
+    })
 
     // --- 2. Filtro de Ignorados (Storage) ---
     const storage = await new Promise(resolve =>
@@ -2364,6 +2509,9 @@ function processSafeHTML(text) {
   // 1. Escapa tudo para neutralizar scripts e tags não permitidas
   let safe = escapeHTML(text)
 
+  // Restaura entidades HTML originais (ex: &nbsp;, &amp;, &lt;, &gt;) para evitar exibição de caracteres indesejados
+  safe = safe.replace(/&amp;([a-zA-Z0-9#]+);/g, '&$1;')
+
   // 2. Des-escapa tags permitidas (sem atributos, exceto A)
   // Tags simples: <b>, </b>, <strong>, </strong>, etc.
   const tags = ['b', 'strong', 'i', 'em', 'u', 'br', 'p', 'ul', 'ol', 'li', 'div', 'span', 'font', 'hr', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']
@@ -2777,8 +2925,13 @@ function openCreateWarningModal(existingWarning = null) {
   const msgVal = isEdit ? (existingWarning.message || '') : ''
   const typeVal = isEdit ? existingWarning.type : 'info'
   const isTestVal = isEdit ? existingWarning.isTest : false
-  // Verifica se já estava marcado para notificar (em caso de edição)
-  const notifyVal = isEdit && existingWarning.notify ? 'checked' : ''
+  const onlySelfVal = isEdit && existingWarning.onlySelf ? 'checked' : ''
+  // Em caso de reedição, desmarca por padrão. Para novos, marca por padrão.
+  const notifyVal = isEdit ? '' : 'checked'
+  const notifyLabel = isEdit ? 'Reenviar notificação' : 'Enviar notificação'
+  const notifyDesc = isEdit
+    ? 'Se marcado, a notificação será enviada novamente para os usuários.'
+    : 'Se marcado, os usuários receberão um alerta visual no SGD.'
   const requiredReadingVal = isEdit && existingWarning.requiredReading ? 'checked' : ''
   const channelVal = isEdit ? (existingWarning.channel || 'Geral') : 'Geral'
 
@@ -2870,10 +3023,10 @@ function openCreateWarningModal(existingWarning = null) {
             <div style="padding: 10px; background-color: var(--background-secondary); border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 12px;">
                 <div class="form-checkbox-group" style="margin-top: 0;">
                     <input type="checkbox" id="warn-notify" ${notifyVal}>
-                    <label for="warn-notify" style="font-weight: 600;">🔔 Enviar notificação</label>
+                    <label for="warn-notify" style="font-weight: 600;">🔔 ${notifyLabel}</label>
                 </div>
                 <p style="font-size: 11px; color: var(--text-color-muted); margin: 4px 0 0 24px;">
-                    Se marcado, os usuários receberão um alerta visual no SGD.
+                    ${notifyDesc}
                 </p>
             </div>
 
@@ -2894,6 +3047,16 @@ function openCreateWarningModal(existingWarning = null) {
                 </div>
                 <div style="font-size: 11px; color: var(--text-color-muted); margin-top: 4px; margin-left: 24px;">
                     Se marcado, este aviso aparecerá <b>apenas</b> para usuários com "Modo Desenvolvedor" ativado e não enviará notificações para a equipe geral.
+                </div>
+            </div>
+
+            <div style="margin-bottom: 16px; padding: 10px; background-color: var(--background-secondary); border-radius: 4px; border: 1px dashed var(--border-color);">
+                <div class="form-checkbox-group" style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" id="warn-only-self" ${onlySelfVal} style="width: auto; margin: 0;">
+                    <label for="warn-only-self" style="font-weight: 600; color: var(--text-color-main); font-size: 13px; cursor: pointer;">Apenas para mim (Somente o autor)</label>
+                </div>
+                <div style="font-size: 11px; color: var(--text-color-muted); margin-top: 4px; margin-left: 24px;">
+                    Se marcado, este aviso e suas notificações serão exibidos <b>apenas</b> para o seu usuário.
                 </div>
             </div>
             
@@ -3074,6 +3237,15 @@ function openCreateWarningModal(existingWarning = null) {
   })
 
   // Handlers padrão do modal
+  const onlySelfCheckbox = modal.querySelector('#warn-only-self')
+  const isTestCheckbox = modal.querySelector('#warn-is-test')
+  if (onlySelfCheckbox && isTestCheckbox) {
+    onlySelfCheckbox.addEventListener('change', () => {
+      if (onlySelfCheckbox.checked) {
+        isTestCheckbox.checked = true
+      }
+    })
+  }
   const saveBtn = modal.querySelector('#save-warn-btn')
   const cancelBtn = modal.querySelector('#cancel-warn-btn')
 
@@ -3091,7 +3263,8 @@ function openCreateWarningModal(existingWarning = null) {
     const message = messageEditor.innerHTML.trim()
     const type = modal.querySelector('#warn-type').value
     const channel = modal.querySelector('#warn-channel').value
-    const isTest = modal.querySelector('#warn-is-test').checked
+    const onlySelf = modal.querySelector('#warn-only-self').checked
+    const isTest = modal.querySelector('#warn-is-test').checked || onlySelf
     const notify = modal.querySelector('#warn-notify').checked
     const requiredReading = modal.querySelector('#warn-required-reading').checked
     const author = getCurrentUserName()
@@ -3111,18 +3284,21 @@ function openCreateWarningModal(existingWarning = null) {
 
     try {
       if (isEdit) {
+        const date = notify ? new Date().toISOString() : existingWarning.date
         await window.warningsService.updateWarning(existingWarning.id, {
           title,
           message,
           type,
           author,
           isTest,
+          onlySelf,
           notify,
           requiredReading,
           channel,
           publishedAt,
           expiresAt,
-          archived: existingWarning.archived || false
+          archived: existingWarning.archived || false,
+          date
         })
       } else {
         await window.warningsService.createWarning({
@@ -3131,6 +3307,7 @@ function openCreateWarningModal(existingWarning = null) {
           type,
           author,
           isTest,
+          onlySelf,
           notify,
           requiredReading,
           channel,
@@ -3872,6 +4049,46 @@ async function loadAccessControl(sectionElement) {
     const currentUserNorm = (window.sgdPermissions.currentUser || '').trim().toLowerCase()
     const isMaster = !!window.sgdPermissions.isMaster
 
+    const RTDB_BASE_URL = 'https://sgd-extension-default-rtdb.firebaseio.com'
+    let pendingRequestsHtml = ''
+    if (isMaster) {
+      try {
+        const devRes = await fetch(`${RTDB_BASE_URL}/dev_requests.json`, { cache: 'no-store' })
+        if (devRes.ok) {
+          const devRequests = await devRes.json() || {}
+          
+          const renderDevRequestRow = (userKey, req) => {
+            const reqDate = req.requestedAt ? new Date(req.requestedAt).toLocaleDateString('pt-BR') : '—'
+            return `
+              <div class="ip-access-editor-row ac-pending-dev-request-row" data-user-key="${escapeHTML(userKey)}" style="display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 12px; border-radius: var(--border-radius-sm, 4px); margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div class="ip-access-editor-info">
+                    <span class="ip-access-editor-name" style="font-weight: 600; font-size: 13px; color: var(--text-color-main); display: flex; align-items: center; gap: 6px;">
+                      🛠️ Solicitação Modo Dev: ${escapeHTML(req.userName)}
+                    </span>
+                    <span class="ip-access-editor-meta" style="display: block; font-size: 11px; color: var(--text-color-muted); margin-top: 2px;">
+                      Solicitado em ${reqDate}
+                    </span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <button class="action-btn ac-approve-dev-btn" data-user-key="${escapeHTML(userKey)}" data-user-name="${escapeHTML(req.userName)}" data-user-id="${escapeHTML(req.userId || '')}" style="font-size: 11px; padding: 4px 8px; background: var(--action-green, #22c55e); color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">Aprovar</button>
+                    <button class="action-btn secondary-btn compact ac-reject-dev-btn" data-user-key="${escapeHTML(userKey)}" data-user-name="${escapeHTML(req.userName)}" style="font-size: 11px; padding: 4px 8px; color: var(--action-red, #ef4444); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;">Rejeitar</button>
+                  </div>
+                </div>
+              </div>
+            `
+          }
+
+          pendingRequestsHtml = Object.entries(devRequests)
+            .filter(([key, val]) => val && val.status === 'pending')
+            .map(([key, val]) => renderDevRequestRow(key, val))
+            .join('')
+        }
+      } catch (err) {
+        console.warn('[SGD Access Control] Erro ao carregar solicitações de modo dev:', err)
+      }
+    }
+
     const renderEditorRow = (editor) => {
       const isSelf = editor.name.trim().toLowerCase() === currentUserNorm
       const addedDate = editor.addedAt ? new Date(editor.addedAt).toLocaleDateString('pt-BR') : '—'
@@ -3925,7 +4142,7 @@ async function loadAccessControl(sectionElement) {
         : ''
 
       return `
-        <div class="ip-access-editor-row" data-editor-id="${escapeHTML(editor.id)}" style="display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm, 4px); margin-bottom: 10px;">
+        <div class="ip-access-editor-row" data-editor-id="${escapeHTML(editor.id)}" style="display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 12px; background: color-mix(in srgb, var(--primary-color, #6366f1) 8%, var(--background-secondary, #f3f4f6)); border: 1px solid color-mix(in srgb, var(--primary-color, #6366f1) 30%, var(--border-color, #e5e7eb)); border-radius: var(--border-radius-sm, 4px); margin-bottom: 10px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div class="ip-access-editor-info">
               <span class="ip-access-editor-name" style="font-weight: 600; font-size: 13px; color: var(--text-color-main); display: flex; align-items: center; gap: 6px;">
@@ -3986,7 +4203,7 @@ async function loadAccessControl(sectionElement) {
 
       // Todos os editores (Master e Comum) podem limitar/atualizar os canais de Visualizadores
       return `
-        <div class="ip-access-viewer-row" data-viewer-id="${escapeHTML(viewer.id)}" style="display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm, 4px); margin-bottom: 10px;">
+        <div class="ip-access-viewer-row" data-viewer-id="${escapeHTML(viewer.id)}" style="display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 12px; background: var(--background-secondary, #f3f4f6); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm, 4px); margin-bottom: 10px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div style="display: flex; align-items: center; gap: 8px;">
               <input type="checkbox" class="ac-viewer-select-checkbox" data-viewer-id="${escapeHTML(viewer.id)}" style="width: 15px; height: 15px; margin: 0; cursor: pointer;">
@@ -4043,41 +4260,47 @@ async function loadAccessControl(sectionElement) {
 
     // Perfil de Canais UI HTML
     const profilesHtml = `
-      <div class="ac-profiles-section" style="margin-top: 10px; padding: 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm, 4px);">
-        <strong style="font-size: 13px; color: var(--text-color-main); display: flex; align-items: center; gap: 6px;">
-          📋 Perfis de Canais
-        </strong>
-        <p style="font-size: 11px; color: var(--text-color-muted); margin: 4px 0 10px 0;">
-          Você poderá salvar perfis de canais pré-definidos para aplicar em lote ou individualmente.
-        </p>
-
-        <!-- Form para criar perfil -->
-        <div style="display: flex; gap: 8px; flex-direction: column; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed var(--border-color);">
-          <div style="display: flex; gap: 8px; align-items: center;">
-            <input type="text" id="ac-profile-name" placeholder="Ex: Suporte N1, Plantão..." style="flex: 1; padding: 6px 10px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
-            <button id="ac-save-profile-btn" class="action-btn small-btn" style="background: var(--primary-color, #6366f1); color: white; border: none; padding: 6px 12px; cursor: pointer; font-size: 12px; border-radius: 4px; font-weight: bold;">Salvar Novo Perfil</button>
-          </div>
-          <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;">
-            ${(window.sgdPermissions?.channels || WARNING_CHANNELS).map(ch => `
-              <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer; color: var(--text-color-main);">
-                <input type="checkbox" class="ac-new-profile-channel-checkbox" value="${escapeHTML(ch)}" style="width: auto; margin: 0;">
-                ${escapeHTML(ch)}
-              </label>
-            `).join('')}
-          </div>
+      <div class="ac-profiles-section" style="margin-top: 10px; padding: 12px; background: var(--background-secondary, #f3f4f6); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm, 4px);">
+        <div id="ac-toggle-profiles-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
+          <strong style="font-size: 13px; color: var(--text-color-main); display: flex; align-items: center; gap: 6px;">
+            📋 Perfis de Canais
+          </strong>
+          <span id="ac-profiles-arrow" style="font-size: 11px; color: var(--text-color-muted); font-weight: 600;">▶ Expandir</span>
         </div>
+        
+        <div id="ac-profiles-content" style="display: none; margin-top: 10px; border-top: 1px dashed var(--border-color); padding-top: 10px;">
+          <p style="font-size: 11px; color: var(--text-color-muted); margin: 4px 0 10px 0;">
+            Você poderá salvar perfis de canais pré-definidos para aplicar em lote ou individualmente.
+          </p>
 
-        <!-- Lista de perfis salvos -->
-        <div id="ac-profiles-list" style="display: flex; flex-wrap: wrap; gap: 8px;">
-          ${profiles.length > 0
-            ? profiles.map(p => `
-              <span class="ac-profile-pill" style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 11px; font-weight: 600; border-radius: 20px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main);" title="Canais: ${escapeHTML(p.channels.join(', '))}">
-                ${escapeHTML(p.name)}
-                <button class="ac-delete-profile-btn" data-profile-id="${escapeHTML(p.id)}" style="background: none; border: none; padding: 0; margin: 0; cursor: pointer; font-size: 10px; opacity: 0.6; line-height: 1;">❌</button>
-              </span>
-            `).join('')
-            : '<p style="color: var(--text-color-muted); font-size: 11px; width: 100%; margin: 0;">Nenhum perfil de canais salvo ainda.</p>'
-          }
+          <!-- Form para criar perfil -->
+          <div style="display: flex; gap: 8px; flex-direction: column; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed var(--border-color);">
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <input type="text" id="ac-profile-name" placeholder="Ex: Suporte N1, Plantão..." style="flex: 1; padding: 6px 10px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
+              <button id="ac-save-profile-btn" class="action-btn small-btn" style="background: var(--primary-color, #6366f1); color: white; border: none; padding: 6px 12px; cursor: pointer; font-size: 12px; border-radius: 4px; font-weight: bold;">Salvar Novo Perfil</button>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;">
+              ${(window.sgdPermissions?.channels || WARNING_CHANNELS).map(ch => `
+                <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer; color: var(--text-color-main);">
+                  <input type="checkbox" class="ac-new-profile-channel-checkbox" value="${escapeHTML(ch)}" style="width: auto; margin: 0;">
+                  ${escapeHTML(ch)}
+                </label>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Lista de perfis salvos -->
+          <div id="ac-profiles-list" style="display: flex; flex-wrap: wrap; gap: 8px;">
+            ${profiles.length > 0
+              ? profiles.map(p => `
+                <span class="ac-profile-pill" style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 11px; font-weight: 600; border-radius: 20px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main);" title="Canais: ${escapeHTML(p.channels.join(', '))}">
+                  ${escapeHTML(p.name)}
+                  <button class="ac-delete-profile-btn" data-profile-id="${escapeHTML(p.id)}" style="background: none; border: none; padding: 0; margin: 0; cursor: pointer; font-size: 10px; opacity: 0.6; line-height: 1;">❌</button>
+                </span>
+              `).join('')
+              : '<p style="color: var(--text-color-muted); font-size: 11px; width: 100%; margin: 0;">Nenhum perfil de canais salvo ainda.</p>'
+            }
+          </div>
         </div>
       </div>
     `
@@ -4100,23 +4323,27 @@ async function loadAccessControl(sectionElement) {
         </div>
       </div>
 
-      <div style="margin: 12px 0;">
+      <!-- Perfis de Canais no Topo -->
+      ${profilesHtml}
+
+      <div style="margin: 16px 0; border-top: 1px solid var(--border-color);"></div>
+
+      <!-- Seção de Editores com busca dedicada -->
+      <div style="margin-bottom: 12px;">
+        <strong style="font-size: 14px; color: var(--text-color-main);">✏️ Editores (${editors.length})</strong>
+      </div>
+      <div style="margin-bottom: 12px;">
         <input 
           type="text" 
-          id="ac-search-users-input" 
-          placeholder="🔎 Pesquisar técnico por nome..." 
+          id="ac-search-editors-input" 
+          placeholder="🔎 Pesquisar editor por nome..." 
           class="ip-filter-input" 
           style="width: 100%; padding: 8px 12px; font-size: 13px; border-radius: var(--border-radius-sm, 4px); border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;"
         >
       </div>
 
-      <div style="margin: 16px 0; border-top: 1px solid var(--border-color);"></div>
-
-      <div style="margin-bottom: 12px;">
-        <strong style="font-size: 14px; color: var(--text-color-main);">✏️ Editores (${editors.length})</strong>
-      </div>
-
-      <div id="ip-editors-list">
+      <div id="ip-editors-list" style="margin-bottom: 16px;">
+        ${pendingRequestsHtml}
         ${editors.length > 0
           ? editors.map(renderEditorRow).join('')
           : '<p style="color: var(--text-color-muted); font-size: 13px; text-align: center; padding: 16px 0;">Nenhum editor cadastrado ainda.</p>'
@@ -4125,10 +4352,7 @@ async function loadAccessControl(sectionElement) {
 
       <div style="margin: 20px 0; border-top: 1px solid var(--border-color);"></div>
 
-      ${profilesHtml}
-
-      <div style="margin: 20px 0; border-top: 1px solid var(--border-color);"></div>
-
+      <!-- Seção de Visualizadores com busca dedicada -->
       <div style="margin-bottom: 12px;">
         <strong style="font-size: 14px; color: var(--text-color-main);">👁️ Visualizadores Capturados (${viewers.length})</strong>
         <p style="font-size: 11px; color: var(--text-color-muted); margin: 4px 0 0 0;">
@@ -4139,6 +4363,16 @@ async function loadAccessControl(sectionElement) {
       <div class="bulk-actions-card" style="padding: 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm, 4px); margin-bottom: 12px;">
         <h5 style="margin: 0 0 8px 0; font-size: 12px; font-weight: 600; color: var(--text-color-main);">⚡ Ações em Lote para Selecionados (<span id="ac-selected-count">0</span>):</h5>
         <div style="display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px;">
+          <!-- Pesquisa de visualizadores inline à esquerda -->
+          <input 
+            type="text" 
+            id="ac-search-viewers-input" 
+            placeholder="🔎 Pesquisar visualizador..." 
+            class="ip-filter-input" 
+            style="padding: 5px 8px; font-size: 12px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); min-width: 150px; max-width: 200px; margin: 0; box-sizing: border-box;"
+          >
+          <div style="border-left: 1px solid var(--border-color); height: 20px; margin: 0 4px; flex-shrink: 0;"></div>
+          
           <!-- Selecione um Perfil -->
           <select id="bulk-profile-select" style="padding: 5px 8px; font-size: 12px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); min-width: 140px;">
             <option value="">Selecione um Perfil...</option>
@@ -4314,11 +4548,11 @@ async function loadAccessControl(sectionElement) {
     const bulkProfileSelect = container.querySelector('#bulk-profile-select')
     const bulkApplyProfileBtn = container.querySelector('#bulk-apply-profile-btn')
 
-    // Filtrar nomes dinamicamente (busca local)
-    const searchInput = container.querySelector('#ac-search-users-input')
-    if (searchInput) {
-      searchInput.addEventListener('input', () => {
-        const rawQuery = searchInput.value || ''
+    // Filtrar editores dinamicamente (busca local)
+    const searchEditorsInput = container.querySelector('#ac-search-editors-input')
+    if (searchEditorsInput) {
+      searchEditorsInput.addEventListener('input', () => {
+        const rawQuery = searchEditorsInput.value || ''
         const query = rawQuery.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
         
         container.querySelectorAll('.ip-access-editor-row').forEach(row => {
@@ -4327,6 +4561,15 @@ async function loadAccessControl(sectionElement) {
           const normName = nameText.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
           row.style.display = normName.includes(query) ? 'flex' : 'none'
         })
+      })
+    }
+
+    // Filtrar visualizadores dinamicamente (busca local)
+    const searchViewersInput = container.querySelector('#ac-search-viewers-input')
+    if (searchViewersInput) {
+      searchViewersInput.addEventListener('input', () => {
+        const rawQuery = searchViewersInput.value || ''
+        const query = rawQuery.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
         
         container.querySelectorAll('.ip-access-viewer-row').forEach(row => {
           const nameSpan = row.querySelector('.ip-access-editor-name')
@@ -4334,6 +4577,18 @@ async function loadAccessControl(sectionElement) {
           const normName = nameText.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
           row.style.display = normName.includes(query) ? 'flex' : 'none'
         })
+      })
+    }
+
+    // Alternar visualização da seção de perfis de canais
+    const profilesHeader = container.querySelector('#ac-toggle-profiles-header')
+    const profilesContent = container.querySelector('#ac-profiles-content')
+    const profilesArrow = container.querySelector('#ac-profiles-arrow')
+    if (profilesHeader && profilesContent && profilesArrow) {
+      profilesHeader.addEventListener('click', () => {
+        const isHidden = profilesContent.style.display === 'none'
+        profilesContent.style.display = isHidden ? 'block' : 'none'
+        profilesArrow.textContent = isHidden ? '▼ Recolher' : '▶ Expandir'
       })
     }
 
@@ -4556,6 +4811,84 @@ async function loadAccessControl(sectionElement) {
     container.querySelectorAll('input[type="checkbox"], select').forEach(el => {
       el.addEventListener('click', (e) => {
         e.stopPropagation()
+      })
+    })
+
+    // Ações de solicitação do Modo Dev (Aprovar / Rejeitar)
+    container.querySelectorAll('.ac-approve-dev-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const userKey = btn.dataset.userKey
+        const userName = btn.dataset.userName
+        const userId = btn.dataset.userId
+        
+        const confirmed = confirm(`Aprovar a solicitação de Modo Dev para "${userName}"?`)
+        if (!confirmed) return
+        
+        btn.disabled = true
+        btn.textContent = 'Aprovando...'
+        
+        try {
+          const res = await fetch(`${RTDB_BASE_URL}/dev_requests/${userKey}.json`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              status: 'approved',
+              approvedAt: new Date().toISOString(),
+              approvedBy: window.sgdPermissions.currentUser || 'Master Editor'
+            })
+          })
+          if (res.ok) {
+            showNotification(`Solicitação de Modo Dev para "${userName}" aprovada com sucesso!`, 'success')
+            loadAccessControl(sectionElement)
+          } else {
+            showNotification('Erro ao aprovar solicitação no servidor.', 'error')
+            btn.disabled = false
+            btn.textContent = 'Aprovar'
+          }
+        } catch (e) {
+          console.error(e)
+          showNotification('Erro ao conectar ao Firebase.', 'error')
+          btn.disabled = false
+          btn.textContent = 'Aprovar'
+        }
+      })
+    })
+
+    container.querySelectorAll('.ac-reject-dev-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const userKey = btn.dataset.userKey
+        const userName = btn.dataset.userName
+        
+        const confirmed = confirm(`Rejeitar a solicitação de Modo Dev para "${userName}"?`)
+        if (!confirmed) return
+        
+        btn.disabled = true
+        btn.textContent = 'Rejeitando...'
+        
+        try {
+          const res = await fetch(`${RTDB_BASE_URL}/dev_requests/${userKey}.json`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              status: 'rejected',
+              rejectedAt: new Date().toISOString(),
+              rejectedBy: window.sgdPermissions.currentUser || 'Master Editor'
+            })
+          })
+          if (res.ok) {
+            showNotification(`Solicitação de Modo Dev para "${userName}" rejeitada.`, 'success')
+            loadAccessControl(sectionElement)
+          } else {
+            showNotification('Erro ao rejeitar solicitação no servidor.', 'error')
+            btn.disabled = false
+            btn.textContent = 'Rejeitar'
+          }
+        } catch (e) {
+          console.error(e)
+          showNotification('Erro ao conectar ao Firebase.', 'error')
+          btn.disabled = false
+          btn.textContent = 'Rejeitar'
+        }
       })
     })
 
