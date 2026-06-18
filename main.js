@@ -4232,10 +4232,11 @@ async function updateNotificationStatus() {
     let count = firedReminders.length
 
     // Contagem real de avisos não lidos (array direto, sem .data)
-    const data = await chrome.storage.local.get(['warningsLastReadTime', 'infoDevMode', 'cachedWarnings', 'ignoredWarnings', 'subscribedChannels'])
+    const data = await chrome.storage.local.get(['warningsLastReadTime', 'infoDevMode', 'cachedWarnings', 'ignoredWarnings', 'subscribedChannels', 'warningChannels'])
     const rawWarnings = Array.isArray(data.cachedWarnings) ? data.cachedWarnings : []
     const ignoredIds = Array.isArray(data.ignoredWarnings) ? data.ignoredWarnings : []
-    const subscribed = data.subscribedChannels ? [...data.subscribedChannels] : [...WARNING_CHANNELS];
+    const currentChannels = data.warningChannels || WARNING_CHANNELS;
+    const subscribed = data.subscribedChannels ? [...data.subscribedChannels] : [...currentChannels];
 
     // Registra recebimento dos avisos no Firebase
     const currentUser = window.sgdPermissions?.currentUser;
@@ -4253,14 +4254,27 @@ async function updateNotificationStatus() {
     const nowMs = Date.now()
     const lastReadTime = data.warningsLastReadTime || 0
 
+    const nowIso = new Date().toISOString()
     const unreadWarnings = rawWarnings.filter(w => {
       if (w.isTest && !data.infoDevMode) return false
       if (ignoredIds.includes(w.id)) return false
       const wChannel = w.channel || 'Geral';
       if (!subscribed.includes(wChannel)) return false;
+      
+      if (w.archived) return false
+      if (w.publishedAt && nowIso < w.publishedAt) return false
+
       if (!w.date) return false
       const wTime = new Date(w.date).getTime()
-      return nowMs - wTime < SEVEN_DAYS_MS && wTime > lastReadTime
+
+      let isExpired = false
+      if (w.expiresAt) {
+        isExpired = nowMs > new Date(w.expiresAt).getTime()
+      } else {
+        isExpired = nowMs - wTime >= SEVEN_DAYS_MS
+      }
+
+      return !isExpired && wTime > lastReadTime
     })
     const unreadCount = unreadWarnings.length
     const hasUnreadWarning = unreadCount > 0

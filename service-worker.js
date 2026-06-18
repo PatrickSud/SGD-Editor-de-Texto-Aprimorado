@@ -546,13 +546,41 @@ async function checkWarningsAndNotify() {
 
     if (warnings.length === 0) return;
 
-    const newestWarning = warnings[0];
+    const nowMs = Date.now();
+    const nowIso = new Date().toISOString();
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+    const isDevMode = !!(storage.infoDevMode);
+
+    // Filtra avisos válidos ativos para notificação
+    const activeWarnings = warnings.filter(w => {
+      if (w.archived) return false;
+      if (w.isTest && !isDevMode) return false;
+      if (w.publishedAt && nowIso < w.publishedAt) return false;
+      
+      if (w.expiresAt) {
+        if (nowMs > new Date(w.expiresAt).getTime()) return false;
+      } else if (w.date) {
+        if (nowMs - new Date(w.date).getTime() >= SEVEN_DAYS_MS) return false;
+      }
+      return true;
+    });
+
+    if (activeWarnings.length === 0) {
+      await chrome.storage.local.set({
+        warningsMetaSignature: serverSignature,
+        cachedWarnings: warnings
+      });
+      return;
+    }
+
+    const newestWarning = activeWarnings[0];
     const wChannel = newestWarning.channel || 'Geral';
 
     // Filtro por canais de inscrição e permissão do usuário
-    const subStorage = await chrome.storage.local.get(['subscribedChannels', 'allowedChannels']);
-    const subscribed = subStorage.subscribedChannels ? [...subStorage.subscribedChannels] : [...WARNING_CHANNELS];
-    const allowed = subStorage.allowedChannels ? [...subStorage.allowedChannels] : [...WARNING_CHANNELS];
+    const subStorage = await chrome.storage.local.get(['subscribedChannels', 'allowedChannels', 'warningChannels']);
+    const currentChannels = subStorage.warningChannels || WARNING_CHANNELS;
+    const subscribed = subStorage.subscribedChannels ? [...subStorage.subscribedChannels] : [...currentChannels];
+    const allowed = subStorage.allowedChannels ? [...subStorage.allowedChannels] : [...currentChannels];
 
     // Se não estiver inscrito neste canal ou se o canal não for permitido, salvamos a assinatura/cache no storage para evitar loops, mas não exibimos a notificação
     if (!subscribed.includes(wChannel) || !allowed.includes(wChannel)) {
@@ -566,7 +594,6 @@ async function checkWarningsAndNotify() {
     const title = newestWarning.title || 'Novo Aviso na Central';
     const message = newestWarning.message || 'Você tem um novo comunicado não lido na Central de Informações SGD.';
     const isTest = !!newestWarning.isTest;
-    const isDevMode = !!(storage.infoDevMode);
     const type = newestWarning.type || 'info';
 
     // 3. Atualiza a assinatura local e o cache de avisos para não repetir a mesma notificação e requisições redundantes

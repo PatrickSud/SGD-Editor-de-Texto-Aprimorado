@@ -11,18 +11,48 @@
 ;(function () {
   'use strict'
 
+  const RTDB_BASE_URL = 'https://sgd-extension-default-rtdb.firebaseio.com'
+
   // ─── Estado Global ───────────────────────────────────────────────────────────
   window.sgdPermissions = {
     currentUser: null,    // Nome capturado do SGD
+    currentUserId: null,  // ID capturado do SGD (Ex: "776356")
     isEditor: false,      // true se o usuário está na lista de editores
+    isMaster: false,      // true se o usuário atual é Master Editor
+    role: 'comum',        // cargo do usuário ('master' ou 'comum')
     isDevMode: false,     // true se o modo dev está ativo
     initialized: false,  // true após a primeira verificação
-    editorsList: [],      // Lista de editores [{id, name, addedAt, addedBy, allowedChannels}]
+    editorsList: [],      // Lista de editores [{id, name, addedAt, addedBy, allowedChannels, role}]
     viewersList: [],      // Lista de visualizadores [{id, name, firstSeen, lastSeen, allowedChannels}]
-    allowedChannels: []   // Canais permitidos para o usuário atual
+    allowedChannels: [],  // Canais permitidos para o usuário atual
+    channels: []          // Lista de canais carregados dinamicamente
   }
 
-  // ─── Captura do Nome do Técnico Logado ───────────────────────────────────────
+  function getChannelsFallback() {
+    return (window.sgdPermissions && window.sgdPermissions.channels && window.sgdPermissions.channels.length > 0)
+      ? [...window.sgdPermissions.channels]
+      : [...WARNING_CHANNELS]
+  }
+
+  // ─── Captura do Nome e ID do Técnico Logado ──────────────────────────────────
+
+  /**
+   * Tenta capturar o ID numérico do usuário logado a partir de links de perfil no DOM.
+   * @returns {string|null} ID do usuário ou null se não encontrado
+   */
+  function captureLoggedUserId() {
+    const userLinks = document.querySelectorAll('a[href*="alt-usuario.html"]')
+    for (const link of userLinks) {
+      const href = link.getAttribute('href')
+      if (href) {
+        const match = href.match(/[?&]usuario=(\d+)/)
+        if (match && match[1]) {
+          return match[1]
+        }
+      }
+    }
+    return null
+  }
 
   /**
    * Tenta capturar o nome do técnico logado diretamente do DOM do SGD.
@@ -104,7 +134,8 @@
         name: data.name || '',
         addedAt: data.addedAt || '',
         addedBy: data.addedBy || '',
-        allowedChannels: data.allowedChannels || [...WARNING_CHANNELS]
+        allowedChannels: data.allowedChannels || getChannelsFallback(),
+        role: data.role || 'comum'
       }))
 
       await chrome.storage.local.set({
@@ -157,7 +188,7 @@
         name: data.name || '',
         firstSeen: data.firstSeen || '',
         lastSeen: data.lastSeen || '',
-        allowedChannels: data.allowedChannels || [...WARNING_CHANNELS]
+        allowedChannels: data.allowedChannels || getChannelsFallback()
       }))
 
       viewersList.sort((a, b) => a.name.localeCompare(b.name))
@@ -213,15 +244,19 @@
 
     if (isDevMode) {
       window.sgdPermissions.isDevMode = true
+      window.sgdPermissions.role = 'master'
+      window.sgdPermissions.isMaster = true
     }
 
     const userName = window.sgdPermissions.currentUser
+    const userId = window.sgdPermissions.currentUserId
+
     if (!userName) {
       if (isDevMode) {
         window.sgdPermissions.isEditor = true
-        window.sgdPermissions.allowedChannels = [...WARNING_CHANNELS]
+        window.sgdPermissions.allowedChannels = getChannelsFallback()
         await chrome.storage.local.set({ 
-          allowedChannels: [...WARNING_CHANNELS], 
+          allowedChannels: getChannelsFallback(), 
           isCurrentUserEditor: true 
         })
         return true
@@ -232,35 +267,72 @@
     const editors = await getEditorsList()
     const normalizedUserName = normalizeName(userName)
 
-    const matchedEditor = editors.find(editor => normalizeName(editor.name) === normalizedUserName)
+    // 1. Tenta buscar por ID e depois por Nome
+    let matchedEditor = null
+    if (userId) {
+      matchedEditor = editors.find(editor => editor.id === userId)
+    }
+    if (!matchedEditor) {
+      matchedEditor = editors.find(editor => normalizeName(editor.name) === normalizedUserName)
+    }
+
     const found = !!matchedEditor || isDevMode
     window.sgdPermissions.isEditor = found
     
-    let allowed = [...WARNING_CHANNELS]
+    let allowed = getChannelsFallback()
+    let role = 'comum'
+
     if (matchedEditor) {
-      allowed = matchedEditor.allowedChannels || [...WARNING_CHANNELS]
+      allowed = matchedEditor.allowedChannels || getChannelsFallback()
+      role = matchedEditor.role || 'comum'
       // Ativa automaticamente o Modo Dev para editores cadastrados
       await chrome.storage.local.set({ 
         infoDevMode: true
       })
       window.sgdPermissions.isDevMode = true
     } else if (isDevMode) {
-      allowed = [...WARNING_CHANNELS]
+      allowed = getChannelsFallback()
+      role = 'master'
     } else {
       const viewers = await getViewersList()
-      const matchedViewer = viewers.find(v => normalizeName(v.name) === normalizedUserName)
+      let matchedViewer = null
+      if (userId) {
+        matchedViewer = viewers.find(v => v.id === userId)
+      }
+      if (!matchedViewer) {
+        matchedViewer = viewers.find(v => normalizeName(v.name) === normalizedUserName)
+      }
       if (matchedViewer) {
-        allowed = matchedViewer.allowedChannels || [...WARNING_CHANNELS]
+        allowed = matchedViewer.allowedChannels || getChannelsFallback()
       }
     }
     
     window.sgdPermissions.allowedChannels = allowed
+    window.sgdPermissions.role = role
+    window.sgdPermissions.isMaster = (role === 'master' || isDevMode)
+
     await chrome.storage.local.set({ 
       allowedChannels: allowed, 
       isCurrentUserEditor: found 
     })
     
     return found
+  }
+
+  /**
+   * Limpa uma string para ser usada com segurança como chave do Firebase.
+   * @param {string} str 
+   * @returns {string}
+   */
+  function cleanFirebaseKey(str) {
+    if (!str) return 'unknown_user'
+    return str
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '_')
+      .replace(/_+/g, '_')
   }
 
   // ─── Registro Automático de Usuários ──────────────────────────────────────────
@@ -274,6 +346,8 @@
     
     const normalizedUser = normalizeName(userName)
     const nowStr = new Date().toISOString()
+    const userId = window.sgdPermissions.currentUserId
+    const userKey = userId || cleanFirebaseKey(userName)
     
     try {
       // Obter estado atual do Modo Dev
@@ -282,57 +356,58 @@
 
       // 1. Busca listas atualizadas
       const editors = await getEditorsList(true)
-      const matchedEditor = editors.find(e => normalizeName(e.name) === normalizedUser)
+      let matchedEditor = null
+      if (userId) {
+        matchedEditor = editors.find(e => e.id === userId)
+      }
+      if (!matchedEditor) {
+        matchedEditor = editors.find(e => normalizeName(e.name) === normalizedUser)
+      }
       
       if (isDevMode) {
-        if (matchedEditor) {
-          // Atualiza lastSeen do editor no Firebase
-          await fetch(`${RTDB_EDITORS_URL}/${matchedEditor.id}.json`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ lastSeen: nowStr })
-          })
-          
-          const allowed = matchedEditor.allowedChannels || [...WARNING_CHANNELS]
-          await chrome.storage.local.set({ 
-            allowedChannels: allowed,
-            isCurrentUserEditor: true
-          })
-          window.sgdPermissions.allowedChannels = allowed
-          window.sgdPermissions.isEditor = true
-        } else {
-          // Novo editor com canais padrão
-          const defaultChannels = [...WARNING_CHANNELS]
-          const response = await fetch(`${RTDB_EDITORS_URL}.json`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: userName.trim(),
-              addedAt: nowStr,
-              addedBy: 'Auto Dev Mode',
-              allowedChannels: defaultChannels,
-              lastSeen: nowStr
-            })
-          })
-          
-          if (response.ok) {
-            await chrome.storage.local.set({ 
-              allowedChannels: defaultChannels,
-              isCurrentUserEditor: true
-            })
-            window.sgdPermissions.allowedChannels = defaultChannels
-            window.sgdPermissions.isEditor = true
-          }
+        const targetKey = matchedEditor ? matchedEditor.id : userKey
+        const existingChannels = matchedEditor ? (matchedEditor.allowedChannels || getChannelsFallback()) : getChannelsFallback()
+        const existingRole = matchedEditor ? (matchedEditor.role || 'master') : 'master'
+        
+        const editorBody = {
+          name: userName.trim(),
+          allowedChannels: existingChannels,
+          lastSeen: nowStr,
+          role: existingRole
         }
+        if (!matchedEditor) {
+          editorBody.addedAt = nowStr
+          editorBody.addedBy = 'Auto Dev Mode'
+        }
+
+        await fetch(`${RTDB_EDITORS_URL}/${targetKey}.json`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(editorBody)
+        })
+        
+        await chrome.storage.local.set({ 
+          allowedChannels: existingChannels,
+          isCurrentUserEditor: true
+        })
+        window.sgdPermissions.allowedChannels = existingChannels
+        window.sgdPermissions.isEditor = true
+        window.sgdPermissions.role = existingRole
+        window.sgdPermissions.isMaster = (existingRole === 'master')
 
         // Remove do viewers se existir duplicata
         const viewers = await getViewersList(true)
-        const matchedViewer = viewers.find(v => normalizeName(v.name) === normalizedUser)
-        if (matchedViewer) {
-          await fetch(`${RTDB_VIEWERS_URL}/${matchedViewer.id}.json`, {
-            method: 'DELETE'
-          })
+        let matchedViewer = null
+        if (userId) {
+          matchedViewer = viewers.find(v => v.id === userId)
         }
+        if (!matchedViewer) {
+          matchedViewer = viewers.find(v => normalizeName(v.name) === normalizedUser)
+        }
+        const viewerKeyToDelete = matchedViewer ? matchedViewer.id : userKey
+        await fetch(`${RTDB_VIEWERS_URL}/${viewerKeyToDelete}.json`, {
+          method: 'DELETE'
+        })
         
         await invalidatePermissionsCache()
         return
@@ -346,18 +421,27 @@
           body: JSON.stringify({ lastSeen: nowStr })
         })
         
-        const allowed = matchedEditor.allowedChannels || [...WARNING_CHANNELS]
+        const allowed = matchedEditor.allowedChannels || getChannelsFallback()
+        const existingRole = matchedEditor.role || 'comum'
         await chrome.storage.local.set({ 
           allowedChannels: allowed,
           isCurrentUserEditor: true
         })
         window.sgdPermissions.allowedChannels = allowed
         window.sgdPermissions.isEditor = true
+        window.sgdPermissions.role = existingRole
+        window.sgdPermissions.isMaster = (existingRole === 'master')
         return
       }
       
       const viewers = await getViewersList(true)
-      const matchedViewer = viewers.find(v => normalizeName(v.name) === normalizedUser)
+      let matchedViewer = null
+      if (userId) {
+        matchedViewer = viewers.find(v => v.id === userId)
+      }
+      if (!matchedViewer) {
+        matchedViewer = viewers.find(v => normalizeName(v.name) === normalizedUser)
+      }
       
       if (matchedViewer) {
         // Atualiza lastSeen do visualizador
@@ -367,7 +451,7 @@
           body: JSON.stringify({ lastSeen: nowStr })
         })
         
-        const allowed = matchedViewer.allowedChannels || [...WARNING_CHANNELS]
+        const allowed = matchedViewer.allowedChannels || getChannelsFallback()
         await chrome.storage.local.set({ 
           allowedChannels: allowed,
           isCurrentUserEditor: false
@@ -375,10 +459,10 @@
         window.sgdPermissions.allowedChannels = allowed
         window.sgdPermissions.isEditor = false
       } else {
-        // Cadastra novo visualizador com todos os canais liberados por padrão
-        const defaultChannels = [...WARNING_CHANNELS]
-        const response = await fetch(`${RTDB_VIEWERS_URL}.json`, {
-          method: 'POST',
+        // Cadastra novo visualizador via PUT usando a chave gerada por userId
+        const defaultChannels = getChannelsFallback()
+        const response = await fetch(`${RTDB_VIEWERS_URL}/${userKey}.json`, {
+          method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             name: userName.trim(),
@@ -405,39 +489,96 @@
   // ─── Mutações (Adicionar / Remover / Atualizar Editores e Visualizadores) ──────
 
   /**
+   * Grava um log de auditoria no Firebase RTDB.
+   * @param {string} action - Nome da ação executada
+   * @param {string} target - Alvo da ação (ex: nome do usuário ou título do aviso)
+   * @param {string} details - Detalhes adicionais (opcional)
+   */
+  async function writeAuditLog(action, target, details = '') {
+    try {
+      const operatorId = window.sgdPermissions.currentUserId || 'unknown_id'
+      const operatorName = window.sgdPermissions.currentUser || 'Desconhecido'
+      const timestamp = new Date().toISOString()
+      
+      await fetch(`${RTDB_BASE_URL}/audit_logs.json`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          operatorId,
+          operatorName,
+          action,
+          target,
+          details,
+          timestamp
+        })
+      })
+    } catch (e) {
+      console.warn('[SGD Permissions] Erro ao gravar log de auditoria:', e)
+    }
+  }
+
+  /**
+   * Obtém os logs de auditoria do Firebase RTDB.
+   * @returns {Promise<Array>}
+   */
+  async function getAuditLogs() {
+    try {
+      const response = await fetch(`${RTDB_BASE_URL}/audit_logs.json?orderBy="timestamp"&limitToLast=100`, { cache: 'no-store' })
+      if (!response.ok) return []
+      const result = await response.json()
+      if (!result || typeof result !== 'object') return []
+      
+      const logs = Object.entries(result).map(([id, data]) => ({
+        id,
+        ...data
+      }))
+      logs.sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''))
+      return logs
+    } catch (e) {
+      console.warn('[SGD Permissions] Erro ao carregar logs de auditoria:', e)
+      return []
+    }
+  }
+
+  /**
    * Adiciona um técnico como editor.
    * @param {string} name - Nome do técnico a ser adicionado
+   * @param {string} userId - ID do técnico a ser adicionado (opcional)
    * @returns {Promise<boolean>} Sucesso ou falha
    */
-  async function addEditor(name) {
-    if (!window.sgdPermissions.isEditor) {
-      console.warn('[SGD Permissions] Acesso negado: apenas editores podem adicionar editores.')
+  async function addEditor(name, userId = '') {
+    if (!window.sgdPermissions.isMaster) {
+      console.warn('[SGD Permissions] Acesso negado: apenas editores master podem adicionar editores.')
       return false
     }
 
     const trimmedName = name.trim()
     if (!trimmedName) return false
 
+    const targetKey = userId || cleanFirebaseKey(trimmedName)
+
     // Verifica duplicata
     const editors = await getEditorsList()
     const normalizedNew = normalizeName(trimmedName)
-    const isDuplicate = editors.some(e => normalizeName(e.name) === normalizedNew)
+    const isDuplicate = editors.some(e => normalizeName(e.name) === normalizedNew || e.id === targetKey)
     if (isDuplicate) return false
 
     try {
-      const response = await fetch(`${RTDB_EDITORS_URL}.json`, {
-        method: 'POST',
+      const response = await fetch(`${RTDB_EDITORS_URL}/${targetKey}.json`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: trimmedName,
           addedAt: new Date().toISOString(),
           addedBy: window.sgdPermissions.currentUser || 'desconhecido',
-          allowedChannels: [...WARNING_CHANNELS]
+          allowedChannels: getChannelsFallback(),
+          role: 'comum'
         })
       })
 
       if (!response.ok) throw new Error('Falha ao adicionar editor')
 
+      await writeAuditLog('ADD_EDITOR', trimmedName, `ID: ${targetKey}, Cargo: comum`)
       await invalidatePermissionsCache()
       return true
     } catch (error) {
@@ -448,20 +589,23 @@
 
   /**
    * Remove um técnico da lista de editores pelo ID do Firebase.
-   * @param {string} firebaseId - O key do Firebase (ex: "-N...")
+   * @param {string} firebaseId - O key do Firebase (ex: "776356" ou "-N...")
    * @returns {Promise<boolean>} Sucesso ou falha
    */
   async function removeEditor(firebaseId) {
-    if (!window.sgdPermissions.isEditor) {
-      console.warn('[SGD Permissions] Acesso negado: apenas editores podem remover editores.')
+    if (!window.sgdPermissions.isMaster) {
+      console.warn('[SGD Permissions] Acesso negado: apenas editores master podem remover editores.')
       return false
     }
 
-    // Impede que o único editor se remova (proteção mínima)
     const editors = await getEditorsList()
     const currentNorm = normalizeName(window.sgdPermissions.currentUser)
+    const currentUserId = window.sgdPermissions.currentUserId
+    
     const removing = editors.find(e => e.id === firebaseId)
-    const isRemovingSelf = removing && normalizeName(removing.name) === currentNorm
+    if (!removing) return false
+
+    const isRemovingSelf = firebaseId === currentUserId || normalizeName(removing.name) === currentNorm
     if (isRemovingSelf && editors.length <= 1) {
       console.warn('[SGD Permissions] Não é possível remover o único editor.')
       return false
@@ -474,6 +618,7 @@
 
       if (!response.ok) throw new Error('Falha ao remover editor')
 
+      await writeAuditLog('REMOVE_EDITOR', removing.name, `ID: ${firebaseId}`)
       await invalidatePermissionsCache()
       return true
     } catch (error) {
@@ -486,18 +631,56 @@
    * Atualiza os canais permitidos de um editor.
    */
   async function updateEditorChannels(editorId, allowedChannels) {
-    if (!window.sgdPermissions.isEditor) return false
+    if (!window.sgdPermissions.isMaster) {
+      console.warn('[SGD Permissions] Acesso negado: apenas editores master podem alterar canais de editores.')
+      return false
+    }
     try {
+      const editors = await getEditorsList()
+      const editorObj = editors.find(e => e.id === editorId)
+      const name = editorObj ? editorObj.name : 'Desconhecido'
+
       const response = await fetch(`${RTDB_EDITORS_URL}/${editorId}.json`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ allowedChannels })
       })
       if (!response.ok) throw new Error('Falha ao atualizar canais')
+      
+      await writeAuditLog('UPDATE_EDITOR_CHANNELS', name, `Canais: ${allowedChannels.join(', ') || 'Nenhum'}`)
       await invalidatePermissionsCache()
       return true
     } catch (error) {
       console.error('[SGD Permissions] Erro ao atualizar canais do editor:', error)
+      return false
+    }
+  }
+
+  /**
+   * Atualiza o cargo de um editor (Master vs Comum).
+   */
+  async function updateEditorRole(editorId, role) {
+    if (!window.sgdPermissions.isMaster) {
+      console.warn('[SGD Permissions] Acesso negado: apenas editores master podem alterar cargos.')
+      return false
+    }
+    try {
+      const editors = await getEditorsList()
+      const editorObj = editors.find(e => e.id === editorId)
+      const name = editorObj ? editorObj.name : 'Desconhecido'
+
+      const response = await fetch(`${RTDB_EDITORS_URL}/${editorId}.json`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role })
+      })
+      if (!response.ok) throw new Error('Falha ao atualizar cargo')
+
+      await writeAuditLog('UPDATE_EDITOR_ROLE', name, `Cargo: ${role}`)
+      await invalidatePermissionsCache()
+      return true
+    } catch (error) {
+      console.error('[SGD Permissions] Erro ao atualizar cargo do editor:', error)
       return false
     }
   }
@@ -508,12 +691,18 @@
   async function updateViewerChannels(viewerId, allowedChannels) {
     if (!window.sgdPermissions.isEditor) return false
     try {
+      const viewers = await getViewersList()
+      const viewerObj = viewers.find(v => v.id === viewerId)
+      const name = viewerObj ? viewerObj.name : 'Desconhecido'
+
       const response = await fetch(`${RTDB_VIEWERS_URL}/${viewerId}.json`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ allowedChannels })
       })
       if (!response.ok) throw new Error('Falha ao atualizar canais')
+
+      await writeAuditLog('UPDATE_VIEWER_CHANNELS', name, `Canais: ${allowedChannels.join(', ') || 'Nenhum'}`)
       await invalidatePermissionsCache()
       return true
     } catch (error) {
@@ -533,9 +722,9 @@
         const v = viewers.find(item => item.id === id)
         if (!v) return Promise.resolve()
 
-        let channels = v.allowedChannels || [...WARNING_CHANNELS]
+        let channels = v.allowedChannels || getChannelsFallback()
         if (channel === 'all') {
-          channels = action === 'enable' ? [...WARNING_CHANNELS] : []
+          channels = action === 'enable' ? getChannelsFallback() : []
         } else {
           if (action === 'enable') {
             if (!channels.includes(channel)) channels.push(channel)
@@ -552,6 +741,7 @@
       })
 
       await Promise.all(promises)
+      await writeAuditLog('BULK_UPDATE_VIEWERS_CHANNELS', `${viewerIds.length} usuários`, `Canal: ${channel}, Ação: ${action}`)
       await invalidatePermissionsCache()
       return true
     } catch (error) {
@@ -561,23 +751,27 @@
   }
 
   /**
-   * Promove um visualizador a editor (adiciona no editors e remove do viewers).
+   * Promove um visualizador a editor.
    */
-  async function promoteViewerToEditor(viewerId, viewerName) {
-    if (!window.sgdPermissions.isEditor) return false
+  async function promoteViewerToEditor(viewerId, viewerName, role = 'comum') {
+    if (!window.sgdPermissions.isMaster) {
+      console.warn('[SGD Permissions] Acesso negado: apenas editores master podem promover usuários.')
+      return false
+    }
     try {
       const trimmedName = viewerName.trim()
       if (!trimmedName) return false
 
-      // 1. Adiciona o editor
-      const responseAdd = await fetch(`${RTDB_EDITORS_URL}.json`, {
-        method: 'POST',
+      // 1. Adiciona o editor usando o viewerId como chave via PUT
+      const responseAdd = await fetch(`${RTDB_EDITORS_URL}/${viewerId}.json`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: trimmedName,
           addedAt: new Date().toISOString(),
           addedBy: window.sgdPermissions.currentUser || 'desconhecido',
-          allowedChannels: [...WARNING_CHANNELS]
+          allowedChannels: getChannelsFallback(),
+          role: role
         })
       })
 
@@ -592,10 +786,109 @@
         console.warn('[SGD Permissions] Editor adicionado, mas falha ao remover registro de visualizador.')
       }
 
+      await writeAuditLog('PROMOTE_EDITOR', trimmedName, `ID: ${viewerId}, Cargo: ${role}`)
       await invalidatePermissionsCache()
       return true
     } catch (error) {
       console.error('[SGD Permissions] Erro ao promover visualizador:', error)
+      return false
+    }
+  }
+
+  // Perfis de Canais CRUD
+  async function getChannelProfiles() {
+    try {
+      const response = await fetch(`${RTDB_BASE_URL}/permissions/channel_profiles.json`, { cache: 'no-store' })
+      if (!response.ok) return []
+      const result = await response.json()
+      if (!result || typeof result !== 'object') return []
+      return Object.entries(result).map(([id, data]) => ({
+        id,
+        name: data.name || '',
+        channels: data.channels || []
+      }))
+    } catch (e) {
+      console.warn('[SGD Permissions] Erro ao buscar perfis de canais:', e)
+      return []
+    }
+  }
+
+  async function saveChannelProfile(name, channels) {
+    if (!window.sgdPermissions.isEditor) return false
+    const key = cleanFirebaseKey(name)
+    try {
+      const response = await fetch(`${RTDB_BASE_URL}/permissions/channel_profiles/${key}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, channels })
+      })
+      if (response.ok) {
+        await writeAuditLog('SAVE_CHANNEL_PROFILE', name, `Canais: ${channels.join(', ')}`)
+        return true
+      }
+      return false
+    } catch (e) {
+      console.warn('[SGD Permissions] Erro ao salvar perfil de canais:', e)
+      return false
+    }
+  }
+
+  async function deleteChannelProfile(profileId) {
+    if (!window.sgdPermissions.isEditor) return false
+    try {
+      const response = await fetch(`${RTDB_BASE_URL}/permissions/channel_profiles/${profileId}.json`, {
+        method: 'DELETE'
+      })
+      if (response.ok) {
+        await writeAuditLog('DELETE_CHANNEL_PROFILE', profileId)
+        return true
+      }
+      return false
+    } catch (e) {
+      console.warn('[SGD Permissions] Erro ao excluir perfil de canais:', e)
+      return false
+    }
+  }
+
+  // Canais Dinâmicos CRUD
+  async function loadActiveChannels() {
+    try {
+      const response = await fetch(`${RTDB_BASE_URL}/permissions/channels.json`, { cache: 'no-store' })
+      if (response.ok) {
+        const data = await response.json()
+        if (Array.isArray(data) && data.length > 0) {
+          window.sgdPermissions.channels = data
+          await chrome.storage.local.set({ warningChannels: data })
+          return data
+        }
+      }
+    } catch (e) {
+      console.warn('[SGD Permissions] Erro ao buscar canais do Firebase:', e)
+    }
+    // Fallback para storage local ou constante global WARNING_CHANNELS
+    const stored = await chrome.storage.local.get(['warningChannels'])
+    const list = stored.warningChannels || [...WARNING_CHANNELS]
+    window.sgdPermissions.channels = list
+    return list
+  }
+
+  async function saveActiveChannels(channelsList) {
+    if (!window.sgdPermissions.isEditor || window.sgdPermissions.role !== 'master') return false
+    try {
+      const response = await fetch(`${RTDB_BASE_URL}/permissions/channels.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(channelsList)
+      })
+      if (response.ok) {
+        window.sgdPermissions.channels = channelsList
+        await chrome.storage.local.set({ warningChannels: channelsList })
+        await writeAuditLog('UPDATE_CHANNELS', 'Canais', `Novos canais: ${channelsList.join(', ')}`)
+        return true
+      }
+      return false
+    } catch (e) {
+      console.error('[SGD Permissions] Erro ao salvar canais:', e)
       return false
     }
   }
@@ -608,7 +901,12 @@
    */
   async function initPermissions() {
     const userName = captureLoggedUserName()
+    const userId = captureLoggedUserId()
     window.sgdPermissions.currentUser = userName
+    window.sgdPermissions.currentUserId = userId
+
+    // Carrega canais dinâmicos antes de mais nada
+    await loadActiveChannels()
 
     // 1. Tenta carregar dados cacheados locais de imediato
     const localData = await chrome.storage.local.get(['allowedChannels', 'isCurrentUserEditor'])
@@ -616,7 +914,7 @@
       window.sgdPermissions.allowedChannels = localData.allowedChannels
       window.sgdPermissions.isEditor = !!localData.isCurrentUserEditor
     } else {
-      window.sgdPermissions.allowedChannels = [...WARNING_CHANNELS]
+      window.sgdPermissions.allowedChannels = getChannelsFallback()
     }
 
     await isCurrentUserEditor()
@@ -649,19 +947,33 @@
       } else {
         // Busca em segundo plano de forma assíncrona para garantir sincronia
         isCurrentUserEditor().then(async () => {
-          let allowed = [...WARNING_CHANNELS]
+          let allowed = getChannelsFallback()
           const editors = await getEditorsList()
           const normalUser = normalizeName(userName)
-          const editorObj = editors.find(e => normalizeName(e.name) === normalUser)
+          
+          let editorObj = null
+          if (userId) {
+            editorObj = editors.find(e => e.id === userId)
+          }
+          if (!editorObj) {
+            editorObj = editors.find(e => normalizeName(e.name) === normalUser)
+          }
+
           if (editorObj) {
-            allowed = editorObj.allowedChannels || [...WARNING_CHANNELS]
+            allowed = editorObj.allowedChannels || getChannelsFallback()
           } else if (window.sgdPermissions.isDevMode) {
-            allowed = [...WARNING_CHANNELS]
+            allowed = getChannelsFallback()
           } else {
             const viewers = await getViewersList()
-            const viewerObj = viewers.find(v => normalizeName(v.name) === normalUser)
+            let viewerObj = null
+            if (userId) {
+              viewerObj = viewers.find(v => v.id === userId)
+            }
+            if (!viewerObj) {
+              viewerObj = viewers.find(v => normalizeName(v.name) === normalUser)
+            }
             if (viewerObj) {
-              allowed = viewerObj.allowedChannels || [...WARNING_CHANNELS]
+              allowed = viewerObj.allowedChannels || getChannelsFallback()
             }
           }
           window.sgdPermissions.allowedChannels = allowed
@@ -693,11 +1005,19 @@
   window.sgdPermissions.addEditor = addEditor
   window.sgdPermissions.removeEditor = removeEditor
   window.sgdPermissions.updateEditorChannels = updateEditorChannels
+  window.sgdPermissions.updateEditorRole = updateEditorRole
   window.sgdPermissions.updateViewerChannels = updateViewerChannels
   window.sgdPermissions.bulkUpdateViewersChannels = bulkUpdateViewersChannels
   window.sgdPermissions.promoteViewerToEditor = promoteViewerToEditor
   window.sgdPermissions.invalidateCache = invalidatePermissionsCache
   window.sgdPermissions.registerUserActivity = registerUserActivity
+  window.sgdPermissions.getChannelProfiles = getChannelProfiles
+  window.sgdPermissions.saveChannelProfile = saveChannelProfile
+  window.sgdPermissions.deleteChannelProfile = deleteChannelProfile
+  window.sgdPermissions.loadActiveChannels = loadActiveChannels
+  window.sgdPermissions.saveActiveChannels = saveActiveChannels
+  window.sgdPermissions.getAuditLogs = getAuditLogs
+  window.sgdPermissions.writeAuditLog = writeAuditLog
   window.sgdPermissions.refreshEditors = async () => {
     const list = await getEditorsList(true)
     window.sgdPermissions.editorsList = list

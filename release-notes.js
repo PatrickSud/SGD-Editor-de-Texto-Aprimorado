@@ -1,10 +1,16 @@
 const RELEASE_NOTES = {
   '3.0.5.6': {
-    title: '✨ Controle de Acesso e Busca de Usuários — Versão 3.0.5.6',
+    title: '✨ Gestão Avançada de Acesso e Avisos — Versão 3.0.5.6',
     features: [
-      '<b>🔍 Busca e Promoção de Editores:</b> Adicionado campo de pesquisa em tempo real para filtrar visualizadores e editores, com novo botão para promover visualizadores a editores diretamente no painel.',
-      '<b>🔐 Simplificação de Chaves Dev:</b> Remoção da chave redundante <code>developerMode</code> e unificação das funções administrativas no <code>infoDevMode</code>, mantendo a ativação automática para editores salvos no Firebase.',
-      '<b>📊 Modal de Métricas Ampliado:</b> Aumentado o tamanho do modal de métricas de avisos para evitar corte lateral de informações e permitir visualização de listas maiores de usuários.'
+      '<b>📅 Agendamento e Expiração:</b> Suporte a agendamento de publicação no futuro e datas de expiração customizadas para avisos.',
+      '<b>📥 Histórico e Arquivo de Avisos:</b> Sub-abas no painel de avisos (Ativos vs. Arquivo/Histórico) e botões para arquivar/desarquivar avisos manualmente.',
+      '<b>👑 Níveis de Permissão de Editor:</b> Separação de Editores em Master e Comum. Apenas Master pode alterar cargos, remover editores, limitar canais de editores ou visualizar logs.',
+      '<b>📋 Perfis de Canais:</b> Criação, salvamento no Firebase e aplicação (individual e em lote) de perfis predefinidos de canais de avisos.',
+      '<b>🔍 Busca e Promoção de Editores:</b> Campo de pesquisa em tempo real para filtrar visualizadores e editores, e botão para promover visualizadores a editores diretamente no painel.',
+      '<b>📊 Log de Auditoria e Métricas:</b> Modal de logs de auditoria completo para ações administrativas e tamanho do modal de métricas ampliado para melhor legibilidade.',
+      '<b>⚙️ Canais Dinâmicos:</b> Nova tela de gerenciamento de canais disponível para Editores Master (Adicionar, Renomear e Excluir canais diretamente do Firebase).',
+      '<b>⚡ Ações em Lote Compactadas:</b> Redesenho da interface de ações em lote para exibição inline e sem quebras de linha.',
+      '<b>🛠️ Correções de Clicabilidade:</b> Resolvido problema em que cliques nos checkboxes de perfis eram bloqueados por scripts nativos do SGD.'
     ]
   },
   '3.0.5.5': {

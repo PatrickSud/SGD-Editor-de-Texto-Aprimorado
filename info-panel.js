@@ -1437,8 +1437,9 @@ async function renderChannelPills(sectionElement) {
   const container = sectionElement.querySelector('.warnings-channels-filter')
   if (!container) return
 
-  const storage = await chrome.storage.local.get(['subscribedChannels'])
-  let subscribed = storage.subscribedChannels ? [...storage.subscribedChannels] : [...WARNING_CHANNELS]
+  const storage = await chrome.storage.local.get(['subscribedChannels', 'warningChannels'])
+  const activeChannelsList = storage.warningChannels || WARNING_CHANNELS
+  let subscribed = storage.subscribedChannels ? [...storage.subscribedChannels] : [...activeChannelsList]
   
   // Geral é sempre selecionado e não pode ser desativado
   if (!subscribed.includes('Geral')) {
@@ -1448,7 +1449,7 @@ async function renderChannelPills(sectionElement) {
   // Remove pills antigas mantendo o cabeçalho/span
   container.querySelectorAll('.channel-pill').forEach(el => el.remove())
 
-  WARNING_CHANNELS.forEach(channel => {
+  activeChannelsList.forEach(channel => {
     const isSub = subscribed.includes(channel)
     const pill = document.createElement('button')
     pill.type = 'button'
@@ -1509,30 +1510,38 @@ async function renderChannelPills(sectionElement) {
 
 async function loadWarnings(sectionElement, forceRefresh = false) {
   let listContainer = sectionElement.querySelector('#warnings-list')
+  const activeTab = sectionElement.dataset.activeTab || 'active'
 
   // Se não existir o listContainer, cria a estrutura inicial
   if (!listContainer) {
-    // Cabeçalho da seção com botão de novo aviso (se dev)
+    // Cabeçalho da seção com botão de novo aviso (se dev/editor)
     const headerHtml = `
-            <div class="ip-section-header" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                    <div class="ip-section-desc" style="margin-bottom: 0;">Fique por dentro dos comunicados e avisos importantes.</div>
-                    ${(developerMode || window.sgdPermissions?.isEditor) ? `<button id="new-warning-btn" class="ip-add-closing-btn" style="width: auto;">+ Novo Aviso</button>` : ''}
-                </div>
-                <!-- Canais de Notificação -->
-                <div class="warnings-channels-filter" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding: 12px; background: var(--background-secondary); border: 1px solid var(--border-color); border-radius: 8px; width: 100%;">
-                    <span style="font-size: 12px; font-weight: 600; color: var(--text-color-main); width: 100%; margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
-                      📬 Meus Canais (Selecione para receber notificações):
-                    </span>
-                </div>
-            </div>
-            <div id="warnings-list" class="ip-grid">
-                 <div class="ip-loading-container">
-                    <div class="ip-spinner"></div>
-                    <span>Carregando avisos...</span>
-                </div>
-            </div>
-        `
+      <div class="ip-section-header" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 12px;">
+              <div class="ip-section-desc" style="margin-bottom: 0;">Fique por dentro dos comunicados e avisos importantes.</div>
+              ${(developerMode || window.sgdPermissions?.isEditor) ? `<button id="new-warning-btn" class="ip-add-closing-btn" style="width: auto; white-space: nowrap;">+ Novo Aviso</button>` : ''}
+          </div>
+          
+          <!-- Sub-abas de navegação -->
+          <div style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-top: 8px; width: 100%;">
+              <button id="warn-tab-active" class="action-btn small-btn" style="background: var(--accent-color, #3b82f6); color: white; border: none; padding: 4px 12px; cursor: pointer; font-size: 11px; border-radius: 4px; font-weight: 600;">Ativos</button>
+              <button id="warn-tab-archive" class="action-btn small-btn secondary-btn" style="background: transparent; color: var(--text-color-main); border: 1px solid var(--border-color); padding: 4px 12px; cursor: pointer; font-size: 11px; border-radius: 4px;">Arquivo / Histórico</button>
+          </div>
+
+          <!-- Canais de Notificação -->
+          <div class="warnings-channels-filter" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding: 12px; background: var(--background-secondary); border: 1px solid var(--border-color); border-radius: 8px; width: 100%;">
+              <span style="font-size: 12px; font-weight: 600; color: var(--text-color-main); width: 100%; margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
+                📬 Meus Canais (Selecione para receber notificações):
+              </span>
+          </div>
+      </div>
+      <div id="warnings-list" class="ip-grid">
+           <div class="ip-loading-container">
+              <div class="ip-spinner"></div>
+              <span>Carregando avisos...</span>
+          </div>
+      </div>
+    `
 
     sectionElement.innerHTML = headerHtml
     listContainer = sectionElement.querySelector('#warnings-list')
@@ -1542,19 +1551,45 @@ async function loadWarnings(sectionElement, forceRefresh = false) {
     if (newBtn) {
       newBtn.addEventListener('click', () => openCreateWarningModal(null))
     }
+
+    // Listeners das sub-abas
+    const activeBtn = sectionElement.querySelector('#warn-tab-active')
+    const archiveBtn = sectionElement.querySelector('#warn-tab-archive')
+    
+    if (activeBtn && archiveBtn) {
+      activeBtn.addEventListener('click', () => {
+        sectionElement.dataset.activeTab = 'active'
+        activeBtn.style.background = 'var(--accent-color, #3b82f6)'
+        activeBtn.style.color = 'white'
+        activeBtn.style.border = 'none'
+        archiveBtn.style.background = 'transparent'
+        archiveBtn.style.color = 'var(--text-color-main)'
+        archiveBtn.style.border = '1px solid var(--border-color)'
+        loadWarnings(sectionElement, false)
+      })
+      archiveBtn.addEventListener('click', () => {
+        sectionElement.dataset.activeTab = 'archive'
+        archiveBtn.style.background = 'var(--accent-color, #3b82f6)'
+        archiveBtn.style.color = 'white'
+        archiveBtn.style.border = 'none'
+        activeBtn.style.background = 'transparent'
+        activeBtn.style.color = 'var(--text-color-main)'
+        activeBtn.style.border = '1px solid var(--border-color)'
+        loadWarnings(sectionElement, false)
+      })
+    }
   }
 
   // Renderiza/Atualiza as pills de canais
   await renderChannelPills(sectionElement)
 
   if (forceRefresh) {
-    // Mostra loading se for refresh forçado
     listContainer.innerHTML = `
-            <div class="ip-loading-container">
-                <div class="ip-spinner"></div>
-                <span>Atualizando...</span>
-            </div>
-        `
+      <div class="ip-loading-container">
+          <div class="ip-spinner"></div>
+          <span>Atualizando...</span>
+      </div>
+    `
   }
 
   try {
@@ -1562,20 +1597,49 @@ async function loadWarnings(sectionElement, forceRefresh = false) {
       throw new Error('Serviço de avisos não carregado.')
     }
 
-    // Passa o parâmetro forceRefresh
     let warnings = await window.warningsService.getWarnings(forceRefresh)
-
-    // --- 1. Filtro de Expiração (7 dias) ---
+    const isEditor = !!(developerMode || window.sgdPermissions?.isEditor)
+    const nowMs = Date.now()
+    const nowIso = new Date().toISOString()
     const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
-    const now = Date.now()
-    warnings = warnings.filter(w => {
-      if (!w.date) return true // Se não tem data, mantém
-      const warnDate = new Date(w.date).getTime()
-      return now - warnDate < SEVEN_DAYS_MS
+
+    // Mapeia e classifica os avisos com flags de estado
+    const classified = warnings.map(w => {
+      const isArchived = !!w.archived
+      const isExpired = w.expiresAt 
+        ? (nowMs > new Date(w.expiresAt).getTime())
+        : (w.date ? (nowMs - new Date(w.date).getTime() >= SEVEN_DAYS_MS) : false)
+      const isScheduled = w.publishedAt ? (nowIso < w.publishedAt) : false
+
+      return {
+        ...w,
+        isArchived,
+        isExpired,
+        isScheduled
+      }
     })
 
-    // [NOVO] --- 1.5 Filtro de Teste/Desenvolvedor ---
-    // Se NÃO estiver em modo desenvolvedor, remove avisos marcados como isTest
+    // Aplica filtragem baseada na aba ativa (Ativos vs Arquivo)
+    if (activeTab === 'active') {
+      warnings = classified.filter(w => {
+        // Usuários comuns não vêm arquivados, expirados ou agendados no futuro
+        if (!isEditor) {
+          return !w.isArchived && !w.isExpired && !w.isScheduled
+        }
+        // Editores vêm agendados na lista de ativos para gerenciamento
+        return !w.isArchived && !w.isExpired
+      })
+    } else {
+      // Arquivo/Histórico
+      warnings = classified.filter(w => {
+        if (!isEditor) {
+          return (w.isArchived || w.isExpired) && !w.isScheduled
+        }
+        return w.isArchived || w.isExpired
+      })
+    }
+
+    // [NOVO] Filtro de Teste
     if (!developerMode) {
       warnings = warnings.filter(w => !w.isTest)
     }
@@ -1588,9 +1652,10 @@ async function loadWarnings(sectionElement, forceRefresh = false) {
     warnings = warnings.filter(w => !ignoredIds.includes(w.id))
 
     // --- 2.5 Filtro de Canais Assinados e Permitidos ---
-    const subStorage = await chrome.storage.local.get(['subscribedChannels'])
-    const subscribed = subStorage.subscribedChannels ? [...subStorage.subscribedChannels] : [...WARNING_CHANNELS]
-    const allowed = window.sgdPermissions?.allowedChannels || [...WARNING_CHANNELS]
+    const subStorage = await chrome.storage.local.get(['subscribedChannels', 'warningChannels'])
+    const activeChannelsList = subStorage.warningChannels || WARNING_CHANNELS
+    const subscribed = subStorage.subscribedChannels ? [...subStorage.subscribedChannels] : [...activeChannelsList]
+    const allowed = window.sgdPermissions?.allowedChannels || [...activeChannelsList]
     warnings = warnings.filter(w => {
       const wChannel = w.channel || 'Geral'
       return subscribed.includes(wChannel) && allowed.includes(wChannel)
@@ -1599,22 +1664,23 @@ async function loadWarnings(sectionElement, forceRefresh = false) {
     const listContainer = sectionElement.querySelector('#warnings-list')
     if (!listContainer) return
 
-    // Registra recebimento e visualização no Firebase para o usuário logado
+    // Registra recebimento e visualização no Firebase para o usuário logado (apenas para ativos)
     const currentUser = window.sgdPermissions?.currentUser;
-    if (currentUser && window.warningsService) {
+    if (currentUser && window.warningsService && activeTab === 'active') {
       warnings.forEach(w => {
-        if (typeof window.warningsService.recordWarningReceipt === 'function') {
-          window.warningsService.recordWarningReceipt(w.id, currentUser);
-        }
-        if (typeof window.warningsService.recordWarningView === 'function') {
-          window.warningsService.recordWarningView(w.id, currentUser);
+        if (!w.isScheduled) {
+          if (typeof window.warningsService.recordWarningReceipt === 'function') {
+            window.warningsService.recordWarningReceipt(w.id, currentUser);
+          }
+          if (typeof window.warningsService.recordWarningView === 'function') {
+            window.warningsService.recordWarningView(w.id, currentUser);
+          }
         }
       });
     }
 
     // Busca todas as métricas se for Editor
     let allMetrics = {};
-    const isEditor = !!(developerMode || window.sgdPermissions?.isEditor);
     if (isEditor && window.warningsService?.getAllWarningMetrics) {
       try {
         allMetrics = await window.warningsService.getAllWarningMetrics();
@@ -1691,6 +1757,51 @@ async function loadWarnings(sectionElement, forceRefresh = false) {
                   loadWarnings(sectionElement)
               } catch (err) {
                 alert('Erro ao excluir: ' + err.message)
+              }
+            }
+          })
+        })
+
+        listContainer.querySelectorAll('.ip-warn-archive-btn').forEach(btn => {
+          btn.addEventListener('click', async e => {
+            e.stopPropagation()
+            const card = e.target.closest('.ip-card')
+            const warnId = card.dataset.id
+            const warning = warnings.find(w => w.id === warnId)
+            if (warning) {
+              btn.disabled = true
+              try {
+                await window.warningsService.updateWarning(warnId, { archived: true, title: warning.title })
+                showNotification('Aviso arquivado com sucesso!', 'success')
+                loadWarnings(sectionElement, false)
+              } catch (err) {
+                alert('Erro ao arquivar: ' + err.message)
+                btn.disabled = false
+              }
+            }
+          })
+        })
+
+        listContainer.querySelectorAll('.ip-warn-unarchive-btn').forEach(btn => {
+          btn.addEventListener('click', async e => {
+            e.stopPropagation()
+            const card = e.target.closest('.ip-card')
+            const warnId = card.dataset.id
+            const warning = warnings.find(w => w.id === warnId)
+            if (warning) {
+              btn.disabled = true
+              try {
+                await window.warningsService.updateWarning(warnId, { 
+                  archived: false, 
+                  expiresAt: null, 
+                  date: new Date().toISOString(),
+                  title: warning.title
+                })
+                showNotification('Aviso reativado (desarquivado) com sucesso!', 'success')
+                loadWarnings(sectionElement, false)
+              } catch (err) {
+                alert('Erro ao desarquivar: ' + err.message)
+                btn.disabled = false
               }
             }
           })
@@ -2373,11 +2484,20 @@ function createWarningCard(warning, metrics = {}) {
 
   const channelBadge = `<span class="ip-card-badge" style="background-color: var(--background-secondary); border: 1px solid var(--border-color); color: var(--text-color-muted); font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: normal; margin-left: 4px;">${escapeHTML(warning.channel || 'Geral')}</span>`
 
+  const isArchived = warning.isArchived || warning.isExpired
+  const archiveBtn = (developerMode || window.sgdPermissions?.isEditor)
+    ? (isArchived
+        ? `<button class="ip-warn-unarchive-btn" style="background:none; border:none; cursor:pointer; font-size:14px; padding:0; line-height:1; margin-right:4px;" title="Desarquivar (Mover para Ativos)">📤</button>`
+        : `<button class="ip-warn-archive-btn" style="background:none; border:none; cursor:pointer; font-size:14px; padding:0; line-height:1; margin-right:4px;" title="Arquivar">📥</button>`
+      )
+    : ''
+
   const actionsHtml = `
         <div style="display:flex; gap:10px; align-items:center;">
             ${testBadge} ${ignoreBtn}
             ${(developerMode || window.sgdPermissions?.isEditor)
       ? `
+                ${archiveBtn}
                 <button class="ip-warn-edit-btn" style="background:none; border:none; cursor:pointer; font-size:14px; padding:0; line-height:1;" title="Editar">✏️</button>
                 <button class="ip-warn-delete-btn" style="background:none; border:none; cursor:pointer; font-size:14px; padding:0; line-height:1;" title="Excluir">🗑️</button>
             `
@@ -2401,6 +2521,18 @@ function createWarningCard(warning, metrics = {}) {
     `
   }
 
+  let scheduleHtml = ''
+  if (developerMode || window.sgdPermissions?.isEditor) {
+    if (warning.publishedAt) {
+      const pDate = new Date(warning.publishedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+      scheduleHtml += `<span style="color: #e67e22; font-weight: bold; margin-right: 10px;" title="Agendado para esta data">📅 Agendado: ${pDate}</span>`
+    }
+    if (warning.expiresAt) {
+      const eDate = new Date(warning.expiresAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+      scheduleHtml += `<span style="color: #e74c3c; font-weight: bold;" title="Expira nesta data">⏳ Expira: ${eDate}</span>`
+    }
+  }
+
   return `
         <div class="ip-card ip-card-${warning.type || 'info'}" data-id="${warning.id}" ${warning.isTest ? 'style="border-style: dashed;"' : ''}>
             <div class="ip-card-header">
@@ -2410,7 +2542,10 @@ function createWarningCard(warning, metrics = {}) {
             <div class="ip-card-content">${messageHtml}</div>
             ${metricsHtml}
             <div class="ip-card-updated" style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 8px; border-top: 1px dashed var(--border-color);">
-                <span>🕒 ${dateStr}</span>
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                    <span>🕒 Criado: ${dateStr}</span>
+                    ${scheduleHtml ? `<div style="margin-top: 4px; font-size: 10px; display: flex; flex-wrap: wrap; gap: 4px;">${scheduleHtml}</div>` : ''}
+                </div>
                 ${authorHtml}
             </div>
         </div>
@@ -2647,6 +2782,21 @@ function openCreateWarningModal(existingWarning = null) {
   const requiredReadingVal = isEdit && existingWarning.requiredReading ? 'checked' : ''
   const channelVal = isEdit ? (existingWarning.channel || 'Geral') : 'Geral'
 
+  // Helper para formatar data ISO de forma segura para o campo datetime-local
+  const formatDateForInput = (isoString) => {
+    if (!isoString) return ''
+    try {
+      const date = new Date(isoString)
+      const tzOffset = date.getTimezoneOffset() * 60000
+      return (new Date(date.getTime() - tzOffset)).toISOString().slice(0, 16)
+    } catch (_) {
+      return ''
+    }
+  }
+
+  const publishedAtVal = isEdit ? formatDateForInput(existingWarning.publishedAt) : ''
+  const expiresAtVal = isEdit ? formatDateForInput(existingWarning.expiresAt) : ''
+
   const fieldStyle =
     'display: block; width: 100%; margin-bottom: 12px; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main);'
 
@@ -2696,13 +2846,24 @@ function openCreateWarningModal(existingWarning = null) {
                     <label style="display:block; margin-bottom:4px; font-size:12px;">Canal de Comunicação</label>
                     <select id="warn-channel" style="${fieldStyle}">
                         ${(() => {
-                          const allowed = [...(window.sgdPermissions?.allowedChannels || WARNING_CHANNELS)];
-                          if (channelVal && !allowed.includes(channelVal)) {
-                            allowed.push(channelVal);
-                          }
-                          return allowed.map(ch => `<option value="${ch}" ${channelVal === ch ? 'selected' : ''}>${ch}</option>`).join('');
+                           const allowed = [...(window.sgdPermissions?.allowedChannels || WARNING_CHANNELS)];
+                           if (channelVal && !allowed.includes(channelVal)) {
+                             allowed.push(channelVal);
+                           }
+                           return allowed.map(ch => `<option value="${ch}" ${channelVal === ch ? 'selected' : ''}>${ch}</option>`).join('');
                         })()}
                     </select>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 15px; margin-bottom: 12px;">
+                <div style="flex: 1;">
+                    <label style="display:block; margin-bottom:4px; font-size:12px;">📅 Agendar Publicação (Opcional)</label>
+                    <input type="datetime-local" id="warn-published-at" style="${fieldStyle}" value="${publishedAtVal}">
+                </div>
+                <div style="flex: 1;">
+                    <label style="display:block; margin-bottom:4px; font-size:12px;">⏳ Expiração Customizada (Opcional)</label>
+                    <input type="datetime-local" id="warn-expires-at" style="${fieldStyle}" value="${expiresAtVal}">
                 </div>
             </div>
 
@@ -2935,6 +3096,11 @@ function openCreateWarningModal(existingWarning = null) {
     const requiredReading = modal.querySelector('#warn-required-reading').checked
     const author = getCurrentUserName()
 
+    const publishedAtInput = modal.querySelector('#warn-published-at').value
+    const expiresAtInput = modal.querySelector('#warn-expires-at').value
+    const publishedAt = publishedAtInput ? new Date(publishedAtInput).toISOString() : null
+    const expiresAt = expiresAtInput ? new Date(expiresAtInput).toISOString() : null
+
     if (!title || !textContent) {
       alert('Preencha título e mensagem.')
       return
@@ -2953,7 +3119,10 @@ function openCreateWarningModal(existingWarning = null) {
           isTest,
           notify,
           requiredReading,
-          channel
+          channel,
+          publishedAt,
+          expiresAt,
+          archived: existingWarning.archived || false
         })
       } else {
         await window.warningsService.createWarning({
@@ -2965,6 +3134,9 @@ function openCreateWarningModal(existingWarning = null) {
           notify,
           requiredReading,
           channel,
+          publishedAt,
+          expiresAt,
+          archived: false,
           date: new Date().toISOString()
         })
       }
@@ -3693,23 +3865,70 @@ async function loadAccessControl(sectionElement) {
       throw new Error('Serviço de permissões não está disponível.')
     }
 
-    // Força atualização da lista de editores e visualizadores
+    // Força atualização da lista de editores, visualizadores e perfis de canais
     const editors = await window.sgdPermissions.refreshEditors()
     const viewers = window.sgdPermissions.viewersList || []
+    const profiles = await window.sgdPermissions.getChannelProfiles()
     const currentUserNorm = (window.sgdPermissions.currentUser || '').trim().toLowerCase()
+    const isMaster = !!window.sgdPermissions.isMaster
 
     const renderEditorRow = (editor) => {
       const isSelf = editor.name.trim().toLowerCase() === currentUserNorm
       const addedDate = editor.addedAt ? new Date(editor.addedAt).toLocaleDateString('pt-BR') : '—'
-      const channels = editor.allowedChannels || [...WARNING_CHANNELS]
-      const hasAllChannels = channels.length === WARNING_CHANNELS.length
+      const channels = editor.allowedChannels || [...(window.sgdPermissions?.channels || WARNING_CHANNELS)]
+      const hasAllChannels = channels.length === (window.sgdPermissions?.channels || WARNING_CHANNELS).length
       const channelsText = hasAllChannels ? 'Todos os canais' : (channels.join(', ') || 'Nenhum canal')
+      const roleLabel = editor.role === 'master' ? 'Master' : 'Comum'
+
+      // Cargo: Master pode ver select, Comum vê apenas badge de texto
+      const roleSelectorHtml = isMaster
+        ? `
+          <select class="ac-editor-role-select" data-editor-id="${escapeHTML(editor.id)}" style="font-size: 11px; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); outline: none;">
+            <option value="comum" ${editor.role === 'comum' ? 'selected' : ''}>Comum</option>
+            <option value="master" ${editor.role === 'master' ? 'selected' : ''}>Master</option>
+          </select>
+        `
+        : `
+          <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: var(--background-secondary); border: 1px solid var(--border-color); color: var(--text-color-muted); font-weight: 600;">${escapeHTML(roleLabel)}</span>
+        `
+
+      // Botão Limitar: Apenas Master pode limitar/alterar canais de outros Editores
+      const limitBtnHtml = isMaster
+        ? `<button class="action-btn small-btn ac-toggle-channels-btn" data-editor-id="${escapeHTML(editor.id)}" style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: 1px solid var(--border-color);">✏️ Limitar</button>`
+        : ''
+
+      // Remover: Apenas Master pode remover editores
+      const removeBtnHtml = isMaster
+        ? `
+          <button class="action-btn secondary-btn compact ip-access-remove-btn"
+            data-editor-id="${escapeHTML(editor.id)}"
+            data-editor-name="${escapeHTML(editor.name)}"
+            ${isSelf && editors.length <= 1 ? 'disabled title="Não é possível remover o único editor"' : ''}
+            style="font-size: 11px; padding: 3px 8px; color: var(--action-red, #ef4444); border: 1px solid var(--border-color);"
+          >
+            Remover
+          </button>
+        `
+        : ''
+
+      // Aplicação de Perfil individual na lista de editores (apenas Master)
+      const profileSelectHtml = isMaster
+        ? `
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px;">
+            <span style="font-size: 10px; font-weight: bold; color: var(--text-color-muted);">Aplicar Perfil:</span>
+            <select class="ac-apply-profile-select" style="font-size: 10px; padding: 2px 4px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main);">
+              <option value="">Selecionar Perfil...</option>
+              ${profiles.map(p => `<option value="${escapeHTML(p.id)}">${escapeHTML(p.name)}</option>`).join('')}
+            </select>
+          </div>
+        `
+        : ''
 
       return `
         <div class="ip-access-editor-row" data-editor-id="${escapeHTML(editor.id)}" style="display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm, 4px); margin-bottom: 10px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div class="ip-access-editor-info">
-              <span class="ip-access-editor-name" style="font-weight: 600; font-size: 13px; color: var(--text-color-main);">
+              <span class="ip-access-editor-name" style="font-weight: 600; font-size: 13px; color: var(--text-color-main); display: flex; align-items: center; gap: 6px;">
                 ✏️ ${escapeHTML(editor.name)}
                 ${isSelf ? '<span class="ip-access-you-badge" style="background: var(--accent-color, #6366f1); color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 4px; margin-left: 5px; font-weight: 500;">Você</span>' : ''}
               </span>
@@ -3717,27 +3936,24 @@ async function loadAccessControl(sectionElement) {
                 Adicionado em ${addedDate}${editor.addedBy ? ` por ${escapeHTML(editor.addedBy)}` : ''}
               </span>
             </div>
-            <button class="action-btn secondary-btn compact ip-access-remove-btn"
-              data-editor-id="${escapeHTML(editor.id)}"
-              data-editor-name="${escapeHTML(editor.name)}"
-              ${isSelf && editors.length <= 1 ? 'disabled title="Não é possível remover o único editor"' : ''}
-              style="font-size: 11px; padding: 3px 8px; color: var(--action-red, #ef4444); border: 1px solid var(--border-color);"
-            >
-              Remover
-            </button>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              ${roleSelectorHtml}
+              ${removeBtnHtml}
+            </div>
           </div>
 
           <div class="ac-channels-container" style="font-size: 11px; color: var(--text-color-muted); background: var(--background-main); padding: 8px 10px; border-radius: 4px; border: 1px solid var(--border-color);">
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-              <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 80%;">
                 <strong>Canais:</strong> <span class="ac-channels-text" style="color: var(--text-color-main); font-weight: 500;">${escapeHTML(channelsText)}</span>
               </span>
-              <button class="action-btn small-btn ac-toggle-channels-btn" data-editor-id="${escapeHTML(editor.id)}" style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: 1px solid var(--border-color);">✏️ Limitar</button>
+              ${limitBtnHtml}
             </div>
             
             <div class="ac-channels-checkboxes" style="display: none; margin-top: 8px; border-top: 1px dashed var(--border-color); padding-top: 6px;">
+              ${profileSelectHtml}
               <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; margin-bottom: 8px;">
-                ${WARNING_CHANNELS.map(ch => {
+                ${(window.sgdPermissions?.channels || WARNING_CHANNELS).map(ch => {
                   const checked = channels.includes(ch) ? 'checked' : ''
                   return `
                     <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer; color: var(--text-color-main);">
@@ -3759,10 +3975,16 @@ async function loadAccessControl(sectionElement) {
 
     const renderViewerRow = (viewer) => {
       const addedDate = viewer.firstSeen ? new Date(viewer.firstSeen).toLocaleDateString('pt-BR') : '—'
-      const channels = viewer.allowedChannels || [...WARNING_CHANNELS]
-      const hasAllChannels = channels.length === WARNING_CHANNELS.length
+      const channels = viewer.allowedChannels || [...(window.sgdPermissions?.channels || WARNING_CHANNELS)]
+      const hasAllChannels = channels.length === (window.sgdPermissions?.channels || WARNING_CHANNELS).length
       const channelsText = hasAllChannels ? 'Todos os canais' : (channels.join(', ') || 'Nenhum canal')
 
+      // Tornar Editor: Apenas Master pode promover visualizadores a editores
+      const promoteBtnHtml = isMaster
+        ? `<button class="action-btn small-btn ac-promote-editor-btn" data-viewer-id="${escapeHTML(viewer.id)}" data-viewer-name="${escapeHTML(viewer.name)}" style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: none; background: var(--action-blue, #3b82f6); color: white; cursor: pointer;">✏️ Tornar Editor</button>`
+        : ''
+
+      // Todos os editores (Master e Comum) podem limitar/atualizar os canais de Visualizadores
       return `
         <div class="ip-access-viewer-row" data-viewer-id="${escapeHTML(viewer.id)}" style="display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm, 4px); margin-bottom: 10px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -3781,22 +4003,29 @@ async function loadAccessControl(sectionElement) {
 
           <div class="ac-channels-container" style="font-size: 11px; color: var(--text-color-muted); background: var(--background-main); padding: 8px 10px; border-radius: 4px; border: 1px solid var(--border-color);">
             <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
-              <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 60%;">
                 <strong>Canais:</strong> <span class="ac-channels-text" style="color: var(--text-color-main); font-weight: 500;">${escapeHTML(channelsText)}</span>
               </span>
               <div style="display: flex; gap: 6px; align-items: center;">
-                <button class="action-btn small-btn ac-promote-editor-btn" data-viewer-id="${escapeHTML(viewer.id)}" data-viewer-name="${escapeHTML(viewer.name)}" style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: none; background: var(--action-blue, #3b82f6); color: white; cursor: pointer;">✏️ Tornar Editor</button>
+                ${promoteBtnHtml}
                 <button class="action-btn small-btn ac-toggle-channels-btn" data-viewer-id="${escapeHTML(viewer.id)}" style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: 1px solid var(--border-color);">✏️ Limitar</button>
               </div>
             </div>
             
             <div class="ac-channels-checkboxes" style="display: none; margin-top: 8px; border-top: 1px dashed var(--border-color); padding-top: 6px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px;">
+                <span style="font-size: 10px; font-weight: bold; color: var(--text-color-muted);">Aplicar Perfil:</span>
+                <select class="ac-apply-profile-select" style="font-size: 10px; padding: 2px 4px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main);">
+                  <option value="">Selecionar Perfil...</option>
+                  ${profiles.map(p => `<option value="${escapeHTML(p.id)}">${escapeHTML(p.name)}</option>`).join('')}
+                </select>
+              </div>
               <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; margin-bottom: 8px;">
-                ${WARNING_CHANNELS.map(ch => {
+                ${(window.sgdPermissions?.channels || WARNING_CHANNELS).map(ch => {
                   const checked = channels.includes(ch) ? 'checked' : ''
                   return `
                     <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer; color: var(--text-color-main);">
-                      <input type="checkbox" class="ac-channel-checkbox" value="${escapeHTML(ch)}" ${checked} style="width: auto; margin: 0;">
+                       <input type="checkbox" class="ac-channel-checkbox" value="${escapeHTML(ch)}" ${checked} style="width: auto; margin: 0;">
                       ${escapeHTML(ch)}
                     </label>
                   `
@@ -3812,6 +4041,47 @@ async function loadAccessControl(sectionElement) {
       `
     }
 
+    // Perfil de Canais UI HTML
+    const profilesHtml = `
+      <div class="ac-profiles-section" style="margin-top: 10px; padding: 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm, 4px);">
+        <strong style="font-size: 13px; color: var(--text-color-main); display: flex; align-items: center; gap: 6px;">
+          📋 Perfis de Canais
+        </strong>
+        <p style="font-size: 11px; color: var(--text-color-muted); margin: 4px 0 10px 0;">
+          Você poderá salvar perfis de canais pré-definidos para aplicar em lote ou individualmente.
+        </p>
+
+        <!-- Form para criar perfil -->
+        <div style="display: flex; gap: 8px; flex-direction: column; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed var(--border-color);">
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="text" id="ac-profile-name" placeholder="Ex: Suporte N1, Plantão..." style="flex: 1; padding: 6px 10px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
+            <button id="ac-save-profile-btn" class="action-btn small-btn" style="background: var(--primary-color, #6366f1); color: white; border: none; padding: 6px 12px; cursor: pointer; font-size: 12px; border-radius: 4px; font-weight: bold;">Salvar Novo Perfil</button>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;">
+            ${(window.sgdPermissions?.channels || WARNING_CHANNELS).map(ch => `
+              <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer; color: var(--text-color-main);">
+                <input type="checkbox" class="ac-new-profile-channel-checkbox" value="${escapeHTML(ch)}" style="width: auto; margin: 0;">
+                ${escapeHTML(ch)}
+              </label>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Lista de perfis salvos -->
+        <div id="ac-profiles-list" style="display: flex; flex-wrap: wrap; gap: 8px;">
+          ${profiles.length > 0
+            ? profiles.map(p => `
+              <span class="ac-profile-pill" style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 11px; font-weight: 600; border-radius: 20px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main);" title="Canais: ${escapeHTML(p.channels.join(', '))}">
+                ${escapeHTML(p.name)}
+                <button class="ac-delete-profile-btn" data-profile-id="${escapeHTML(p.id)}" style="background: none; border: none; padding: 0; margin: 0; cursor: pointer; font-size: 10px; opacity: 0.6; line-height: 1;">❌</button>
+              </span>
+            `).join('')
+            : '<p style="color: var(--text-color-muted); font-size: 11px; width: 100%; margin: 0;">Nenhum perfil de canais salvo ainda.</p>'
+          }
+        </div>
+      </div>
+    `
+
     container.innerHTML = `
       <div class="ip-access-current-user" style="padding: 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm, 4px); display: flex; align-items: center; justify-content: space-between;">
         <div>
@@ -3821,7 +4091,13 @@ async function loadAccessControl(sectionElement) {
             <span style="font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; background: var(--action-green, #22c55e); color: #fff;">✏️ Editor</span>
           </div>
         </div>
-        <button id="ac-refresh-btn" class="action-btn secondary-btn compact" title="Atualizar lista" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color);">🔄 Atualizar</button>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          ${isMaster ? `
+            <button id="ac-config-channels-btn" class="action-btn secondary-btn compact" title="Configurar canais disponíveis" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">⚙️ Canais</button>
+            <button id="ac-audit-logs-btn" class="action-btn secondary-btn compact" title="Ver logs de auditoria" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">📋 Auditoria</button>
+          ` : ''}
+          <button id="ac-refresh-btn" class="action-btn secondary-btn compact" title="Atualizar lista" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">🔄 Atualizar</button>
+        </div>
       </div>
 
       <div style="margin: 12px 0;">
@@ -3847,7 +4123,9 @@ async function loadAccessControl(sectionElement) {
         }
       </div>
 
+      <div style="margin: 20px 0; border-top: 1px solid var(--border-color);"></div>
 
+      ${profilesHtml}
 
       <div style="margin: 20px 0; border-top: 1px solid var(--border-color);"></div>
 
@@ -3857,21 +4135,32 @@ async function loadAccessControl(sectionElement) {
           Técnicos que utilizaram a extensão. Limite seus canais de visualização individualmente ou em lote.
         </p>
       </div>
-
       <!-- Ações em Lote -->
       <div class="bulk-actions-card" style="padding: 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm, 4px); margin-bottom: 12px;">
         <h5 style="margin: 0 0 8px 0; font-size: 12px; font-weight: 600; color: var(--text-color-main);">⚡ Ações em Lote para Selecionados (<span id="ac-selected-count">0</span>):</h5>
-        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: nowrap;">
-          <select id="bulk-channel-select" style="padding: 5px 8px; font-size: 12px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main);">
-            <option value="all">Todos os Canais</option>
-            ${WARNING_CHANNELS.map(ch => `<option value="${escapeHTML(ch)}">${escapeHTML(ch)}</option>`).join('')}
+        <div style="display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px;">
+          <!-- Selecione um Perfil -->
+          <select id="bulk-profile-select" style="padding: 5px 8px; font-size: 12px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); min-width: 140px;">
+            <option value="">Selecione um Perfil...</option>
+            ${profiles.map(p => `<option value="${escapeHTML(p.id)}">${escapeHTML(p.name)}</option>`).join('')}
           </select>
-          <button id="bulk-enable-channel-btn" class="action-btn small-btn" style="background: var(--action-green, #22c55e); color: white; border: none; padding: 5px 12px; cursor: pointer; font-size: 12px; border-radius: 4px;" disabled>Habilitar</button>
-          <button id="bulk-disable-channel-btn" class="action-btn small-btn" style="background: var(--action-red, #ef4444); color: white; border: none; padding: 5px 12px; cursor: pointer; font-size: 12px; border-radius: 4px;" disabled>Desabilitar</button>
+          <!-- Aplicar perfil -->
+          <button id="bulk-apply-profile-btn" class="action-btn small-btn" style="background: var(--primary-color, #6366f1); color: white; border: none; padding: 5px 12px; cursor: pointer; font-size: 12px; border-radius: 4px; font-weight: bold; white-space: nowrap;" disabled>Aplicar Perfil</button>
+          
+          <span style="font-size: 12px; color: var(--text-color-muted); font-weight: bold; white-space: nowrap; margin-left: 6px;">Canais:</span>
+          
+          <!-- Dropdown de Canais -->
+          <select id="bulk-channel-select" style="padding: 5px 8px; font-size: 12px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); min-width: 110px;">
+            <option value="all">Todos os Canais</option>
+            ${(window.sgdPermissions?.channels || WARNING_CHANNELS).map(ch => `<option value="${escapeHTML(ch)}">${escapeHTML(ch)}</option>`).join('')}
+          </select>
+          
+          <!-- Habilitar -->
+          <button id="bulk-enable-channel-btn" class="action-btn small-btn" style="background: var(--action-green, #22c55e); color: white; border: none; padding: 5px 12px; cursor: pointer; font-size: 12px; border-radius: 4px; white-space: nowrap;" disabled>Habilitar</button>
+          <!-- Desabilitar -->
+          <button id="bulk-disable-channel-btn" class="action-btn small-btn" style="background: var(--action-red, #ef4444); color: white; border: none; padding: 5px 12px; cursor: pointer; font-size: 12px; border-radius: 4px; white-space: nowrap;" disabled>Desabilitar</button>
         </div>
-      </div>
-
-      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-left: 12px;">
+      </div>      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-left: 12px;">
         <input type="checkbox" id="ac-select-all-viewers" style="width: 15px; height: 15px; margin: 0; cursor: pointer;">
         <label for="ac-select-all-viewers" style="font-size: 12px; cursor: pointer; font-weight: 600; color: var(--text-color-main);">Selecionar Todos</label>
       </div>
@@ -3885,6 +4174,145 @@ async function loadAccessControl(sectionElement) {
     `
 
     // ── Listeners ──
+
+    // Botão de Auditoria click
+    const auditBtn = container.querySelector('#ac-audit-logs-btn')
+    if (auditBtn) {
+      auditBtn.addEventListener('click', async () => {
+        auditBtn.disabled = true
+        const origText = auditBtn.textContent
+        auditBtn.textContent = 'Carregando...'
+        try {
+          const logs = await window.sgdPermissions.getAuditLogs()
+          openAuditLogsModal(logs)
+        } catch (e) {
+          alert('Erro ao carregar logs: ' + e.message)
+        } finally {
+          auditBtn.disabled = false
+          auditBtn.textContent = origText
+        }
+      })
+    }
+
+    // Botão de Configuração de Canais click
+    const configChannelsBtn = container.querySelector('#ac-config-channels-btn')
+    if (configChannelsBtn) {
+      configChannelsBtn.addEventListener('click', async () => {
+        configChannelsBtn.disabled = true
+        const origText = configChannelsBtn.textContent
+        configChannelsBtn.textContent = 'Carregando...'
+        try {
+          const channels = await window.sgdPermissions.loadActiveChannels()
+          openConfigChannelsModal(channels, sectionElement)
+        } catch (e) {
+          alert('Erro ao carregar canais: ' + e.message)
+        } finally {
+          configChannelsBtn.disabled = false
+          configChannelsBtn.textContent = origText
+        }
+      })
+    }
+
+    // Alteração de Cargo (Comum vs Master)
+    container.querySelectorAll('.ac-editor-role-select').forEach(select => {
+      select.addEventListener('change', async () => {
+        const editorId = select.dataset.editorId
+        const newRole = select.value
+        const row = select.closest('.ip-access-editor-row')
+        const editorName = row ? row.querySelector('.ip-access-editor-name').textContent.trim().split('\n')[0] : 'Editor'
+
+        const confirmed = confirm(`Alterar o cargo de "${editorName}" para "${newRole === 'master' ? 'Master' : 'Comum'}"?`)
+        if (!confirmed) {
+          loadAccessControl(sectionElement)
+          return
+        }
+
+        select.disabled = true
+        const success = await window.sgdPermissions.updateEditorRole(editorId, newRole)
+        if (success) {
+          showNotification('Cargo atualizado com sucesso!', 'success')
+          loadAccessControl(sectionElement)
+        } else {
+          showNotification('Erro ao atualizar cargo.', 'error')
+          select.disabled = false
+        }
+      })
+    })
+
+    // Salvar Perfil de Canais
+    const saveProfileBtn = container.querySelector('#ac-save-profile-btn')
+    if (saveProfileBtn) {
+      saveProfileBtn.addEventListener('click', async () => {
+        const nameInput = container.querySelector('#ac-profile-name')
+        const profileName = nameInput ? nameInput.value.trim() : ''
+        if (!profileName) {
+          alert('Por favor, informe o nome do perfil.')
+          return
+        }
+
+        const checkedBoxes = container.querySelectorAll('.ac-new-profile-channel-checkbox:checked')
+        const selectedChannels = Array.from(checkedBoxes).map(cb => cb.value)
+        if (selectedChannels.length === 0) {
+          alert('Selecione pelo menos um canal para o perfil.')
+          return
+        }
+
+        saveProfileBtn.disabled = true
+        saveProfileBtn.textContent = 'Salvando...'
+        const success = await window.sgdPermissions.saveChannelProfile(profileName, selectedChannels)
+        if (success) {
+          showNotification(`Perfil "${profileName}" salvo com sucesso!`, 'success')
+          loadAccessControl(sectionElement)
+        } else {
+          showNotification('Erro ao salvar perfil.', 'error')
+          saveProfileBtn.disabled = false
+          saveProfileBtn.textContent = 'Salvar Novo Perfil'
+        }
+      })
+    }
+
+    // Excluir Perfil de Canais
+    container.querySelectorAll('.ac-delete-profile-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation()
+        const profileId = btn.dataset.profileId
+        const confirmed = confirm(`Excluir o perfil de canais "${profileId}"?`)
+        if (!confirmed) return
+
+        btn.disabled = true
+        const success = await window.sgdPermissions.deleteChannelProfile(profileId)
+        if (success) {
+          showNotification('Perfil excluído com sucesso.', 'success')
+          loadAccessControl(sectionElement)
+        } else {
+          showNotification('Erro ao excluir perfil.', 'error')
+          btn.disabled = false
+        }
+      })
+    })
+
+    // Aplicar Perfil Individual nos Checkboxes
+    container.querySelectorAll('.ac-apply-profile-select').forEach(select => {
+      select.addEventListener('change', () => {
+        const profileId = select.value
+        if (!profileId) return
+
+        const profile = profiles.find(p => p.id === profileId)
+        if (!profile) return
+
+        const checkboxesDiv = select.closest('.ac-channels-container').querySelector('.ac-channels-checkboxes')
+        if (checkboxesDiv) {
+          const checkboxes = checkboxesDiv.querySelectorAll('.ac-channel-checkbox')
+          checkboxes.forEach(cb => {
+            cb.checked = profile.channels.includes(cb.value)
+          })
+        }
+      })
+    })
+
+    // Ação em lote com Perfil de Canais
+    const bulkProfileSelect = container.querySelector('#bulk-profile-select')
+    const bulkApplyProfileBtn = container.querySelector('#bulk-apply-profile-btn')
 
     // Filtrar nomes dinamicamente (busca local)
     const searchInput = container.querySelector('#ac-search-users-input')
@@ -3969,8 +4397,8 @@ async function loadAccessControl(sectionElement) {
     // Botão "Todos os Canais" nos checkboxes individuais
     container.querySelectorAll('.ac-select-all-channels-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        const container = btn.closest('.ac-channels-checkboxes')
-        const checkboxes = container.querySelectorAll('.ac-channel-checkbox')
+        const checkboxesContainer = btn.closest('.ac-channels-checkboxes')
+        const checkboxes = checkboxesContainer.querySelectorAll('.ac-channel-checkbox')
         const allChecked = Array.from(checkboxes).every(cb => cb.checked)
         checkboxes.forEach(cb => cb.checked = !allChecked)
       })
@@ -4021,6 +4449,9 @@ async function loadAccessControl(sectionElement) {
       const disabled = checkedCount === 0
       bulkEnableBtn.disabled = disabled
       bulkDisableBtn.disabled = disabled
+      if (bulkApplyProfileBtn) {
+        bulkApplyProfileBtn.disabled = disabled || !bulkProfileSelect.value
+      }
     }
 
     if (selectAllViewers) {
@@ -4039,7 +4470,7 @@ async function loadAccessControl(sectionElement) {
       })
     })
 
-    // Botões de Ação em Lote
+    // Botões de Ação em Lote (Canais)
     const handleBulkAction = async (action) => {
       const selectedIds = Array.from(viewerCheckboxes)
         .filter(cb => cb.checked)
@@ -4077,6 +4508,41 @@ async function loadAccessControl(sectionElement) {
     if (bulkEnableBtn) bulkEnableBtn.addEventListener('click', () => handleBulkAction('enable'))
     if (bulkDisableBtn) bulkDisableBtn.addEventListener('click', () => handleBulkAction('disable'))
 
+    // Ação em Lote com Perfil
+    if (bulkProfileSelect && bulkApplyProfileBtn) {
+      bulkProfileSelect.addEventListener('change', updateBulkButtonsState)
+      
+      bulkApplyProfileBtn.addEventListener('click', async () => {
+        const selectedIds = Array.from(viewerCheckboxes)
+          .filter(cb => cb.checked)
+          .map(cb => cb.dataset.viewerId)
+
+        if (selectedIds.length === 0) return
+
+        const profileId = bulkProfileSelect.value
+        const profile = profiles.find(p => p.id === profileId)
+        if (!profile) return
+
+        const confirmed = confirm(`Aplicar o perfil "${profile.name}" (Canais: ${profile.channels.join(', ')}) para os ${selectedIds.length} visualizadores selecionados?`)
+        if (!confirmed) return
+
+        bulkApplyProfileBtn.disabled = true
+        bulkApplyProfileBtn.textContent = 'Aplicando...'
+
+        const promises = selectedIds.map(id => window.sgdPermissions.updateViewerChannels(id, profile.channels))
+        try {
+          await Promise.all(promises)
+          showNotification('Perfil aplicado em lote com sucesso!', 'success')
+          loadAccessControl(sectionElement)
+        } catch (err) {
+          console.error(err)
+          showNotification('Erro ao aplicar perfil em lote.', 'error')
+          updateBulkButtonsState()
+          bulkApplyProfileBtn.textContent = 'Aplicar Perfil'
+        }
+      })
+    }
+
     // Atualizar lista
     const refreshBtn = container.querySelector('#ac-refresh-btn')
     if (refreshBtn) {
@@ -4085,8 +4551,13 @@ async function loadAccessControl(sectionElement) {
         loadAccessControl(sectionElement)
       })
     }
-
-
+    
+    // Evita que cliques nos checkboxes e selects sejam capturados e cancelados por scripts externos da página
+    container.querySelectorAll('input[type="checkbox"], select').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation()
+      })
+    })
 
   } catch (error) {
     console.error('[SGD Permissions] Erro ao carregar controle de acesso:', error)
@@ -4102,6 +4573,255 @@ async function loadAccessControl(sectionElement) {
     if (retryBtn) retryBtn.addEventListener('click', () => loadAccessControl(sectionElement))
   }
 }
+
+/**
+ * Abre modal com os logs de auditoria
+ */
+function openAuditLogsModal(logs) {
+  const formatDate = (isoString) => {
+    if (!isoString) return '—';
+    try {
+      const d = new Date(isoString);
+      return d.toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    } catch {
+      return '—';
+    }
+  };
+
+  const logsRows = logs.length > 0
+    ? logs.map(log => `
+        <tr style="border-bottom: 1px solid var(--border-color, #e5e7eb);">
+          <td style="padding: 10px; font-size: 12px; color: var(--text-color-main); font-weight: 600;">${escapeHTML(log.operatorName)}</td>
+          <td style="padding: 10px; font-size: 11px; color: var(--text-color-main);">
+            <span class="ip-card-badge" style="background: var(--background-secondary); border: 1px solid var(--border-color); color: var(--text-color-muted); font-size: 10px; padding: 2px 6px; border-radius: 4px;">${escapeHTML(log.action)}</span>
+          </td>
+          <td style="padding: 10px; font-size: 12px; color: var(--text-color-main);">${escapeHTML(log.target)}</td>
+          <td style="padding: 10px; font-size: 12px; color: var(--text-color-muted); max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHTML(log.details || '')}">${escapeHTML(log.details || '')}</td>
+          <td style="padding: 10px; font-size: 11px; color: var(--text-color-muted); text-align: right; white-space: nowrap;">${formatDate(log.timestamp)}</td>
+        </tr>
+      `).join('')
+    : `<tr><td colspan="5" style="padding: 16px; font-size: 12px; color: var(--text-color-muted); text-align: center;">Nenhum log de auditoria encontrado.</td></tr>`;
+
+  const modalHtml = `
+    <div style="padding: 10px; max-height: 650px; display: flex; flex-direction: column;">
+      <p style="font-size: 13px; color: var(--text-color-muted); margin-bottom: 15px; margin-top: 0;">
+        Histórico de ações administrativas realizadas na Central de Informações SGD.
+      </p>
+      
+      <div style="overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; flex: 1; min-height: 300px; max-height: 450px;">
+        <table style="width: 100%; border-collapse: collapse; background: var(--background-main);">
+          <thead>
+            <tr style="background: var(--background-secondary); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 1;">
+              <th style="padding: 10px; font-size: 11px; text-align: left; color: var(--text-color-muted); background: var(--background-secondary); position: sticky; top: 0;">Operador</th>
+              <th style="padding: 10px; font-size: 11px; text-align: left; color: var(--text-color-muted); background: var(--background-secondary); position: sticky; top: 0;">Ação</th>
+              <th style="padding: 10px; font-size: 11px; text-align: left; color: var(--text-color-muted); background: var(--background-secondary); position: sticky; top: 0;">Alvo</th>
+              <th style="padding: 10px; font-size: 11px; text-align: left; color: var(--text-color-muted); background: var(--background-secondary); position: sticky; top: 0;">Detalhes</th>
+              <th style="padding: 10px; font-size: 11px; text-align: right; color: var(--text-color-muted); background: var(--background-secondary); position: sticky; top: 0;">Data/Hora</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${logsRows}
+          </tbody>
+        </table>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+        <button id="close-audit-logs-btn" class="ip-add-closing-btn" style="width: auto; padding: 8px 20px;">Fechar</button>
+      </div>
+    </div>
+  `;
+
+  const modal = createModal(
+    'Log de Auditoria',
+    modalHtml,
+    null,
+    {
+      isManagementModal: false,
+      modalId: 'audit-logs-modal',
+      showShareButton: false
+    }
+  );
+
+  const defaultActions = modal.querySelector('.se-modal-actions');
+  if (defaultActions) defaultActions.remove();
+
+  modal.style.zIndex = '10003';
+
+  document.body.appendChild(modal);
+
+  const closeBtn = modal.querySelector('#close-audit-logs-btn');
+  const xBtn = modal.querySelector('.se-close-modal-btn');
+
+  const cleanup = () => modal.remove();
+
+  if (closeBtn) closeBtn.addEventListener('click', cleanup);
+  if (xBtn) xBtn.addEventListener('click', cleanup);
+}
+
+function openConfigChannelsModal(initialChannels, sectionElement) {
+  let channels = [...initialChannels]
+
+  function renderChannelsList(modalBody) {
+    const listDiv = modalBody.querySelector('#cc-channels-list')
+    if (!listDiv) return
+    
+    listDiv.innerHTML = channels.map((ch, idx) => `
+      <div class="cc-channel-row" style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+        <input type="text" class="cc-channel-input" data-idx="${idx}" value="${escapeHTML(ch)}" style="flex: 1; padding: 6px 10px; font-size: 13px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
+        <button class="action-btn secondary-btn compact cc-delete-btn" data-idx="${idx}" title="Excluir canal" style="color: var(--action-red, #ef4444); border: 1px solid var(--border-color); background: var(--background-main); cursor: pointer; padding: 6px 10px;">❌</button>
+      </div>
+    `).join('')
+
+    // Add delete listeners
+    listDiv.querySelectorAll('.cc-delete-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        const idx = parseInt(btn.dataset.idx)
+        const name = channels[idx]
+        if (confirm(`Tem certeza que deseja excluir o canal "${name}"?\n(Avisos existentes neste canal não serão excluídos, mas novos avisos não poderão ser criados nele.)`)) {
+          channels.splice(idx, 1)
+          renderChannelsList(modalBody)
+        }
+      })
+    })
+
+    // Stop propagation on inputs so host page scripts don't intercept typing
+    listDiv.querySelectorAll('.cc-channel-input').forEach(input => {
+      input.addEventListener('click', e => e.stopPropagation())
+      input.addEventListener('keydown', e => e.stopPropagation())
+      input.addEventListener('input', e => {
+        const idx = parseInt(input.dataset.idx)
+        channels[idx] = input.value.trim()
+      })
+    })
+  }
+
+  const modalHtml = `
+    <div style="padding: 10px; max-height: 600px; display: flex; flex-direction: column; width: 450px; box-sizing: border-box;">
+      <p style="font-size: 13px; color: var(--text-color-muted); margin-bottom: 12px; margin-top: 0;">
+        Gerencie os canais de avisos disponíveis para cadastro e visualização.
+      </p>
+
+      <!-- Seção para Adicionar Novo Canal -->
+      <div style="display: flex; gap: 8px; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+        <input type="text" id="cc-new-channel-name" placeholder="Nome do novo canal..." style="flex: 1; padding: 8px 12px; font-size: 13px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
+        <button id="cc-add-channel-btn" class="action-btn small-btn" style="background: var(--primary-color, #6366f1); color: white; border: none; padding: 8px 16px; cursor: pointer; font-size: 13px; border-radius: 4px; font-weight: bold;">Adicionar</button>
+      </div>
+
+      <!-- Lista de Canais Atuais -->
+      <div style="flex: 1; overflow-y: auto; max-height: 350px; padding-right: 4px;" id="cc-channels-list-container">
+        <div id="cc-channels-list"></div>
+      </div>
+
+      <!-- Footer do Modal -->
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+        <button id="cc-cancel-btn" class="action-btn secondary-btn compact" style="padding: 8px 16px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">Cancelar</button>
+        <button id="cc-save-btn" class="action-btn small-btn" style="background: var(--action-green, #22c55e); color: white; border: none; padding: 8px 20px; cursor: pointer; font-size: 13px; border-radius: 4px; font-weight: bold;">Salvar Alterações</button>
+      </div>
+    </div>
+  `
+
+  const modal = createModal(
+    'Configurar Canais',
+    modalHtml,
+    null,
+    {
+      isManagementModal: false,
+      modalId: 'config-channels-modal',
+      showShareButton: false
+    }
+  )
+
+  const defaultActions = modal.querySelector('.se-modal-actions')
+  if (defaultActions) defaultActions.remove()
+
+  modal.style.zIndex = '10003'
+  document.body.appendChild(modal)
+
+  const modalBody = modal.querySelector('.se-modal-body') || modal
+  renderChannelsList(modalBody)
+
+  // Adicionar canal logic
+  const newChannelInput = modal.querySelector('#cc-new-channel-name')
+  const addChannelBtn = modal.querySelector('#cc-add-channel-btn')
+
+  if (newChannelInput) {
+    newChannelInput.addEventListener('click', e => e.stopPropagation())
+    newChannelInput.addEventListener('keydown', e => {
+      e.stopPropagation()
+      if (e.key === 'Enter') {
+        addChannelBtn.click()
+      }
+    })
+  }
+
+  if (addChannelBtn) {
+    addChannelBtn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const newName = newChannelInput ? newChannelInput.value.trim() : ''
+      if (!newName) {
+        alert('Por favor, digite o nome do canal.')
+        return
+      }
+      if (channels.includes(newName)) {
+        alert('Este canal já existe!')
+        return
+      }
+      channels.push(newName)
+      if (newChannelInput) newChannelInput.value = ''
+      renderChannelsList(modalBody)
+    })
+  }
+
+  // Cancelar e Fechar listeners
+  const cleanup = () => modal.remove()
+  const cancelBtn = modal.querySelector('#cc-cancel-btn')
+  const xBtn = modal.querySelector('.se-close-modal-btn')
+
+  if (cancelBtn) cancelBtn.addEventListener('click', (e) => { e.stopPropagation(); cleanup(); })
+  if (xBtn) xBtn.addEventListener('click', (e) => { e.stopPropagation(); cleanup(); })
+
+  // Salvar logic
+  const saveBtn = modal.querySelector('#cc-save-btn')
+  if (saveBtn) {
+    saveBtn.addEventListener('click', async (e) => {
+      e.stopPropagation()
+
+      // Filtra e valida os canais antes de salvar
+      const finalChannels = channels
+        .map(ch => ch.trim())
+        .filter(ch => ch !== '')
+
+      if (finalChannels.length === 0) {
+        alert('Pelo menos um canal deve ser configurado!')
+        return
+      }
+
+      saveBtn.disabled = true
+      saveBtn.textContent = 'Salvando...'
+
+      const success = await window.sgdPermissions.saveActiveChannels(finalChannels)
+      if (success) {
+        showNotification('Canais atualizados com sucesso!', 'success')
+        cleanup()
+        // Recarrega o controle de acesso para refletir os novos canais nos filtros/dropdowns
+        if (sectionElement) loadAccessControl(sectionElement)
+      } else {
+        alert('Erro ao salvar os canais. Tente novamente.')
+        saveBtn.disabled = false
+        saveBtn.textContent = 'Salvar Alterações'
+      }
+    })
+  }
+}
+
 
 /**
  * Carrega e renderiza os formulários na seção correspondente

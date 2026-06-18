@@ -67,7 +67,6 @@ async function getWarnings(forceRefresh = false) {
 
 async function createWarning(warningData) {
   try {
-    // Remove o campo 'id' se existir (o RTDB gera automaticamente)
     const { id, ...data } = warningData;
     const response = await fetch(`${RTDB_WARNINGS_URL}.json`, {
       method: 'POST',
@@ -78,6 +77,12 @@ async function createWarning(warningData) {
     await touchWarningsMetadata();
     // Notifica o service worker para verificar e disparar o toast imediatamente
     chrome.runtime.sendMessage({ action: 'WARNING_CREATED' }).catch(() => {});
+    
+    // Grava Log de Auditoria
+    if (window.sgdPermissions?.writeAuditLog) {
+      await window.sgdPermissions.writeAuditLog('CREATE_WARNING', data.title || 'Aviso sem título', `Canal: ${data.channel || 'Geral'}`);
+    }
+    
     return true;
   } catch (error) {
     console.error('Erro ao criar aviso:', error);
@@ -87,18 +92,32 @@ async function createWarning(warningData) {
 
 async function deleteWarning(id) {
   try {
+    let title = 'Aviso sem título';
+    try {
+      const fetchResponse = await fetch(`${RTDB_WARNINGS_URL}/${id}.json`);
+      if (fetchResponse.ok) {
+        const doc = await fetchResponse.json();
+        if (doc) title = doc.title || title;
+      }
+    } catch (_) {}
+
     const response = await fetch(`${RTDB_WARNINGS_URL}/${id}.json`, {
       method: 'DELETE'
     });
     if (!response.ok) throw new Error('Erro ao deletar');
     await touchWarningsMetadata();
+
+    // Grava Log de Auditoria
+    if (window.sgdPermissions?.writeAuditLog) {
+      await window.sgdPermissions.writeAuditLog('DELETE_WARNING', title, `ID: ${id}`);
+    }
+    
     return true;
   } catch (error) { throw error; }
 }
 
 async function updateWarning(id, updates) {
   try {
-    // Remove o campo 'id' das atualizações se existir
     const { id: _, ...data } = updates;
     const response = await fetch(`${RTDB_WARNINGS_URL}/${id}.json`, {
       method: 'PATCH',
@@ -107,6 +126,21 @@ async function updateWarning(id, updates) {
     });
     if (!response.ok) throw new Error('Erro ao atualizar');
     await touchWarningsMetadata();
+
+    // Grava Log de Auditoria
+    if (window.sgdPermissions?.writeAuditLog) {
+      let action = 'EDIT_WARNING';
+      let details = `Canal: ${data.channel || 'Geral'}`;
+      if (updates.archived === true) {
+        action = 'ARCHIVE_WARNING';
+        details = 'Aviso arquivado';
+      } else if (updates.archived === false) {
+        action = 'UNARCHIVE_WARNING';
+        details = 'Aviso desarquivado';
+      }
+      await window.sgdPermissions.writeAuditLog(action, data.title || updates.title || 'Aviso sem título', details);
+    }
+    
     return true;
   } catch (error) { throw error; }
 }
