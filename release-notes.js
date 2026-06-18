@@ -10,7 +10,8 @@ const RELEASE_NOTES = {
       '<b>📊 Log de Auditoria e Métricas:</b> Modal de logs de auditoria completo para ações administrativas e tamanho do modal de métricas ampliado para melhor legibilidade.',
       '<b>⚙️ Canais Dinâmicos:</b> Nova tela de gerenciamento de canais disponível para Editores Master (Adicionar, Renomear e Excluir canais diretamente do Firebase).',
       '<b>⚡ Ações em Lote Compactadas:</b> Redesenho da interface de ações em lote para exibição inline e sem quebras de linha.',
-      '<b>🛠️ Correções de Clicabilidade:</b> Resolvido problema em que cliques nos checkboxes de perfis eram bloqueados por scripts nativos do SGD.'
+      '<b>🛠️ Correções de Clicabilidade:</b> Resolvido problema em que cliques nos checkboxes de perfis eram bloqueados por scripts nativos do SGD.',
+      '<b>🔧 Correção de Comunicação Firebase:</b> Ajustada a resolução de URLs internas da extensão para o banco de dados do Realtime Database e refinada a propagação de eventos no DOM.'
     ]
   },
   '3.0.5.5': {
