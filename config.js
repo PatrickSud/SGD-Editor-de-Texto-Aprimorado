@@ -16,6 +16,14 @@ const GREETINGS_CLOSINGS_KEY = 'greetingsAndClosingsData'
 const LAST_SEEN_VERSION_KEY = 'lastSeenVersion'
 const PENDING_MINOR_NOTES_KEY = 'pendingMinorNotes'
 
+// Permissões de Editores (Firebase Realtime Database)
+const RTDB_PERMISSIONS_BASE_URL = 'https://sgd-extension-default-rtdb.firebaseio.com/permissions'
+const RTDB_EDITORS_URL = `${RTDB_PERMISSIONS_BASE_URL}/editors`
+const RTDB_VIEWERS_URL = `${RTDB_PERMISSIONS_BASE_URL}/viewers`
+const PERMISSIONS_CACHE_KEY = 'cachedEditorPermissions'
+const VIEWERS_CACHE_KEY = 'cachedViewerPermissions'
+const PERMISSIONS_CACHE_TTL = 30 * 60 * 1000 // 30 minutos em ms
+
 /**
  * Separadores exclusivos para delimitar saudação e encerramento no texto.
  */

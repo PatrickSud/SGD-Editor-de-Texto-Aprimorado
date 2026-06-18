@@ -1,4 +1,12 @@
 const RELEASE_NOTES = {
+  '3.0.5.6': {
+    title: '✨ Controle de Acesso e Busca de Usuários — Versão 3.0.5.6',
+    features: [
+      '<b>🔍 Busca e Promoção de Editores:</b> Adicionado campo de pesquisa em tempo real para filtrar visualizadores e editores, com novo botão para promover visualizadores a editores diretamente no painel.',
+      '<b>🔐 Simplificação de Chaves Dev:</b> Remoção da chave redundante <code>developerMode</code> e unificação das funções administrativas no <code>infoDevMode</code>, mantendo a ativação automática para editores salvos no Firebase.',
+      '<b>📊 Modal de Métricas Ampliado:</b> Aumentado o tamanho do modal de métricas de avisos para evitar corte lateral de informações e permitir visualização de listas maiores de usuários.'
+    ]
+  },
   '3.0.5.5': {
     title: '✨ Correção nas Notificações do Modo Dev — Versão 3.0.5.5',
     features: [

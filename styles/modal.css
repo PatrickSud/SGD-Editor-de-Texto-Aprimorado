@@ -3197,7 +3197,8 @@ a.open-link-btn:hover {
 }
 
 /* Custom sizing and toolbar styles for Novo Aviso modal */
-#create-warning-modal .se-modal-content {
+#create-warning-modal .se-modal-content,
+#warning-metrics-modal .se-modal-content {
   max-width: 950px;
 }
 .editor-toolbar.warn-toolbar button {

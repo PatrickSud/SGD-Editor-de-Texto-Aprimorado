@@ -255,6 +255,12 @@ async function markWarningAsRead(id) {
     
     if (updated) {
       await chrome.storage.local.set({ readWarnings: read, readWarningIds: readIds });
+      
+      const currentUser = window.sgdPermissions?.currentUser;
+      if (currentUser && window.warningsService?.recordWarningView) {
+        window.warningsService.recordWarningView(id, currentUser);
+      }
+
       if (typeof updateNotificationStatus === 'function') {
         updateNotificationStatus();
       }
@@ -2251,10 +2257,10 @@ async function openFiredRemindersPanel() {
     .filter(r => r.isFired === false && r.firedAt)
     .sort((a, b) => (b.firedAt || 0) - (a.firedAt || 0))
 
-  const data = await chrome.storage.local.get(['warningsLastReadTime', 'developerMode', 'infoDevMode', 'developerModeEnabled', 'cachedWarnings', 'ignoredWarnings', 'readWarningIds', 'subscribedChannels'])
+  const data = await chrome.storage.local.get(['warningsLastReadTime', 'infoDevMode', 'cachedWarnings', 'ignoredWarnings', 'readWarningIds', 'subscribedChannels'])
   const ignoredIds = Array.isArray(data.ignoredWarnings) ? data.ignoredWarnings : []
   const readWarningIds = Array.isArray(data.readWarningIds) ? data.readWarningIds : []
-  const subscribed = data.subscribedChannels || WARNING_CHANNELS;
+  const subscribed = data.subscribedChannels ? [...data.subscribedChannels] : [...WARNING_CHANNELS];
 
   // cachedWarnings é um array direto (não um objeto com .data)
   const rawWarnings = Array.isArray(data.cachedWarnings) ? data.cachedWarnings : []
@@ -2263,7 +2269,7 @@ async function openFiredRemindersPanel() {
   const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
   const nowMs = Date.now()
   const visibleWarnings = rawWarnings.filter(w => {
-    if (w.isTest && !(data.developerMode || data.infoDevMode || data.developerModeEnabled)) return false
+    if (w.isTest && !data.infoDevMode) return false
     if (ignoredIds.includes(w.id)) return false
     const wChannel = w.channel || 'Geral';
     if (!subscribed.includes(wChannel)) return false

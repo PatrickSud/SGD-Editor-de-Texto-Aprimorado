@@ -332,7 +332,7 @@ async function getReminders() {
   try {
     const localResult = await getStorageData(REMINDERS_STORAGE_KEY, 'local')
     if (localResult) return localResult
-    
+
     const syncResult = await getStorageData(REMINDERS_STORAGE_KEY, 'sync')
     if (syncResult) {
       await setStorageData(REMINDERS_STORAGE_KEY, syncResult, 'local')
@@ -517,7 +517,7 @@ const WARNING_CHANNELS = [
  */
 async function checkWarningsAndNotify() {
   try {
-    const storage = await chrome.storage.local.get(['warningsMetaSignature', 'developerMode', 'infoDevMode', 'developerModeEnabled']);
+    const storage = await chrome.storage.local.get(['warningsMetaSignature', 'infoDevMode']);
     const localSignature = storage.warningsMetaSignature;
 
     // 1. Checa a data de última atualização (Metadado) via Realtime Database
@@ -549,12 +549,13 @@ async function checkWarningsAndNotify() {
     const newestWarning = warnings[0];
     const wChannel = newestWarning.channel || 'Geral';
 
-    // Filtro por canais de inscrição do usuário
-    const subStorage = await chrome.storage.local.get(['subscribedChannels']);
-    const subscribed = subStorage.subscribedChannels || WARNING_CHANNELS;
+    // Filtro por canais de inscrição e permissão do usuário
+    const subStorage = await chrome.storage.local.get(['subscribedChannels', 'allowedChannels']);
+    const subscribed = subStorage.subscribedChannels ? [...subStorage.subscribedChannels] : [...WARNING_CHANNELS];
+    const allowed = subStorage.allowedChannels ? [...subStorage.allowedChannels] : [...WARNING_CHANNELS];
 
-    // Se não estiver inscrito neste canal, salvamos a assinatura/cache no storage para evitar loops, mas não exibimos a notificação
-    if (!subscribed.includes(wChannel)) {
+    // Se não estiver inscrito neste canal ou se o canal não for permitido, salvamos a assinatura/cache no storage para evitar loops, mas não exibimos a notificação
+    if (!subscribed.includes(wChannel) || !allowed.includes(wChannel)) {
       await chrome.storage.local.set({
         warningsMetaSignature: serverSignature,
         cachedWarnings: warnings
@@ -565,7 +566,7 @@ async function checkWarningsAndNotify() {
     const title = newestWarning.title || 'Novo Aviso na Central';
     const message = newestWarning.message || 'Você tem um novo comunicado não lido na Central de Informações SGD.';
     const isTest = !!newestWarning.isTest;
-    const isDevMode = !!(storage.developerMode || storage.infoDevMode || storage.developerModeEnabled);
+    const isDevMode = !!(storage.infoDevMode);
     const type = newestWarning.type || 'info';
 
     // 3. Atualiza a assinatura local e o cache de avisos para não repetir a mesma notificação e requisições redundantes
@@ -581,10 +582,10 @@ async function checkWarningsAndNotify() {
 
     // 4. Dispara a notificação nativa do Windows com tipo e emoji, limpando tags HTML
     const typeMap = {
-      danger:  { icon: '🚨', label: 'IMPORTANTE:' },
+      danger: { icon: '🚨', label: 'IMPORTANTE:' },
       warning: { icon: '⚠️', label: 'Alerta:' },
-      success: { icon: '✅', label: 'Novidade:' },
-      info:    { icon: 'ℹ️', label: 'Informativo:' }
+      success: { icon: '✨', label: 'Novidade:' },
+      info: { icon: 'ℹ️', label: 'Informativo:' }
     };
     const meta = typeMap[type] || typeMap.info;
     const cleanMessage = message.replace(/<[^>]+>/g, '').trim();

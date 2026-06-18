@@ -530,8 +530,8 @@
 
   async function init() {
     // Verifica se o modo desenvolvedor está ativo antes de carregar o painel
-    const storage = await chrome.storage.local.get(['developerMode', 'infoDevMode', 'developerModeEnabled']);
-    if (!(storage.developerMode || storage.infoDevMode || storage.developerModeEnabled)) {
+    const storage = await chrome.storage.local.get(['developerModeEnabled']);
+    if (!storage.developerModeEnabled) {
       console.log('[BI Scraper] Modo Desenvolvedor desativado. O painel de controle não será carregado.');
       return;
     }

@@ -45,54 +45,6 @@ function debounce(func, wait) {
  * Manipula o clique para ativar o modo desenvolvedor exclusivo do Painel SGD
  * @param {Event} event - Evento de clique
  */
-async function handleDeveloperModeClick(event) {
-  const now = Date.now()
-
-  // Reset contador se passou mais de 3 segundos desde o último clique
-  if (now - lastClickTime > 3000) {
-    clickCount = 0
-  }
-
-  clickCount++
-  lastClickTime = now
-
-  // Ativar modo desenvolvedor após 5 cliques
-  if (clickCount >= 5) {
-    const currentState = await isInfoDevModeEnabled()
-    const newState = !currentState
-
-    await chrome.storage.local.set({ 
-      infoDevMode: newState,
-      developerMode: newState,
-      developerModeEnabled: newState
-    })
-
-    clickCount = 0
-
-    // Mostrar mensagem de confirmação
-    const toast = document.createElement('div')
-    toast.style.cssText =
-      'position: fixed; top: 20px; right: 20px; padding: 12px 16px; background-color: var(--action-green); color: white; border-radius: var(--border-radius-sm); z-index: 10000; font-size: 14px;'
-    toast.textContent = newState
-      ? '🚀 Modo Dev (Painel SGD) Ativado!'
-      : '✅ Modo Dev (Painel SGD) Desativado!'
-    document.body.appendChild(toast)
-
-    setTimeout(() => {
-      toast.style.opacity = '0'
-      toast.style.transition = 'opacity 0.5s ease'
-      setTimeout(() => toast.remove(), 500)
-    }, 3000)
-
-    // Recarregar o painel para refletir a mudança
-    const modal = document.querySelector('.ip-modal')
-    if (modal) {
-      modal.remove()
-      openInfoPanel()
-    }
-  }
-}
-
 /**
  * Abre o Painel de Informações e Alertas.
  * @param {string} initialTabId - ID da aba que deve ser aberta inicialmente
@@ -102,9 +54,25 @@ async function openInfoPanel(initialTabId = 'pending') {
   // Injeta estilos necessários
   injectDevSwitchStyles()
 
-  // 1. Carregar estados persistentes do modo desenvolvedor
+  // 1. Carregar estados persistentes do modo desenvolvedor e aba Controle de Acesso
   const infoDevMode = await isInfoDevModeEnabled() // Ativado via Cliques no Painel
   developerMode = infoDevMode // Para este painel, usamos o modo específico
+
+  const storageResult = await chrome.storage.local.get(['accessControlTabUnlocked'])
+  const accessControlTabUnlocked = storageResult.accessControlTabUnlocked === true
+
+  // 1.1 Inicializar / atualizar permissões do usuário logado
+  if (window.sgdPermissions) {
+    // Re-verifica devMode, pois pode ter mudado desde a inicialização automática
+    if (infoDevMode) {
+      window.sgdPermissions.isEditor = true
+      window.sgdPermissions.isDevMode = true
+    } else if (!window.sgdPermissions.initialized) {
+      await window.sgdPermissions.init()
+    }
+  }
+  const isEditor = !!(window.sgdPermissions?.isEditor)
+  const currentUserName = window.sgdPermissions?.currentUser || null
 
   const equipeATEnabled = await isEquipeATEnabled()
 
@@ -115,14 +83,20 @@ async function openInfoPanel(initialTabId = 'pending') {
     { id: 'notices', icon: '📢', label: 'Avisos' },
     { id: 'forms', icon: '📝', label: 'Formulários & Documentos' },
     { id: 'ai-chains', icon: '🤖', label: 'AI Chains - Assistentes' },
-    { id: 'extensions', icon: '🧩', label: 'Extensões & Apps' }
+    { id: 'extensions', icon: '🧩', label: 'Extensões & Apps' },
+    { id: 'access-control', icon: '🔐', label: 'Controle de Acesso' }
   ]
 
-  // Filtrar seções baseado na chave Equipe AT e Modo Dev
+  // Filtrar seções baseado na chave Equipe AT, Modo Dev e permissão de Editor/Desbloqueio
   const sections = allSections.filter(section => {
     // Equipe AT aparece exclusivamente se estiver habilitada, independente do modo dev
     if (section.id === 'team-status') {
       return equipeATEnabled
+    }
+
+    // Controle de Acesso visível apenas se desbloqueado nas Configurações
+    if (section.id === 'access-control') {
+      return accessControlTabUnlocked
     }
 
     // Outras abas aparecem se estiver em modo dev
@@ -143,8 +117,19 @@ async function openInfoPanel(initialTabId = 'pending') {
   const activeSectionId = sections.some(s => s.id === initialTabId) ? initialTabId : (sections[0] ? sections[0].id : 'pending')
 
   // HTML do rodapé da sidebar (Interruptores de Opções)
+  const permBadgeHtml = currentUserName
+    ? `<div class="ip-dev-toggle-wrapper" style="margin-bottom: 10px; flex-direction: column; align-items: flex-start; gap: 4px;">
+        <span style="font-size: 10px; opacity: 0.6; font-weight: 400;">Logado como</span>
+        <div style="display: flex; align-items: center; gap: 6px; width: 100%;">
+          <span style="font-size: 11px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;" title="${escapeHTML(currentUserName)}">${escapeHTML(currentUserName.split(' ')[0])}</span>
+          <span style="font-size: 10px; padding: 1px 6px; border-radius: 10px; font-weight: 600; background: ${isEditor ? 'var(--action-green, #22c55e)' : 'var(--border-color)'}; color: ${isEditor ? '#fff' : 'var(--text-color-muted)'}; white-space: nowrap;">${isEditor ? '✏️ Editor' : '👁️ Vizualizador'}</span>
+        </div>
+      </div>`
+    : ''
+
   const sidebarFooterHtml = `
     <div class="ip-sidebar-footer">
+      ${permBadgeHtml}
       <div class="ip-dev-toggle-wrapper" style="margin-bottom: 8px;">
         <span>Modo Dev</span>
         <label class="ip-switch" title="Mostrar/Ocultar Modo Desenvolvedor do Painel">
@@ -165,7 +150,7 @@ async function openInfoPanel(initialTabId = 'pending') {
   // Estrutura Base do Modal
   const sidebarHtml = `
     <div class="ip-sidebar">
-      <div class="ip-sidebar-header" id="developer-mode-trigger" style="cursor: default; user-select: none;">
+      <div class="ip-sidebar-header" style="user-select: none;">
         Painel
       </div>
       <div style="flex: 1; overflow-y: auto;">
@@ -213,12 +198,6 @@ async function openInfoPanel(initialTabId = 'pending') {
       showShareButton: false
     }
   )
-
-  // --- Lógica de Cliques Secretos no Cabeçalho (Modo Dev) ---
-  const devTrigger = modal.querySelector('#developer-mode-trigger')
-  if (devTrigger) {
-    devTrigger.addEventListener('click', handleDeveloperModeClick)
-  }
 
   // --- Lógica de Navegação ---
   const navItems = modal.querySelectorAll('.ip-nav-item')
@@ -354,6 +333,7 @@ async function openInfoPanel(initialTabId = 'pending') {
         }
 
         if (targetId === 'notices') loadWarnings(targetSection, false)
+        if (targetId === 'access-control') loadAccessControl(targetSection)
       }
     })
   })
@@ -544,10 +524,19 @@ async function openInfoPanel(initialTabId = 'pending') {
 
             if (password === 'Dominio@2026') {
               await chrome.storage.local.set({ 
-                infoDevMode: true,
-                developerMode: true,
-                developerModeEnabled: true
+                infoDevMode: true
               })
+              
+              if (window.sgdPermissions && window.sgdPermissions.currentUser) {
+                if (typeof window.sgdPermissions.registerUserActivity === 'function') {
+                  await window.sgdPermissions.registerUserActivity(window.sgdPermissions.currentUser)
+                  await chrome.storage.local.set({
+                    lastPermissionsHeartbeat: Date.now(),
+                    lastPermissionsHeartbeatUser: window.sgdPermissions.currentUser
+                  })
+                }
+              }
+              
               closePasswordModal()
               modal.remove() // Fecha o painel de info principal
               openInfoPanel() // Reabre para mostrar os recursos de desenvolvimento
@@ -586,9 +575,7 @@ async function openInfoPanel(initialTabId = 'pending') {
       } else {
         // Desativando (sem senha)
         await chrome.storage.local.set({ 
-          infoDevMode: false,
-          developerMode: false,
-          developerModeEnabled: false
+          infoDevMode: false
         })
         // Recarrega o painel para refletir a mudança
         modal.remove()
@@ -653,20 +640,14 @@ let pendingTagsMapCache = {}
 
 // Controle do modo desenvolvedor
 let developerMode = false
-let clickCount = 0
-let lastClickTime = 0
 
 /**
  * Verifica se o modo desenvolvedor específico do painel está ativo
  */
 function isInfoDevModeEnabled() {
   return new Promise(resolve => {
-    chrome.storage.local.get(['infoDevMode', 'developerMode', 'developerModeEnabled'], result => {
-      resolve(
-        result.infoDevMode === true ||
-        result.developerMode === true ||
-        result.developerModeEnabled === true
-      )
+    chrome.storage.local.get(['infoDevMode'], result => {
+      resolve(result.infoDevMode === true)
     })
   })
 }
@@ -807,6 +788,55 @@ function injectDevSwitchStyles() {
     }
     .ip-action-icon-btn.active-hide:hover {
        opacity: 1 !important;
+    }
+    /* ── Access Control Panel ── */
+    .ip-access-current-user {
+      background: color-mix(in srgb, var(--primary-color, #6366f1) 8%, transparent);
+      border: 1px solid color-mix(in srgb, var(--primary-color, #6366f1) 20%, transparent);
+      border-radius: var(--border-radius-sm, 6px);
+      padding: 10px 14px;
+      margin-bottom: 4px;
+    }
+    .ip-access-editor-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border-color);
+      gap: 8px;
+    }
+    .ip-access-editor-row:last-child {
+      border-bottom: none;
+    }
+    .ip-access-editor-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      flex: 1;
+      min-width: 0;
+    }
+    .ip-access-editor-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-color-main);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .ip-access-editor-meta {
+      font-size: 11px;
+      color: var(--text-color-muted);
+    }
+    .ip-access-you-badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--primary-color, #6366f1) 15%, transparent);
+      color: var(--primary-color, #6366f1);
+    }
+    .ip-access-add-section {
+      padding: 4px 0;
     }
   `
   document.head.appendChild(style)
@@ -1408,7 +1438,7 @@ async function renderChannelPills(sectionElement) {
   if (!container) return
 
   const storage = await chrome.storage.local.get(['subscribedChannels'])
-  let subscribed = storage.subscribedChannels || WARNING_CHANNELS
+  let subscribed = storage.subscribedChannels ? [...storage.subscribedChannels] : [...WARNING_CHANNELS]
   
   // Geral é sempre selecionado e não pode ser desativado
   if (!subscribed.includes('Geral')) {
@@ -1487,7 +1517,7 @@ async function loadWarnings(sectionElement, forceRefresh = false) {
             <div class="ip-section-header" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                     <div class="ip-section-desc" style="margin-bottom: 0;">Fique por dentro dos comunicados e avisos importantes.</div>
-                    ${developerMode ? `<button id="new-warning-btn" class="ip-add-closing-btn" style="width: auto;">+ Novo Aviso</button>` : ''}
+                    ${(developerMode || window.sgdPermissions?.isEditor) ? `<button id="new-warning-btn" class="ip-add-closing-btn" style="width: auto;">+ Novo Aviso</button>` : ''}
                 </div>
                 <!-- Canais de Notificação -->
                 <div class="warnings-channels-filter" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding: 12px; background: var(--background-secondary); border: 1px solid var(--border-color); border-radius: 8px; width: 100%;">
@@ -1557,16 +1587,41 @@ async function loadWarnings(sectionElement, forceRefresh = false) {
     const ignoredIds = storage.ignoredWarnings || []
     warnings = warnings.filter(w => !ignoredIds.includes(w.id))
 
-    // --- 2.5 Filtro de Canais Assinados ---
+    // --- 2.5 Filtro de Canais Assinados e Permitidos ---
     const subStorage = await chrome.storage.local.get(['subscribedChannels'])
-    const subscribed = subStorage.subscribedChannels || WARNING_CHANNELS
+    const subscribed = subStorage.subscribedChannels ? [...subStorage.subscribedChannels] : [...WARNING_CHANNELS]
+    const allowed = window.sgdPermissions?.allowedChannels || [...WARNING_CHANNELS]
     warnings = warnings.filter(w => {
       const wChannel = w.channel || 'Geral'
-      return subscribed.includes(wChannel)
+      return subscribed.includes(wChannel) && allowed.includes(wChannel)
     })
 
     const listContainer = sectionElement.querySelector('#warnings-list')
     if (!listContainer) return
+
+    // Registra recebimento e visualização no Firebase para o usuário logado
+    const currentUser = window.sgdPermissions?.currentUser;
+    if (currentUser && window.warningsService) {
+      warnings.forEach(w => {
+        if (typeof window.warningsService.recordWarningReceipt === 'function') {
+          window.warningsService.recordWarningReceipt(w.id, currentUser);
+        }
+        if (typeof window.warningsService.recordWarningView === 'function') {
+          window.warningsService.recordWarningView(w.id, currentUser);
+        }
+      });
+    }
+
+    // Busca todas as métricas se for Editor
+    let allMetrics = {};
+    const isEditor = !!(developerMode || window.sgdPermissions?.isEditor);
+    if (isEditor && window.warningsService?.getAllWarningMetrics) {
+      try {
+        allMetrics = await window.warningsService.getAllWarningMetrics();
+      } catch (err) {
+        console.warn('[SGD Warnings] Falha ao carregar métricas:', err);
+      }
+    }
 
     if (warnings.length === 0) {
       listContainer.innerHTML = `
@@ -1582,10 +1637,36 @@ async function loadWarnings(sectionElement, forceRefresh = false) {
       listContainer.style.display = 'flex'
       listContainer.style.flexDirection = 'column'
       listContainer.style.gap = '16px'
-      listContainer.innerHTML = warnings.map(createWarningCard).join('')
+      listContainer.innerHTML = warnings.map(w => createWarningCard(w, allMetrics[w.id] || {})).join('')
 
-      // Adicionar listeners para botões de edição/exclusão (apenas se dev)
-      if (developerMode) {
+      // Adicionar listeners para botões de edição/exclusão (apenas editores)
+      if (developerMode || window.sgdPermissions?.isEditor) {
+        // Listener para o botão de ver detalhes de métricas
+        listContainer.querySelectorAll('.ip-warn-view-metrics-btn').forEach(btn => {
+          btn.addEventListener('click', async e => {
+            e.stopPropagation();
+            const warnId = btn.dataset.id;
+            const warning = warnings.find(w => w.id === warnId);
+            if (!warning) return;
+
+            btn.disabled = true;
+            const originalText = btn.textContent;
+            btn.textContent = 'Carregando...';
+
+            try {
+              if (window.warningsService?.getWarningMetrics) {
+                const metrics = await window.warningsService.getWarningMetrics(warnId);
+                openWarningMetricsModal(warning, metrics);
+              }
+            } catch (err) {
+              console.error(err);
+              alert('Erro ao carregar detalhes de métricas: ' + err.message);
+            } finally {
+              btn.disabled = false;
+              btn.textContent = originalText;
+            }
+          });
+        });
         listContainer.querySelectorAll('.ip-warn-edit-btn').forEach(btn => {
           btn.addEventListener('click', e => {
             const card = e.target.closest('.ip-card')
@@ -2238,7 +2319,7 @@ function processSafeHTML(text) {
 /**
  * Cria o HTML do card de aviso
  */
-function createWarningCard(warning) {
+function createWarningCard(warning, metrics = {}) {
   const typeClass =
     warning.type === 'danger'
       ? 'badge-danger'
@@ -2295,7 +2376,7 @@ function createWarningCard(warning) {
   const actionsHtml = `
         <div style="display:flex; gap:10px; align-items:center;">
             ${testBadge} ${ignoreBtn}
-            ${developerMode
+            ${(developerMode || window.sgdPermissions?.isEditor)
       ? `
                 <button class="ip-warn-edit-btn" style="background:none; border:none; cursor:pointer; font-size:14px; padding:0; line-height:1;" title="Editar">✏️</button>
                 <button class="ip-warn-delete-btn" style="background:none; border:none; cursor:pointer; font-size:14px; padding:0; line-height:1;" title="Excluir">🗑️</button>
@@ -2307,6 +2388,19 @@ function createWarningCard(warning) {
         </div>
     `
 
+  // Exibição de métricas para editores
+  let metricsHtml = ''
+  if (developerMode || window.sgdPermissions?.isEditor) {
+    const receiptsCount = Object.keys(metrics.receipts || {}).length
+    const viewsCount = Object.keys(metrics.views || {}).length
+    metricsHtml = `
+      <div class="ip-warn-metrics" style="margin-top: 8px; padding: 6px 10px; background: var(--background-secondary); border: 1px solid var(--border-color); border-radius: 4px; font-size: 11px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+        <span>📊 <b>Métricas:</b> <span style="color: var(--action-blue, #3b82f6); font-weight: 700;">${receiptsCount}</span> Receberam | <span style="color: var(--action-green, #22c55e); font-weight: 700;">${viewsCount}</span> Visualizaram</span>
+        <button class="ip-warn-view-metrics-btn" data-id="${escapeHTML(warning.id)}" style="background: none; border: none; color: var(--primary-color, #6366f1); font-weight: bold; cursor: pointer; padding: 0; font-size: 11px; text-decoration: underline; font-family: inherit;">Ver Detalhes</button>
+      </div>
+    `
+  }
+
   return `
         <div class="ip-card ip-card-${warning.type || 'info'}" data-id="${warning.id}" ${warning.isTest ? 'style="border-style: dashed;"' : ''}>
             <div class="ip-card-header">
@@ -2314,12 +2408,141 @@ function createWarningCard(warning) {
                 ${actionsHtml}
             </div>
             <div class="ip-card-content">${messageHtml}</div>
+            ${metricsHtml}
             <div class="ip-card-updated" style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 8px; border-top: 1px dashed var(--border-color);">
                 <span>🕒 ${dateStr}</span>
                 ${authorHtml}
             </div>
         </div>
     `
+}
+
+/**
+ * Abre modal com os detalhes de métricas de recebimento e visualização do aviso
+ */
+function openWarningMetricsModal(warning, metrics) {
+  const receipts = Object.values(metrics.receipts || {});
+  const views = Object.values(metrics.views || {});
+
+  // Ordena por data decrescente
+  receipts.sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
+  views.sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
+
+  const formatDate = (isoString) => {
+    if (!isoString) return '—';
+    try {
+      const d = new Date(isoString);
+      return d.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return '—';
+    }
+  };
+
+  const receiptsRows = receipts.length > 0
+    ? receipts.map(r => `
+        <tr style="border-bottom: 1px solid var(--border-color, #e5e7eb);">
+          <td style="padding: 8px; font-size: 12px; color: var(--text-color-main);">${escapeHTML(r.name)}</td>
+          <td style="padding: 8px; font-size: 12px; color: var(--text-color-muted); text-align: right; white-space: nowrap;">${formatDate(r.timestamp)}</td>
+        </tr>
+      `).join('')
+    : `<tr><td colspan="2" style="padding: 16px; font-size: 12px; color: var(--text-color-muted); text-align: center;">Nenhum registro de recebimento.</td></tr>`;
+
+  const viewsRows = views.length > 0
+    ? views.map(v => `
+        <tr style="border-bottom: 1px solid var(--border-color, #e5e7eb);">
+          <td style="padding: 8px; font-size: 12px; color: var(--text-color-main);">${escapeHTML(v.name)}</td>
+          <td style="padding: 8px; font-size: 12px; color: var(--text-color-muted); text-align: right; white-space: nowrap;">${formatDate(v.timestamp)}</td>
+        </tr>
+      `).join('')
+    : `<tr><td colspan="2" style="padding: 16px; font-size: 12px; color: var(--text-color-muted); text-align: center;">Nenhum registro de visualização.</td></tr>`;
+
+  const modalHtml = `
+    <div style="padding: 10px; max-height: 650px; display: flex; flex-direction: column;">
+      <p style="font-size: 13px; color: var(--text-color-muted); margin-bottom: 15px; margin-top: 0;">
+        Alcance do aviso: <b>"${escapeHTML(warning.title)}"</b>
+      </p>
+      
+      <div style="display: flex; gap: 16px; align-items: stretch; overflow: hidden; flex: 1;">
+        <!-- Tabela Recebidos -->
+        <div style="flex: 1; background: var(--background-secondary); border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; display: flex; flex-direction: column;">
+          <h5 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 700; color: var(--action-blue, #3b82f6); display: flex; justify-content: space-between;">
+            <span>📬 Receberam</span>
+            <span>${receipts.length}</span>
+          </h5>
+          <div style="overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; flex: 1; min-height: 250px; max-height: 400px;">
+            <table style="width: 100%; border-collapse: collapse; background: var(--background-main);">
+              <thead>
+                <tr style="background: var(--background-secondary); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 1;">
+                  <th style="padding: 8px; font-size: 11px; text-align: left; color: var(--text-color-muted); background: var(--background-secondary);">Usuário</th>
+                  <th style="padding: 8px; font-size: 11px; text-align: right; color: var(--text-color-muted); background: var(--background-secondary);">Quando</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${receiptsRows}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tabela Visualizados -->
+        <div style="flex: 1; background: var(--background-secondary); border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; display: flex; flex-direction: column;">
+          <h5 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 700; color: var(--action-green, #22c55e); display: flex; justify-content: space-between;">
+            <span>👁️ Visualizaram</span>
+            <span>${views.length}</span>
+          </h5>
+          <div style="overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; flex: 1; min-height: 250px; max-height: 400px;">
+            <table style="width: 100%; border-collapse: collapse; background: var(--background-main);">
+              <thead>
+                <tr style="background: var(--background-secondary); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 1;">
+                  <th style="padding: 8px; font-size: 11px; text-align: left; color: var(--text-color-muted); background: var(--background-secondary);">Usuário</th>
+                  <th style="padding: 8px; font-size: 11px; text-align: right; color: var(--text-color-muted); background: var(--background-secondary);">Quando</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${viewsRows}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+        <button id="close-metrics-btn" class="ip-add-closing-btn" style="width: auto; padding: 8px 20px;">Fechar</button>
+      </div>
+    </div>
+  `;
+
+  const modal = createModal(
+    'Métricas do Aviso',
+    modalHtml,
+    null,
+    {
+      isManagementModal: false,
+      modalId: 'warning-metrics-modal',
+      showShareButton: false
+    }
+  );
+
+  const defaultActions = modal.querySelector('.se-modal-actions');
+  if (defaultActions) defaultActions.remove();
+
+  modal.style.zIndex = '10003';
+
+  document.body.appendChild(modal);
+
+  const closeBtn = modal.querySelector('#close-metrics-btn');
+  const xBtn = modal.querySelector('.se-close-modal-btn');
+
+  const cleanup = () => modal.remove();
+
+  if (closeBtn) closeBtn.addEventListener('click', cleanup);
+  if (xBtn) xBtn.addEventListener('click', cleanup);
 }
 
 /**
@@ -2472,7 +2695,13 @@ function openCreateWarningModal(existingWarning = null) {
                 <div style="flex: 1;">
                     <label style="display:block; margin-bottom:4px; font-size:12px;">Canal de Comunicação</label>
                     <select id="warn-channel" style="${fieldStyle}">
-                        ${WARNING_CHANNELS.map(ch => `<option value="${ch}" ${channelVal === ch ? 'selected' : ''}>${ch}</option>`).join('')}
+                        ${(() => {
+                          const allowed = [...(window.sgdPermissions?.allowedChannels || WARNING_CHANNELS)];
+                          if (channelVal && !allowed.includes(channelVal)) {
+                            allowed.push(channelVal);
+                          }
+                          return allowed.map(ch => `<option value="${ch}" ${channelVal === ch ? 'selected' : ''}>${ch}</option>`).join('');
+                        })()}
                     </select>
                 </div>
             </div>
@@ -3426,8 +3655,451 @@ function getSectionContent(sectionId) {
         </div>
       `
 
+    case 'access-control':
+      return `
+        <p class="ip-section-desc">Gerencie quem pode criar, editar e excluir avisos na Central de Informações.</p>
+        <div id="access-control-container">
+          <div class="ip-loading-container">
+            <div class="ip-spinner"></div>
+            <span>Carregando permissões...</span>
+          </div>
+        </div>
+      `
+
     default:
       return '<p>Seção em desenvolvimento...</p>'
+  }
+}
+
+/**
+ * Carrega e renderiza o painel de Controle de Acesso.
+ * Permite a editores gerenciar a lista de outros editores.
+ * @param {HTMLElement} sectionElement - Elemento da seção de controle de acesso
+ */
+async function loadAccessControl(sectionElement) {
+  const container = sectionElement.querySelector('#access-control-container')
+  if (!container) return
+
+  // Mostra loading
+  container.innerHTML = `
+    <div class="ip-loading-container">
+      <div class="ip-spinner"></div>
+      <span>Carregando lista de permissões...</span>
+    </div>
+  `
+
+  try {
+    if (!window.sgdPermissions) {
+      throw new Error('Serviço de permissões não está disponível.')
+    }
+
+    // Força atualização da lista de editores e visualizadores
+    const editors = await window.sgdPermissions.refreshEditors()
+    const viewers = window.sgdPermissions.viewersList || []
+    const currentUserNorm = (window.sgdPermissions.currentUser || '').trim().toLowerCase()
+
+    const renderEditorRow = (editor) => {
+      const isSelf = editor.name.trim().toLowerCase() === currentUserNorm
+      const addedDate = editor.addedAt ? new Date(editor.addedAt).toLocaleDateString('pt-BR') : '—'
+      const channels = editor.allowedChannels || [...WARNING_CHANNELS]
+      const hasAllChannels = channels.length === WARNING_CHANNELS.length
+      const channelsText = hasAllChannels ? 'Todos os canais' : (channels.join(', ') || 'Nenhum canal')
+
+      return `
+        <div class="ip-access-editor-row" data-editor-id="${escapeHTML(editor.id)}" style="display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm, 4px); margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="ip-access-editor-info">
+              <span class="ip-access-editor-name" style="font-weight: 600; font-size: 13px; color: var(--text-color-main);">
+                ✏️ ${escapeHTML(editor.name)}
+                ${isSelf ? '<span class="ip-access-you-badge" style="background: var(--accent-color, #6366f1); color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 4px; margin-left: 5px; font-weight: 500;">Você</span>' : ''}
+              </span>
+              <span class="ip-access-editor-meta" style="display: block; font-size: 11px; color: var(--text-color-muted); margin-top: 2px;">
+                Adicionado em ${addedDate}${editor.addedBy ? ` por ${escapeHTML(editor.addedBy)}` : ''}
+              </span>
+            </div>
+            <button class="action-btn secondary-btn compact ip-access-remove-btn"
+              data-editor-id="${escapeHTML(editor.id)}"
+              data-editor-name="${escapeHTML(editor.name)}"
+              ${isSelf && editors.length <= 1 ? 'disabled title="Não é possível remover o único editor"' : ''}
+              style="font-size: 11px; padding: 3px 8px; color: var(--action-red, #ef4444); border: 1px solid var(--border-color);"
+            >
+              Remover
+            </button>
+          </div>
+
+          <div class="ac-channels-container" style="font-size: 11px; color: var(--text-color-muted); background: var(--background-main); padding: 8px 10px; border-radius: 4px; border: 1px solid var(--border-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+              <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                <strong>Canais:</strong> <span class="ac-channels-text" style="color: var(--text-color-main); font-weight: 500;">${escapeHTML(channelsText)}</span>
+              </span>
+              <button class="action-btn small-btn ac-toggle-channels-btn" data-editor-id="${escapeHTML(editor.id)}" style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: 1px solid var(--border-color);">✏️ Limitar</button>
+            </div>
+            
+            <div class="ac-channels-checkboxes" style="display: none; margin-top: 8px; border-top: 1px dashed var(--border-color); padding-top: 6px;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; margin-bottom: 8px;">
+                ${WARNING_CHANNELS.map(ch => {
+                  const checked = channels.includes(ch) ? 'checked' : ''
+                  return `
+                    <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer; color: var(--text-color-main);">
+                      <input type="checkbox" class="ac-channel-checkbox" value="${escapeHTML(ch)}" ${checked} style="width: auto; margin: 0;">
+                      ${escapeHTML(ch)}
+                    </label>
+                  `
+                }).join('')}
+              </div>
+              <div style="display: flex; gap: 6px; justify-content: flex-end;">
+                <button class="action-btn small-btn ac-select-all-channels-btn" style="font-size: 10px; border: 1px solid var(--border-color);">Todos</button>
+                <button class="action-btn small-btn ac-save-channels-btn" data-id="${escapeHTML(editor.id)}" data-type="editor" style="font-size: 10px; background: var(--action-green, #22c55e); color: white; border: none; padding: 3px 8px;">Salvar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `
+    }
+
+    const renderViewerRow = (viewer) => {
+      const addedDate = viewer.firstSeen ? new Date(viewer.firstSeen).toLocaleDateString('pt-BR') : '—'
+      const channels = viewer.allowedChannels || [...WARNING_CHANNELS]
+      const hasAllChannels = channels.length === WARNING_CHANNELS.length
+      const channelsText = hasAllChannels ? 'Todos os canais' : (channels.join(', ') || 'Nenhum canal')
+
+      return `
+        <div class="ip-access-viewer-row" data-viewer-id="${escapeHTML(viewer.id)}" style="display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm, 4px); margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" class="ac-viewer-select-checkbox" data-viewer-id="${escapeHTML(viewer.id)}" style="width: 15px; height: 15px; margin: 0; cursor: pointer;">
+              <div class="ip-access-editor-info">
+                <span class="ip-access-editor-name" style="font-weight: 500; font-size: 13px; color: var(--text-color-main);">
+                  👁️ ${escapeHTML(viewer.name)}
+                </span>
+                <span class="ip-access-editor-meta" style="display: block; font-size: 11px; color: var(--text-color-muted); margin-top: 2px;">
+                  Primeiro acesso em ${addedDate}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="ac-channels-container" style="font-size: 11px; color: var(--text-color-muted); background: var(--background-main); padding: 8px 10px; border-radius: 4px; border: 1px solid var(--border-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+              <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                <strong>Canais:</strong> <span class="ac-channels-text" style="color: var(--text-color-main); font-weight: 500;">${escapeHTML(channelsText)}</span>
+              </span>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <button class="action-btn small-btn ac-promote-editor-btn" data-viewer-id="${escapeHTML(viewer.id)}" data-viewer-name="${escapeHTML(viewer.name)}" style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: none; background: var(--action-blue, #3b82f6); color: white; cursor: pointer;">✏️ Tornar Editor</button>
+                <button class="action-btn small-btn ac-toggle-channels-btn" data-viewer-id="${escapeHTML(viewer.id)}" style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: 1px solid var(--border-color);">✏️ Limitar</button>
+              </div>
+            </div>
+            
+            <div class="ac-channels-checkboxes" style="display: none; margin-top: 8px; border-top: 1px dashed var(--border-color); padding-top: 6px;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; margin-bottom: 8px;">
+                ${WARNING_CHANNELS.map(ch => {
+                  const checked = channels.includes(ch) ? 'checked' : ''
+                  return `
+                    <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer; color: var(--text-color-main);">
+                      <input type="checkbox" class="ac-channel-checkbox" value="${escapeHTML(ch)}" ${checked} style="width: auto; margin: 0;">
+                      ${escapeHTML(ch)}
+                    </label>
+                  `
+                }).join('')}
+              </div>
+              <div style="display: flex; gap: 6px; justify-content: flex-end;">
+                <button class="action-btn small-btn ac-select-all-channels-btn" style="font-size: 10px; border: 1px solid var(--border-color);">Todos</button>
+                <button class="action-btn small-btn ac-save-channels-btn" data-id="${escapeHTML(viewer.id)}" data-type="viewer" style="font-size: 10px; background: var(--action-green, #22c55e); color: white; border: none; padding: 3px 8px;">Salvar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `
+    }
+
+    container.innerHTML = `
+      <div class="ip-access-current-user" style="padding: 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm, 4px); display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <span style="font-size: 12px; color: var(--text-color-muted);">Você está logado como:</span>
+          <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+            <span style="font-weight: 700; font-size: 14px; color: var(--text-color-main);">${escapeHTML(window.sgdPermissions.currentUser || 'Desconhecido')}</span>
+            <span style="font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; background: var(--action-green, #22c55e); color: #fff;">✏️ Editor</span>
+          </div>
+        </div>
+        <button id="ac-refresh-btn" class="action-btn secondary-btn compact" title="Atualizar lista" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color);">🔄 Atualizar</button>
+      </div>
+
+      <div style="margin: 12px 0;">
+        <input 
+          type="text" 
+          id="ac-search-users-input" 
+          placeholder="🔎 Pesquisar técnico por nome..." 
+          class="ip-filter-input" 
+          style="width: 100%; padding: 8px 12px; font-size: 13px; border-radius: var(--border-radius-sm, 4px); border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;"
+        >
+      </div>
+
+      <div style="margin: 16px 0; border-top: 1px solid var(--border-color);"></div>
+
+      <div style="margin-bottom: 12px;">
+        <strong style="font-size: 14px; color: var(--text-color-main);">✏️ Editores (${editors.length})</strong>
+      </div>
+
+      <div id="ip-editors-list">
+        ${editors.length > 0
+          ? editors.map(renderEditorRow).join('')
+          : '<p style="color: var(--text-color-muted); font-size: 13px; text-align: center; padding: 16px 0;">Nenhum editor cadastrado ainda.</p>'
+        }
+      </div>
+
+
+
+      <div style="margin: 20px 0; border-top: 1px solid var(--border-color);"></div>
+
+      <div style="margin-bottom: 12px;">
+        <strong style="font-size: 14px; color: var(--text-color-main);">👁️ Visualizadores Capturados (${viewers.length})</strong>
+        <p style="font-size: 11px; color: var(--text-color-muted); margin: 4px 0 0 0;">
+          Técnicos que utilizaram a extensão. Limite seus canais de visualização individualmente ou em lote.
+        </p>
+      </div>
+
+      <!-- Ações em Lote -->
+      <div class="bulk-actions-card" style="padding: 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm, 4px); margin-bottom: 12px;">
+        <h5 style="margin: 0 0 8px 0; font-size: 12px; font-weight: 600; color: var(--text-color-main);">⚡ Ações em Lote para Selecionados (<span id="ac-selected-count">0</span>):</h5>
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: nowrap;">
+          <select id="bulk-channel-select" style="padding: 5px 8px; font-size: 12px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main);">
+            <option value="all">Todos os Canais</option>
+            ${WARNING_CHANNELS.map(ch => `<option value="${escapeHTML(ch)}">${escapeHTML(ch)}</option>`).join('')}
+          </select>
+          <button id="bulk-enable-channel-btn" class="action-btn small-btn" style="background: var(--action-green, #22c55e); color: white; border: none; padding: 5px 12px; cursor: pointer; font-size: 12px; border-radius: 4px;" disabled>Habilitar</button>
+          <button id="bulk-disable-channel-btn" class="action-btn small-btn" style="background: var(--action-red, #ef4444); color: white; border: none; padding: 5px 12px; cursor: pointer; font-size: 12px; border-radius: 4px;" disabled>Desabilitar</button>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-left: 12px;">
+        <input type="checkbox" id="ac-select-all-viewers" style="width: 15px; height: 15px; margin: 0; cursor: pointer;">
+        <label for="ac-select-all-viewers" style="font-size: 12px; cursor: pointer; font-weight: 600; color: var(--text-color-main);">Selecionar Todos</label>
+      </div>
+
+      <div id="ip-viewers-list">
+        ${viewers.length > 0
+          ? viewers.map(renderViewerRow).join('')
+          : '<p style="color: var(--text-color-muted); font-size: 13px; text-align: center; padding: 16px 0;">Nenhum visualizador registrado ainda.</p>'
+        }
+      </div>
+    `
+
+    // ── Listeners ──
+
+    // Filtrar nomes dinamicamente (busca local)
+    const searchInput = container.querySelector('#ac-search-users-input')
+    if (searchInput) {
+      searchInput.addEventListener('input', () => {
+        const rawQuery = searchInput.value || ''
+        const query = rawQuery.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        
+        container.querySelectorAll('.ip-access-editor-row').forEach(row => {
+          const nameSpan = row.querySelector('.ip-access-editor-name')
+          const nameText = nameSpan ? nameSpan.textContent : ''
+          const normName = nameText.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          row.style.display = normName.includes(query) ? 'flex' : 'none'
+        })
+        
+        container.querySelectorAll('.ip-access-viewer-row').forEach(row => {
+          const nameSpan = row.querySelector('.ip-access-editor-name')
+          const nameText = nameSpan ? nameSpan.textContent : ''
+          const normName = nameText.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          row.style.display = normName.includes(query) ? 'flex' : 'none'
+        })
+      })
+    }
+
+    // Promover visualizador a editor
+    container.querySelectorAll('.ac-promote-editor-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const viewerId = btn.dataset.viewerId
+        const viewerName = btn.dataset.viewerName
+        const confirmed = confirm(`Promover "${viewerName}" para Editor?\n(Isso removerá da lista de visualizadores e ativará automaticamente o Modo DEV para ele na próxima abertura)`)
+        if (!confirmed) return
+
+        btn.disabled = true
+        btn.textContent = 'Promovendo...'
+
+        const success = await window.sgdPermissions.promoteViewerToEditor(viewerId, viewerName)
+        if (success) {
+          showNotification(`"${viewerName}" promovido a Editor com sucesso!`, 'success')
+          loadAccessControl(sectionElement) // Recarrega
+        } else {
+          btn.disabled = false
+          btn.textContent = '✏️ Tornar Editor'
+          showNotification('Erro ao promover visualizador. Tente novamente.', 'error')
+        }
+      })
+    })
+
+    // Remover editor
+    container.querySelectorAll('.ip-access-remove-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const editorId = btn.dataset.editorId
+        const editorName = btn.dataset.editorName
+        const confirmed = confirm(`Remover "${editorName}" da lista de editores?`)
+        if (!confirmed) return
+
+        btn.disabled = true
+        btn.textContent = 'Removendo...'
+
+        const success = await window.sgdPermissions.removeEditor(editorId)
+        if (success) {
+          showNotification(`Editor "${editorName}" removido com sucesso.`, 'success')
+          loadAccessControl(sectionElement) // Recarrega
+        } else {
+          btn.disabled = false
+          btn.textContent = 'Remover'
+          showNotification('Erro ao remover editor. Tente novamente.', 'error')
+        }
+      })
+    })
+
+    // Alternar visualização de checkboxes de canais
+    container.querySelectorAll('.ac-toggle-channels-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const card = btn.closest('.ac-channels-container')
+        const checkboxesDiv = card.querySelector('.ac-channels-checkboxes')
+        const isHidden = checkboxesDiv.style.display === 'none'
+        checkboxesDiv.style.display = isHidden ? 'block' : 'none'
+        btn.textContent = isHidden ? 'Fechar' : '✏️ Limitar'
+      })
+    })
+
+    // Botão "Todos os Canais" nos checkboxes individuais
+    container.querySelectorAll('.ac-select-all-channels-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const container = btn.closest('.ac-channels-checkboxes')
+        const checkboxes = container.querySelectorAll('.ac-channel-checkbox')
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked)
+        checkboxes.forEach(cb => cb.checked = !allChecked)
+      })
+    })
+
+    // Salvar canais individuais
+    container.querySelectorAll('.ac-save-channels-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id
+        const type = btn.dataset.type
+        const containerDiv = btn.closest('.ac-channels-checkboxes')
+        const checkboxes = containerDiv.querySelectorAll('.ac-channel-checkbox')
+        const allowedChannels = Array.from(checkboxes)
+          .filter(cb => cb.checked)
+          .map(cb => cb.value)
+
+        btn.disabled = true
+        btn.textContent = 'Salvando...'
+
+        let success = false
+        if (type === 'editor') {
+          success = await window.sgdPermissions.updateEditorChannels(id, allowedChannels)
+        } else {
+          success = await window.sgdPermissions.updateViewerChannels(id, allowedChannels)
+        }
+
+        if (success) {
+          showNotification('Canais permitidos atualizados com sucesso.', 'success')
+          loadAccessControl(sectionElement)
+        } else {
+          btn.disabled = false
+          btn.textContent = 'Salvar'
+          showNotification('Erro ao atualizar canais.', 'error')
+        }
+      })
+    })
+
+    // Seleção em lote de Visualizadores
+    const selectAllViewers = container.querySelector('#ac-select-all-viewers')
+    const viewerCheckboxes = container.querySelectorAll('.ac-viewer-select-checkbox')
+    const selectedCountSpan = container.querySelector('#ac-selected-count')
+    const bulkEnableBtn = container.querySelector('#bulk-enable-channel-btn')
+    const bulkDisableBtn = container.querySelector('#bulk-disable-channel-btn')
+
+    const updateBulkButtonsState = () => {
+      const checkedCount = Array.from(viewerCheckboxes).filter(cb => cb.checked).length
+      selectedCountSpan.textContent = checkedCount
+      const disabled = checkedCount === 0
+      bulkEnableBtn.disabled = disabled
+      bulkDisableBtn.disabled = disabled
+    }
+
+    if (selectAllViewers) {
+      selectAllViewers.addEventListener('change', () => {
+        const isChecked = selectAllViewers.checked
+        viewerCheckboxes.forEach(cb => cb.checked = isChecked)
+        updateBulkButtonsState()
+      })
+    }
+
+    viewerCheckboxes.forEach(cb => {
+      cb.addEventListener('change', () => {
+        const allChecked = Array.from(viewerCheckboxes).every(item => item.checked)
+        if (selectAllViewers) selectAllViewers.checked = allChecked
+        updateBulkButtonsState()
+      })
+    })
+
+    // Botões de Ação em Lote
+    const handleBulkAction = async (action) => {
+      const selectedIds = Array.from(viewerCheckboxes)
+        .filter(cb => cb.checked)
+        .map(cb => cb.dataset.viewerId)
+
+      if (selectedIds.length === 0) return
+
+      const channelSelect = container.querySelector('#bulk-channel-select')
+      const channel = channelSelect.value
+
+      const actionText = action === 'enable' ? 'Habilitar' : 'Desabilitar'
+      const channelName = channel === 'all' ? 'Todos os canais' : `o canal "${channel}"`
+      
+      const confirmed = confirm(`${actionText} ${channelName} para os ${selectedIds.length} visualizadores selecionados?`)
+      if (!confirmed) return
+
+      bulkEnableBtn.disabled = true
+      bulkDisableBtn.disabled = true
+      const origText = action === 'enable' ? 'Habilitando...' : 'Desabilitando...'
+      if (action === 'enable') bulkEnableBtn.textContent = origText
+      else bulkDisableBtn.textContent = origText
+
+      const success = await window.sgdPermissions.bulkUpdateViewersChannels(selectedIds, channel, action)
+      if (success) {
+        showNotification(`Ação em lote executada com sucesso!`, 'success')
+        loadAccessControl(sectionElement)
+      } else {
+        showNotification(`Erro ao executar ação em lote.`, 'error')
+        updateBulkButtonsState()
+        bulkEnableBtn.textContent = 'Habilitar'
+        bulkDisableBtn.textContent = 'Desativar'
+      }
+    }
+
+    if (bulkEnableBtn) bulkEnableBtn.addEventListener('click', () => handleBulkAction('enable'))
+    if (bulkDisableBtn) bulkDisableBtn.addEventListener('click', () => handleBulkAction('disable'))
+
+    // Atualizar lista
+    const refreshBtn = container.querySelector('#ac-refresh-btn')
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', () => {
+        window.sgdPermissions.invalidateCache()
+        loadAccessControl(sectionElement)
+      })
+    }
+
+
+
+  } catch (error) {
+    console.error('[SGD Permissions] Erro ao carregar controle de acesso:', error)
+    container.innerHTML = `
+      <div style="text-align: center; padding: 24px; color: var(--text-color-muted);">
+        <p style="font-size: 32px; margin-bottom: 8px;">⚠️</p>
+        <p style="font-size: 13px;">Erro ao carregar dados de permissões.</p>
+        <p style="font-size: 12px; opacity: 0.7;">${escapeHTML(error.message)}</p>
+        <button id="ac-retry-btn" class="action-btn secondary-btn compact" style="margin-top: 12px;">Tentar novamente</button>
+      </div>
+    `
+    const retryBtn = container.querySelector('#ac-retry-btn')
+    if (retryBtn) retryBtn.addEventListener('click', () => loadAccessControl(sectionElement))
   }
 }
 
@@ -3436,6 +4108,7 @@ function getSectionContent(sectionId) {
  * @param {HTMLElement} sectionElement - Elemento da seção de formulários
  * @param {string} filterType - Tipo de filtro ('forms' ou 'ai')
  */
+
 async function loadForms(
   sectionElement,
   filterType = 'forms',

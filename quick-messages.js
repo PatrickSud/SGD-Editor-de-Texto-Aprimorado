@@ -1097,7 +1097,7 @@ async function openManagementModal() {
   if (modalContentElement) {
     const watermarkTrigger = document.createElement('div')
     watermarkTrigger.id = 'dev-mode-trigger'
-    watermarkTrigger.textContent = 'Adaptado po Patrick Godoy'
+    watermarkTrigger.textContent = 'Adaptado por Patrick Godoy'
 
     // Aplica o estilo para posicionar no canto inferior esquerdo, como antes
     Object.assign(watermarkTrigger.style, {
@@ -1130,11 +1130,18 @@ async function openManagementModal() {
         clickCount = 0
         clearTimeout(clickTimer)
 
-        const newState = await toggleDevMode()
-        const status = newState ? 'ATIVADO' : 'DESATIVADO'
+        const result = await chrome.storage.local.get(['developerModeEnabled'])
+        const currentVal = result.developerModeEnabled === true
+        const newVal = !currentVal
+        await chrome.storage.local.set({ 
+          developerModeEnabled: newVal,
+          accessControlTabUnlocked: newVal
+        })
+
+        const status = newVal ? 'HABILITADA' : 'DESABILITADA'
 
         showNotification(
-          `Modo de Desenvolvedor ${status}! O modal será recarregado.`,
+          `Guia de Controle de Acesso e Modo Dev ${status}! O modal de Configurações será recarregado.`,
           'info',
           3000
         )

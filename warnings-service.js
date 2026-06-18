@@ -111,4 +111,96 @@ async function updateWarning(id, updates) {
   } catch (error) { throw error; }
 }
 
-window.warningsService = { getWarnings, createWarning, deleteWarning, updateWarning };
+function safeFirebaseKey(str) {
+  if (!str) return '';
+  return str
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+    .replace(/[^a-z0-9]/g, '_') // Substitui não-alfanuméricos por _
+    .replace(/_+/g, '_'); // Evita múltiplos _
+}
+
+async function recordWarningReceipt(warningId, userName) {
+  if (!userName || !warningId) return;
+  const safeKey = safeFirebaseKey(userName);
+  const now = new Date().toISOString();
+  try {
+    const storage = await chrome.storage.local.get(['dbReceivedWarnings']);
+    const dbReceived = storage.dbReceivedWarnings || {};
+    if (dbReceived[warningId]) return; // Já enviou
+
+    const response = await fetch(`${RTDB_BASE_URL}/warning_metrics/${warningId}/receipts/${safeKey}.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: userName.trim(), timestamp: now })
+    });
+
+    if (response.ok) {
+      dbReceived[warningId] = true;
+      await chrome.storage.local.set({ dbReceivedWarnings: dbReceived });
+    }
+  } catch (e) {
+    console.warn('[Warnings Service] Erro ao registrar recebimento:', e);
+  }
+}
+
+async function recordWarningView(warningId, userName) {
+  if (!userName || !warningId) return;
+  const safeKey = safeFirebaseKey(userName);
+  const now = new Date().toISOString();
+  try {
+    const storage = await chrome.storage.local.get(['dbViewedWarnings']);
+    const dbViewed = storage.dbViewedWarnings || {};
+    if (dbViewed[warningId]) return; // Já enviou
+
+    const response = await fetch(`${RTDB_BASE_URL}/warning_metrics/${warningId}/views/${safeKey}.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: userName.trim(), timestamp: now })
+    });
+
+    if (response.ok) {
+      dbViewed[warningId] = true;
+      await chrome.storage.local.set({ dbViewedWarnings: dbViewed });
+    }
+  } catch (e) {
+    console.warn('[Warnings Service] Erro ao registrar visualização:', e);
+  }
+}
+
+async function getWarningMetrics(warningId) {
+  try {
+    const response = await fetch(`${RTDB_BASE_URL}/warning_metrics/${warningId}.json`, { cache: 'no-store' });
+    if (!response.ok) return { receipts: {}, views: {} };
+    const result = await response.json();
+    return result || { receipts: {}, views: {} };
+  } catch (error) {
+    console.error('[Warnings Service] Erro ao buscar métricas:', error);
+    return { receipts: {}, views: {} };
+  }
+}
+
+async function getAllWarningMetrics() {
+  try {
+    const response = await fetch(`${RTDB_BASE_URL}/warning_metrics.json`, { cache: 'no-store' });
+    if (!response.ok) return {};
+    const result = await response.json();
+    return result || {};
+  } catch (error) {
+    console.error('[Warnings Service] Erro ao buscar todas as métricas:', error);
+    return {};
+  }
+}
+
+window.warningsService = { 
+  getWarnings, 
+  createWarning, 
+  deleteWarning, 
+  updateWarning,
+  recordWarningReceipt,
+  recordWarningView,
+  getWarningMetrics,
+  getAllWarningMetrics
+};
