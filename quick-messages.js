@@ -2697,6 +2697,7 @@ async function renderButtonVisibilitySettings(modal) {
 
   // Mapeamento completo de chaves para nomes amigáveis
   const buttonLabels = {
+    ai: '✨ Recursos de IA',
     lists: '☰ Listas',
     bullet: '• Marcadores',
     link: '🔗 Hiperlink',

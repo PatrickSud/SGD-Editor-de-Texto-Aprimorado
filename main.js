@@ -811,7 +811,7 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
   const pinnedAIButtons = settings.pinnedAIButtons || []
 
   let aiButtonsHtml = ''
-  if (includeAI) {
+  if (includeAI && buttonsVisibility.ai !== false) {
     const renderAIOption = action => {
       const feature = AI_FEATURES[action]
       const isPinned = pinnedAIButtons.includes(action)
@@ -866,7 +866,7 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
     `
   }
 
-  const pinnedAIButtonsHtml = includeAI
+  const pinnedAIButtonsHtml = includeAI && buttonsVisibility.ai !== false
     ? pinnedAIButtons
       .filter(action => {
         if (action === 'ai-summarize' && instanceId !== 'main') return false
@@ -882,7 +882,7 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
       .join('')
     : ''
 
-  const pinnedAIWrapperHtml = includeAI
+  const pinnedAIWrapperHtml = includeAI && buttonsVisibility.ai !== false
     ? `
     <div class="pinned-ai-wrapper" style="display: ${pinnedAIButtonsHtml ? 'flex' : 'none'
     }; align-items: center;">
@@ -4109,6 +4109,7 @@ async function updateToolbarButtonVisibility(editorContainer) {
 
   // Mapeamento completo de chaves para seletores de botões
   const buttonSelectors = {
+    ai: '.ai-master-button:not(.pinned-ai-button)',
     link: '[data-action="link"]',
     insertImage: '[data-action="insert-image"]',
     emoji: '[data-action="emoji"]',
@@ -4135,8 +4136,16 @@ async function updateToolbarButtonVisibility(editorContainer) {
     if (button) {
       // Para dropdowns, precisamos pegar o elemento pai
       const elementToToggle = button.closest('.dropdown') || button
-      elementToToggle.style.display =
-        buttonsVisibility[key] === false ? 'none' : ''
+      
+      if (key === 'separator1') {
+        const isAiVisible = buttonsVisibility.ai !== false
+        elementToToggle.style.display =
+          (buttonsVisibility[key] === false || !isAiVisible) ? 'none' : ''
+      } else {
+        elementToToggle.style.display =
+          buttonsVisibility[key] === false ? 'none' : ''
+      }
+
       if (key === 'speechToText') {
         const micSeparator = editorContainer.querySelector(
           '[data-id="mic-separator"]'
@@ -4146,6 +4155,16 @@ async function updateToolbarButtonVisibility(editorContainer) {
           const shouldHide =
             buttonsVisibility[key] === false || isOperaBrowser()
           micSeparator.style.display = shouldHide ? 'none' : ''
+        }
+      }
+
+      if (key === 'ai') {
+        const pinnedWrapper = editorContainer.querySelector('.pinned-ai-wrapper')
+        if (pinnedWrapper) {
+          const pinnedAIButtons = settings.pinnedAIButtons || []
+          const hasPinnedButtons = pinnedAIButtons.length > 0
+          pinnedWrapper.style.display =
+            (buttonsVisibility[key] === false || !hasPinnedButtons) ? 'none' : 'flex'
         }
       }
     }

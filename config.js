@@ -55,6 +55,7 @@ const DEFAULT_SETTINGS = {
   previewResizable: false,
   fabPosition: 'bottom-left',
   toolbarButtons: {
+    ai: true,
     link: true,
     insertImage: true,
     emoji: true,

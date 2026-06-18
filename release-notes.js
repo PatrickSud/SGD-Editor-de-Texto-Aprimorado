@@ -1,7 +1,8 @@
 const RELEASE_NOTES = {
-  '3.0.5.7': {
-    title: '✨ Solicitação de Modo Dev e Correções — Versão 3.0.5.7',
+  '3.0.5.8': {
+    title: '✨ Ocultar Recursos de IA — Versão 3.0.5.8',
     features: [
+      '<b>🤖 Ocultar Recursos de IA:</b> Adicionada a opção nas Configurações de Visibilidade dos Botões para ocultar/exibir o menu de Recursos de IA da barra de ferramentas.',
       '<b>🛠️ Novo Fluxo do Modo Dev:</b> Ativação do Modo Dev por solicitação e aprovação via Firebase Realtime Database (sem senhas), destacando pendências piscantes no Controle de Acesso para usuários Master.',
       '<b>📢 Correção e Visibilidade:</b> Correção de entrega do aviso "Apenas para mim" com o Modo Dev inativo, e ajuste nos estilos globais para exibição correta dos checkboxes ocultos no Controle de Acesso.'
     ]
