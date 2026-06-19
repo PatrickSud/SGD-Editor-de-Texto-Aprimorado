@@ -153,17 +153,10 @@ async function openInfoPanel(initialTabId = 'pending') {
   const sidebarFooterHtml = `
     <div class="ip-sidebar-footer">
       ${permBadgeHtml}
-      <div class="ip-dev-toggle-wrapper" style="margin-bottom: 8px;">
+      <div class="ip-dev-toggle-wrapper">
         <span>Modo Dev</span>
         <label class="ip-switch" title="Mostrar/Ocultar Modo Desenvolvedor do Painel">
           <input type="checkbox" id="ip-dev-mode-switch" ${infoDevMode ? 'checked' : ''}>
-          <span class="ip-slider round"></span>
-        </label>
-      </div>
-      <div class="ip-dev-toggle-wrapper">
-        <span>Equipe AT</span>
-        <label class="ip-switch" title="Mostrar/Ocultar aba Equipe AT">
-          <input type="checkbox" id="ip-equipe-at-switch" ${equipeATEnabled ? 'checked' : ''}>
           <span class="ip-slider round"></span>
         </label>
       </div>
@@ -447,79 +440,6 @@ async function openInfoPanel(initialTabId = 'pending') {
     }
   }
 
-  // --- Lógica dos Interruptores do Rodapé ---
-  const equipeATSwitch = modal.querySelector('#ip-equipe-at-switch')
-  if (equipeATSwitch) {
-    equipeATSwitch.addEventListener('click', async e => {
-      const isChecking = e.target.checked
-
-      if (isChecking) {
-        // Previne a mudança imediata até a senha ser validada
-        e.preventDefault()
-
-        const passwordModalHtml = `
-          <div style="padding: 10px;">
-            <p style="margin-bottom: 12px; font-size: 13px; color: var(--text-color-main);">Esta seção é exclusiva para a Equipe AT. Por favor, insira a senha de acesso para continuar.</p>
-            <input type="password" id="at-password-input" 
-              style="display: block; width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); font-size: 14px;" 
-              placeholder="Digite a senha...">
-          </div>
-        `
-
-        const passwordModal = createModal(
-          'Acesso Protegido',
-          passwordModalHtml,
-          async (content, closePasswordModal) => {
-            const input = content.querySelector('#at-password-input')
-            const password = input.value
-
-            if (password === 'equipe.at123') {
-              await chrome.storage.local.set({ equipeATEnabled: true })
-              closePasswordModal()
-              modal.remove() // Fecha o painel de info principal
-              openInfoPanel() // Reabre para mostrar a nova aba
-              showNotification(
-                'Acesso concedido! Aba Equipe AT habilitada.',
-                'success'
-              )
-            } else {
-              showNotification('Senha incorreta', 'error')
-            }
-          },
-          {
-            isManagementModal: false,
-            modalId: 'at-password-modal'
-          }
-        )
-
-        // Personalizar botão de salvar
-        const confirmBtn = passwordModal.querySelector('#modal-save-btn')
-        if (confirmBtn) confirmBtn.textContent = 'Confirmar'
-
-        document.body.appendChild(passwordModal)
-
-        // Foco no input e suporte ao Enter
-        setTimeout(() => {
-          const input = passwordModal.querySelector('#at-password-input')
-          if (input) {
-            input.focus()
-            input.addEventListener('keypress', event => {
-              if (event.key === 'Enter') {
-                confirmBtn.click()
-              }
-            })
-          }
-        }, 100)
-      } else {
-        // Desativando (sem senha)
-        await chrome.storage.local.set({ equipeATEnabled: false })
-        // Recarrega o painel para refletir a mudança
-        modal.remove()
-        openInfoPanel()
-      }
-    })
-  }
-
   const devModeSwitch = modal.querySelector('#ip-dev-mode-switch')
   if (devModeSwitch) {
     devModeSwitch.addEventListener('click', async e => {
@@ -720,6 +640,7 @@ let allPendingItems = []
 let filteredPendingItems = []
 let allPendingTabs = null
 let activePendingTabId = 'all'
+let acOnlyShowTeamAT = false
 
 // #region agent log
 // Global click listener to detect if clicks are happening but handler is missed
@@ -4157,6 +4078,9 @@ async function loadAccessControl(sectionElement) {
   const container = sectionElement.querySelector('#access-control-container')
   if (!container) return
 
+  const settings = await getSettings()
+  const enableTeamManagement = settings.preferences?.enableTeamManagement === true
+
   // Mostra loading
   container.innerHTML = `
     <div class="ip-loading-container">
@@ -4171,8 +4095,14 @@ async function loadAccessControl(sectionElement) {
     }
 
     // Força atualização da lista de editores, visualizadores e perfis de canais
-    const editors = await window.sgdPermissions.refreshEditors()
-    const viewers = window.sgdPermissions.viewersList || []
+    let editors = await window.sgdPermissions.refreshEditors()
+    let viewers = window.sgdPermissions.viewersList || []
+
+    if (acOnlyShowTeamAT) {
+      editors = editors.filter(e => e.isEquipeAT === true)
+      viewers = viewers.filter(v => v.isEquipeAT === true)
+    }
+
     const profiles = await window.sgdPermissions.getChannelProfiles()
     const currentUserNorm = (window.sgdPermissions.currentUser || '').trim().toLowerCase()
     const isMaster = !!window.sgdPermissions.isMaster
@@ -4256,6 +4186,20 @@ async function loadAccessControl(sectionElement) {
         `
         : ''
 
+      const isEquipeAT = editor.isEquipeAT === true
+      const teamBtnHtml = enableTeamManagement
+        ? `
+          <button class="action-btn small-btn ac-toggle-team-at-btn" 
+            data-user-id="${escapeHTML(editor.id)}" 
+            data-user-name="${escapeHTML(editor.name)}" 
+            data-is-editor="true" 
+            data-current-status="${isEquipeAT}"
+            style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: 1px solid var(--border-color); background: ${isEquipeAT ? 'var(--action-green, #22c55e)' : 'var(--background-main)'}; color: ${isEquipeAT ? 'white' : 'var(--text-color-main)'}; cursor: pointer; border-radius: 4px;">
+            ${isEquipeAT ? '👥 Ativo Equipe AT' : '👥 Ativar Equipe AT'}
+          </button>
+        `
+        : ''
+
       // Aplicação de Perfil individual na lista de editores (apenas Master)
       const profileSelectHtml = isMaster
         ? `
@@ -4282,6 +4226,7 @@ async function loadAccessControl(sectionElement) {
               </span>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
+              ${teamBtnHtml}
               ${roleSelectorHtml}
               ${removeBtnHtml}
             </div>
@@ -4329,6 +4274,20 @@ async function loadAccessControl(sectionElement) {
         ? `<button class="action-btn small-btn ac-promote-editor-btn" data-viewer-id="${escapeHTML(viewer.id)}" data-viewer-name="${escapeHTML(viewer.name)}" style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: none; background: var(--action-blue, #3b82f6); color: white; cursor: pointer;">✏️ Tornar Editor</button>`
         : ''
 
+      const isEquipeAT = viewer.isEquipeAT === true
+      const teamBtnHtml = enableTeamManagement
+        ? `
+          <button class="action-btn small-btn ac-toggle-team-at-btn" 
+            data-user-id="${escapeHTML(viewer.id)}" 
+            data-user-name="${escapeHTML(viewer.name)}" 
+            data-is-editor="false" 
+            data-current-status="${isEquipeAT}"
+            style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: 1px solid var(--border-color); background: ${isEquipeAT ? 'var(--action-green, #22c55e)' : 'var(--background-main)'}; color: ${isEquipeAT ? 'white' : 'var(--text-color-main)'}; cursor: pointer; border-radius: 4px;">
+            ${isEquipeAT ? '👥 Ativo Equipe AT' : '👥 Ativar Equipe AT'}
+          </button>
+        `
+        : ''
+
       // Todos os editores (Master e Comum) podem limitar/atualizar os canais de Visualizadores
       return `
         <div class="ip-access-viewer-row" data-viewer-id="${escapeHTML(viewer.id)}" style="display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 12px; background: var(--background-secondary, #f3f4f6); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm, 4px); margin-bottom: 10px;">
@@ -4353,6 +4312,7 @@ async function loadAccessControl(sectionElement) {
               </span>
               <div style="display: flex; gap: 6px; align-items: center;">
                 ${promoteBtnHtml}
+                ${teamBtnHtml}
                 <button class="action-btn small-btn ac-toggle-channels-btn" data-viewer-id="${escapeHTML(viewer.id)}" style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: 1px solid var(--border-color);">✏️ Limitar</button>
               </div>
             </div>
@@ -4443,6 +4403,11 @@ async function loadAccessControl(sectionElement) {
           </div>
         </div>
         <div style="display: flex; gap: 8px; align-items: center;">
+          ${enableTeamManagement ? `
+            <button id="ac-filter-team-btn" class="action-btn secondary-btn compact" title="Filtrar membros da Equipe AT" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: ${acOnlyShowTeamAT ? 'var(--primary-color, #6366f1)' : 'var(--background-main)'}; color: ${acOnlyShowTeamAT ? '#fff' : 'var(--text-color-main)'}; font-weight: ${acOnlyShowTeamAT ? 'bold' : 'normal'}; cursor: pointer;">
+              👥 ${acOnlyShowTeamAT ? 'Apenas Equipe AT' : 'Filtrar Equipe AT'}
+            </button>
+          ` : ''}
           ${isMaster ? `
             <button id="ac-config-channels-btn" class="action-btn secondary-btn compact" title="Configurar canais disponíveis" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">⚙️ Canais</button>
             <button id="ac-audit-logs-btn" class="action-btn secondary-btn compact" title="Ver logs de auditoria" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">📋 Auditoria</button>
@@ -4926,6 +4891,17 @@ async function loadAccessControl(sectionElement) {
       })
     }
 
+    // Alterna o filtro de Equipe AT
+    const filterTeamBtn = container.querySelector('#ac-filter-team-btn')
+    if (filterTeamBtn) {
+      filterTeamBtn.addEventListener('click', (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        acOnlyShowTeamAT = !acOnlyShowTeamAT
+        loadAccessControl(sectionElement)
+      })
+    }
+
     // Atualizar lista
     const refreshBtn = container.querySelector('#ac-refresh-btn')
     if (refreshBtn) {
@@ -5016,6 +4992,32 @@ async function loadAccessControl(sectionElement) {
           showNotification('Erro ao conectar ao Firebase.', 'error')
           btn.disabled = false
           btn.textContent = 'Rejeitar'
+        }
+      })
+    })
+
+    // Alterna o status da Equipe AT
+    container.querySelectorAll('.ac-toggle-team-at-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        
+        const userId = btn.dataset.userId
+        const userName = btn.dataset.userName
+        const isEditor = btn.dataset.isEditor === 'true'
+        const currentStatus = btn.dataset.currentStatus === 'true'
+        
+        btn.disabled = true
+        btn.textContent = 'Aguarde...'
+        
+        const success = await window.sgdPermissions.toggleUserEquipeAT(userId, isEditor, currentStatus)
+        if (success) {
+          showNotification(`Usuário "${userName}" ${!currentStatus ? 'ativado na' : 'removido da'} Equipe AT!`, 'success')
+          loadAccessControl(sectionElement)
+        } else {
+          showNotification('Erro ao alterar status da Equipe AT.', 'error')
+          btn.disabled = false
+          btn.textContent = currentStatus ? '👥 Ativo Equipe AT' : '👥 Ativar Equipe AT'
         }
       })
     })

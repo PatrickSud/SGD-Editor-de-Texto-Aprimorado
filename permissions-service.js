@@ -136,7 +136,8 @@
         addedBy: data.addedBy || '',
         allowedChannels: data.allowedChannels || getChannelsFallback(),
         role: data.role || 'comum',
-        lastSeen: data.lastSeen || ''
+        lastSeen: data.lastSeen || '',
+        isEquipeAT: data.isEquipeAT === true
       }))
 
       await chrome.storage.local.set({
@@ -189,7 +190,8 @@
         name: data.name || '',
         firstSeen: data.firstSeen || '',
         lastSeen: data.lastSeen || '',
-        allowedChannels: data.allowedChannels || getChannelsFallback()
+        allowedChannels: data.allowedChannels || getChannelsFallback(),
+        isEquipeAT: data.isEquipeAT === true
       }))
 
       viewersList.sort((a, b) => a.name.localeCompare(b.name))
@@ -360,6 +362,28 @@
       allowedChannels: allowed, 
       isCurrentUserEditor: found 
     })
+
+    // Sincroniza estado de ativação da Equipe AT do Firebase com o storage local
+    let isUserEquipeAT = false
+    if (matchedEditor) {
+      isUserEquipeAT = matchedEditor.isEquipeAT === true
+    } else {
+      const viewers = await getViewersList()
+      let matchedViewer = null
+      if (userId) {
+        matchedViewer = viewers.find(v => v.id === userId)
+      }
+      if (!matchedViewer) {
+        matchedViewer = viewers.find(v => normalizeName(v.name) === normalizedUserName)
+      }
+      if (matchedViewer) {
+        isUserEquipeAT = matchedViewer.isEquipeAT === true
+      }
+    }
+    const currentEquipeATEnabled = (await chrome.storage.local.get(['equipeATEnabled'])).equipeATEnabled === true
+    if (isUserEquipeAT !== currentEquipeATEnabled) {
+      await chrome.storage.local.set({ equipeATEnabled: isUserEquipeAT })
+    }
     
     return found
   }
@@ -616,7 +640,8 @@
         name: removing.name.trim(),
         firstSeen: removing.addedAt || nowStr,
         lastSeen: removing.lastSeen || nowStr,
-        allowedChannels: removing.allowedChannels || getChannelsFallback()
+        allowedChannels: removing.allowedChannels || getChannelsFallback(),
+        isEquipeAT: removing.isEquipeAT === true
       }
 
       try {
@@ -777,6 +802,10 @@
       if (!trimmedName) return false
 
       // 1. Adiciona o editor usando o viewerId como chave via PUT
+      const viewers = await getViewersList()
+      const viewerObj = viewers.find(v => v.id === viewerId)
+      const isEquipeAT = viewerObj ? viewerObj.isEquipeAT === true : false
+
       const responseAdd = await fetch(`${RTDB_EDITORS_URL}/${viewerId}.json`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -785,7 +814,8 @@
           addedAt: new Date().toISOString(),
           addedBy: window.sgdPermissions.currentUser || 'desconhecido',
           allowedChannels: getChannelsFallback(),
-          role: role
+          role: role,
+          isEquipeAT: isEquipeAT
         })
       })
 
@@ -907,6 +937,32 @@
     }
   }
 
+  /**
+   * Alterna o status da Equipe AT de um usuário no Firebase.
+   */
+  async function toggleUserEquipeAT(userId, isEditor, currentStatus) {
+    if (!window.sgdPermissions.isEditor) return false
+    const url = isEditor ? `${RTDB_EDITORS_URL}/${userId}.json` : `${RTDB_VIEWERS_URL}/${userId}.json`
+    const targetStatus = !currentStatus
+    try {
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isEquipeAT: targetStatus })
+      })
+      if (response.ok) {
+        const listName = isEditor ? 'editores' : 'visualizadores'
+        await writeAuditLog('TOGGLE_EQUIPE_AT', userId, `Ação: ${targetStatus ? 'Ativar' : 'Desativar'} na Equipe AT (${listName})`)
+        await invalidatePermissionsCache()
+        return true
+      }
+      return false
+    } catch (e) {
+      console.error('[SGD Permissions] Erro ao toggle Equipe AT:', e)
+      return false
+    }
+  }
+
   // ─── Inicialização ────────────────────────────────────────────────────────────
 
   /**
@@ -1022,6 +1078,7 @@
   window.sgdPermissions.saveActiveChannels = saveActiveChannels
   window.sgdPermissions.getAuditLogs = getAuditLogs
   window.sgdPermissions.writeAuditLog = writeAuditLog
+  window.sgdPermissions.toggleUserEquipeAT = toggleUserEquipeAT
   window.sgdPermissions.refreshEditors = async () => {
     const list = await getEditorsList(true)
     window.sgdPermissions.editorsList = list

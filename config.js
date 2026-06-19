@@ -88,7 +88,8 @@ const DEFAULT_SETTINGS = {
     enableWindowsNotifications: true,
     dropdownBehavior: 'hover', // 'hover' ou 'click'
     ocultarPreVisualizacaoSite: false, // Oculta o campo "Pré-visualizar:" nativo do site por padrão desativado
-    enableDuplicateChecker: false // Habilita a verificação de atendimentos duplicados por padrão desativado
+    enableDuplicateChecker: false, // Habilita a verificação de atendimentos duplicados por padrão desativado
+    enableTeamManagement: false // Habilita o gerenciamento de Equipe AT na guia Controle de Acesso por padrão desativado
   },
   pinnedAIButtons: []
 }

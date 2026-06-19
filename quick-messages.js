@@ -812,6 +812,20 @@ async function openManagementModal() {
   const settings = await getSettings()
   const uiSettings = settings.uiSettings || DEFAULT_SETTINGS.uiSettings
   const preferences = settings.preferences || DEFAULT_SETTINGS.preferences
+  const storedSecret = await chrome.storage.local.get(['teamManagementSecretUnlocked'])
+  const teamManagementSecretUnlocked = storedSecret.teamManagementSecretUnlocked === true
+
+  let teamManagementHtml = ''
+  if (teamManagementSecretUnlocked) {
+    teamManagementHtml = `
+                <hr style="margin: 15px 0;">
+                <h5>Equipe AT</h5>
+                <div class="form-checkbox-group">
+                    <input type="checkbox" id="enable-team-management" ${preferences.enableTeamManagement ? 'checked' : ''}>
+                    <label for="enable-team-management">Ativar gerenciamento da Equipe AT no Controle de Acesso</label>
+                </div>
+    `
+  }
 
   // let aiSettingsHtml = '' // Inicia como string vazia
   // if (devMode) {
@@ -995,6 +1009,7 @@ async function openManagementModal() {
                     <input type="checkbox" id="enable-duplicate-checker" ${preferences.enableDuplicateChecker ? 'checked' : ''}>
                     <label for="enable-duplicate-checker">Verificar atendimentos similares em aberto do cliente</label>
                 </div>
+                ${teamManagementHtml}
             </div>
         </div>
     `
@@ -1135,7 +1150,8 @@ async function openManagementModal() {
         const newVal = !currentVal
         await chrome.storage.local.set({ 
           developerModeEnabled: newVal,
-          accessControlTabUnlocked: newVal
+          accessControlTabUnlocked: newVal,
+          teamManagementSecretUnlocked: newVal
         })
 
         const status = newVal ? 'HABILITADA' : 'DESABILITADA'
@@ -2801,6 +2817,12 @@ async function savePreferencesSettings(modal) {
   const enableDuplicateCheckerCheckbox = container.querySelector('#enable-duplicate-checker');
   if (enableDuplicateCheckerCheckbox) {
     newPreferences.enableDuplicateChecker = enableDuplicateCheckerCheckbox.checked;
+  }
+
+  // NOVO: Ler preferência para habilitar o gerenciamento da Equipe AT
+  const enableTeamManagementCheckbox = container.querySelector('#enable-team-management');
+  if (enableTeamManagementCheckbox) {
+    newPreferences.enableTeamManagement = enableTeamManagementCheckbox.checked;
   }
 
   try {
