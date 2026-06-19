@@ -321,3 +321,34 @@ function getSgdClassificacao() {
   }
   return null
 }
+
+/**
+ * Verifica se a funcionalidade de classificação automática padrão está habilitada.
+ * Valida a configuração remota do Firebase e a preferência local do usuário.
+ * @returns {Promise<boolean>} True se estiver ativa, false caso contrário.
+ */
+async function isClassificationDefaultEnabled() {
+  try {
+    // 1. Verifica configuração remota do Firebase salva no storage local
+    if (typeof chrome !== 'undefined' && chrome.storage) {
+      const localData = await chrome.storage.local.get(['remoteConfig'])
+      const remoteConfig = localData.remoteConfig || {}
+      
+      // Se o Firebase forçar explicitamente a ativação ou desativação, essa regra prevalece
+      if (remoteConfig.rememberLastClassification === true) {
+        return true
+      }
+      if (remoteConfig.rememberLastClassification === false) {
+        return false
+      }
+    }
+
+    // 2. Caso contrário (Firebase não configurado), respeita a preferência local do usuário (desativado por padrão)
+    const settings = await getSettings()
+    const preferences = settings.preferences || {}
+    return preferences.rememberLastClassification === true
+  } catch (error) {
+    console.warn('[SGD Utils] Erro ao verificar se a classificação automática está ativa:', error)
+    return false // Fallback seguro (desativado)
+  }
+}

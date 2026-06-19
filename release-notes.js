@@ -5,7 +5,8 @@ const RELEASE_NOTES = {
       '<b>🤖 Ocultar Recursos de IA:</b> Adicionada a opção nas Configurações de Visibilidade dos Botões para ocultar/exibir o menu de Recursos de IA da barra de ferramentas.',
       '<b>🛠️ Novo Fluxo do Modo Dev:</b> Ativação do Modo Dev por solicitação e aprovação via Firebase Realtime Database (sem senhas), destacando pendências piscantes no Controle de Acesso para usuários Master.',
       '<b>📢 Correção e Visibilidade:</b> Correção de entrega do aviso "Apenas para mim" com o Modo Dev inativo, ajuste nos estilos globais para exibição correta dos checkboxes ocultos no Controle de Acesso, e retorno automático de editores removidos para a lista de visualizadores.',
-      '<b>⏱️ Múltiplas Guias de Pendências:</b> Suporte a múltiplas guias de pendências ativas com a aba "Todas" unificada (sem duplicados), limpeza automática e sequencial de filtros via formulário JSF com reabertura automática da Central apenas após a finalização da rotina de todas as guias dos usuários, e botão de correção pulsante.'
+      '<b>⏱️ Múltiplas Guias de Pendências:</b> Suporte a múltiplas guias de pendências ativas com a aba "Todas" unificada (sem duplicados), limpeza automática e sequencial de filtros via formulário JSF com reabertura automática da Central apenas após a finalização da rotina de todas as guias dos usuários, e botão de correção pulsante.',
+      '<b>⚙️ Classificação Padrão Controlada:</b> Implementação de toggle nas preferências para a classificação padrão (desativado por padrão) com suporte a override e ativação/desativação remota via Firebase Realtime Database.'
     ]
   },
   '3.0.5.6': {

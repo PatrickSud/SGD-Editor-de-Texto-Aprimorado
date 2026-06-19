@@ -389,6 +389,23 @@
   }
 
   /**
+   * Sincroniza as configurações remotas do Firebase e as salva no storage local.
+   */
+  async function syncRemoteConfig() {
+    try {
+      const response = await fetch(`${RTDB_BASE_URL}/config.json`, { cache: 'no-store' })
+      if (response.ok) {
+        const remoteConfig = await response.json()
+        if (remoteConfig && typeof remoteConfig === 'object') {
+          await chrome.storage.local.set({ remoteConfig })
+        }
+      }
+    } catch (e) {
+      console.warn('[SGD Permissions] Erro ao sincronizar configurações remotas do Firebase:', e)
+    }
+  }
+
+  /**
    * Limpa uma string para ser usada com segurança como chave do Firebase.
    * @param {string} str 
    * @returns {string}
@@ -970,6 +987,9 @@
    * Deve ser chamado assim que o DOM estiver disponível.
    */
   async function initPermissions() {
+    // Sincroniza configurações remotas em segundo plano
+    syncRemoteConfig().catch(err => console.warn('[SGD Permissions] Falha ao sincronizar configs:', err))
+
     const userName = captureLoggedUserName()
     const userId = captureLoggedUserId()
     window.sgdPermissions.currentUser = userName

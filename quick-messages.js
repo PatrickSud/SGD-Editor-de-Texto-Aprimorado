@@ -818,6 +818,23 @@ async function openManagementModal() {
   const storedMasterPC = await chrome.storage.local.get(['isMasterPC'])
   const isMasterPC = storedMasterPC.isMasterPC === true
 
+  // NOVO: Rastreia a config remota do Firebase para aplicar a renderização condicional do checkbox
+  const localData = await chrome.storage.local.get(['remoteConfig'])
+  const remoteConfig = localData.remoteConfig || {}
+  let rememberChecked = preferences.rememberLastClassification === true
+  let rememberDisabled = false
+  let rememberLabelSuffix = ''
+
+  if (remoteConfig.rememberLastClassification === true) {
+    rememberChecked = true
+    rememberDisabled = true
+    rememberLabelSuffix = ' <span style="color: var(--accent-color); font-size: 11px; font-weight: bold;">(Ativado remotamente)</span>'
+  } else if (remoteConfig.rememberLastClassification === false) {
+    rememberChecked = false
+    rememberDisabled = true
+    rememberLabelSuffix = ' <span style="color: var(--text-color-muted); font-size: 11px;">(Desativado remotamente)</span>'
+  }
+
   let biScrapperHtml = ''
   if (devMode) {
     biScrapperHtml = `
@@ -1023,6 +1040,12 @@ async function openManagementModal() {
                 <div class="form-checkbox-group">
                     <input type="checkbox" id="enable-duplicate-checker" ${preferences.enableDuplicateChecker ? 'checked' : ''}>
                     <label for="enable-duplicate-checker">Verificar atendimentos similares em aberto do cliente</label>
+                </div>
+                <hr style="margin: 15px 0;">
+                <h5>Classificação Padrão</h5>
+                <div class="form-checkbox-group">
+                    <input type="checkbox" id="remember-last-classification" ${rememberChecked ? 'checked' : ''} ${rememberDisabled ? 'disabled' : ''}>
+                    <label for="remember-last-classification">Lembrar e preencher automaticamente a última classificação selecionada${rememberLabelSuffix}</label>
                 </div>
                 ${biScrapperHtml}
                 ${teamManagementHtml}
@@ -2833,6 +2856,12 @@ async function savePreferencesSettings(modal) {
   const enableDuplicateCheckerCheckbox = container.querySelector('#enable-duplicate-checker');
   if (enableDuplicateCheckerCheckbox) {
     newPreferences.enableDuplicateChecker = enableDuplicateCheckerCheckbox.checked;
+  }
+
+  // NOVO: Ler preferência para lembrar a classificação automática padrão
+  const rememberLastClassificationCheckbox = container.querySelector('#remember-last-classification');
+  if (rememberLastClassificationCheckbox && !rememberLastClassificationCheckbox.disabled) {
+    newPreferences.rememberLastClassification = rememberLastClassificationCheckbox.checked;
   }
 
   // NOVO: Ler preferência para habilitar o gerenciamento da Equipe AT

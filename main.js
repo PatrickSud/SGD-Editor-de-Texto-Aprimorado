@@ -2863,6 +2863,11 @@ function observeForSolutionResponseRadio() {
 function observeForClassificationDefault() {
   const applyFor = async select => {
     if (!select) return
+
+    // Verifica se a funcionalidade de classificação automática padrão está habilitada
+    const isEnabled = await isClassificationDefaultEnabled()
+    if (!isEnabled) return
+
     const options = Array.from(select.options)
     let seenTodas = false
     options.forEach(opt => {
@@ -2898,6 +2903,10 @@ function observeForClassificationDefault() {
     if (!select._classificationDefaultAttached) {
       select._classificationDefaultAttached = true
       select.addEventListener('change', async () => {
+        // Apenas salva a última classificação se a funcionalidade estiver ativa
+        const active = await isClassificationDefaultEnabled()
+        if (!active) return
+
         const s = await getSettings()
         if (!s.uiSettings) s.uiSettings = {}
         s.uiSettings.classificationDefaultValue = select.value
