@@ -110,10 +110,19 @@ function toFirestoreTeamStatus(data) {
  */
 async function getTeamStatus() {
     try {
+        const currentHour = new Date().getHours();
+        const isWorkingHours = currentHour >= 8 && currentHour < 18;
+
         // Tenta usar cache local primeiro (reduz leituras do Firestore)
         const storage = await chrome.storage.local.get(['cachedTeamStatus', 'teamStatusLastFetch']);
         const cached = storage.cachedTeamStatus;
         const lastFetch = storage.teamStatusLastFetch;
+
+        // Se estiver fora do horário de funcionamento, retorna o cache diretamente para evitar leituras no Firestore
+        if (!isWorkingHours) {
+            console.log('[Team Service] Fora do horário de funcionamento (08h às 18h). Utilizando cache local.');
+            return cached || { members: [], timestamp: null, source: null };
+        }
 
         // Cache válido por 30 segundos
         const CACHE_TTL_MS = 30 * 1000;
@@ -190,6 +199,12 @@ async function saveTeamStatus(data) {
  * @returns {Promise<Object|null>}
  */
 async function refreshTeamStatus() {
+    const currentHour = new Date().getHours();
+    if (currentHour < 8 || currentHour >= 18) {
+        console.log('[Team Service] Fora do horário de funcionamento (08h às 18h). Forçando uso do cache local.');
+        const storage = await chrome.storage.local.get('cachedTeamStatus');
+        return storage.cachedTeamStatus || { members: [], timestamp: null, source: null };
+    }
     // Limpa o cache para forçar nova busca
     await chrome.storage.local.remove(['cachedTeamStatus', 'teamStatusLastFetch']);
     return await getTeamStatus();

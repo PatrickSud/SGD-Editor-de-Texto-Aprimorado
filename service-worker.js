@@ -995,6 +995,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       } else if (message.action === 'UPDATE_TEAM_STATUS') {
         // Handler para receber dados do Power BI Scraper (Master PC)
         try {
+          const currentHour = new Date().getHours();
+          if (currentHour < 8 || currentHour >= 18) {
+            console.log('Service Worker: UPDATE_TEAM_STATUS ignorado fora do horário de funcionamento (08h às 18h).');
+            sendResponse({ success: false, error: 'Fora do horário de funcionamento (08h às 18h).' });
+            return;
+          }
+
           const { members, timestamp, source } = message.data || {};
 
           if (!members || !Array.isArray(members)) {

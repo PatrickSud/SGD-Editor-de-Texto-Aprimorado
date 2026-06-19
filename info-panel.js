@@ -221,6 +221,12 @@ async function openInfoPanel(initialTabId = 'pending') {
 
   navItems.forEach(item => {
     item.addEventListener('click', () => {
+      // Sempre limpa o temporizador de auto-refresh do status da equipe ao mudar de aba
+      if (teamStatusAutoRefreshInterval) {
+        clearInterval(teamStatusAutoRefreshInterval)
+        teamStatusAutoRefreshInterval = null
+      }
+
       // Remove active class
       navItems.forEach(n => n.classList.remove('active'))
       contentSections.forEach(s => s.classList.remove('active'))
@@ -334,6 +340,7 @@ async function openInfoPanel(initialTabId = 'pending') {
           }
 
           loadTeamStatus(targetSection, false)
+          startTeamStatusAutoRefresh(targetSection)
         }
 
         if (targetId === 'instabilities') {
@@ -2047,13 +2054,14 @@ async function loadWarnings(sectionElement, forceRefresh = false) {
 
 // #region Equipe AT (Team Status)
 let allTeamMembers = []
+let teamStatusAutoRefreshInterval = null
 
 /**
  * Carrega e renderiza o status da equipe.
  * @param {HTMLElement} sectionElement - O elemento da seção.
  * @param {boolean} forceRefresh - Se true, força atualização do servidor.
  */
-async function loadTeamStatus(sectionElement, forceRefresh = false) {
+async function loadTeamStatus(sectionElement, forceRefresh = false, isAutoRefresh = false) {
   const container = sectionElement.querySelector('#team-status-container')
   const footer = sectionElement.querySelector('#team-status-footer')
   const refreshBtn = sectionElement.querySelector('#refresh-team-status-btn')
@@ -2065,7 +2073,7 @@ async function loadTeamStatus(sectionElement, forceRefresh = false) {
 
   // Se não for forceRefresh e já tivermos dados, não mostramos spinner completo para evitar flicker
   const hasData = allTeamMembers.length > 0
-  if (forceRefresh || !hasData) {
+  if ((forceRefresh || !hasData) && !isAutoRefresh) {
     container.innerHTML = `
       <div class="ip-loading-container">
         <div class="ip-spinner"></div>
@@ -2086,8 +2094,8 @@ async function loadTeamStatus(sectionElement, forceRefresh = false) {
   }
 
   try {
-    // Busca dados se for forceRefresh ou se o cache estiver vazio
-    if (forceRefresh || !hasData) {
+    // Busca dados se for forceRefresh, se o cache local estiver vazio ou se for atualização automática
+    if (forceRefresh || !hasData || isAutoRefresh) {
       if (typeof window.teamService === 'undefined') {
         throw new Error('Serviço de status da equipe não carregado.')
       }
@@ -2432,6 +2440,52 @@ async function toggleTechnicianPreference(name, type) {
   // Recarrega apenas a seção de status da equipe
   const section = document.querySelector('#ip-section-team-status')
   if (section) loadTeamStatus(section, false)
+}
+
+/**
+ * Inicia a rotina de atualização automática do status da equipe.
+ * @param {HTMLElement} targetSection - O elemento contendo a aba Equipe AT.
+ */
+function startTeamStatusAutoRefresh(targetSection) {
+  if (teamStatusAutoRefreshInterval) {
+    clearInterval(teamStatusAutoRefreshInterval)
+  }
+
+  const refreshIntervalMs = 2 * 60 * 1000 // 2 minutos
+
+  teamStatusAutoRefreshInterval = setInterval(() => {
+    // 1. Verifica se o modal ainda existe no DOM. Se não existir, cancela o timer.
+    const modalExists = document.getElementById('info-panel-modal')
+    if (!modalExists) {
+      clearInterval(teamStatusAutoRefreshInterval)
+      teamStatusAutoRefreshInterval = null
+      return
+    }
+
+    // 2. Verifica se a aba da equipe ainda está ativa. Se não estiver, cancela o timer.
+    const isTabActive = targetSection.classList.contains('active')
+    if (!isTabActive) {
+      clearInterval(teamStatusAutoRefreshInterval)
+      teamStatusAutoRefreshInterval = null
+      return
+    }
+
+    // 3. Verifica se a página/aba está ativa/visível para evitar requisições em background/inativas
+    if (document.hidden) {
+      console.log('[Team Status Auto-Refresh] Atualização automática pausada (página oculta).')
+      return
+    }
+
+    // 4. Verifica se está no horário de funcionamento (08h às 18h)
+    const currentHour = new Date().getHours()
+    if (currentHour < 8 || currentHour >= 18) {
+      console.log('[Team Status Auto-Refresh] Atualização automática pausada (fora do horário de 08h às 18h).')
+      return
+    }
+
+    console.log('[Team Status Auto-Refresh] Atualizando status da equipe silenciosamente...')
+    loadTeamStatus(targetSection, false, true)
+  }, refreshIntervalMs)
 }
 
 // Verifica alertas para técnicos monitorados

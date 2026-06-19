@@ -363,7 +363,8 @@ a.open-link-btn:hover {
 /* Checkboxes padronizados via styles/base.css */
 
 #enable-windows-notifications,
-#ocultar-previsualizacao-site {
+#ocultar-previsualizacao-site,
+#enable-bi-scraper {
   appearance: none;
   -webkit-appearance: none;
   position: relative;
@@ -377,18 +378,21 @@ a.open-link-btn:hover {
 }
 
 #enable-windows-notifications:hover,
-#ocultar-previsualizacao-site:hover {
+#ocultar-previsualizacao-site:hover,
+#enable-bi-scraper:hover:not(:disabled) {
   border-color: var(--primary-color);
 }
 
 #enable-windows-notifications:checked,
-#ocultar-previsualizacao-site:checked {
+#ocultar-previsualizacao-site:checked,
+#enable-bi-scraper:checked {
   background-color: var(--primary-color);
   border-color: var(--primary-color);
 }
 
 #enable-windows-notifications:checked::after,
-#ocultar-previsualizacao-site:checked::after {
+#ocultar-previsualizacao-site:checked::after,
+#enable-bi-scraper:checked::after {
   content: '✔';
   position: absolute;
   color: white;
@@ -397,6 +401,18 @@ a.open-link-btn:hover {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+}
+
+#enable-bi-scraper:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: var(--border-color);
+  background-color: var(--background-hover);
+}
+
+#enable-bi-scraper:disabled + label {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .se-modal-body input[type='text']:focus,

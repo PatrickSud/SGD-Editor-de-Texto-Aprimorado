@@ -189,6 +189,14 @@
    * Função principal que faz o scraping e envia os dados.
    */
   async function scrapeAndSend() {
+    // Restringe a execução ao horário de funcionamento: 08:00 às 18:00 (exclusive)
+    const now = new Date();
+    const currentHour = now.getHours();
+    if (currentHour < 8 || currentHour >= 18) {
+      console.log('[BI Scraper] Fora do horário de funcionamento (08h às 18h). Execução suspensa.');
+      return [];
+    }
+
     console.log('[BI Scraper] Iniciando extração de dados...');
 
     const data = scrapeData();
@@ -526,13 +534,40 @@
     }
   }
 
+  // ===== REATIVIDADE DE CONFIGURAÇÕES =====
+
+  chrome.storage.onChanged.addListener(async (changes, areaName) => {
+    if (areaName !== 'local') return;
+
+    const storage = await chrome.storage.local.get(['developerModeEnabled', 'isMasterPC']);
+    const shouldShow = storage.developerModeEnabled === true && storage.isMasterPC === true;
+
+    if (shouldShow) {
+      const controlPanelExists = document.getElementById('bi-scraper-control-panel');
+      if (!controlPanelExists) {
+        createControlPanel();
+      }
+      startScraperLoop();
+    } else {
+      if (scraperIntervalId) {
+        clearInterval(scraperIntervalId);
+        scraperIntervalId = null;
+        console.log('[BI Scraper] Loop de scraping interrompido.');
+      }
+      if (controlPanel) {
+        controlPanel.remove();
+        controlPanel = null;
+      }
+    }
+  });
+
   // ===== INICIALIZAÇÃO =====
 
   async function init() {
-    // Verifica se o modo desenvolvedor está ativo antes de carregar o painel
-    const storage = await chrome.storage.local.get(['developerModeEnabled']);
-    if (!storage.developerModeEnabled) {
-      console.log('[BI Scraper] Modo Desenvolvedor desativado. O painel de controle não será carregado.');
+    // Verifica se o modo desenvolvedor e o BiScrapper estão ativos antes de carregar o painel
+    const storage = await chrome.storage.local.get(['developerModeEnabled', 'isMasterPC']);
+    if (!storage.developerModeEnabled || !storage.isMasterPC) {
+      console.log('[BI Scraper] Modo Desenvolvedor desativado ou BiScrapper inativo. O painel de controle não será carregado.');
       return;
     }
 

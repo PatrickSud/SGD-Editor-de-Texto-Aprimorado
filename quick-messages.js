@@ -815,6 +815,21 @@ async function openManagementModal() {
   const storedSecret = await chrome.storage.local.get(['teamManagementSecretUnlocked'])
   const teamManagementSecretUnlocked = storedSecret.teamManagementSecretUnlocked === true
 
+  const storedMasterPC = await chrome.storage.local.get(['isMasterPC'])
+  const isMasterPC = storedMasterPC.isMasterPC === true
+
+  let biScrapperHtml = ''
+  if (devMode) {
+    biScrapperHtml = `
+                 <hr style="margin: 15px 0;">
+                 <h5>BiScrapper</h5>
+                 <div class="form-checkbox-group">
+                     <input type="checkbox" id="enable-bi-scraper" ${isMasterPC ? 'checked' : ''}>
+                     <label for="enable-bi-scraper">Ativar BiScrapper (Captura de Status do Power BI)</label>
+                 </div>
+    `
+  }
+
   let teamManagementHtml = ''
   if (teamManagementSecretUnlocked) {
     teamManagementHtml = `
@@ -1009,6 +1024,7 @@ async function openManagementModal() {
                     <input type="checkbox" id="enable-duplicate-checker" ${preferences.enableDuplicateChecker ? 'checked' : ''}>
                     <label for="enable-duplicate-checker">Verificar atendimentos similares em aberto do cliente</label>
                 </div>
+                ${biScrapperHtml}
                 ${teamManagementHtml}
             </div>
         </div>
@@ -2823,6 +2839,12 @@ async function savePreferencesSettings(modal) {
   const enableTeamManagementCheckbox = container.querySelector('#enable-team-management');
   if (enableTeamManagementCheckbox) {
     newPreferences.enableTeamManagement = enableTeamManagementCheckbox.checked;
+  }
+
+  // NOVO: Ler preferência para habilitar o BiScrapper
+  const enableBiScrapperCheckbox = container.querySelector('#enable-bi-scraper');
+  if (enableBiScrapperCheckbox) {
+    await chrome.storage.local.set({ isMasterPC: enableBiScrapperCheckbox.checked });
   }
 
   try {
