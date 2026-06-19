@@ -1280,3 +1280,57 @@
     box-shadow: 0 0 8px rgba(133, 100, 4, 0.6);
   }
 }
+
+/* --- STYLES FOR OUTDATED TIMESTAMP AND FORA DA FILA PULSE --- */
+.ip-timestamp-alert-badge {
+  background-color: color-mix(in srgb, var(--action-red) 15%, transparent);
+  color: var(--action-red);
+  border: 1px solid var(--action-red);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  animation: pulse-soft 2s infinite;
+}
+
+@keyframes fora-fila-pulse {
+  0% {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05), 0 0 0 0px rgba(239, 68, 68, 0.85);
+  }
+  50% {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05), 0 0 0 10px rgba(239, 68, 68, 0.4);
+  }
+  100% {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05), 0 0 0 0px rgba(239, 68, 68, 0);
+  }
+}
+
+@keyframes fora-fila-pinned-pulse {
+  0% {
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15), 0 0 0 0px rgba(239, 68, 68, 0.95);
+  }
+  50% {
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15), 0 0 0 12px rgba(239, 68, 68, 0.5);
+  }
+  100% {
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15), 0 0 0 0px rgba(239, 68, 68, 0);
+  }
+}
+
+.ip-team-member-card.is-fora-fila {
+  animation: fora-fila-pulse 2s infinite ease-in-out;
+}
+
+.ip-team-member-card.is-fora-fila.is-pinned {
+  animation: fora-fila-pinned-pulse 2s infinite ease-in-out;
+}
+
+.ip-team-member-card.is-fora-fila:hover {
+  animation-play-state: paused;
+  box-shadow: var(--shadow-lg);
+}
+

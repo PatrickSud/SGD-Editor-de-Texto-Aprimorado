@@ -774,7 +774,7 @@ function injectDevSwitchStyles() {
     .ip-team-member-card.is-pinned {
       border: 2px solid var(--primary-color) !important;
       background-color: color-mix(in srgb, var(--primary-color) 5%, var(--bg-card)) !important;
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15) !important;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
       transform: translateY(-2px);
     }
     .ip-team-member-card.is-dimmed {
@@ -2119,10 +2119,25 @@ async function loadTeamStatus(sectionElement, forceRefresh = false) {
         if (timestamp) {
           const formattedTime =
             window.teamService.formatTeamStatusTimestamp(timestamp)
-          timestampSpan.innerHTML = `🕐 <strong>${formattedTime}</strong>`
+          
+          const lastUpdateDate = new Date(timestamp)
+          const timeDiffMs = Date.now() - lastUpdateDate.getTime()
+          const isOutdated = !isNaN(timeDiffMs) && timeDiffMs > 60 * 60 * 1000
+
+          if (isOutdated) {
+            const hours = Math.floor(timeDiffMs / (1000 * 60 * 60))
+            const minutes = Math.floor((timeDiffMs % (1000 * 60 * 60)) / (1000 * 60))
+            const timeAgoText = hours > 0 ? `${hours}h e ${minutes}m` : `${minutes}m`
+            timestampSpan.innerHTML = `🕐 <strong>${formattedTime}</strong> <span class="ip-timestamp-alert-badge" title="Os dados não são atualizados há ${timeAgoText}">⚠️ Desatualizado (${hours}h+)</span>`
+            timestampSpan.style.color = 'var(--action-red)'
+          } else {
+            timestampSpan.innerHTML = `🕐 <strong>${formattedTime}</strong>`
+            timestampSpan.style.color = 'var(--text-color-muted)'
+          }
           timestampSpan.title = 'Última atualização recebida'
         } else {
           timestampSpan.innerHTML = ''
+          timestampSpan.style.color = 'var(--text-color-muted)'
         }
       }
 
@@ -2316,9 +2331,18 @@ function createTeamMemberCard(member) {
     percentColor = 'var(--action-yellow)'
   }
 
+  // Verifica status Fora da Fila
+  const statusStr = (member.currentStatus || '').trim().toLowerCase()
+  const isNaFila =
+    statusStr === 'conversando' ||
+    statusStr === 'ocioso' ||
+    statusStr.includes('na fila')
+  const isSemStatus = !statusStr
+  const isForaFila = !isNaFila && !isSemStatus
+
   return `
-    <div class="ip-card ip-team-member-card ${member.isPinned ? 'is-pinned' : ''} ${member.isHidden ? 'is-dimmed' : ''}" 
-         style="padding: 12px; border-left: 4px solid ${percentColor};"
+    <div class="ip-card ip-team-member-card ${member.isPinned ? 'is-pinned' : ''} ${member.isHidden ? 'is-dimmed' : ''} ${isForaFila ? 'is-fora-fila' : ''}" 
+         style="padding: 12px; border-left: 4px solid ${percentColor} !important;"
          data-name="${escapeHTML(member.name)}">
       
       <div style="display: flex; flex-direction: column; gap: 6px;">
