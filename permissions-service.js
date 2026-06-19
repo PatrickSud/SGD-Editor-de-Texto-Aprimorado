@@ -135,7 +135,8 @@
         addedAt: data.addedAt || '',
         addedBy: data.addedBy || '',
         allowedChannels: data.allowedChannels || getChannelsFallback(),
-        role: data.role || 'comum'
+        role: data.role || 'comum',
+        lastSeen: data.lastSeen || ''
       }))
 
       await chrome.storage.local.set({
@@ -608,6 +609,28 @@
       })
 
       if (!response.ok) throw new Error('Falha ao remover editor')
+
+      // Adiciona o usuário removido de volta à lista de visualizadores
+      const nowStr = new Date().toISOString()
+      const viewerData = {
+        name: removing.name.trim(),
+        firstSeen: removing.addedAt || nowStr,
+        lastSeen: removing.lastSeen || nowStr,
+        allowedChannels: removing.allowedChannels || getChannelsFallback()
+      }
+
+      try {
+        const responseViewer = await fetch(`${RTDB_VIEWERS_URL}/${firebaseId}.json`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(viewerData)
+        })
+        if (!responseViewer.ok) {
+          console.warn('[SGD Permissions] Editor removido, mas falha ao recriar registro como visualizador.')
+        }
+      } catch (errViewer) {
+        console.warn('[SGD Permissions] Erro ao cadastrar visualizador pós-remoção:', errViewer)
+      }
 
       await writeAuditLog('REMOVE_EDITOR', removing.name, `ID: ${firebaseId}`)
       await invalidatePermissionsCache()
