@@ -2395,7 +2395,11 @@ async function initializeExtension() {
 
   // Verifica se deve abrir o painel de pendências automaticamente (via URL param)
   const urlParams = new URLSearchParams(window.location.search)
-  if (urlParams.get('open_sgd_panel') === 'true') {
+  if (
+    urlParams.get('open_sgd_panel') === 'true' &&
+    !sessionStorage.getItem('tabsToClear') &&
+    sessionStorage.getItem('autoOpenPendingPanel') !== 'true'
+  ) {
     // Delay um pouco maior para garantir que tudo (estilos, serviços) foi carregado
     setTimeout(async () => {
       if (typeof openInfoPanel === 'function') {
@@ -4673,3 +4677,63 @@ async function handleInfoPanelOpen() {
 
 // A inicialização principal ocorre via initializeExtension() acima.
 // observeForTextArea() já é chamado dentro de initializeExtension().
+
+// Fila de limpeza automática de filtros em múltiplas guias
+const tabsToClearStr = sessionStorage.getItem('tabsToClear')
+const isExecutingQueue = !!tabsToClearStr
+
+if (tabsToClearStr) {
+  try {
+    const tabsToClear = JSON.parse(tabsToClearStr)
+    if (tabsToClear && tabsToClear.length > 0) {
+      const nextUrl = tabsToClear[0]
+      const currentUrl = window.location.href
+
+      const targetFiltro = getFiltroParam(nextUrl)
+      const currentFiltro = getFiltroParam(currentUrl)
+
+      const isCorrectPage =
+        currentUrl.includes('filtro-listas.html') &&
+        (!targetFiltro || targetFiltro === currentFiltro)
+
+      if (isCorrectPage) {
+        // Remove esta guia da fila
+        tabsToClear.shift()
+        if (tabsToClear.length > 0) {
+          sessionStorage.setItem('tabsToClear', JSON.stringify(tabsToClear))
+        } else {
+          sessionStorage.removeItem('tabsToClear')
+          sessionStorage.setItem('autoOpenPendingPanel', 'true')
+        }
+
+        console.log('[SGD Editor] Limpando filtros da guia ativa: ' + (currentFiltro || 'padrão'))
+        setTimeout(() => {
+          if (typeof resetSiteFilter === 'function') {
+            resetSiteFilter().catch(err =>
+              console.error('Erro ao resetar filtros automaticamente:', err)
+            )
+          }
+        }, 600)
+      } else {
+        console.log('[SGD Editor] Redirecionando para a guia na fila de limpeza: ' + (targetFiltro || 'padrão'))
+        window.location.href = nextUrl
+      }
+    }
+  } catch (e) {
+    console.error('[SGD Editor] Erro ao processar fila de limpeza de filtros:', e)
+    sessionStorage.removeItem('tabsToClear')
+  }
+}
+
+// Reabertura automática do painel de informações após conclusão da limpeza
+if (sessionStorage.getItem('autoOpenPendingPanel') === 'true' && !isExecutingQueue) {
+  sessionStorage.removeItem('autoOpenPendingPanel')
+  setTimeout(() => {
+    if (typeof openInfoPanel === 'function') {
+      console.log('[SGD Editor] Reabrindo Painel de Pendências após limpeza de filtros...')
+      openInfoPanel('pending').catch(err =>
+        console.error('Erro ao reabrir painel de pendências:', err)
+      )
+    }
+  }, 500)
+}

@@ -84,11 +84,331 @@ async function savePendingArrivalTimes(timesMap) {
  * Busca e processa a lista de pendências.
  * @returns {Promise<Array<object>>} Uma promessa que resolve com um array de objetos de pendência.
  */
+function getFiltroParam(url) {
+  if (!url) return null
+  const match = url.match(/[?&]filtro=(\d+)/)
+  return match ? match[1] : null
+}
+
+function parsePendingPage(doc, arrivalTimes, now, arrivalTimesState) {
+  const dataTable = doc.querySelector('table.tablesorter')
+
+  if (!dataTable) {
+    const passwordInput = doc.querySelector('input[type="password"]')
+    const loginForm =
+      doc.querySelector('form[action*="login"]') ||
+      doc.querySelector('#login-form')
+
+    if (passwordInput || loginForm) {
+      throw new Error('Você não está logado no SGD. Por favor, faça login.')
+    }
+
+    const errorMsg = doc.querySelector(
+      '.ui-messages-error-summary, .erro'
+    )?.innerText
+    if (errorMsg) {
+      throw new Error(`Erro no SGD: ${errorMsg.trim()}`)
+    }
+
+    console.warn(
+      'PendingService: Tabela não encontrada e não parece ser login. Layout pode ter mudado.'
+    )
+    return { items: [], siteFilter: { active: false, name: null } }
+  }
+
+  // Identificar índice da coluna "Responsável"
+  let responsibleColIndex = -1
+  const headers = dataTable.querySelectorAll('thead th')
+  headers.forEach((th, index) => {
+    if (th.innerText.toLowerCase().includes('responsável')) {
+      responsibleColIndex = index
+    }
+  })
+
+  // Detectar Filtro do Site Ativo (Session State)
+  const filterIds = [
+    { id: 'filtrosForm:responsavel', label: 'Responsável', default: '0' },
+    { id: 'filtrosForm:sistema', label: 'Sistema', default: '0' },
+    { id: 'filtrosForm:modulo', label: 'Módulo', default: '0' },
+    { id: 'filtrosForm:topicoSuporte', label: 'Tópico', default: '0' },
+    { id: 'filtrosForm:situacao', label: 'Situação', default: '0' },
+    {
+      id: 'filtrosForm:classificacaoSSC',
+      label: 'Classificação',
+      default: '0'
+    },
+    { id: 'filtrosForm:meioAcesso', label: 'Meio de Acesso', default: '0' },
+    { id: 'filtrosForm:origem', label: 'Subtópico', default: '0' },
+    {
+      id: 'filtrosForm:palavraChave',
+      label: 'Palavra-chave',
+      type: 'text',
+      default: ''
+    }
+  ]
+
+  const siteFilter = {
+    active: false,
+    name: null
+  }
+
+  const activeFilters = []
+
+  filterIds.forEach(f => {
+    const el = doc.getElementById(f.id)
+    if (el) {
+      const val = el.value
+      // Verifica se o valor é diferente do padrão
+      if (val && val !== f.default) {
+        let isReallyActive = false
+        if (f.type === 'text') {
+          isReallyActive = val.trim() !== ''
+        } else {
+          // Para selects com "selected" explícito no HTML estático ou valor atual
+          const selectedOption = el.querySelector(`option[value="${val}"]`)
+          // Se tiver selected ou o valor for diferente do default (assumindo value do select correto)
+          if (
+            (selectedOption && selectedOption.hasAttribute('selected')) ||
+            val !== '0'
+          ) {
+            isReallyActive = true
+          }
+        }
+
+        if (isReallyActive) {
+          // Exceção para Responsável: Se houver apenas 1 opção (além de Todos), não considerar filtro ativo
+          // Pois o usuário provavelmente não tem permissão para ver outros
+          if (f.id === 'filtrosForm:responsavel') {
+            const options = el.querySelectorAll('option')
+            if (options.length <= 2) {
+              isReallyActive = false
+            }
+          }
+        }
+
+        if (isReallyActive) {
+          let label = f.label
+
+          if (f.type === 'text') {
+            if (val.trim()) label += `: "${val.trim()}"`
+          } else {
+            // Para selects, tenta pegar o texto da option selecionada
+            const selectedOption = el.querySelector(`option[value="${val}"]`)
+            if (selectedOption) {
+              label += `: ${selectedOption.innerText.trim()}`
+            }
+          }
+
+          activeFilters.push(label)
+        }
+      }
+    }
+  })
+
+  if (activeFilters.length > 0) {
+    siteFilter.active = true
+    siteFilter.name =
+      activeFilters.length === 1
+        ? activeFilters[0]
+        : `${activeFilters.length} filtros ativos`
+  }
+
+  const rows = dataTable.querySelectorAll('tbody > tr')
+  const pendingItems = []
+
+  rows.forEach(row => {
+    const cells = row.cells
+
+    if (cells.length < 13) return
+
+    try {
+      // ID: Coluna 0
+      const id = cells[0].innerText.trim()
+
+      // Verifica se a pendência é prioritária
+      const isPrioritaria =
+        cells[0].classList.contains('tableListaRowWarningBlue') ||
+        cells[0].classList.contains('tableListaRowWarning')
+
+      // Data Abertura: Coluna 1 (Limpa spans ocultos)
+      const dataAbertura = cleanDateText(cells[1])
+
+      // Dias: Coluna 2
+      const dias = cells[2].innerText.trim()
+
+      // Último Trâmite: Coluna 3 (Limpa spans ocultos)
+      const dataUltimoTramite = cleanDateText(cells[3])
+
+      // Qtd Trâmites: Coluna 4
+      const qtdTramites = cells[4].innerText.trim()
+
+      // --- DETECÇÃO DE NOVO TRÂMITE PARA RESET DE TEMPO ---
+      if (arrivalTimes[id]) {
+        let record = arrivalTimes[id]
+
+        // Migração de legado (se for apenas número) ou inicialização de objeto
+        if (typeof record !== 'object') {
+          record = {
+            ts: record,
+            precise: true,
+            lastTramiteDate: dataUltimoTramite
+          }
+          arrivalTimes[id] = record
+          arrivalTimesState.changed = true
+        } else {
+          // FIX: Recuperação de Desastre (Healer)
+          if (record.precise && now - record.ts < 1000 * 60 * 60) {
+            const matches = [
+              ...(record.lastTramiteDate || '').matchAll(
+                /(\d{2})\/(\d{2})\/(\d{4})/g
+              )
+            ]
+
+            if (matches.length > 0) {
+              let maxTramTs = 0
+              for (const m of matches) {
+                const d = parseInt(m[1], 10)
+                const mo = parseInt(m[2], 10) - 1
+                const y = parseInt(m[3], 10)
+                const t = new Date(y, mo, d).getTime()
+                if (t > maxTramTs) maxTramTs = t
+              }
+
+              if (now - maxTramTs > 24 * 60 * 60 * 1000) {
+                record.ts = maxTramTs
+                record.precise = false
+                arrivalTimesState.changed = true
+              }
+            }
+          }
+
+          const currentDate = dataUltimoTramite
+
+          if (record.lastTramiteDate === undefined) {
+            record.lastTramiteDate = currentDate
+            arrivalTimesState.changed = true
+          } else if (record.lastTramiteDate !== currentDate) {
+            record.ts = now
+            record.precise = true
+            record.lastTramiteDate = currentDate
+            arrivalTimesState.changed = true
+          }
+        }
+      }
+
+      // --- CÁLCULO DE SLA APRIMORADO COM PRECISÃO ---
+      let hoursSinceUpdate = null
+      let timePrecision = null
+      let estimatedDaysSinceUpdate = null
+
+      if (arrivalTimes[id]) {
+        const record = arrivalTimes[id]
+        const arrivalTs =
+          typeof record === 'object' && record?.ts ? record.ts : record
+        const isPrecise = typeof record === 'object' ? !!record.precise : true
+        const businessMs = calculateBusinessTimeMs(arrivalTs, now)
+
+        if (isPrecise) {
+          hoursSinceUpdate = Math.max(0, businessMs / (1000 * 60 * 60))
+          timePrecision = 'preciso'
+          estimatedDaysSinceUpdate = Math.max(
+            0,
+            Math.floor(businessMs / (1000 * 60 * 60 * 24))
+          )
+        } else {
+          estimatedDaysSinceUpdate = Math.max(
+            0,
+            Math.floor(businessMs / (1000 * 60 * 60 * 24))
+          )
+          timePrecision = 'estimado'
+        }
+      } else {
+        const m = (dataUltimoTramite || '').match(/(\d{2})\/(\d{2})\/(\d{4})/)
+        if (m) {
+          const d = parseInt(m[1], 10)
+          const mo = parseInt(m[2], 10) - 1
+          const y = parseInt(m[3], 10)
+          const tramiteTs = new Date(y, mo, d).getTime()
+          const businessMs = calculateBusinessTimeMs(tramiteTs, now)
+          estimatedDaysSinceUpdate = Math.max(
+            0,
+            Math.floor(businessMs / (1000 * 60 * 60 * 24))
+          )
+          timePrecision = 'estimado'
+        }
+      }
+
+      // Assunto e Link
+      const anchor = cells[5].querySelector('a')
+      let subject = 'Sem assunto'
+      let link = '#'
+
+      if (anchor) {
+        subject = anchor.innerText.trim()
+        const href = anchor.getAttribute('href')
+        if (href) {
+          link = href.startsWith('http')
+            ? href
+            : `https://sgd.dominiosistemas.com.br${href.startsWith('/') ? '' : '/sgpub/faces/'}${href}`
+        }
+      }
+
+      // Responsável
+      let responsible = 'Desconhecido'
+      if (responsibleColIndex > -1 && cells[responsibleColIndex]) {
+        responsible = cells[responsibleColIndex].innerText.trim()
+      }
+
+      // Em SS
+      const rowStyle = (row.getAttribute('style') || '').toLowerCase()
+      const anchorStyle = anchor
+        ? (anchor.getAttribute('style') || '').toLowerCase()
+        : ''
+      const isEmSS =
+        rowStyle.includes('color: red') || anchorStyle.includes('color: red')
+
+      // Status
+      let status = 'Desconhecido'
+      const imgStatus = cells[12].querySelector('img')
+      if (imgStatus) {
+        status = imgStatus.getAttribute('title') || 'Status indefinido'
+      } else {
+        status = cells[12].innerText.trim() || 'Sem status'
+      }
+
+      pendingItems.push({
+        id,
+        dataAbertura,
+        dias,
+        dataUltimoTramite,
+        qtdTramites,
+        subject,
+        link,
+        status,
+        responsible,
+        isPrioritaria,
+        isEmSS,
+        hoursSinceUpdate,
+        timePrecision,
+        estimatedDaysSinceUpdate
+      })
+    } catch (err) {}
+  })
+
+  return { items: pendingItems, siteFilter }
+}
+
+/**
+ * Busca e processa a lista de pendências.
+ * @returns {Promise<object>} Uma promessa que resolve com um objeto contendo os itens e informações de abas.
+ */
 async function fetchPendingItems() {
   try {
     // 1. Carrega os tempos precisos salvos
     const arrivalTimes = await getPendingArrivalTimes()
-    let arrivalTimesChanged = false
+    const arrivalTimesState = { changed: false }
+    const now = Date.now()
+
     const response = await fetch(PENDING_ITEMS_URL, {
       credentials: 'include', // Envia cookies de sessão
       cache: 'no-cache'
@@ -107,343 +427,129 @@ async function fetchPendingItems() {
     const parser = new DOMParser()
     const doc = parser.parseFromString(htmlText, 'text/html')
 
-    // Verificação robusta de login
-    const dataTable = doc.querySelector('table.tablesorter')
+    // Parse the current page
+    const primaryResult = parsePendingPage(doc, arrivalTimes, now, arrivalTimesState)
 
-    if (!dataTable) {
-      const passwordInput = doc.querySelector('input[type="password"]')
-      const loginForm =
-        doc.querySelector('form[action*="login"]') ||
-        doc.querySelector('#login-form')
+    // Check if multiple tabs exist
+    const tabElements = doc.querySelectorAll('#navigationTab ul li')
+    if (tabElements.length > 1) {
+      const tabs = []
+      const fetchPromises = []
 
-      if (passwordInput || loginForm) {
-        throw new Error('Você não está logado no SGD. Por favor, faça login.')
-      }
-
-      const errorMsg = doc.querySelector(
-        '.ui-messages-error-summary, .erro'
-      )?.innerText
-      if (errorMsg) {
-        throw new Error(`Erro no SGD: ${errorMsg.trim()}`)
-      }
-
-      console.warn(
-        'PendingService: Tabela não encontrada e não parece ser login. Layout pode ter mudado.'
-      )
-      return []
-    }
-
-    // Identificar índice da coluna "Responsável"
-    let responsibleColIndex = -1
-    const headers = dataTable.querySelectorAll('thead th')
-    headers.forEach((th, index) => {
-      if (th.innerText.toLowerCase().includes('responsável')) {
-        responsibleColIndex = index
-      }
-    })
-
-    // Detectar Filtro do Site Ativo (Session State)
-    // Detectar Filtros do Site Ativos (Session State)
-    const filterIds = [
-      { id: 'filtrosForm:responsavel', label: 'Responsável', default: '0' },
-      { id: 'filtrosForm:sistema', label: 'Sistema', default: '0' },
-      { id: 'filtrosForm:modulo', label: 'Módulo', default: '0' },
-      { id: 'filtrosForm:topicoSuporte', label: 'Tópico', default: '0' },
-      { id: 'filtrosForm:situacao', label: 'Situação', default: '0' },
-      {
-        id: 'filtrosForm:classificacaoSSC',
-        label: 'Classificação',
-        default: '0'
-      },
-      { id: 'filtrosForm:meioAcesso', label: 'Meio de Acesso', default: '0' },
-      { id: 'filtrosForm:origem', label: 'Subtópico', default: '0' },
-      {
-        id: 'filtrosForm:palavraChave',
-        label: 'Palavra-chave',
-        type: 'text',
-        default: ''
-      }
-    ]
-
-    const siteFilter = {
-      active: false,
-      name: null
-    }
-
-    const activeFilters = []
-
-    filterIds.forEach(f => {
-      const el = doc.getElementById(f.id)
-      if (el) {
-        const val = el.value
-        // Verifica se o valor é diferente do padrão
-        if (val && val !== f.default) {
-          let isReallyActive = false
-          if (f.type === 'text') {
-            isReallyActive = val.trim() !== ''
-          } else {
-            // Para selects com "selected" explícito no HTML estático ou valor atual
-            const selectedOption = el.querySelector(`option[value="${val}"]`)
-            // Se tiver selected ou o valor for diferente do default (assumindo value do select correto)
-            if (
-              (selectedOption && selectedOption.hasAttribute('selected')) ||
-              val !== '0'
-            ) {
-              isReallyActive = true
-            }
-          }
-
-          if (isReallyActive) {
-            // Exceção para Responsável: Se houver apenas 1 opção (além de Todos), não considerar filtro ativo
-            // Pois o usuário provavelmente não tem permissão para ver outros
-            if (f.id === 'filtrosForm:responsavel') {
-              const options = el.querySelectorAll('option')
-              if (options.length <= 2) {
-                isReallyActive = false
-              }
-            }
-          }
-
-          if (isReallyActive) {
-            let label = f.label
-
-            if (f.type === 'text') {
-              if (val.trim()) label += `: "${val.trim()}"`
-            } else {
-              // Para selects, tenta pegar o texto da option selecionada
-              const selectedOption = el.querySelector(`option[value="${val}"]`)
-              if (selectedOption) {
-                label += `: ${selectedOption.innerText.trim()}`
-              }
-            }
-
-            activeFilters.push(label)
-          }
-        }
-      }
-    })
-
-    if (activeFilters.length > 0) {
-      siteFilter.active = true
-      siteFilter.name =
-        activeFilters.length === 1
-          ? activeFilters[0]
-          : `${activeFilters.length} filtros ativos`
-    }
-
-    const rows = dataTable.querySelectorAll('tbody > tr')
-    const pendingItems = []
-    const now = Date.now()
-
-    rows.forEach(row => {
-      const cells = row.cells
-
-      if (cells.length < 13) return
-
-      try {
-        // ID: Coluna 0
-        const id = cells[0].innerText.trim()
-
-        // Verifica se a pendência é prioritária
-        // Verifica classes tableListaRowWarningBlue (Prioridade Azul) e tableListaRowWarning (Prioridade Amarela)
-        const isPrioritaria =
-          cells[0].classList.contains('tableListaRowWarningBlue') ||
-          cells[0].classList.contains('tableListaRowWarning')
-
-        // Data Abertura: Coluna 1 (Limpa spans ocultos)
-        const dataAbertura = cleanDateText(cells[1])
-
-        // Dias: Coluna 2
-        const dias = cells[2].innerText.trim()
-
-        // Último Trâmite: Coluna 3 (Limpa spans ocultos)
-        const dataUltimoTramite = cleanDateText(cells[3])
-
-        // Qtd Trâmites: Coluna 4
-        const qtdTramites = cells[4].innerText.trim()
-
-        // --- DETECÇÃO DE NOVO TRÂMITE PARA RESET DE TEMPO ---
-        if (arrivalTimes[id]) {
-          let record = arrivalTimes[id]
-
-          // Migração de legado (se for apenas número) ou inicialização de objeto
-          if (typeof record !== 'object') {
-            record = {
-              ts: record,
-              precise: true,
-              lastTramiteDate: dataUltimoTramite
-            }
-            arrivalTimes[id] = record
-            arrivalTimesChanged = true
-          } else {
-            // FIX: Recuperação de Desastre (Healer)
-            // Se o item foi marcado como preciso recentemente (bug da versão anterior),
-            // mas a data do trâmite é antiga, reverte para estimado.
-            if (record.precise && now - record.ts < 1000 * 60 * 60) {
-              // Busca TODAS as datas encontradas na string (ex: "28/01/2026 | 02/02/2026")
-              const matches = [
-                ...(record.lastTramiteDate || '').matchAll(
-                  /(\d{2})\/(\d{2})\/(\d{4})/g
-                )
-              ]
-
-              if (matches.length > 0) {
-                // Encontra a data mais recente
-                let maxTramTs = 0
-                for (const m of matches) {
-                  const d = parseInt(m[1], 10)
-                  const mo = parseInt(m[2], 10) - 1
-                  const y = parseInt(m[3], 10)
-                  const t = new Date(y, mo, d).getTime()
-                  if (t > maxTramTs) maxTramTs = t
-                }
-
-                // Se a data MAIS RECENTE do trâmite é de mais de 24h atrás,
-                // então realmente é antigo e não deveria ter resetado.
-                if (now - maxTramTs > 24 * 60 * 60 * 1000) {
-                  record.ts = maxTramTs
-                  record.precise = false
-                  arrivalTimesChanged = true
-                }
-              }
-            }
-
-            // Verifica se houve alteração na Data do Último Trâmite
-            const currentDate = dataUltimoTramite
-
-            if (record.lastTramiteDate === undefined) {
-              // Apenas migração: adiciona campo se não existir
-              record.lastTramiteDate = currentDate
-              arrivalTimesChanged = true
-            } else if (record.lastTramiteDate !== currentDate) {
-              // Data do trâmite mudou! Reseta o tempo para AGORA.
-              record.ts = now
-              record.precise = true
-              record.lastTramiteDate = currentDate
-              arrivalTimesChanged = true
-            }
-          }
-        }
-
-        // --- CÁLCULO DE SLA APRIMORADO COM PRECISÃO ---
-        let hoursSinceUpdate = null // Padrão: Sem informação de tempo
-        let timePrecision = null // 'preciso' | 'estimado' | null
-        let estimatedDaysSinceUpdate = null // Apenas para estimativas (offline)
-
-        if (arrivalTimes[id]) {
-          const record = arrivalTimes[id]
-          const arrivalTs =
-            typeof record === 'object' && record?.ts ? record.ts : record
-          const isPrecise = typeof record === 'object' ? !!record.precise : true
-          const businessMs = calculateBusinessTimeMs(arrivalTs, now)
-
-          if (isPrecise) {
-            hoursSinceUpdate = Math.max(0, businessMs / (1000 * 60 * 60))
-            timePrecision = 'preciso'
-            // Também calcula dias estimados para fallback/visualização simplificada
-            estimatedDaysSinceUpdate = Math.max(
-              0,
-              Math.floor(businessMs / (1000 * 60 * 60 * 24))
-            )
-          } else {
-            estimatedDaysSinceUpdate = Math.max(
-              0,
-              Math.floor(businessMs / (1000 * 60 * 60 * 24))
-            )
-            timePrecision = 'estimado'
-          }
-        } else {
-          // Solicitação antiga: cronômetro preciso não iniciado
-          // Considera dias úteis desde a data do último trâmite apresentada
-          const m = (dataUltimoTramite || '').match(/(\d{2})\/(\d{2})\/(\d{4})/)
-          if (m) {
-            const d = parseInt(m[1], 10)
-            const mo = parseInt(m[2], 10) - 1
-            const y = parseInt(m[3], 10)
-            const tramiteTs = new Date(y, mo, d).getTime()
-            const businessMs = calculateBusinessTimeMs(tramiteTs, now)
-            estimatedDaysSinceUpdate = Math.max(
-              0,
-              Math.floor(businessMs / (1000 * 60 * 60 * 24))
-            )
-            timePrecision = 'estimado'
-          }
-        }
-
-
-
-        // Assunto e Link: Coluna 5
-        const anchor = cells[5].querySelector('a')
-        let subject = 'Sem assunto'
-        let link = '#'
-
+      tabElements.forEach(li => {
+        const anchor = li.querySelector('a')
         if (anchor) {
-          subject = anchor.innerText.trim()
           const href = anchor.getAttribute('href')
-          if (href) {
-            link = href.startsWith('http')
-              ? href
-              : `https://sgd.dominiosistemas.com.br${href.startsWith('/') ? '' : '/sgpub/faces/'}${href}`
+          const fullUrl = href.startsWith('http') ? href : `https://sgd.dominiosistemas.com.br/sgpub/faces/${href}`
+          const span = anchor.querySelector('span')
+          const rawText = span ? span.innerText.replace(/\u00A0/g, ' ').trim() : anchor.innerText.trim()
+
+          const match = rawText.match(/(.*?)\s*\((\d+)\)$/)
+          const name = match ? match[1].trim() : rawText
+
+          const isCurrent = li.id === 'current'
+
+          const tabObj = {
+            id: getFiltroParam(fullUrl) || fullUrl,
+            name: name,
+            url: fullUrl,
+            items: isCurrent ? primaryResult.items : [],
+            siteFilter: isCurrent ? primaryResult.siteFilter : { active: false, name: null },
+            isCurrent: isCurrent
+          }
+
+          tabs.push(tabObj)
+
+          if (!isCurrent) {
+            fetchPromises.push(
+              fetch(fullUrl, { credentials: 'include', cache: 'no-cache' })
+                .then(res => {
+                  if (!res.ok) throw new Error(`Erro ao buscar aba: ${res.status}`)
+                  return res.text()
+                })
+                .then(text => {
+                  const tabDoc = parser.parseFromString(text, 'text/html')
+                  const tabResult = parsePendingPage(tabDoc, arrivalTimes, now, arrivalTimesState)
+                  tabObj.items = tabResult.items
+                  tabObj.siteFilter = tabResult.siteFilter
+                })
+                .catch(err => {
+                  console.error(`Erro ao carregar a aba ${name}:`, err)
+                })
+            )
           }
         }
+      })
 
-        // Responsável (Dinâmico)
-        let responsible = 'Desconhecido'
-        if (responsibleColIndex > -1 && cells[responsibleColIndex]) {
-          responsible = cells[responsibleColIndex].innerText.trim()
-        }
+      // Wait for all other tabs to load
+      await Promise.all(fetchPromises)
 
-        // Verifica se é "Em SS" (texto vermelho)
-        // O SGD coloca style="color: red;" no TR ou no A quando há retorno de SS
-        const rowStyle = (row.getAttribute('style') || '').toLowerCase()
-        const anchorStyle = anchor
-          ? (anchor.getAttribute('style') || '').toLowerCase()
-          : ''
-        const isEmSS =
-          rowStyle.includes('color: red') || anchorStyle.includes('color: red')
-
-        // Status: Coluna 12
-        let status = 'Desconhecido'
-        const imgStatus = cells[12].querySelector('img')
-        if (imgStatus) {
-          status = imgStatus.getAttribute('title') || 'Status indefinido'
-        } else {
-          status = cells[12].innerText.trim() || 'Sem status'
-        }
-
-        pendingItems.push({
-          id,
-          dataAbertura,
-          dias,
-          dataUltimoTramite,
-          qtdTramites,
-          subject,
-          link,
-          status,
-          responsible,
-          isPrioritaria,
-          isEmSS,
-          hoursSinceUpdate, // Pode ser null
-          timePrecision,
-          estimatedDaysSinceUpdate
+      // Create "Todas" (All) tab
+      // Merge all items without duplication (by id)
+      const allItemsMap = new Map()
+      tabs.forEach(t => {
+        t.items.forEach(item => {
+          if (!allItemsMap.has(item.id)) {
+            allItemsMap.set(item.id, item)
+          }
         })
-      } catch (err) {}
-    })
+      })
+      const mergedItems = Array.from(allItemsMap.values())
 
-    if (arrivalTimesChanged) {
-      await savePendingArrivalTimes(arrivalTimes)
+      // Find if any tab has an active filter
+      const anyTabHasFilter = tabs.some(t => t.siteFilter.active)
+      let combinedFilterName = null
+      if (anyTabHasFilter) {
+        const filters = tabs
+          .filter(t => t.siteFilter.active)
+          .map(t => `${t.name}: ${t.siteFilter.name}`)
+        combinedFilterName = filters.join(' | ')
+      }
+
+      const allTabObj = {
+        id: 'all',
+        name: 'Todas',
+        url: null,
+        items: mergedItems,
+        siteFilter: { active: anyTabHasFilter, name: combinedFilterName }
+      }
+
+      const finalTabs = [allTabObj, ...tabs]
+
+      if (arrivalTimesState.changed) {
+        await savePendingArrivalTimes(arrivalTimes)
+      }
+
+      return {
+        items: mergedItems, // For backwards compatibility
+        siteFilter: allTabObj.siteFilter, // For backwards compatibility
+        tabs: finalTabs
+      }
+    } else {
+      if (arrivalTimesState.changed) {
+        await savePendingArrivalTimes(arrivalTimes)
+      }
+      return {
+        items: primaryResult.items,
+        siteFilter: primaryResult.siteFilter,
+        tabs: null
+      }
     }
-
-    return { items: pendingItems, siteFilter }
   } catch (error) {
     throw error
   }
 }
 
-async function resetSiteFilter() {
-  const isOnFilterPage = window.location.href.includes('filtro-listas.html')
+async function resetSiteFilter(targetUrl) {
+  const currentUrl = window.location.href
+  const targetFiltro = targetUrl ? getFiltroParam(targetUrl) : null
+  const currentFiltro = getFiltroParam(currentUrl)
 
-  if (isOnFilterPage) {
+  const isOnTargetPage =
+    currentUrl.includes('filtro-listas.html') &&
+    (!targetFiltro || targetFiltro === currentFiltro)
+
+  if (isOnTargetPage) {
     const filterIds = [
       'filtrosForm:responsavel',
       'filtrosForm:sistema',
@@ -455,13 +561,12 @@ async function resetSiteFilter() {
       'filtrosForm:origem'
     ]
 
-    // 1. Reseta Selects
+    // 1. Reseta Selects (sem disparar eventos change para evitar enfileiramento AJAX do JSF/RichFaces)
     filterIds.forEach(id => {
       const select = document.getElementById(id)
       if (select) {
         select.value = '0'
         select.selectedIndex = 0
-        select.dispatchEvent(new Event('change', { bubbles: true }))
       }
     })
 
@@ -469,8 +574,6 @@ async function resetSiteFilter() {
     const textInput = document.getElementById('filtrosForm:palavraChave')
     if (textInput) {
       textInput.value = ''
-      textInput.dispatchEvent(new Event('input', { bubbles: true }))
-      textInput.dispatchEvent(new Event('change', { bubbles: true }))
     }
 
     // 3. Clica em Pesquisar/Atualizar
@@ -482,18 +585,33 @@ async function resetSiteFilter() {
       document.getElementById('filtrosForm:pesquisar')
 
     if (btn) {
-      await new Promise(r => setTimeout(r, 150)) // Delay leve
-      btn.click()
+      await new Promise(r => setTimeout(r, 250)) // Delay para estabilizar
+
+      const form = btn.form || document.getElementById('filtrosForm')
+      if (form) {
+        console.log('[SGD Editor] Submetendo formulário com campo oculto para JSF...')
+        let hiddenInput = form.querySelector(`input[name="${btn.name}"]`)
+        if (!hiddenInput) {
+          hiddenInput = document.createElement('input')
+          hiddenInput.type = 'hidden'
+          hiddenInput.name = btn.name
+          hiddenInput.value = btn.value
+          form.appendChild(hiddenInput)
+        }
+        form.submit()
+      } else {
+        btn.click()
+      }
       return true
     } else {
       console.warn('Botão de pesquisar não encontrado.')
     }
   } else {
-    alert(
-      'Redirecionando para a página de Pendências para limpar os filtros...'
-    )
-    window.location.href =
+    const redirectUrl =
+      targetUrl ||
       'https://sgd.dominiosistemas.com.br/sgpub/faces/filtro-listas.html'
+    sessionStorage.setItem('tabsToClear', JSON.stringify([redirectUrl]))
+    window.location.href = redirectUrl
     return true
   }
 

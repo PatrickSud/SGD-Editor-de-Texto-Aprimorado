@@ -1148,6 +1148,7 @@
 }
 
 /* Badges de Tempo SLA - Atualizado */
+
 .ip-time-badge {
     font-size: 11px;
     padding: 2px 6px;
@@ -1208,4 +1209,74 @@
 @keyframes pulse-hard {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.05); }
+}
+
+/* --- TABS DE PENDÊNCIAS --- */
+.ip-pending-tabs-container {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+  align-items: center;
+  font-weight: normal;
+  font-size: 11px;
+}
+
+.ip-pending-tab-btn {
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 20px;
+  border: 1px solid var(--border-color);
+  background-color: var(--background-main);
+  color: var(--text-color-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.ip-pending-tab-btn:hover {
+  background-color: var(--background-hover);
+  color: var(--text-color-main);
+}
+
+.ip-pending-tab-btn.active {
+  background-color: var(--primary-color);
+  color: #ffffff;
+  border-color: var(--primary-color);
+}
+
+/* Animação de pulso/pisca para o botão de correção de filtros */
+.ip-pulse-warning-btn {
+  animation: ipPulseWarningBtn 1.5s infinite ease-in-out;
+  border: 1px solid #856404;
+  background: transparent;
+  color: #856404;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.ip-pulse-warning-btn:hover {
+  background-color: #856404 !important;
+  color: #fff !important;
+  animation: none; /* Interrompe a animação no hover */
+  box-shadow: 0 0 10px rgba(133, 100, 4, 0.8);
+}
+
+@keyframes ipPulseWarningBtn {
+  0%, 100% {
+    background-color: transparent;
+    color: #856404;
+    border-color: #856404;
+    box-shadow: 0 0 0 rgba(133, 100, 4, 0);
+  }
+  50% {
+    background-color: #856404;
+    color: #fff;
+    border-color: #856404;
+    box-shadow: 0 0 8px rgba(133, 100, 4, 0.6);
+  }
 }

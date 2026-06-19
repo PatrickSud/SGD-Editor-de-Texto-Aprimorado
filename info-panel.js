@@ -67,6 +67,13 @@ function debounce(func, wait) {
  */
 async function openInfoPanel(initialTabId = 'pending') {
   console.log('[DEBUG] openInfoPanel called with initialTabId:', initialTabId);
+
+  // Evita criar múltiplos modais se o painel já existir
+  const existingModal = document.getElementById('info-panel-modal')
+  if (existingModal) {
+    existingModal.remove()
+  }
+
   // Injeta estilos necessários
   injectDevSwitchStyles()
 
@@ -711,6 +718,8 @@ async function openInfoPanel(initialTabId = 'pending') {
 // Variável global para armazenar os itens pendentes carregados
 let allPendingItems = []
 let filteredPendingItems = []
+let allPendingTabs = null
+let activePendingTabId = 'all'
 
 // #region agent log
 // Global click listener to detect if clicks are happening but handler is missed
@@ -1216,77 +1225,38 @@ async function loadPendingItems(sectionElement) {
   try {
     // fetchPendingItems deve estar disponível globalmente via pending-service.js
     const result = await fetchPendingItems()
-    const items = result.items || []
-    const siteFilter = result.siteFilter
+    
+    let activeItems = []
+    let activeFilter = null
 
-    allPendingItems = items
-
-    // Gerenciar Aviso de Filtro do Site
-    const existingWarning = sectionElement.querySelector(
-      '.ip-site-filter-warning'
-    )
-    if (existingWarning) existingWarning.remove()
-
-    if (siteFilter && siteFilter.active) {
-      const headerRow = sectionElement.querySelector('.ip-pending-header-row')
-      if (headerRow) {
-        const warningDiv = document.createElement('div')
-        warningDiv.className = 'ip-site-filter-warning'
-        warningDiv.style.cssText =
-          'background: #fff3cd; color: #856404; padding: 8px 12px; margin: 0 10px 10px 10px; border-radius: 4px; border: 1px solid #ffeeba; display: flex; align-items: center; justify-content: space-between; font-size: 12px;'
-        warningDiv.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <span style="font-size: 14px;">⚠️</span>
-                    <span><strong>Filtro do site ativo:</strong> ${escapeHTML(siteFilter.name || 'Desconhecido')}</span>
-                </div>
-                <button id="reset-site-filter-btn" style="border: 1px solid #856404; background: transparent; color: #856404; cursor: pointer; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: bold; transition: all 0.2s;">CORREÇÃO: Ver Todos</button>
-            `
-        headerRow.parentNode.insertBefore(warningDiv, headerRow.nextSibling)
-
-        // Bind click
-        const resetBtn = warningDiv.querySelector('#reset-site-filter-btn')
-        resetBtn.addEventListener('mouseenter', () => {
-          resetBtn.style.background = '#856404'
-          resetBtn.style.color = '#fff'
-        })
-        resetBtn.addEventListener('mouseleave', () => {
-          resetBtn.style.background = 'transparent'
-          resetBtn.style.color = '#856404'
-        })
-
-        resetBtn.addEventListener('click', async () => {
-          resetBtn.disabled = true
-          const originalText = resetBtn.innerText
-          resetBtn.innerText = 'Limpando...'
-          warningDiv.style.opacity = '0.7'
-
-          try {
-            // resetSiteFilter deve estar no pending-service.js
-            if (typeof resetSiteFilter === 'function') {
-              const success = await resetSiteFilter()
-
-              if (!success) {
-                throw new Error(
-                  'Não foi possível encontrar o botão de pesquisar ou limpar o filtro automaticamente.'
-                )
-              }
-              // Se sucesso, a página deve recarregar ou atualizar, então não restauramos o estado imediatamente
-            } else {
-              throw new Error('Função de limpar filtro não encontrada.')
-            }
-          } catch (err) {
-            console.error(err)
-            alert(
-              'Não conseguimos limpar o filtro automaticamente. Por favor, limpe manualmente no site de pendências.'
-            )
-            // Restaura estado
-            resetBtn.disabled = false
-            resetBtn.innerText = originalText
-            warningDiv.style.opacity = '1'
-          }
-        })
+    if (result.tabs && result.tabs.length > 1) {
+      allPendingTabs = result.tabs
+      if (!allPendingTabs.some(t => t.id === activePendingTabId)) {
+        activePendingTabId = 'all'
       }
+      const activeTab = allPendingTabs.find(t => t.id === activePendingTabId) || allPendingTabs[0]
+      activeItems = activeTab.items
+      activeFilter = activeTab.siteFilter
+      
+      renderPendingTabs(sectionElement)
+    } else {
+      allPendingTabs = null
+      activePendingTabId = 'all'
+      activeItems = result.items || []
+      activeFilter = result.siteFilter
+      
+      const existingTabs = sectionElement.querySelector('.ip-pending-tabs-container')
+      if (existingTabs) existingTabs.remove()
     }
+
+    allPendingItems = activeItems
+
+    // Gerenciar Aviso de Filtro do Site com base na guia selecionada
+    const currentActiveTab = allPendingTabs 
+      ? allPendingTabs.find(t => t.id === activePendingTabId) 
+      : { siteFilter: activeFilter, url: null }
+      
+    manageSiteFilterWarning(sectionElement, currentActiveTab)
 
     // Carregar Tags e Mapa
     availableTagsCache = await getAvailableTags()
@@ -1316,7 +1286,7 @@ async function loadPendingItems(sectionElement) {
       const currentVal = responsibleSelect.value || savedResponsible
 
       const responsibles = [
-        ...new Set(items.map(i => i.responsible).filter(Boolean))
+        ...new Set(activeItems.map(i => i.responsible).filter(Boolean))
       ].sort()
 
       responsibleSelect.innerHTML = `
@@ -1328,13 +1298,9 @@ async function loadPendingItems(sectionElement) {
       if (responsibles.includes(currentVal)) {
         responsibleSelect.value = currentVal
       } else if (currentVal !== '' && responsibles.length > 0) {
-        // Se o filtro salvo não existe mais na lista (ex: férias), volta para Todos
         responsibleSelect.value = ''
-        // Opcional: Limpar a preferência inválida
         chrome.storage.local.remove('preferredResponsible')
       }
-
-      // 3. Adiciona Listener para SALVAR a preferência quando mudar (já feito no openInfoPanel para consistência)
 
       // Se houver apenas 1 ou nenhum responsável, esconde o filtro pois é desnecessário
       if (responsibles.length <= 1) {
@@ -1344,7 +1310,7 @@ async function loadPendingItems(sectionElement) {
       }
     }
 
-    if (items.length === 0) {
+    if (activeItems.length === 0) {
       container.innerHTML = `
                 <div class="ip-empty-state">
                     <span style="font-size: 24px;">🎉</span>
@@ -1367,6 +1333,168 @@ async function loadPendingItems(sectionElement) {
         `
   } finally {
     if (refreshBtn) refreshBtn.disabled = false
+  }
+}
+
+function renderPendingTabs(sectionElement) {
+  const titleEl = sectionElement.parentNode.querySelector('.ip-section-title') || sectionElement.querySelector('.ip-section-title')
+  if (!titleEl) return
+  
+  let tabsContainer = titleEl.querySelector('.ip-pending-tabs-container')
+  if (!tabsContainer) {
+    tabsContainer = document.createElement('div')
+    tabsContainer.className = 'ip-pending-tabs-container'
+    titleEl.appendChild(tabsContainer)
+  }
+  
+  tabsContainer.innerHTML = allPendingTabs.map(tab => {
+    const isActive = tab.id === activePendingTabId
+    return `
+      <button class="ip-pending-tab-btn ${isActive ? 'active' : ''}" 
+              data-tab-id="${tab.id}" 
+              title="${escapeHTML(tab.name)}">
+        ${escapeHTML(tab.name)} <span>(${tab.items.length})</span>
+      </button>
+    `
+  }).join('')
+
+  tabsContainer.querySelectorAll('.ip-pending-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tabId = btn.dataset.tabId
+      activePendingTabId = tabId
+      
+      const activeTab = allPendingTabs.find(t => t.id === activePendingTabId)
+      if (activeTab) {
+        allPendingItems = activeTab.items
+        
+        // Re-render tabs to update active states
+        renderPendingTabs(sectionElement)
+        
+        // Update warning banner for this tab
+        manageSiteFilterWarning(sectionElement, activeTab)
+        
+        // Dynamically update the responsible select filter for the new active tab
+        const responsibleSelect = sectionElement.querySelector('#pending-responsible-filter')
+        if (responsibleSelect) {
+          const currentVal = responsibleSelect.value
+          const responsibles = [
+            ...new Set(allPendingItems.map(i => i.responsible).filter(Boolean))
+          ].sort()
+          responsibleSelect.innerHTML = `
+                <option value="">Todos Responsáveis</option>
+                ${responsibles.map(r => `<option value="${escapeHTML(r)}">${escapeHTML(r)}</option>`).join('')}
+            `
+          if (responsibles.includes(currentVal)) {
+            responsibleSelect.value = currentVal
+          } else {
+            responsibleSelect.value = ''
+          }
+          if (responsibles.length <= 1) {
+            responsibleSelect.style.display = 'none'
+          } else {
+            responsibleSelect.style.display = ''
+          }
+        }
+
+        // Apply filters
+        applyPendingFilters(sectionElement)
+      }
+    })
+  })
+}
+
+function manageSiteFilterWarning(sectionElement, activeTab) {
+  const existingWarning = sectionElement.querySelector('.ip-site-filter-warning')
+  if (existingWarning) existingWarning.remove()
+
+  const siteFilter = activeTab.siteFilter
+  if (siteFilter && siteFilter.active) {
+    const headerRow = sectionElement.querySelector('.ip-pending-header-row')
+    if (headerRow) {
+      const warningDiv = document.createElement('div')
+      warningDiv.className = 'ip-site-filter-warning'
+      warningDiv.style.cssText =
+        'background: #fff3cd; color: #856404; padding: 8px 12px; margin: 0 10px 10px 10px; border-radius: 4px; border: 1px solid #ffeeba; display: flex; align-items: center; justify-content: space-between; font-size: 12px;'
+      warningDiv.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 14px;">⚠️</span>
+              <span><strong>Filtro do site ativo:</strong> ${escapeHTML(siteFilter.name || 'Desconhecido')}</span>
+          </div>
+          <button id="reset-site-filter-btn" class="ip-pulse-warning-btn">CORREÇÃO: Ver Todos</button>
+      `
+      headerRow.parentNode.insertBefore(warningDiv, headerRow.nextSibling)
+
+      const resetBtn = warningDiv.querySelector('#reset-site-filter-btn')
+
+      resetBtn.addEventListener('click', async () => {
+        resetBtn.disabled = true
+        const originalText = resetBtn.innerText
+        resetBtn.innerText = 'Limpando...'
+        warningDiv.style.opacity = '0.7'
+
+        try {
+          if (typeof resetSiteFilter === 'function') {
+            // Identifica quais URLs precisam ser limpas
+            let urlsToClear = []
+            if (activeTab.id === 'all') {
+              const filteredTabs = allPendingTabs.filter(
+                t => t.id !== 'all' && t.siteFilter && t.siteFilter.active
+              )
+              urlsToClear = filteredTabs.map(t => t.url)
+            } else {
+              if (activeTab.url) {
+                urlsToClear = [activeTab.url]
+              } else {
+                urlsToClear = [
+                  'https://sgd.dominiosistemas.com.br/sgpub/faces/filtro-listas.html'
+                ]
+              }
+            }
+
+            if (urlsToClear.length > 0) {
+              sessionStorage.setItem('tabsToClear', JSON.stringify(urlsToClear))
+
+              const firstUrl = urlsToClear[0]
+              const currentUrl = window.location.href
+              const targetFiltro = getFiltroParam(firstUrl)
+              const currentFiltro = getFiltroParam(currentUrl)
+              const isCorrectPage =
+                currentUrl.includes('filtro-listas.html') &&
+                (!targetFiltro || targetFiltro === currentFiltro)
+
+              if (isCorrectPage) {
+                const queue = JSON.parse(sessionStorage.getItem('tabsToClear'))
+                queue.shift()
+                if (queue.length > 0) {
+                  sessionStorage.setItem('tabsToClear', JSON.stringify(queue))
+                } else {
+                  sessionStorage.removeItem('tabsToClear')
+                  sessionStorage.setItem('autoOpenPendingPanel', 'true')
+                }
+
+                await resetSiteFilter(firstUrl)
+              } else {
+                window.location.href = firstUrl
+              }
+            } else {
+              resetBtn.disabled = false
+              resetBtn.innerText = originalText
+              warningDiv.style.opacity = '1'
+            }
+          } else {
+            throw new Error('Função de limpar filtro não encontrada.')
+          }
+        } catch (err) {
+          console.error(err)
+          alert(
+            'Não conseguimos limpar o filtro automaticamente. Por favor, limpe manualmente no site de pendências.'
+          )
+          resetBtn.disabled = false
+          resetBtn.innerText = originalText
+          warningDiv.style.opacity = '1'
+        }
+      })
+    }
   }
 }
 
