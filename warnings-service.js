@@ -9,36 +9,132 @@ const RTDB_BASE_URL = 'https://sgd-extension-default-rtdb.firebaseio.com';
 const RTDB_WARNINGS_URL = `${RTDB_BASE_URL}/warnings`;
 const RTDB_WARNINGS_META_URL = `${RTDB_BASE_URL}/metadata/warnings`;
 
-async function touchWarningsMetadata() {
+async function touchWarningsMetadata(warningDataOrArray) {
   try {
     const now = new Date().toISOString();
+    const patchData = { lastUpdated: now };
+    
+    const allChannels = [
+      'Geral', 'AT', 'Onvio', 'Onvio Processos/Messenger',
+      'Folha de pagamento', 'Escrita Fiscal', 'Contabilidade',
+      'Serviços Digitais', 'Fila 61', 'Fila 62'
+    ];
+
+    const dataArray = Array.isArray(warningDataOrArray) 
+      ? warningDataOrArray 
+      : [warningDataOrArray];
+
+    let hasValidData = false;
+
+    for (const data of dataArray) {
+      if (data) {
+        hasValidData = true;
+        if (data.isTest) {
+          patchData.lastTestUpdated = now;
+        } else if (data.targetUsers && Array.isArray(data.targetUsers) && data.targetUsers.length > 0) {
+          for (const user of data.targetUsers) {
+            const userKey = safeFirebaseKey(user);
+            if (userKey) {
+              patchData[`user_${userKey}`] = now;
+            }
+          }
+        } else if (data.channel) {
+          const channelKey = safeFirebaseKey(data.channel);
+          if (channelKey) {
+            patchData[`channel_${channelKey}`] = now;
+          }
+        } else {
+          patchData.lastTestUpdated = now;
+          for (const ch of allChannels) {
+            patchData[`channel_${safeFirebaseKey(ch)}`] = now;
+          }
+        }
+      }
+    }
+
+    if (!hasValidData) {
+      patchData.lastTestUpdated = now;
+      for (const ch of allChannels) {
+        patchData[`channel_${safeFirebaseKey(ch)}`] = now;
+      }
+    }
+
     await fetch(`${RTDB_WARNINGS_META_URL}.json`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lastUpdated: now })
+      body: JSON.stringify(patchData)
     });
   } catch (e) { console.warn('Falha meta avisos:', e); }
 }
 
 async function getWarnings(forceRefresh = false) {
   try {
-    const storage = await chrome.storage.local.get(['cachedWarnings', 'warningsMetaSignature']);
+    const storage = await chrome.storage.local.get([
+      'cachedWarnings',
+      'warningsMetaSignature',
+      'infoDevMode',
+      'subscribedChannels',
+      'warningChannels',
+      'allowedChannels',
+      'currentUser'
+    ]);
     let cachedData = storage.cachedWarnings || [];
     const localSignature = storage.warningsMetaSignature;
     let serverSignature = null;
+    const currentUser = storage.currentUser;
 
     if (!forceRefresh) {
       try {
         const metaResponse = await fetch(`${RTDB_WARNINGS_META_URL}.json`, { cache: 'no-store' });
         if (metaResponse.ok) {
           const metaDoc = await metaResponse.json();
-          serverSignature = metaDoc?.lastUpdated;
+          if (metaDoc) {
+            const isDevMode = !!(storage.infoDevMode);
+            const activeChannelsList = storage.warningChannels || [
+              'Geral', 'AT', 'Onvio', 'Onvio Processos/Messenger',
+              'Folha de pagamento', 'Escrita Fiscal', 'Contabilidade',
+              'Serviços Digitais', 'Fila 61', 'Fila 62'
+            ];
+            const subscribed = storage.subscribedChannels ? [...storage.subscribedChannels] : [...activeChannelsList];
+            const allowed = storage.allowedChannels ? [...storage.allowedChannels] : [...activeChannelsList];
+
+            let hasChanges = false;
+            if (typeof localSignature !== 'object' || !localSignature) {
+              hasChanges = true;
+            } else {
+              if (isDevMode && metaDoc.lastTestUpdated !== localSignature.lastTestUpdated) {
+                hasChanges = true;
+              }
+              if (!hasChanges && currentUser) {
+                const userKey = `user_${safeFirebaseKey(currentUser)}`;
+                if (metaDoc[userKey] !== localSignature[userKey]) {
+                  hasChanges = true;
+                }
+              }
+              if (!hasChanges) {
+                const activeSubscribedChannels = subscribed.filter(c => allowed.includes(c));
+                for (const channel of activeSubscribedChannels) {
+                  const key = `channel_${safeFirebaseKey(channel)}`;
+                  if (metaDoc[key] !== localSignature[key]) {
+                    hasChanges = true;
+                    break;
+                  }
+                }
+              }
+              // Fallback se não há chaves específicas (compatibilidade com registros antigos)
+              const hasSpecificKeys = Object.keys(metaDoc).some(k => k.startsWith('channel_') || k.startsWith('user_') || k === 'lastTestUpdated');
+              if (!hasSpecificKeys && metaDoc.lastUpdated !== localSignature.lastUpdated) {
+                hasChanges = true;
+              }
+            }
+
+            if (!hasChanges) {
+              return cachedData;
+            }
+            serverSignature = metaDoc;
+          }
         }
       } catch (e) { }
-
-      if (cachedData.length > 0 && serverSignature && serverSignature === localSignature) {
-        return cachedData;
-      }
     }
 
     const response = await fetch(`${RTDB_WARNINGS_URL}.json?orderBy="date"&limitToLast=20`, { cache: 'no-store' });
@@ -52,12 +148,24 @@ async function getWarnings(forceRefresh = false) {
     const warnings = Object.entries(result).map(([id, data]) => ({ id, ...data }));
     warnings.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
-    await chrome.storage.local.set({
-      cachedWarnings: warnings,
-      warningsMetaSignature: serverSignature || new Date().toISOString()
+    // Filtra localmente os avisos direcionados que não pertencem ao usuário atual
+    const isEditor = !!(storage.infoDevMode || window.sgdPermissions?.isEditor);
+    const filteredWarnings = warnings.filter(w => {
+      if (isEditor) return true; // Editor visualiza todos
+      if (w.targetUsers && Array.isArray(w.targetUsers) && w.targetUsers.length > 0) {
+        if (!currentUser) return false;
+        const curUserLower = currentUser.trim().toLowerCase();
+        return w.targetUsers.some(u => u.trim().toLowerCase() === curUserLower);
+      }
+      return true;
     });
 
-    return warnings;
+    await chrome.storage.local.set({
+      cachedWarnings: filteredWarnings,
+      warningsMetaSignature: serverSignature || { lastUpdated: new Date().toISOString() }
+    });
+
+    return filteredWarnings;
   } catch (error) {
     console.error('Erro ao buscar avisos:', error);
     const fallback = await chrome.storage.local.get('cachedWarnings');
@@ -74,7 +182,7 @@ async function createWarning(warningData) {
       body: JSON.stringify(data)
     });
     if (!response.ok) throw new Error('Erro ao criar aviso');
-    await touchWarningsMetadata();
+    await touchWarningsMetadata(warningData);
     // Notifica o service worker para verificar e disparar o toast imediatamente
     chrome.runtime.sendMessage({ action: 'WARNING_CREATED' }).catch(() => {});
     
@@ -93,10 +201,11 @@ async function createWarning(warningData) {
 async function deleteWarning(id) {
   try {
     let title = 'Aviso sem título';
+    let doc = null;
     try {
       const fetchResponse = await fetch(`${RTDB_WARNINGS_URL}/${id}.json`);
       if (fetchResponse.ok) {
-        const doc = await fetchResponse.json();
+        doc = await fetchResponse.json();
         if (doc) title = doc.title || title;
       }
     } catch (_) {}
@@ -105,7 +214,7 @@ async function deleteWarning(id) {
       method: 'DELETE'
     });
     if (!response.ok) throw new Error('Erro ao deletar');
-    await touchWarningsMetadata();
+    await touchWarningsMetadata(doc);
 
     // Grava Log de Auditoria
     if (window.sgdPermissions?.writeAuditLog) {
@@ -118,6 +227,14 @@ async function deleteWarning(id) {
 
 async function updateWarning(id, updates) {
   try {
+    let oldDoc = null;
+    try {
+      const fetchResponse = await fetch(`${RTDB_WARNINGS_URL}/${id}.json`);
+      if (fetchResponse.ok) {
+        oldDoc = await fetchResponse.json();
+      }
+    } catch (_) {}
+
     const { id: _, ...data } = updates;
     const response = await fetch(`${RTDB_WARNINGS_URL}/${id}.json`, {
       method: 'PATCH',
@@ -125,7 +242,16 @@ async function updateWarning(id, updates) {
       body: JSON.stringify(data)
     });
     if (!response.ok) throw new Error('Erro ao atualizar');
-    await touchWarningsMetadata();
+
+    let newDoc = null;
+    try {
+      const fetchResponse = await fetch(`${RTDB_WARNINGS_URL}/${id}.json`);
+      if (fetchResponse.ok) {
+        newDoc = await fetchResponse.json();
+      }
+    } catch (_) {}
+
+    await touchWarningsMetadata([oldDoc, newDoc || updates]);
     // Notifica o service worker para verificar e disparar o toast imediatamente se necessário
     chrome.runtime.sendMessage({ action: 'WARNING_CREATED' }).catch(() => {});
 

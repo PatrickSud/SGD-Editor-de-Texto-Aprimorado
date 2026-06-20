@@ -1845,6 +1845,17 @@ async function loadWarnings(sectionElement, forceRefresh = false) {
       return true
     })
 
+    // [NOVO] Filtro de Avisos Direcionados a Colaboradores Específicos
+    warnings = warnings.filter(w => {
+      if (isEditor) return true; // Editor vê todos
+      if (w.targetUsers && Array.isArray(w.targetUsers) && w.targetUsers.length > 0) {
+        if (!activeUserName) return false;
+        const curUserLower = activeUserName.trim().toLowerCase();
+        return w.targetUsers.some(u => u.trim().toLowerCase() === curUserLower);
+      }
+      return true;
+    })
+
     // --- 2. Filtro de Ignorados (Storage) ---
     const storage = await new Promise(resolve =>
       chrome.storage.local.get(['ignoredWarnings'], resolve)
@@ -3062,6 +3073,10 @@ function openCreateWarningModal(existingWarning = null) {
   const requiredReadingVal = isEdit && existingWarning.requiredReading ? 'checked' : ''
   const channelVal = isEdit ? (existingWarning.channel || 'Geral') : 'Geral'
 
+  const targetUsersVal = isEdit && Array.isArray(existingWarning.targetUsers) ? existingWarning.targetUsers : []
+  const isTargetedChecked = targetUsersVal.length > 0 ? 'checked' : ''
+  const isTargetedStyle = targetUsersVal.length > 0 ? 'display: block;' : 'display: none;'
+
   // Helper para formatar data ISO de forma segura para o campo datetime-local
   const formatDateForInput = (isoString) => {
     if (!isoString) return ''
@@ -3082,6 +3097,44 @@ function openCreateWarningModal(existingWarning = null) {
 
   const modalHtml = `
         <div style="padding: 10px;">
+            <div style="display: flex; gap: 15px; margin-bottom: 12px;">
+                <div style="flex: 1;">
+                    <label style="display:block; margin-bottom:4px; font-size:12px;">Tipo</label>
+                    <select id="warn-type" style="${fieldStyle}">
+                        <option value="info" ${typeVal === 'info' ? 'selected' : ''}>ℹ️ Informativo</option>
+                        <option value="success" ${typeVal === 'success' ? 'selected' : ''}>✨ Novidade</option>
+                        <option value="warning" ${typeVal === 'warning' ? 'selected' : ''}>⚠️ Alerta</option>
+                        <option value="danger" ${typeVal === 'danger' ? 'selected' : ''}>🚨 Importante</option>
+                    </select>
+                </div>
+                <div style="flex: 1;">
+                    <label style="display:block; margin-bottom:4px; font-size:12px;">Canal de Comunicação</label>
+                    <select id="warn-channel" style="${fieldStyle}">
+                        ${(() => {
+                           const allowed = [...(window.sgdPermissions?.allowedChannels || WARNING_CHANNELS)];
+                           if (channelVal && !allowed.includes(channelVal)) {
+                             allowed.push(channelVal);
+                           }
+                           return allowed.map(ch => `<option value="${ch}" ${channelVal === ch ? 'selected' : ''}>${ch}</option>`).join('');
+                        })()}
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 16px; padding: 10px; background-color: var(--background-secondary); border-radius: 4px; border: 1px dashed var(--border-color); position: relative;">
+                <div class="form-checkbox-group" style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" id="warn-is-targeted" ${isTargetedChecked} style="width: auto; margin: 0;">
+                    <label for="warn-is-targeted" style="font-weight: 600; color: var(--text-color-main); font-size: 13px; cursor: pointer;">Direcionar para colaboradores específicos</label>
+                </div>
+                <div id="warn-target-users-section" style="${isTargetedStyle} margin-top: 10px;">
+                    <label style="display:block; margin-bottom:4px; font-size:12px;">Colaboradores (Digite para filtrar e clique para adicionar)</label>
+                    <div id="warn-tags-container" style="display: flex; flex-wrap: wrap; gap: 6px; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); margin-bottom: 8px; min-height: 38px; align-items: center;">
+                        <input type="text" id="warn-user-input" style="border: none; outline: none; background: transparent; color: var(--text-color-main); flex: 1; min-width: 120px;" placeholder="Digite o nome...">
+                    </div>
+                    <div id="warn-user-suggestions" style="position: absolute; display: none; background: var(--background-main); border: 1px solid var(--border-color); border-radius: 4px; max-height: 150px; overflow-y: auto; z-index: 10007; box-shadow: var(--shadow-md); width: calc(100% - 20px);"></div>
+                </div>
+            </div>
+
             <label style="display:block; margin-bottom:4px; font-size:12px;">Título</label>
             <input type="text" id="warn-title" style="${fieldStyle}" placeholder="Ex: Nova Atualização do Sistema Programada" value="${titleVal}">
 
@@ -3111,30 +3164,6 @@ function openCreateWarningModal(existingWarning = null) {
             <div style="font-size: 11px; color: var(--text-color-muted); margin-bottom: 12px; opacity: 0.8;">
                 Dica: Você poderá usar a barra de ferramentas acima para formatar sua mensagem.
             </div>
-            
-            <div style="display: flex; gap: 15px; margin-bottom: 12px;">
-                <div style="flex: 1;">
-                    <label style="display:block; margin-bottom:4px; font-size:12px;">Tipo</label>
-                    <select id="warn-type" style="${fieldStyle}">
-                        <option value="info" ${typeVal === 'info' ? 'selected' : ''}>ℹ️ Informativo</option>
-                        <option value="success" ${typeVal === 'success' ? 'selected' : ''}>✨ Novidade</option>
-                        <option value="warning" ${typeVal === 'warning' ? 'selected' : ''}>⚠️ Alerta</option>
-                        <option value="danger" ${typeVal === 'danger' ? 'selected' : ''}>🚨 Importante</option>
-                    </select>
-                </div>
-                <div style="flex: 1;">
-                    <label style="display:block; margin-bottom:4px; font-size:12px;">Canal de Comunicação</label>
-                    <select id="warn-channel" style="${fieldStyle}">
-                        ${(() => {
-                           const allowed = [...(window.sgdPermissions?.allowedChannels || WARNING_CHANNELS)];
-                           if (channelVal && !allowed.includes(channelVal)) {
-                             allowed.push(channelVal);
-                           }
-                           return allowed.map(ch => `<option value="${ch}" ${channelVal === ch ? 'selected' : ''}>${ch}</option>`).join('');
-                        })()}
-                    </select>
-                </div>
-            </div>
 
             <div style="display: flex; gap: 15px; margin-bottom: 12px;">
                 <div style="flex: 1;">
@@ -3147,43 +3176,47 @@ function openCreateWarningModal(existingWarning = null) {
                 </div>
             </div>
 
-            <div style="padding: 10px; background-color: var(--background-secondary); border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 12px;">
-                <div class="form-checkbox-group" style="margin-top: 0;">
-                    <input type="checkbox" id="warn-notify" ${notifyVal}>
-                    <label for="warn-notify" style="font-weight: 600;">🔔 ${notifyLabel}</label>
+            <div style="display: flex; gap: 15px; margin-bottom: 12px;">
+                <div style="flex: 1; padding: 10px; background-color: var(--background-secondary); border: 1px solid var(--border-color); border-radius: 4px; display: flex; flex-direction: column;">
+                    <div class="form-checkbox-group" style="margin-top: 0;">
+                        <input type="checkbox" id="warn-notify" ${notifyVal}>
+                        <label for="warn-notify" style="font-weight: 600;">🔔 ${notifyLabel}</label>
+                    </div>
+                    <p style="font-size: 11px; color: var(--text-color-muted); margin: 4px 0 0 24px;">
+                        ${notifyDesc}
+                    </p>
                 </div>
-                <p style="font-size: 11px; color: var(--text-color-muted); margin: 4px 0 0 24px;">
-                    ${notifyDesc}
-                </p>
-            </div>
 
-            <div style="padding: 10px; background-color: var(--background-secondary); border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 15px;">
-                <div class="form-checkbox-group" style="margin-top: 0;">
-                    <input type="checkbox" id="warn-required-reading" ${requiredReadingVal}>
-                    <label for="warn-required-reading" style="font-weight: 600;">⚠️ Leitura Obrigatória</label>
-                </div>
-                <p style="font-size: 11px; color: var(--text-color-muted); margin: 4px 0 0 24px;">
-                    Se marcado, os usuários deverão visualizar o aviso em tela cheia por pelo menos 10 segundos antes de fechar.
-                </p>
-            </div>
-
-            <div style="margin-bottom: 16px; padding: 10px; background-color: var(--background-secondary); border-radius: 4px; border: 1px dashed var(--border-color);">
-                <div class="form-checkbox-group" style="display: flex; align-items: center; gap: 8px;">
-                    <input type="checkbox" id="warn-is-test" ${isTestVal ? 'checked' : ''} style="width: auto; margin: 0;">
-                    <label for="warn-is-test" style="font-weight: 600; color: var(--text-color-main); font-size: 13px; cursor: pointer;">Modo de Teste / Demonstração</label>
-                </div>
-                <div style="font-size: 11px; color: var(--text-color-muted); margin-top: 4px; margin-left: 24px;">
-                    Se marcado, este aviso aparecerá <b>apenas</b> para usuários com "Modo Desenvolvedor" ativado e não enviará notificações para a equipe geral.
+                <div style="flex: 1; padding: 10px; background-color: var(--background-secondary); border: 1px solid var(--border-color); border-radius: 4px; display: flex; flex-direction: column;">
+                    <div class="form-checkbox-group" style="margin-top: 0;">
+                        <input type="checkbox" id="warn-required-reading" ${requiredReadingVal}>
+                        <label for="warn-required-reading" style="font-weight: 600;">⚠️ Leitura Obrigatória</label>
+                    </div>
+                    <p style="font-size: 11px; color: var(--text-color-muted); margin: 4px 0 0 24px;">
+                        Se marcado, os usuários deverão visualizar o aviso em tela cheia por pelo menos 10 segundos antes de fechar.
+                    </p>
                 </div>
             </div>
 
-            <div style="margin-bottom: 16px; padding: 10px; background-color: var(--background-secondary); border-radius: 4px; border: 1px dashed var(--border-color);">
-                <div class="form-checkbox-group" style="display: flex; align-items: center; gap: 8px;">
-                    <input type="checkbox" id="warn-only-self" ${onlySelfVal} style="width: auto; margin: 0;">
-                    <label for="warn-only-self" style="font-weight: 600; color: var(--text-color-main); font-size: 13px; cursor: pointer;">Apenas para mim (Somente o autor)</label>
+            <div style="display: flex; gap: 15px; margin-bottom: 16px;">
+                <div style="flex: 1; padding: 10px; background-color: var(--background-secondary); border-radius: 4px; border: 1px dashed var(--border-color); display: flex; flex-direction: column;">
+                    <div class="form-checkbox-group" style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="warn-is-test" ${isTestVal ? 'checked' : ''} style="width: auto; margin: 0;">
+                        <label for="warn-is-test" style="font-weight: 600; color: var(--text-color-main); font-size: 13px; cursor: pointer;">Modo de Teste / Demonstração</label>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-color-muted); margin-top: 4px; margin-left: 24px;">
+                        Se marcado, este aviso aparecerá <b>apenas</b> para usuários com "Modo Desenvolvedor" ativado e não enviará notificações para a equipe geral.
+                    </div>
                 </div>
-                <div style="font-size: 11px; color: var(--text-color-muted); margin-top: 4px; margin-left: 24px;">
-                    Se marcado, este aviso e suas notificações serão exibidos <b>apenas</b> para o seu usuário.
+
+                <div style="flex: 1; padding: 10px; background-color: var(--background-secondary); border-radius: 4px; border: 1px dashed var(--border-color); display: flex; flex-direction: column;">
+                    <div class="form-checkbox-group" style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="warn-only-self" ${onlySelfVal} style="width: auto; margin: 0;">
+                        <label for="warn-only-self" style="font-weight: 600; color: var(--text-color-main); font-size: 13px; cursor: pointer;">Apenas para mim (Somente o autor)</label>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-color-muted); margin-top: 4px; margin-left: 24px;">
+                        Se marcado, este aviso e suas notificações serão exibidos <b>apenas</b> para o seu usuário.
+                    </div>
                 </div>
             </div>
             
@@ -3373,6 +3406,121 @@ function openCreateWarningModal(existingWarning = null) {
       }
     })
   }
+
+  // --- LÓGICA DE DIRECIONAMENTO DE COLABORADORES ---
+  const isTargetedCheckbox = modal.querySelector('#warn-is-targeted')
+  const targetUsersSection = modal.querySelector('#warn-target-users-section')
+  const userInput = modal.querySelector('#warn-user-input')
+  const suggestionsDiv = modal.querySelector('#warn-user-suggestions')
+  const tagsContainer = modal.querySelector('#warn-tags-container')
+
+  let selectedUsers = [...targetUsersVal]
+  let allColleagues = []
+
+  if (window.sgdPermissions?.getEditorsList && window.sgdPermissions?.getViewersList) {
+    Promise.all([
+      window.sgdPermissions.getEditorsList(),
+      window.sgdPermissions.getViewersList()
+    ]).then(([editors, viewers]) => {
+      const merged = [...editors, ...viewers];
+      const seen = new Set();
+      allColleagues = [];
+      merged.forEach(u => {
+        if (u && u.name) {
+          const nameTrimmed = u.name.trim();
+          const key = nameTrimmed.toLowerCase();
+          if (!seen.has(key)) {
+            seen.add(key);
+            allColleagues.push(nameTrimmed);
+          }
+        }
+      });
+      allColleagues.sort((a, b) => a.localeCompare(b));
+    }).catch(err => console.warn('Erro ao carregar colaboradores do Firebase para sugestão:', err));
+  } else if (window.teamService?.getTeamStatus) {
+    window.teamService.getTeamStatus().then(data => {
+      if (data && Array.isArray(data.members)) {
+        allColleagues = data.members.map(m => m.name).filter(Boolean)
+      }
+    }).catch(err => console.warn('Erro ao carregar colaboradores para sugestão:', err))
+  }
+
+  isTargetedCheckbox.addEventListener('change', () => {
+    targetUsersSection.style.display = isTargetedCheckbox.checked ? 'block' : 'none'
+    if (!isTargetedCheckbox.checked) {
+      selectedUsers = []
+      renderTags()
+    }
+  })
+
+  function renderTags() {
+    tagsContainer.querySelectorAll('.user-tag').forEach(tag => tag.remove())
+    selectedUsers.forEach(user => {
+      const tagSpan = document.createElement('span')
+      tagSpan.className = 'user-tag'
+      tagSpan.dataset.name = user
+      tagSpan.style.cssText = 'display: inline-flex; align-items: center; gap: 4px; background: var(--primary-color); color: #ffffff; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-bottom: 2px;'
+      tagSpan.innerHTML = `${escapeHTML(user)} <span class="remove-tag" style="cursor: pointer; opacity: 0.8; font-weight: bold; margin-left: 2px;">&times;</span>`
+      
+      tagSpan.querySelector('.remove-tag').addEventListener('click', () => {
+        selectedUsers = selectedUsers.filter(u => u !== user)
+        renderTags()
+      })
+      
+      tagsContainer.insertBefore(tagSpan, userInput)
+    })
+  }
+
+  if (selectedUsers.length > 0) {
+    renderTags()
+  }
+
+  userInput.addEventListener('input', () => {
+    const val = userInput.value.trim().toLowerCase()
+    suggestionsDiv.innerHTML = ''
+    if (!val) {
+      suggestionsDiv.style.display = 'none'
+      return
+    }
+    const matches = allColleagues.filter(name => 
+      name.toLowerCase().includes(val) && !selectedUsers.includes(name)
+    )
+    if (matches.length === 0) {
+      suggestionsDiv.style.display = 'none'
+      return
+    }
+    matches.slice(0, 10).forEach(name => {
+      const option = document.createElement('div')
+      option.className = 'suggestion-option'
+      option.style.cssText = 'padding: 8px 12px; cursor: pointer; color: var(--text-color-main); border-bottom: 1px solid var(--border-color);'
+      option.textContent = name
+      
+      option.addEventListener('mouseenter', () => {
+        option.style.background = 'var(--background-secondary)'
+      })
+      option.addEventListener('mouseleave', () => {
+        option.style.background = ''
+      })
+      option.addEventListener('click', () => {
+        selectedUsers.push(name)
+        renderTags()
+        userInput.value = ''
+        suggestionsDiv.style.display = 'none'
+        userInput.focus()
+      })
+      suggestionsDiv.appendChild(option)
+    })
+    
+    const rect = tagsContainer.getBoundingClientRect()
+    suggestionsDiv.style.width = `${rect.width}px`
+    suggestionsDiv.style.display = 'block'
+  })
+
+  document.addEventListener('click', (e) => {
+    if (!userInput.contains(e.target) && !suggestionsDiv.contains(e.target)) {
+      suggestionsDiv.style.display = 'none'
+    }
+  })
   const saveBtn = modal.querySelector('#save-warn-btn')
   const cancelBtn = modal.querySelector('#cancel-warn-btn')
 
@@ -3395,6 +3543,9 @@ function openCreateWarningModal(existingWarning = null) {
     const notify = modal.querySelector('#warn-notify').checked
     const requiredReading = modal.querySelector('#warn-required-reading').checked
     const author = getCurrentUserName()
+
+    const isTargeted = modal.querySelector('#warn-is-targeted').checked
+    const targetUsers = isTargeted ? selectedUsers : []
 
     const publishedAtInput = modal.querySelector('#warn-published-at').value
     const expiresAtInput = modal.querySelector('#warn-expires-at').value
@@ -3424,6 +3575,7 @@ function openCreateWarningModal(existingWarning = null) {
           channel,
           publishedAt,
           expiresAt,
+          targetUsers,
           archived: existingWarning.archived || false,
           date
         })
@@ -3440,6 +3592,7 @@ function openCreateWarningModal(existingWarning = null) {
           channel,
           publishedAt,
           expiresAt,
+          targetUsers,
           archived: false,
           date: new Date().toISOString()
         })

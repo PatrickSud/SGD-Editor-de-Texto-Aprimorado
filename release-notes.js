@@ -1,4 +1,10 @@
 const RELEASE_NOTES = {
+  '3.0.5.9': {
+    title: '✨ Reformulação do Layout de Avisos — Versão 3.0.5.9',
+    features: [
+      '<b>📢 Reformulação de Layout:</b> Seletores de Tipo, Canal e campo de direcionamento de colaboradores específicos movidos para cima do título, checkboxes de opções inferiores organizados lado a lado (2 por linha) e largura máxima do modal aumentada para 1100px para acomodar o novo layout flexível.'
+    ]
+  },
   '3.0.5.8': {
     title: '✨ Ocultar Recursos de IA — Versão 3.0.5.8',
     features: [

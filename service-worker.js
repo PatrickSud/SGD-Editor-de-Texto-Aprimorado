@@ -515,9 +515,27 @@ const WARNING_CHANNELS = [
 /**
  * Verifica se há novos avisos na Central de Informações via Firestore REST API
  */
+function safeFirebaseKey(str) {
+  if (!str) return '';
+  return str
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+    .replace(/[^a-z0-9]/g, '_') // Substitui não-alfanuméricos por _
+    .replace(/_+/g, '_'); // Evita múltiplos _
+}
+
 async function checkWarningsAndNotify() {
   try {
-    const storage = await chrome.storage.local.get(['warningsMetaSignature', 'infoDevMode', 'currentUser']);
+    const storage = await chrome.storage.local.get([
+      'warningsMetaSignature',
+      'infoDevMode',
+      'currentUser',
+      'subscribedChannels',
+      'allowedChannels',
+      'warningChannels'
+    ]);
     const localSignature = storage.warningsMetaSignature;
 
     // 1. Checa a data de última atualização (Metadado) via Realtime Database
@@ -525,10 +543,45 @@ async function checkWarningsAndNotify() {
     if (!metaResponse.ok) return;
 
     const metaDoc = await metaResponse.json();
-    const serverSignature = metaDoc?.lastUpdated;
+    if (!metaDoc) return;
 
-    // Se não há data ou a data já é conhecida, ignora
-    if (!serverSignature || serverSignature === localSignature) {
+    const isDevMode = !!(storage.infoDevMode);
+    const currentChannels = storage.warningChannels || WARNING_CHANNELS;
+    const subscribed = storage.subscribedChannels ? [...storage.subscribedChannels] : [...currentChannels];
+    const allowed = storage.allowedChannels ? [...storage.allowedChannels] : [...currentChannels];
+
+    let hasChanges = false;
+    if (typeof localSignature !== 'object' || !localSignature) {
+      hasChanges = true;
+    } else {
+      if (isDevMode && metaDoc.lastTestUpdated !== localSignature.lastTestUpdated) {
+        hasChanges = true;
+      }
+      if (!hasChanges && storage.currentUser) {
+        const userKey = `user_${safeFirebaseKey(storage.currentUser)}`;
+        if (metaDoc[userKey] !== localSignature[userKey]) {
+          hasChanges = true;
+        }
+      }
+      if (!hasChanges) {
+        const activeSubscribedChannels = subscribed.filter(c => allowed.includes(c));
+        for (const channel of activeSubscribedChannels) {
+          const key = `channel_${safeFirebaseKey(channel)}`;
+          if (metaDoc[key] !== localSignature[key]) {
+            hasChanges = true;
+            break;
+          }
+        }
+      }
+      // Fallback se não há chaves específicas (compatibilidade com registros antigos)
+      const hasSpecificKeys = Object.keys(metaDoc).some(k => k.startsWith('channel_') || k.startsWith('user_') || k === 'lastTestUpdated');
+      if (!hasSpecificKeys && metaDoc.lastUpdated !== localSignature.lastUpdated) {
+        hasChanges = true;
+      }
+    }
+
+    // Se não houve alteração relevante para este usuário, encerra
+    if (!hasChanges) {
       return;
     }
 
@@ -549,7 +602,6 @@ async function checkWarningsAndNotify() {
     const nowMs = Date.now();
     const nowIso = new Date().toISOString();
     const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
-    const isDevMode = !!(storage.infoDevMode);
 
     // Filtra avisos válidos ativos para notificação
     const activeWarnings = warnings.filter(w => {
@@ -561,6 +613,16 @@ async function checkWarningsAndNotify() {
         if (nowMs > new Date(w.expiresAt).getTime()) return false;
       } else if (w.date) {
         if (nowMs - new Date(w.date).getTime() >= SEVEN_DAYS_MS) return false;
+      }
+
+      // Se for direcionado a colaboradores específicos, valida se o usuário atual é destinatário
+      if (w.targetUsers && Array.isArray(w.targetUsers) && w.targetUsers.length > 0) {
+        const currentUser = storage.currentUser;
+        if (!currentUser) return false;
+        const curUserLower = currentUser.trim().toLowerCase();
+        if (!w.targetUsers.some(u => u.trim().toLowerCase() === curUserLower)) {
+          return false;
+        }
       }
 
       // Se for apenas para o autor, valida se o usuário atual é o autor
@@ -575,7 +637,7 @@ async function checkWarningsAndNotify() {
 
     if (activeWarnings.length === 0) {
       await chrome.storage.local.set({
-        warningsMetaSignature: serverSignature,
+        warningsMetaSignature: metaDoc,
         cachedWarnings: warnings
       });
       return;
@@ -584,16 +646,10 @@ async function checkWarningsAndNotify() {
     const newestWarning = activeWarnings[0];
     const wChannel = newestWarning.channel || 'Geral';
 
-    // Filtro por canais de inscrição e permissão do usuário
-    const subStorage = await chrome.storage.local.get(['subscribedChannels', 'allowedChannels', 'warningChannels']);
-    const currentChannels = subStorage.warningChannels || WARNING_CHANNELS;
-    const subscribed = subStorage.subscribedChannels ? [...subStorage.subscribedChannels] : [...currentChannels];
-    const allowed = subStorage.allowedChannels ? [...subStorage.allowedChannels] : [...currentChannels];
-
     // Se não estiver inscrito neste canal ou se o canal não for permitido, salvamos a assinatura/cache no storage para evitar loops, mas não exibimos a notificação
     if (!subscribed.includes(wChannel) || !allowed.includes(wChannel)) {
       await chrome.storage.local.set({
-        warningsMetaSignature: serverSignature,
+        warningsMetaSignature: metaDoc,
         cachedWarnings: warnings
       });
       return;
@@ -606,7 +662,7 @@ async function checkWarningsAndNotify() {
 
     // 3. Atualiza a assinatura local e o cache de avisos para não repetir a mesma notificação e requisições redundantes
     await chrome.storage.local.set({
-      warningsMetaSignature: serverSignature,
+      warningsMetaSignature: metaDoc,
       cachedWarnings: warnings
     });
 
