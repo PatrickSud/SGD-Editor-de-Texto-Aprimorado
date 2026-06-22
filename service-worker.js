@@ -534,7 +534,8 @@ async function checkWarningsAndNotify() {
       'currentUser',
       'subscribedChannels',
       'allowedChannels',
-      'warningChannels'
+      'warningChannels',
+      'isCurrentUserEditor'
     ]);
     const localSignature = storage.warningsMetaSignature;
 
@@ -546,9 +547,14 @@ async function checkWarningsAndNotify() {
     if (!metaDoc) return;
 
     const isDevMode = !!(storage.infoDevMode);
+    const isEditor = !!(storage.infoDevMode || storage.isCurrentUserEditor);
     const currentChannels = storage.warningChannels || WARNING_CHANNELS;
     const subscribed = storage.subscribedChannels ? [...storage.subscribedChannels] : [...currentChannels];
-    const allowed = storage.allowedChannels ? [...storage.allowedChannels] : [...currentChannels];
+    let allowed = storage.allowedChannels ? [...storage.allowedChannels] : ['Geral'];
+
+    if (!isEditor && allowed.length >= currentChannels.length) {
+      allowed = ['Geral'];
+    }
 
     let hasChanges = false;
     if (typeof localSignature !== 'object' || !localSignature) {
@@ -619,8 +625,17 @@ async function checkWarningsAndNotify() {
       if (w.targetUsers && Array.isArray(w.targetUsers) && w.targetUsers.length > 0) {
         const currentUser = storage.currentUser;
         if (!currentUser) return false;
-        const curUserLower = currentUser.trim().toLowerCase();
-        if (!w.targetUsers.some(u => u.trim().toLowerCase() === curUserLower)) {
+        const normalizeName = (name) => {
+          if (!name) return '';
+          return name
+            .trim()
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/\s+/g, ' ');
+        };
+        const normCurrentUser = normalizeName(currentUser);
+        if (!w.targetUsers.some(u => normalizeName(u) === normCurrentUser)) {
           return false;
         }
       }
@@ -632,6 +647,13 @@ async function checkWarningsAndNotify() {
           return false;
         }
       }
+
+      // Valida se o usuário tem permissão e está inscrito no canal
+      const wChannel = w.channel || 'Geral';
+      if (!subscribed.includes(wChannel) || !allowed.includes(wChannel)) {
+        return false;
+      }
+
       return true;
     });
 
@@ -644,17 +666,6 @@ async function checkWarningsAndNotify() {
     }
 
     const newestWarning = activeWarnings[0];
-    const wChannel = newestWarning.channel || 'Geral';
-
-    // Se não estiver inscrito neste canal ou se o canal não for permitido, salvamos a assinatura/cache no storage para evitar loops, mas não exibimos a notificação
-    if (!subscribed.includes(wChannel) || !allowed.includes(wChannel)) {
-      await chrome.storage.local.set({
-        warningsMetaSignature: metaDoc,
-        cachedWarnings: warnings
-      });
-      return;
-    }
-
     const title = newestWarning.title || 'Novo Aviso na Central';
     const message = newestWarning.message || 'Você tem um novo comunicado não lido na Central de Informações SGD.';
     const isTest = !!newestWarning.isTest;

@@ -34,6 +34,14 @@
       : [...WARNING_CHANNELS]
   }
 
+  function getViewerAllowedChannels(allowedChannels) {
+    const allChs = getChannelsFallback()
+    if (!allowedChannels || !Array.isArray(allowedChannels) || allowedChannels.length >= allChs.length) {
+      return ['Geral']
+    }
+    return allowedChannels
+  }
+
   // ─── Captura do Nome e ID do Técnico Logado ──────────────────────────────────
 
   /**
@@ -190,7 +198,7 @@
         name: data.name || '',
         firstSeen: data.firstSeen || '',
         lastSeen: data.lastSeen || '',
-        allowedChannels: data.allowedChannels || getChannelsFallback(),
+        allowedChannels: getViewerAllowedChannels(data.allowedChannels),
         isEquipeAT: data.isEquipeAT === true
       }))
 
@@ -328,7 +336,9 @@
         matchedViewer = viewers.find(v => normalizeName(v.name) === normalizedUserName)
       }
       if (matchedViewer) {
-        allowed = matchedViewer.allowedChannels || getChannelsFallback()
+        allowed = getViewerAllowedChannels(matchedViewer.allowedChannels)
+      } else {
+        allowed = ['Geral']
       }
       role = 'comum'
       window.sgdPermissions.isDevMode = true
@@ -345,7 +355,9 @@
         matchedViewer = viewers.find(v => normalizeName(v.name) === normalizedUserName)
       }
       if (matchedViewer) {
-        allowed = matchedViewer.allowedChannels || getChannelsFallback()
+        allowed = getViewerAllowedChannels(matchedViewer.allowedChannels)
+      } else {
+        allowed = ['Geral']
       }
       // Se não é editor nem tem dev mode manual, garante limpeza do infoDevMode
       await chrome.storage.local.set({ 
@@ -477,14 +489,21 @@
       }
       
       if (matchedViewer) {
+        const allowed = getViewerAllowedChannels(matchedViewer.allowedChannels)
+        const patchData = { lastSeen: nowStr }
+        
+        const allChs = getChannelsFallback()
+        if (matchedViewer.allowedChannels && Array.isArray(matchedViewer.allowedChannels) && matchedViewer.allowedChannels.length >= allChs.length) {
+          patchData.allowedChannels = allowed
+        }
+
         // Atualiza lastSeen do visualizador
         await fetch(`${RTDB_VIEWERS_URL}/${matchedViewer.id}.json`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ lastSeen: nowStr })
+          body: JSON.stringify(patchData)
         })
         
-        const allowed = matchedViewer.allowedChannels || getChannelsFallback()
         await chrome.storage.local.set({ 
           allowedChannels: allowed,
           isCurrentUserEditor: false
@@ -493,7 +512,7 @@
         window.sgdPermissions.isEditor = false
       } else {
         // Cadastra novo visualizador via PUT usando a chave gerada por userId
-        const defaultChannels = getChannelsFallback()
+        const defaultChannels = ['Geral']
         const response = await fetch(`${RTDB_VIEWERS_URL}/${userKey}.json`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -657,7 +676,7 @@
         name: removing.name.trim(),
         firstSeen: removing.addedAt || nowStr,
         lastSeen: removing.lastSeen || nowStr,
-        allowedChannels: removing.allowedChannels || getChannelsFallback(),
+        allowedChannels: getViewerAllowedChannels(removing.allowedChannels),
         isEquipeAT: removing.isEquipeAT === true
       }
 
@@ -778,15 +797,18 @@
         const v = viewers.find(item => item.id === id)
         if (!v) return Promise.resolve()
 
-        let channels = v.allowedChannels || getChannelsFallback()
+        let channels = getViewerAllowedChannels(v.allowedChannels)
         if (channel === 'all') {
-          channels = action === 'enable' ? getChannelsFallback() : []
+          channels = action === 'enable' ? getChannelsFallback() : ['Geral']
         } else {
           if (action === 'enable') {
             if (!channels.includes(channel)) channels.push(channel)
           } else {
             channels = channels.filter(c => c !== channel)
           }
+        }
+        if (!channels.includes('Geral')) {
+          channels.unshift('Geral')
         }
 
         return fetch(`${RTDB_VIEWERS_URL}/${id}.json`, {
@@ -1096,7 +1118,9 @@
               viewerObj = viewers.find(v => normalizeName(v.name) === normalUser)
             }
             if (viewerObj) {
-              allowed = viewerObj.allowedChannels || getChannelsFallback()
+              allowed = getViewerAllowedChannels(viewerObj.allowedChannels)
+            } else {
+              allowed = ['Geral']
             }
           }
           window.sgdPermissions.allowedChannels = allowed

@@ -4287,7 +4287,7 @@ async function updateNotificationStatus() {
     if (currentUser && window.warningsService?.recordWarningReceipt) {
       rawWarnings.forEach(w => {
         const wChannel = w.channel || 'Geral';
-        const isAllowed = window.sgdPermissions?.allowedChannels?.includes(wChannel) ?? true;
+        const isAllowed = window.sgdPermissions?.allowedChannels?.includes(wChannel) ?? (window.sgdPermissions?.isEditor ? true : wChannel === 'Geral');
         if (subscribed.includes(wChannel) && isAllowed) {
           window.warningsService.recordWarningReceipt(w.id, currentUser);
         }
@@ -4396,8 +4396,30 @@ async function checkAndShowPendingWarningToasts() {
       if (isExpired) continue;
 
       const wChannel = w.channel || 'Geral';
-      const isAllowed = window.sgdPermissions?.allowedChannels?.includes(wChannel) ?? true;
+      const isAllowed = window.sgdPermissions?.allowedChannels?.includes(wChannel) ?? (window.sgdPermissions?.isEditor ? true : wChannel === 'Geral');
       if (!subscribed.includes(wChannel) || !isAllowed) continue;
+
+      // Se for direcionado a colaboradores específicos, valida se o usuário atual é destinatário
+      if (w.targetUsers && Array.isArray(w.targetUsers) && w.targetUsers.length > 0) {
+        const isEditor = !!(window.sgdPermissions?.isDevMode || window.sgdPermissions?.isEditor);
+        if (!isEditor) {
+          const currentUserName = window.sgdPermissions?.currentUser;
+          if (!currentUserName) continue;
+          
+          const normalizeName = (name) => {
+            if (!name) return '';
+            return name
+              .trim()
+              .toLowerCase()
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, '')
+              .replace(/\s+/g, ' ');
+          };
+          const normCurrentUser = normalizeName(currentUserName);
+          const isTargeted = w.targetUsers.some(u => normalizeName(u) === normCurrentUser);
+          if (!isTargeted) continue;
+        }
+      }
 
       // Se for apenas para o autor, valida se o usuário atual é o autor
       if (w.onlySelf) {

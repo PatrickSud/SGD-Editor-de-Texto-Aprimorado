@@ -76,7 +76,8 @@ async function getWarnings(forceRefresh = false) {
       'subscribedChannels',
       'warningChannels',
       'allowedChannels',
-      'currentUser'
+      'currentUser',
+      'isCurrentUserEditor'
     ]);
     let cachedData = storage.cachedWarnings || [];
     const localSignature = storage.warningsMetaSignature;
@@ -90,13 +91,18 @@ async function getWarnings(forceRefresh = false) {
           const metaDoc = await metaResponse.json();
           if (metaDoc) {
             const isDevMode = !!(storage.infoDevMode);
+            const isEditor = !!(storage.infoDevMode || storage.isCurrentUserEditor || window.sgdPermissions?.isEditor);
             const activeChannelsList = storage.warningChannels || [
               'Geral', 'AT', 'Onvio', 'Onvio Processos/Messenger',
               'Folha de pagamento', 'Escrita Fiscal', 'Contabilidade',
               'Serviços Digitais', 'Fila 61', 'Fila 62'
             ];
             const subscribed = storage.subscribedChannels ? [...storage.subscribedChannels] : [...activeChannelsList];
-            const allowed = storage.allowedChannels ? [...storage.allowedChannels] : [...activeChannelsList];
+            let allowed = storage.allowedChannels ? [...storage.allowedChannels] : ['Geral'];
+
+            if (!isEditor && allowed.length >= activeChannelsList.length) {
+              allowed = ['Geral'];
+            }
 
             let hasChanges = false;
             if (typeof localSignature !== 'object' || !localSignature) {
@@ -149,13 +155,22 @@ async function getWarnings(forceRefresh = false) {
     warnings.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
     // Filtra localmente os avisos direcionados que não pertencem ao usuário atual
-    const isEditor = !!(storage.infoDevMode || window.sgdPermissions?.isEditor);
+    const isEditor = !!(storage.infoDevMode || storage.isCurrentUserEditor || window.sgdPermissions?.isEditor);
     const filteredWarnings = warnings.filter(w => {
       if (isEditor) return true; // Editor visualiza todos
       if (w.targetUsers && Array.isArray(w.targetUsers) && w.targetUsers.length > 0) {
         if (!currentUser) return false;
-        const curUserLower = currentUser.trim().toLowerCase();
-        return w.targetUsers.some(u => u.trim().toLowerCase() === curUserLower);
+        const normalizeName = (name) => {
+          if (!name) return '';
+          return name
+            .trim()
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/\s+/g, ' ');
+        };
+        const normCurrentUser = normalizeName(currentUser);
+        return w.targetUsers.some(u => normalizeName(u) === normCurrentUser);
       }
       return true;
     });
