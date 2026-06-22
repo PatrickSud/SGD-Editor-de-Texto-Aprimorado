@@ -4265,12 +4265,23 @@ async function updateNotificationStatus() {
     let count = firedReminders.length
 
     // Contagem real de avisos não lidos (array direto, sem .data)
-    const data = await chrome.storage.local.get(['warningsLastReadTime', 'infoDevMode', 'cachedWarnings', 'ignoredWarnings', 'subscribedChannels', 'warningChannels'])
+    const data = await chrome.storage.local.get([
+      'warningsLastReadTime',
+      'infoDevMode',
+      'cachedWarnings',
+      'ignoredWarnings',
+      'subscribedChannels',
+      'warningChannels',
+      'readWarningIds',
+      'readWarnings'
+    ])
     const rawWarnings = Array.isArray(data.cachedWarnings) ? data.cachedWarnings : []
     const ignoredIds = Array.isArray(data.ignoredWarnings) ? data.ignoredWarnings : []
+    const readWarningIds = Array.isArray(data.readWarningIds) ? data.readWarningIds : []
+    const readWarnings = Array.isArray(data.readWarnings) ? data.readWarnings : []
     const currentChannels = data.warningChannels || WARNING_CHANNELS;
     const subscribed = data.subscribedChannels ? [...data.subscribedChannels] : [...currentChannels];
-
+ 
     // Registra recebimento dos avisos no Firebase
     const currentUser = window.sgdPermissions?.currentUser;
     if (currentUser && window.warningsService?.recordWarningReceipt) {
@@ -4282,31 +4293,31 @@ async function updateNotificationStatus() {
         }
       });
     }
-
+ 
     const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
     const nowMs = Date.now()
     const lastReadTime = data.warningsLastReadTime || 0
-
+ 
     const nowIso = new Date().toISOString()
     const unreadWarnings = rawWarnings.filter(w => {
       if (w.isTest && !data.infoDevMode && !w.onlySelf) return false
-      if (ignoredIds.includes(w.id)) return false
+      if (ignoredIds.includes(w.id) || readWarningIds.includes(w.id) || readWarnings.includes(w.id)) return false
       const wChannel = w.channel || 'Geral';
       if (!subscribed.includes(wChannel)) return false;
       
       if (w.archived) return false
       if (w.publishedAt && nowIso < w.publishedAt) return false
-
+ 
       if (!w.date) return false
       const wTime = new Date(w.date).getTime()
-
+ 
       let isExpired = false
       if (w.expiresAt) {
         isExpired = nowMs > new Date(w.expiresAt).getTime()
       } else {
         isExpired = nowMs - wTime >= SEVEN_DAYS_MS
       }
-
+ 
       return !isExpired && wTime > lastReadTime
     })
     const unreadCount = unreadWarnings.length
@@ -4353,12 +4364,14 @@ async function checkAndShowPendingWarningToasts() {
       'ignoredWarnings',
       'subscribedChannels',
       'warningChannels',
-      'readWarningIds'
+      'readWarningIds',
+      'readWarnings'
     ]);
 
     const rawWarnings = Array.isArray(data.cachedWarnings) ? data.cachedWarnings : [];
     const ignoredIds = Array.isArray(data.ignoredWarnings) ? data.ignoredWarnings : [];
     const readWarningIds = Array.isArray(data.readWarningIds) ? data.readWarningIds : [];
+    const readWarnings = Array.isArray(data.readWarnings) ? data.readWarnings : [];
     const currentChannels = data.warningChannels || WARNING_CHANNELS;
     const subscribed = data.subscribedChannels ? [...data.subscribedChannels] : [...currentChannels];
 
@@ -4395,7 +4408,7 @@ async function checkAndShowPendingWarningToasts() {
       }
 
       // Se já foi lido ou ignorado
-      if (readWarningIds.includes(w.id) || ignoredIds.includes(w.id)) continue;
+      if (readWarningIds.includes(w.id) || readWarnings.includes(w.id) || ignoredIds.includes(w.id)) continue;
 
       const requiredReading = !!w.requiredReading;
       if (requiredReading) {

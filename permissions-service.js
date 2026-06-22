@@ -911,6 +911,49 @@
     }
   }
 
+  // Grupos de Visualizadores CRUD (Armazenamento Local)
+  async function getViewerGroups() {
+    try {
+      const local = await chrome.storage.local.get(['viewerGroups'])
+      return local.viewerGroups || []
+    } catch (e) {
+      console.warn('[SGD Permissions] Erro ao buscar grupos de visualizadores do storage local:', e)
+      return []
+    }
+  }
+
+  async function saveViewerGroup(name, viewers) {
+    if (!window.sgdPermissions.isEditor) return false
+    const key = cleanFirebaseKey(name)
+    try {
+      const local = await chrome.storage.local.get(['viewerGroups'])
+      let groups = local.viewerGroups || []
+      groups = groups.filter(g => g.id !== key)
+      groups.push({ id: key, name, viewers })
+      await chrome.storage.local.set({ viewerGroups: groups })
+      await writeAuditLog('SAVE_VIEWER_GROUP_LOCAL', name, `Visualizadores: ${viewers.length} usuários`)
+      return true
+    } catch (err) {
+      console.error('[SGD Permissions] Erro ao salvar grupo localmente:', err)
+      return false
+    }
+  }
+
+  async function deleteViewerGroup(groupId) {
+    if (!window.sgdPermissions.isEditor) return false
+    try {
+      const local = await chrome.storage.local.get(['viewerGroups'])
+      let groups = local.viewerGroups || []
+      groups = groups.filter(g => g.id !== groupId)
+      await chrome.storage.local.set({ viewerGroups: groups })
+      await writeAuditLog('DELETE_VIEWER_GROUP_LOCAL', groupId)
+      return true
+    } catch (err) {
+      console.error('[SGD Permissions] Erro ao excluir grupo localmente:', err)
+      return false
+    }
+  }
+
   // Canais Dinâmicos CRUD
   async function loadActiveChannels() {
     try {
@@ -1094,6 +1137,9 @@
   window.sgdPermissions.getChannelProfiles = getChannelProfiles
   window.sgdPermissions.saveChannelProfile = saveChannelProfile
   window.sgdPermissions.deleteChannelProfile = deleteChannelProfile
+  window.sgdPermissions.getViewerGroups = getViewerGroups
+  window.sgdPermissions.saveViewerGroup = saveViewerGroup
+  window.sgdPermissions.deleteViewerGroup = deleteViewerGroup
   window.sgdPermissions.loadActiveChannels = loadActiveChannels
   window.sgdPermissions.saveActiveChannels = saveActiveChannels
   window.sgdPermissions.getAuditLogs = getAuditLogs

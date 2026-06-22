@@ -648,6 +648,8 @@ let filteredPendingItems = []
 let allPendingTabs = null
 let activePendingTabId = 'all'
 let acOnlyShowTeamAT = false
+let acSelectedGroupId = ''
+let acEditingGroupId = ''
 
 // #region agent log
 // Global click listener to detect if clicks are happening but handler is missed
@@ -2199,9 +2201,18 @@ async function loadTeamStatus(sectionElement, forceRefresh = false, isAutoRefres
     }
 
     // 2. Filtro de Busca
-    const searchTerm = searchInput?.value?.toLowerCase()?.trim() || ''
+    const normalizeSearchStr = (str) => {
+      if (!str) return ''
+      return str
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+    }
+    const searchTerm = normalizeSearchStr(searchInput?.value)
     let filteredMembers = allTeamMembers.filter(m => {
-      const name = m.name?.toLowerCase() || ''
+      const name = normalizeSearchStr(m.name)
       return name.includes(searchTerm)
     })
 
@@ -3476,15 +3487,25 @@ function openCreateWarningModal(existingWarning = null) {
   }
 
   userInput.addEventListener('input', () => {
-    const val = userInput.value.trim().toLowerCase()
+    const normalizeSearchStr = (str) => {
+      if (!str) return ''
+      return str
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+    }
+    const val = normalizeSearchStr(userInput.value)
     suggestionsDiv.innerHTML = ''
     if (!val) {
       suggestionsDiv.style.display = 'none'
       return
     }
-    const matches = allColleagues.filter(name => 
-      name.toLowerCase().includes(val) && !selectedUsers.includes(name)
-    )
+    const matches = allColleagues.filter(name => {
+      const normName = normalizeSearchStr(name)
+      return normName.includes(val) && !selectedUsers.includes(name)
+    })
     if (matches.length === 0) {
       suggestionsDiv.style.display = 'none'
       return
@@ -4335,6 +4356,17 @@ async function loadAccessControl(sectionElement) {
     }
 
     const profiles = await window.sgdPermissions.getChannelProfiles()
+    const groups = await window.sgdPermissions.getViewerGroups()
+    const editingGroup = acEditingGroupId ? groups.find(g => g.id === acEditingGroupId) : null
+
+    if (acSelectedGroupId && !acEditingGroupId) {
+      const selectedGroup = groups.find(g => g.id === acSelectedGroupId)
+      if (selectedGroup) {
+        viewers = viewers.filter(v => selectedGroup.viewers.includes(v.id))
+      } else {
+        acSelectedGroupId = ''
+      }
+    }
     const currentUserNorm = (window.sgdPermissions.currentUser || '').trim().toLowerCase()
     const isMaster = !!window.sgdPermissions.isMaster
 
@@ -4519,12 +4551,14 @@ async function loadAccessControl(sectionElement) {
         `
         : ''
 
+      const isCheckedInGroup = editingGroup && editingGroup.viewers && editingGroup.viewers.includes(viewer.id)
+
       // Todos os editores (Master e Comum) podem limitar/atualizar os canais de Visualizadores
       return `
         <div class="ip-access-viewer-row" data-viewer-id="${escapeHTML(viewer.id)}" style="display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 12px; background: var(--background-secondary, #f3f4f6); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm, 4px); margin-bottom: 10px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div style="display: flex; align-items: center; gap: 8px;">
-              <input type="checkbox" class="ac-viewer-select-checkbox" data-viewer-id="${escapeHTML(viewer.id)}" style="width: 15px; height: 15px; margin: 0; cursor: pointer;">
+              <input type="checkbox" class="ac-viewer-select-checkbox" data-viewer-id="${escapeHTML(viewer.id)}" ${isCheckedInGroup ? 'checked' : ''} style="width: 15px; height: 15px; margin: 0; cursor: pointer;">
               <div class="ip-access-editor-info">
                 <span class="ip-access-editor-name" style="font-weight: 500; font-size: 13px; color: var(--text-color-main);">
                   👁️ ${escapeHTML(viewer.name)}
@@ -4597,6 +4631,7 @@ async function loadAccessControl(sectionElement) {
             <div style="display: flex; gap: 8px; align-items: center;">
               <input type="text" id="ac-profile-name" placeholder="Ex: Suporte N1, Plantão..." style="flex: 1; padding: 6px 10px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
               <button id="ac-save-profile-btn" class="action-btn small-btn" style="background: var(--primary-color, #6366f1); color: white; border: none; padding: 6px 12px; cursor: pointer; font-size: 12px; border-radius: 4px; font-weight: bold;">Salvar Novo Perfil</button>
+              <button id="ac-cancel-profile-edit-btn" class="action-btn small-btn secondary-btn" style="display: none; padding: 6px 12px; cursor: pointer; font-size: 12px; border-radius: 4px; border: 1px solid var(--border-color);">Cancelar</button>
             </div>
             <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px;">
               ${(window.sgdPermissions?.channels || WARNING_CHANNELS).map(ch => `
@@ -4614,6 +4649,7 @@ async function loadAccessControl(sectionElement) {
               ? profiles.map(p => `
                 <span class="ac-profile-pill" style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 11px; font-weight: 600; border-radius: 20px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main);" title="Canais: ${escapeHTML(p.channels.join(', '))}">
                   ${escapeHTML(p.name)}
+                  <button class="ac-edit-profile-btn" data-profile-id="${escapeHTML(p.id)}" style="background: none; border: none; padding: 0; margin: 0; cursor: pointer; font-size: 10px; opacity: 0.6; line-height: 1;">✏️</button>
                   <button class="ac-delete-profile-btn" data-profile-id="${escapeHTML(p.id)}" style="background: none; border: none; padding: 0; margin: 0; cursor: pointer; font-size: 10px; opacity: 0.6; line-height: 1;">❌</button>
                 </span>
               `).join('')
@@ -4685,7 +4721,7 @@ async function loadAccessControl(sectionElement) {
       </div>
       <!-- Ações em Lote -->
       <div class="bulk-actions-card" style="padding: 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm, 4px); margin-bottom: 12px;">
-        <h5 style="margin: 0 0 8px 0; font-size: 12px; font-weight: 600; color: var(--text-color-main);">⚡ Ações em Lote para Selecionados (<span id="ac-selected-count">0</span>):</h5>
+        <h5 style="margin: 0 0 8px 0; font-size: 12px; font-weight: 600; color: var(--text-color-main);">${acEditingGroupId ? `⚡ Editando Grupo: <span style="color: var(--primary-color, #6366f1); font-weight: bold;">${escapeHTML(editingGroup ? editingGroup.name : '')}</span>` : '⚡ Ações em Lote para Selecionados (<span id="ac-selected-count">0</span>):'}</h5>
         <div style="display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px;">
           <!-- Pesquisa de visualizadores inline à esquerda -->
           <input 
@@ -4695,10 +4731,12 @@ async function loadAccessControl(sectionElement) {
             class="ip-filter-input" 
             style="padding: 5px 8px; font-size: 12px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); min-width: 150px; max-width: 200px; margin: 0; box-sizing: border-box;"
           >
+          <button id="ac-save-group-btn" class="action-btn small-btn" style="background: var(--primary-color, #6366f1); color: white; border: none; padding: 5px 12px; cursor: pointer; font-size: 12px; border-radius: 4px; white-space: nowrap; font-weight: bold;" ${acEditingGroupId ? '' : 'disabled'}>${acEditingGroupId ? '💾 Atualizar Grupo' : '💾 Salvar Grupo'}</button>
+          ${acEditingGroupId ? `<button id="ac-cancel-group-edit-btn" class="action-btn small-btn secondary-btn" style="padding: 5px 12px; cursor: pointer; font-size: 12px; border-radius: 4px; border: 1px solid var(--border-color); white-space: nowrap; background: var(--background-main); color: var(--text-color-main);">Cancelar</button>` : ''}
           <div style="border-left: 1px solid var(--border-color); height: 20px; margin: 0 4px; flex-shrink: 0;"></div>
           
           <!-- Selecione um Perfil -->
-          <select id="bulk-profile-select" style="padding: 5px 8px; font-size: 12px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); min-width: 140px;">
+          <select id="bulk-profile-select" style="padding: 5px 8px; font-size: 12px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); min-width: 140px;" ${acEditingGroupId ? 'disabled' : ''}>
             <option value="">Selecione um Perfil...</option>
             ${profiles.map(p => `<option value="${escapeHTML(p.id)}">${escapeHTML(p.name)}</option>`).join('')}
           </select>
@@ -4708,7 +4746,7 @@ async function loadAccessControl(sectionElement) {
           <span style="font-size: 12px; color: var(--text-color-muted); font-weight: bold; white-space: nowrap; margin-left: 6px;">Canais:</span>
           
           <!-- Dropdown de Canais -->
-          <select id="bulk-channel-select" style="padding: 5px 8px; font-size: 12px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); min-width: 110px;">
+          <select id="bulk-channel-select" style="padding: 5px 8px; font-size: 12px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); min-width: 110px;" ${acEditingGroupId ? 'disabled' : ''}>
             <option value="all">Todos os Canais</option>
             ${(window.sgdPermissions?.channels || WARNING_CHANNELS).map(ch => `<option value="${escapeHTML(ch)}">${escapeHTML(ch)}</option>`).join('')}
           </select>
@@ -4718,9 +4756,22 @@ async function loadAccessControl(sectionElement) {
           <!-- Desabilitar -->
           <button id="bulk-disable-channel-btn" class="action-btn small-btn" style="background: var(--action-red, #ef4444); color: white; border: none; padding: 5px 12px; cursor: pointer; font-size: 12px; border-radius: 4px; white-space: nowrap;" disabled>Desabilitar</button>
         </div>
-      </div>      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding-left: 12px;">
-        <input type="checkbox" id="ac-select-all-viewers" style="width: 15px; height: 15px; margin: 0; cursor: pointer;">
-        <label for="ac-select-all-viewers" style="font-size: 12px; cursor: pointer; font-weight: 600; color: var(--text-color-main);">Selecionar Todos</label>
+      </div>
+      
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; padding-left: 12px; padding-right: 12px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <input type="checkbox" id="ac-select-all-viewers" style="width: 15px; height: 15px; margin: 0; cursor: pointer;">
+          <label for="ac-select-all-viewers" style="font-size: 12px; cursor: pointer; font-weight: 600; color: var(--text-color-main);">Selecionar Todos</label>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 11px; font-weight: bold; color: var(--text-color-muted);">Filtrar por Grupo:</span>
+          <select id="ac-filter-group-select" ${acEditingGroupId ? 'disabled' : ''} style="padding: 4px 8px; font-size: 11px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); min-width: 130px;">
+            <option value="">Todos os usuários</option>
+            ${groups.map(g => `<option value="${escapeHTML(g.id)}" ${g.id === acSelectedGroupId ? 'selected' : ''}>${escapeHTML(g.name)}</option>`).join('')}
+          </select>
+          ${acSelectedGroupId && !acEditingGroupId ? `<button id="ac-edit-group-btn" class="action-btn small-btn" style="background: none; border: none; cursor: pointer; font-size: 11px; padding: 0; display: inline-block; margin-right: 6px;" title="Editar membros deste grupo">✏️</button>` : ''}
+          ${acSelectedGroupId && !acEditingGroupId ? `<button id="ac-delete-group-btn" class="action-btn small-btn" style="background: none; border: none; cursor: pointer; font-size: 11px; padding: 0; display: inline-block;" title="Excluir grupo selecionado">❌</button>` : ''}
+        </div>
       </div>
 
       <div id="ip-viewers-list">
@@ -4796,9 +4847,9 @@ async function loadAccessControl(sectionElement) {
         }
       })
     })
-
-    // Salvar Perfil de Canais
+    // Salvar/Editar Perfil de Canais
     const saveProfileBtn = container.querySelector('#ac-save-profile-btn')
+    const cancelProfileEditBtn = container.querySelector('#ac-cancel-profile-edit-btn')
     if (saveProfileBtn) {
       saveProfileBtn.addEventListener('click', async () => {
         const nameInput = container.querySelector('#ac-profile-name')
@@ -4816,18 +4867,77 @@ async function loadAccessControl(sectionElement) {
         }
 
         saveProfileBtn.disabled = true
-        saveProfileBtn.textContent = 'Salvando...'
-        const success = await window.sgdPermissions.saveChannelProfile(profileName, selectedChannels)
-        if (success) {
-          showNotification(`Perfil "${profileName}" salvo com sucesso!`, 'success')
-          loadAccessControl(sectionElement)
+        const editingId = saveProfileBtn.dataset.editingId
+        if (editingId) {
+          saveProfileBtn.textContent = 'Atualizando...'
+          const oldKey = editingId
+          const newKey = window.sgdPermissions ? profileName.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_') : ''
+          
+          if (oldKey !== newKey) {
+            await window.sgdPermissions.deleteChannelProfile(oldKey)
+          }
+          const success = await window.sgdPermissions.saveChannelProfile(profileName, selectedChannels)
+          if (success) {
+            showNotification(`Perfil "${profileName}" atualizado com sucesso!`, 'success')
+            loadAccessControl(sectionElement)
+          } else {
+            showNotification('Erro ao atualizar perfil.', 'error')
+            saveProfileBtn.disabled = false
+            saveProfileBtn.textContent = 'Atualizar Perfil'
+          }
         } else {
-          showNotification('Erro ao salvar perfil.', 'error')
-          saveProfileBtn.disabled = false
-          saveProfileBtn.textContent = 'Salvar Novo Perfil'
+          saveProfileBtn.textContent = 'Salvando...'
+          const success = await window.sgdPermissions.saveChannelProfile(profileName, selectedChannels)
+          if (success) {
+            showNotification(`Perfil "${profileName}" salvo com sucesso!`, 'success')
+            loadAccessControl(sectionElement)
+          } else {
+            showNotification('Erro ao salvar perfil.', 'error')
+            saveProfileBtn.disabled = false
+            saveProfileBtn.textContent = 'Salvar Novo Perfil'
+          }
         }
       })
     }
+
+    if (cancelProfileEditBtn) {
+      cancelProfileEditBtn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        const nameInput = container.querySelector('#ac-profile-name')
+        if (nameInput) nameInput.value = ''
+        const checkboxes = container.querySelectorAll('.ac-new-profile-channel-checkbox')
+        checkboxes.forEach(cb => cb.checked = false)
+        if (saveProfileBtn) {
+          delete saveProfileBtn.dataset.editingId
+          saveProfileBtn.textContent = 'Salvar Novo Perfil'
+        }
+        cancelProfileEditBtn.style.display = 'none'
+      })
+    }
+
+    // Editar Perfil de Canais (Preencher Form)
+    container.querySelectorAll('.ac-edit-profile-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        const profileId = btn.dataset.profileId
+        const profile = profiles.find(p => p.id === profileId)
+        if (!profile) return
+
+        const nameInput = container.querySelector('#ac-profile-name')
+        if (nameInput) nameInput.value = profile.name
+
+        const checkboxes = container.querySelectorAll('.ac-new-profile-channel-checkbox')
+        checkboxes.forEach(cb => {
+          cb.checked = profile.channels.includes(cb.value)
+        })
+
+        if (saveProfileBtn) {
+          saveProfileBtn.dataset.editingId = profileId
+          saveProfileBtn.textContent = 'Atualizar Perfil'
+        }
+        if (cancelProfileEditBtn) cancelProfileEditBtn.style.display = 'inline-block'
+      })
+    })
 
     // Excluir Perfil de Canais
     container.querySelectorAll('.ac-delete-profile-btn').forEach(btn => {
@@ -4848,7 +4958,6 @@ async function loadAccessControl(sectionElement) {
         }
       })
     })
-
     // Aplicar Perfil Individual nos Checkboxes
     container.querySelectorAll('.ac-apply-profile-select').forEach(select => {
       select.addEventListener('change', () => {
@@ -4871,18 +4980,24 @@ async function loadAccessControl(sectionElement) {
     // Ação em lote com Perfil de Canais
     const bulkProfileSelect = container.querySelector('#bulk-profile-select')
     const bulkApplyProfileBtn = container.querySelector('#bulk-apply-profile-btn')
-
     // Filtrar editores dinamicamente (busca local)
     const searchEditorsInput = container.querySelector('#ac-search-editors-input')
     if (searchEditorsInput) {
       searchEditorsInput.addEventListener('input', () => {
         const rawQuery = searchEditorsInput.value || ''
-        const query = rawQuery.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        const query = rawQuery.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ')
         
         container.querySelectorAll('.ip-access-editor-row').forEach(row => {
           const nameSpan = row.querySelector('.ip-access-editor-name')
           const nameText = nameSpan ? nameSpan.textContent : ''
-          const normName = nameText.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          const normName = nameText
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/voce/g, '')
+            .replace(/[✏️👁️🛠️]/gu, '')
+            .replace(/\s+/g, ' ')
+            .trim()
           row.style.display = normName.includes(query) ? 'flex' : 'none'
         })
       })
@@ -4893,17 +5008,23 @@ async function loadAccessControl(sectionElement) {
     if (searchViewersInput) {
       searchViewersInput.addEventListener('input', () => {
         const rawQuery = searchViewersInput.value || ''
-        const query = rawQuery.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        const query = rawQuery.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ')
         
         container.querySelectorAll('.ip-access-viewer-row').forEach(row => {
           const nameSpan = row.querySelector('.ip-access-editor-name')
           const nameText = nameSpan ? nameSpan.textContent : ''
-          const normName = nameText.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          const normName = nameText
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/voce/g, '')
+            .replace(/[✏️👁️🛠️]/gu, '')
+            .replace(/\s+/g, ' ')
+            .trim()
           row.style.display = normName.includes(query) ? 'flex' : 'none'
         })
       })
     }
-
     // Alternar visualização da seção de perfis de canais
     const profilesHeader = container.querySelector('#ac-toggle-profiles-header')
     const profilesContent = container.querySelector('#ac-profiles-content')
@@ -5028,9 +5149,111 @@ async function loadAccessControl(sectionElement) {
       const disabled = checkedCount === 0
       bulkEnableBtn.disabled = disabled
       bulkDisableBtn.disabled = disabled
+      const saveGroupBtn = container.querySelector('#ac-save-group-btn')
+      if (saveGroupBtn) {
+        saveGroupBtn.disabled = acEditingGroupId ? false : disabled
+      }
       if (bulkApplyProfileBtn) {
         bulkApplyProfileBtn.disabled = disabled || !bulkProfileSelect.value
       }
+    }
+
+    // Salvar/Editar Seleção de Visualizadores como Grupo
+    const saveGroupBtn = container.querySelector('#ac-save-group-btn')
+    if (saveGroupBtn) {
+      saveGroupBtn.addEventListener('click', async () => {
+        const selectedIds = Array.from(viewerCheckboxes)
+          .filter(cb => cb.checked)
+          .map(cb => cb.dataset.viewerId)
+
+        if (acEditingGroupId) {
+          const groupToEdit = groups.find(g => g.id === acEditingGroupId)
+          if (!groupToEdit) return
+
+          saveGroupBtn.disabled = true
+          saveGroupBtn.textContent = 'Salvando...'
+
+          const success = await window.sgdPermissions.saveViewerGroup(groupToEdit.name, selectedIds)
+          if (success) {
+            showNotification(`Grupo "${groupToEdit.name}" atualizado com sucesso!`, 'success')
+            acEditingGroupId = ''
+            loadAccessControl(sectionElement)
+          } else {
+            showNotification('Erro ao atualizar grupo.', 'error')
+            saveGroupBtn.disabled = false
+            saveGroupBtn.textContent = '💾 Atualizar Grupo'
+          }
+        } else {
+          if (selectedIds.length === 0) return
+
+          const groupName = prompt('Informe o nome do grupo para salvar os visualizadores selecionados:')
+          if (!groupName || !groupName.trim()) return
+
+          saveGroupBtn.disabled = true
+          saveGroupBtn.textContent = 'Salvando...'
+
+          const success = await window.sgdPermissions.saveViewerGroup(groupName.trim(), selectedIds)
+          if (success) {
+            showNotification(`Grupo "${groupName}" salvo com sucesso!`, 'success')
+            acSelectedGroupId = groupName.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_')
+            loadAccessControl(sectionElement)
+          } else {
+            showNotification('Erro ao salvar grupo.', 'error')
+            saveGroupBtn.disabled = false
+            saveGroupBtn.textContent = '💾 Salvar Grupo'
+          }
+        }
+      })
+    }
+
+    // Filtrar visualizadores por Grupo
+    const filterGroupSelect = container.querySelector('#ac-filter-group-select')
+    if (filterGroupSelect) {
+      filterGroupSelect.addEventListener('change', () => {
+        acSelectedGroupId = filterGroupSelect.value
+        loadAccessControl(sectionElement)
+      })
+    }
+
+    // Excluir Grupo de Visualizadores
+    const deleteGroupBtn = container.querySelector('#ac-delete-group-btn')
+    if (deleteGroupBtn) {
+      deleteGroupBtn.addEventListener('click', async () => {
+        if (!acSelectedGroupId) return
+        const confirmed = confirm('Excluir este grupo de visualizadores?')
+        if (!confirmed) return
+
+        deleteGroupBtn.disabled = true
+        const success = await window.sgdPermissions.deleteViewerGroup(acSelectedGroupId)
+        if (success) {
+          showNotification('Grupo excluído com sucesso.', 'success')
+          acSelectedGroupId = ''
+          loadAccessControl(sectionElement)
+        } else {
+          showNotification('Erro ao excluir grupo.', 'error')
+          deleteGroupBtn.disabled = false
+        }
+      })
+    }
+
+    // Cancelar Edição do Grupo
+    const cancelGroupEditBtn = container.querySelector('#ac-cancel-group-edit-btn')
+    if (cancelGroupEditBtn) {
+      cancelGroupEditBtn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        acEditingGroupId = ''
+        loadAccessControl(sectionElement)
+      })
+    }
+
+    // Editar membros do grupo selecionado (Ativar modo edição)
+    const editGroupBtn = container.querySelector('#ac-edit-group-btn')
+    if (editGroupBtn) {
+      editGroupBtn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        acEditingGroupId = acSelectedGroupId
+        loadAccessControl(sectionElement)
+      })
     }
 
     if (selectAllViewers) {

@@ -667,10 +667,33 @@ async function checkWarningsAndNotify() {
     });
 
     // Evita duplicar notificações se o aviso já foi notificado anteriormente com a mesma data/versão
-    const notifiedStorage = await chrome.storage.local.get(['notifiedWarnings', 'readWarningIds', 'ignoredWarnings']);
+    const notifiedStorage = await chrome.storage.local.get([
+      'notifiedWarnings',
+      'readWarningIds',
+      'ignoredWarnings',
+      'warningsLastReadTime',
+      'readWarnings'
+    ]);
     const notifiedWarnings = notifiedStorage.notifiedWarnings || {};
+    const readWarningIds = notifiedStorage.readWarningIds || [];
+    const ignoredWarnings = notifiedStorage.ignoredWarnings || [];
+    const readWarnings = notifiedStorage.readWarnings || [];
+    const lastReadTime = notifiedStorage.warningsLastReadTime || 0;
     
     if (notifiedWarnings[newestWarning.id] === newestWarning.date) {
+      return;
+    }
+
+    // Se o aviso é antigo (data menor ou igual ao último acesso do usuário na aba de avisos) 
+    // ou se já foi lido/ignorado, apenas registra para evitar notificações futuras e encerra.
+    // Só permitimos re-notificar se o aviso foi explicitamente atualizado (ou seja, já havia uma data notificada anterior diferente da atual).
+    const wTime = newestWarning.date ? new Date(newestWarning.date).getTime() : 0;
+    const hasPreviousNotification = notifiedWarnings[newestWarning.id] !== undefined;
+    const isDateChanged = hasPreviousNotification && notifiedWarnings[newestWarning.id] !== newestWarning.date;
+    
+    if (!isDateChanged && (wTime <= lastReadTime || readWarningIds.includes(newestWarning.id) || ignoredWarnings.includes(newestWarning.id))) {
+      notifiedWarnings[newestWarning.id] = newestWarning.date;
+      await chrome.storage.local.set({ notifiedWarnings });
       return;
     }
 
@@ -685,23 +708,29 @@ async function checkWarningsAndNotify() {
     notifiedWarnings[newestWarning.id] = newestWarning.date;
 
     // Se o aviso é novo ou foi reenviado (a data mudou), remove das listas de lidos e ignorados para que seja exibido novamente
-    let readWarningIds = notifiedStorage.readWarningIds || [];
-    let ignoredWarnings = notifiedStorage.ignoredWarnings || [];
+    let updatedReadWarningIds = [...readWarningIds];
+    let updatedIgnoredWarnings = [...ignoredWarnings];
+    let updatedReadWarnings = [...readWarnings];
     let storageUpdated = false;
 
-    if (readWarningIds.includes(newestWarning.id)) {
-      readWarningIds = readWarningIds.filter(id => id !== newestWarning.id);
+    if (updatedReadWarningIds.includes(newestWarning.id)) {
+      updatedReadWarningIds = updatedReadWarningIds.filter(id => id !== newestWarning.id);
       storageUpdated = true;
     }
-    if (ignoredWarnings.includes(newestWarning.id)) {
-      ignoredWarnings = ignoredWarnings.filter(id => id !== newestWarning.id);
+    if (updatedReadWarnings.includes(newestWarning.id)) {
+      updatedReadWarnings = updatedReadWarnings.filter(id => id !== newestWarning.id);
+      storageUpdated = true;
+    }
+    if (updatedIgnoredWarnings.includes(newestWarning.id)) {
+      updatedIgnoredWarnings = updatedIgnoredWarnings.filter(id => id !== newestWarning.id);
       storageUpdated = true;
     }
 
     const setToStorage = { notifiedWarnings };
     if (storageUpdated) {
-      setToStorage.readWarningIds = readWarningIds;
-      setToStorage.ignoredWarnings = ignoredWarnings;
+      setToStorage.readWarningIds = updatedReadWarningIds;
+      setToStorage.readWarnings = updatedReadWarnings;
+      setToStorage.ignoredWarnings = updatedIgnoredWarnings;
     }
     await chrome.storage.local.set(setToStorage);
 
