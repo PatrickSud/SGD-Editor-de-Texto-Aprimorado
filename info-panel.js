@@ -4497,7 +4497,7 @@ async function loadAccessControl(sectionElement) {
                   const checked = channels.includes(ch) ? 'checked' : ''
                   const cbId = `ac-ed-ch-${escapeHTML(editor.id)}-${idx}`
                   return `
-                    <div style="display: flex; align-items: center;">
+                    <div style="display: flex; align-items: center; position: relative;">
                       <input type="checkbox" class="ac-channel-checkbox" id="${cbId}" value="${escapeHTML(ch)}" ${checked}>
                       <label for="${cbId}" style="font-size: 11px; cursor: pointer; color: var(--text-color-main); padding-left: 26px; min-height: 18px; margin: 0; position: relative; display: inline-flex; align-items: center;">
                         ${escapeHTML(ch)}
@@ -4585,7 +4585,7 @@ async function loadAccessControl(sectionElement) {
                   const checked = channels.includes(ch) ? 'checked' : ''
                   const cbId = `ac-vi-ch-${escapeHTML(viewer.id)}-${idx}`
                   return `
-                    <div style="display: flex; align-items: center;">
+                    <div style="display: flex; align-items: center; position: relative;">
                       <input type="checkbox" class="ac-channel-checkbox" id="${cbId}" value="${escapeHTML(ch)}" ${checked}>
                       <label for="${cbId}" style="font-size: 11px; cursor: pointer; color: var(--text-color-main); padding-left: 26px; min-height: 18px; margin: 0; position: relative; display: inline-flex; align-items: center;">
                         ${escapeHTML(ch)}
@@ -4630,7 +4630,7 @@ async function loadAccessControl(sectionElement) {
               ${(window.sgdPermissions?.channels || WARNING_CHANNELS).map((ch, idx) => {
                 const cbId = `ac-new-prof-ch-${idx}`
                 return `
-                  <div style="display: flex; align-items: center;">
+                  <div style="display: flex; align-items: center; position: relative;">
                     <input type="checkbox" class="ac-new-profile-channel-checkbox" id="${cbId}" value="${escapeHTML(ch)}">
                     <label for="${cbId}" style="font-size: 11px; cursor: pointer; color: var(--text-color-main); padding-left: 26px; min-height: 18px; margin: 0; position: relative; display: inline-flex; align-items: center;">
                       ${escapeHTML(ch)}
@@ -4757,9 +4757,9 @@ async function loadAccessControl(sectionElement) {
       </div>
       
       <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; padding-left: 12px; padding-right: 12px; flex-wrap: wrap;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <input type="checkbox" id="ac-select-all-viewers" style="width: 15px; height: 15px; margin: 0; cursor: pointer;">
-          <label for="ac-select-all-viewers" style="font-size: 12px; cursor: pointer; font-weight: 600; color: var(--text-color-main);">Selecionar Todos</label>
+        <div style="display: flex; align-items: center; gap: 8px; position: relative;">
+          <input type="checkbox" id="ac-select-all-viewers">
+          <label for="ac-select-all-viewers" style="font-size: 12px; cursor: pointer; font-weight: 600; color: var(--text-color-main); padding-left: 26px; min-height: 18px; display: inline-flex; align-items: center; position: relative; margin: 0;">Selecionar Todos</label>
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
           <span style="font-size: 11px; font-weight: bold; color: var(--text-color-muted);">Filtrar por Grupo:</span>
