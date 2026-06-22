@@ -352,3 +352,18 @@ async function isClassificationDefaultEnabled() {
     return false // Fallback seguro (desativado)
   }
 }
+
+/**
+ * Normaliza um nome para comparação segura (remover acentos, converter em minúsculas e limpar espaços).
+ * @param {string} name - O nome a ser normalizado.
+ * @returns {string} O nome normalizado.
+ */
+function normalizeName(name) {
+  if (!name) return ''
+  return name
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+}

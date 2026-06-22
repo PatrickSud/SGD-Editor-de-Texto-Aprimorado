@@ -1839,15 +1839,6 @@ async function loadWarnings(sectionElement, forceRefresh = false) {
       if (isEditor) return true; // Editor vê todos
       if (w.targetUsers && Array.isArray(w.targetUsers) && w.targetUsers.length > 0) {
         if (!activeUserName) return false;
-        const normalizeName = (name) => {
-          if (!name) return '';
-          return name
-            .trim()
-            .toLowerCase()
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .replace(/\s+/g, ' ');
-        };
         const normCurrentUser = normalizeName(activeUserName);
         return w.targetUsers.some(u => normalizeName(u) === normCurrentUser);
       }
@@ -1865,7 +1856,6 @@ async function loadWarnings(sectionElement, forceRefresh = false) {
     const subStorage = await chrome.storage.local.get(['subscribedChannels', 'warningChannels'])
     const activeChannelsList = subStorage.warningChannels || WARNING_CHANNELS
     const subscribed = subStorage.subscribedChannels ? [...subStorage.subscribedChannels] : [...activeChannelsList]
-    const isEditor = !!(developerMode || window.sgdPermissions?.isEditor)
     const allowed = window.sgdPermissions?.allowedChannels || (isEditor ? [...activeChannelsList] : ['Geral'])
     warnings = warnings.filter(w => {
       const wChannel = w.channel || 'Geral'
@@ -3572,6 +3562,11 @@ function openCreateWarningModal(existingWarning = null) {
 
     if (!title || !textContent) {
       alert('Preencha título e mensagem.')
+      return
+    }
+
+    if (isTargeted && targetUsers.length === 0) {
+      alert('Selecione pelo menos um colaborador para direcionar o aviso.')
       return
     }
 

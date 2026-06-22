@@ -4405,16 +4405,6 @@ async function checkAndShowPendingWarningToasts() {
         if (!isEditor) {
           const currentUserName = window.sgdPermissions?.currentUser;
           if (!currentUserName) continue;
-          
-          const normalizeName = (name) => {
-            if (!name) return '';
-            return name
-              .trim()
-              .toLowerCase()
-              .normalize('NFD')
-              .replace(/[\u0300-\u036f]/g, '')
-              .replace(/\s+/g, ' ');
-          };
           const normCurrentUser = normalizeName(currentUserName);
           const isTargeted = w.targetUsers.some(u => normalizeName(u) === normCurrentUser);
           if (!isTargeted) continue;

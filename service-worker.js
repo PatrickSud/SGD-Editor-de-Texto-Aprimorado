@@ -526,6 +526,59 @@ function safeFirebaseKey(str) {
     .replace(/_+/g, '_'); // Evita múltiplos _
 }
 
+async function touchWarningsMetadata(warningDataOrArray) {
+  try {
+    const now = new Date().toISOString();
+    const patchData = { lastUpdated: now };
+    const allChannels = [
+      'Geral', 'AT', 'Onvio', 'Onvio Processos/Messenger',
+      'Folha de pagamento', 'Escrita Fiscal', 'Contabilidade',
+      'Serviços Digitais', 'Fila 61', 'Fila 62'
+    ];
+    const dataArray = Array.isArray(warningDataOrArray) ? warningDataOrArray : [warningDataOrArray];
+    let hasValidData = false;
+
+    for (const data of dataArray) {
+      if (data) {
+        hasValidData = true;
+        if (data.isTest) {
+          patchData.lastTestUpdated = now;
+        } else if (data.targetUsers && Array.isArray(data.targetUsers) && data.targetUsers.length > 0) {
+          for (const user of data.targetUsers) {
+            const userKey = safeFirebaseKey(user);
+            if (userKey) {
+              patchData[`user_${userKey}`] = now;
+            }
+          }
+        } else if (data.channel) {
+          const channelKey = safeFirebaseKey(data.channel);
+          if (channelKey) {
+            patchData[`channel_${channelKey}`] = now;
+          }
+        } else {
+          patchData.lastTestUpdated = now;
+          for (const ch of allChannels) {
+            patchData[`channel_${safeFirebaseKey(ch)}`] = now;
+          }
+        }
+      }
+    }
+
+    if (!hasValidData) {
+      patchData.lastTestUpdated = now;
+      for (const ch of allChannels) {
+        patchData[`channel_${safeFirebaseKey(ch)}`] = now;
+      }
+    }
+
+    await fetch(`${RTDB_WARNINGS_META_URL}.json`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patchData)
+    });
+  } catch (e) { console.warn('Falha meta avisos:', e); }
+}
+
 async function checkWarningsAndNotify() {
   try {
     const storage = await chrome.storage.local.get([
@@ -1518,6 +1571,109 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         } else {
           handleGerarSugestao(message.prompt, sender.tab.id, workflowId, 'rascunhoCompleto', 'rascunhoErro')
         }
+
+      } else if (message.action === 'FETCH_WARNINGS_DATA') {
+        const fetchUrl = `${RTDB_WARNINGS_URL}.json?orderBy="date"&limitToLast=20`;
+        try {
+          const response = await fetch(fetchUrl, { cache: 'no-store' });
+          if (!response.ok) throw new Error('Erro ao buscar do RTDB');
+          const data = await response.json();
+          sendResponse({ success: true, data });
+        } catch (e) {
+          sendResponse({ success: false, error: e.message });
+        }
+
+      } else if (message.action === 'WRITE_WARNING_ACTION') {
+        const { type, id, data } = message;
+        (async () => {
+          try {
+            if (type === 'create') {
+              const { id: _, ...bodyData } = data;
+              const response = await fetch(`${RTDB_WARNINGS_URL}.json`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(bodyData)
+              });
+              if (!response.ok) throw new Error('Erro ao criar no RTDB');
+              await touchWarningsMetadata(data);
+              sendResponse({ success: true });
+            } else if (type === 'update') {
+              let oldDoc = null;
+              try {
+                const fetchResponse = await fetch(`${RTDB_WARNINGS_URL}/${id}.json`);
+                if (fetchResponse.ok) oldDoc = await fetchResponse.json();
+              } catch (_) {}
+
+              const { id: _, ...bodyData } = data;
+              const response = await fetch(`${RTDB_WARNINGS_URL}/${id}.json`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(bodyData)
+              });
+              if (!response.ok) throw new Error('Erro ao atualizar no RTDB');
+
+              let newDoc = null;
+              try {
+                const fetchResponse = await fetch(`${RTDB_WARNINGS_URL}/${id}.json`);
+                if (fetchResponse.ok) newDoc = await fetchResponse.json();
+              } catch (_) {}
+
+              await touchWarningsMetadata([oldDoc, newDoc || data]);
+              sendResponse({ success: true });
+            } else if (type === 'delete') {
+              let doc = null;
+              try {
+                const fetchResponse = await fetch(`${RTDB_WARNINGS_URL}/${id}.json`);
+                if (fetchResponse.ok) doc = await fetchResponse.json();
+              } catch (_) {}
+
+              const response = await fetch(`${RTDB_WARNINGS_URL}/${id}.json`, {
+                method: 'DELETE'
+              });
+              if (!response.ok) throw new Error('Erro ao deletar no RTDB');
+              await touchWarningsMetadata(doc);
+              sendResponse({ success: true });
+            }
+          } catch (e) {
+            sendResponse({ success: false, error: e.message });
+          }
+        })();
+        return true; // Resposta assíncrona
+
+      } else if (message.action === 'READ_PERMISSIONS_ACTION') {
+        const { path } = message;
+        (async () => {
+          try {
+            const url = `${RTDB_BASE_URL}${path}`;
+            const response = await fetch(url, { cache: 'no-store' });
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const data = await response.json();
+            sendResponse({ success: true, data });
+          } catch (e) {
+            sendResponse({ success: false, error: e.message });
+          }
+        })();
+        return true; // Resposta assíncrona
+
+      } else if (message.action === 'WRITE_PERMISSIONS_ACTION') {
+        const { path, method, data } = message;
+        (async () => {
+          try {
+            const url = `${RTDB_BASE_URL}${path}`;
+            const options = { method };
+            if (data) {
+              options.headers = { 'Content-Type': 'application/json' };
+              options.body = JSON.stringify(data);
+            }
+            const response = await fetch(url, options);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const resData = await response.json();
+            sendResponse({ success: true, data: resData });
+          } catch (e) {
+            sendResponse({ success: false, error: e.message });
+          }
+        })();
+        return true; // Resposta assíncrona
 
       }
     } catch (error) {

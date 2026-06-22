@@ -105,6 +105,57 @@
 
   // ─── Cache e Fetch dos Editores e Visualizadores ─────────────────────────────
 
+  function getPathFromUrl(url) {
+    if (!url) return '';
+    if (url.startsWith('/')) return url;
+    return url.replace(RTDB_BASE_URL, '');
+  }
+
+  async function callDatabaseRead(url) {
+    const path = getPathFromUrl(url);
+    try {
+      const response = await chrome.runtime.sendMessage({
+        action: 'READ_PERMISSIONS_ACTION',
+        path: path
+      });
+      if (response && response.success) {
+        return {
+          ok: true,
+          json: async () => response.data
+        };
+      }
+      throw new Error(response ? response.error : 'Erro na resposta do SW');
+    } catch (e) {
+      return fetch(url, { cache: 'no-store' });
+    }
+  }
+
+  async function callDatabaseWrite(url, method, data) {
+    const path = getPathFromUrl(url);
+    try {
+      const response = await chrome.runtime.sendMessage({
+        action: 'WRITE_PERMISSIONS_ACTION',
+        path: path,
+        method: method,
+        data: data
+      });
+      if (response && response.success) {
+        return {
+          ok: true,
+          json: async () => response.data
+        };
+      }
+      throw new Error(response ? response.error : 'Erro na resposta do SW');
+    } catch (e) {
+      const options = { method };
+      if (data) {
+        options.headers = { 'Content-Type': 'application/json' };
+        options.body = JSON.stringify(data);
+      }
+      return fetch(url, options);
+    }
+  }
+
   /**
    * Busca a lista de editores do Firebase RTDB com cache local de 30 minutos.
    * @param {boolean} forceRefresh - Se true, ignora o cache e busca do servidor
@@ -122,7 +173,7 @@
         }
       }
 
-      const response = await fetch(`${RTDB_EDITORS_URL}.json`, { cache: 'no-store' })
+      const response = await callDatabaseRead(`${RTDB_EDITORS_URL}.json`)
       if (!response.ok) {
         const fallback = await chrome.storage.local.get(PERMISSIONS_CACHE_KEY)
         return fallback[PERMISSIONS_CACHE_KEY] || []
@@ -178,7 +229,7 @@
         }
       }
 
-      const response = await fetch(`${RTDB_VIEWERS_URL}.json`, { cache: 'no-store' })
+      const response = await callDatabaseRead(`${RTDB_VIEWERS_URL}.json`)
       if (!response.ok) {
         const fallback = await chrome.storage.local.get(VIEWERS_CACHE_KEY)
         return fallback[VIEWERS_CACHE_KEY] || []
@@ -229,20 +280,7 @@
 
   // ─── Verificação de Editor ────────────────────────────────────────────────────
 
-  /**
-   * Normaliza um nome para comparação (lowercase, sem acentos, sem espaços extras).
-   * @param {string} name
-   * @returns {string}
-   */
-  function normalizeName(name) {
-    if (!name) return ''
-    return name
-      .trim()
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/\s+/g, ' ')
-  }
+  // As chamadas a normalizeName agora utilizam a função global declarada em utils.js
 
   /**
    * Verifica se o técnico logado é um editor e carrega seus canais permitidos.
@@ -295,7 +333,7 @@
 
     if (hasLocalInfoDev) {
       try {
-        const res = await fetch(`${RTDB_BASE_URL}/dev_requests/${userKey}.json`, { cache: 'no-store' })
+        const res = await callDatabaseRead(`${RTDB_BASE_URL}/dev_requests/${userKey}.json`)
         if (res.ok) {
           const reqData = await res.json()
           if (reqData && reqData.status === 'approved') {
@@ -405,7 +443,7 @@
    */
   async function syncRemoteConfig() {
     try {
-      const response = await fetch(`${RTDB_BASE_URL}/config.json`, { cache: 'no-store' })
+      const response = await callDatabaseRead(`${RTDB_BASE_URL}/config.json`)
       if (response.ok) {
         const remoteConfig = await response.json()
         if (remoteConfig && typeof remoteConfig === 'object') {
@@ -460,11 +498,7 @@
       
       if (matchedEditor) {
         // Atualiza lastSeen do editor no Firebase
-        await fetch(`${RTDB_EDITORS_URL}/${matchedEditor.id}.json`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ lastSeen: nowStr })
-        })
+        await callDatabaseWrite(`${RTDB_EDITORS_URL}/${matchedEditor.id}.json`, 'PATCH', { lastSeen: nowStr })
         
         const allowed = matchedEditor.allowedChannels || getChannelsFallback()
         const existingRole = matchedEditor.role || 'comum'
@@ -498,11 +532,7 @@
         }
 
         // Atualiza lastSeen do visualizador
-        await fetch(`${RTDB_VIEWERS_URL}/${matchedViewer.id}.json`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(patchData)
-        })
+        await callDatabaseWrite(`${RTDB_VIEWERS_URL}/${matchedViewer.id}.json`, 'PATCH', patchData)
         
         await chrome.storage.local.set({ 
           allowedChannels: allowed,
@@ -513,15 +543,11 @@
       } else {
         // Cadastra novo visualizador via PUT usando a chave gerada por userId
         const defaultChannels = ['Geral']
-        const response = await fetch(`${RTDB_VIEWERS_URL}/${userKey}.json`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: userName.trim(),
-            firstSeen: nowStr,
-            lastSeen: nowStr,
-            allowedChannels: defaultChannels
-          })
+        const response = await callDatabaseWrite(`${RTDB_VIEWERS_URL}/${userKey}.json`, 'PUT', {
+          name: userName.trim(),
+          firstSeen: nowStr,
+          lastSeen: nowStr,
+          allowedChannels: defaultChannels
         })
         
         if (response.ok) {
@@ -552,17 +578,13 @@
       const operatorName = window.sgdPermissions.currentUser || 'Desconhecido'
       const timestamp = new Date().toISOString()
       
-      await fetch(`${RTDB_BASE_URL}/audit_logs.json`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          operatorId,
-          operatorName,
-          action,
-          target,
-          details,
-          timestamp
-        })
+      await callDatabaseWrite(`${RTDB_BASE_URL}/audit_logs.json`, 'POST', {
+        operatorId,
+        operatorName,
+        action,
+        target,
+        details,
+        timestamp
       })
     } catch (e) {
       console.warn('[SGD Permissions] Erro ao gravar log de auditoria:', e)
@@ -575,7 +597,7 @@
    */
   async function getAuditLogs() {
     try {
-      const response = await fetch(`${RTDB_BASE_URL}/audit_logs.json?orderBy="timestamp"&limitToLast=100`, { cache: 'no-store' })
+      const response = await callDatabaseRead(`${RTDB_BASE_URL}/audit_logs.json?orderBy="timestamp"&limitToLast=100`)
       if (!response.ok) return []
       const result = await response.json()
       if (!result || typeof result !== 'object') return []
@@ -616,16 +638,12 @@
     if (isDuplicate) return false
 
     try {
-      const response = await fetch(`${RTDB_EDITORS_URL}/${targetKey}.json`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: trimmedName,
-          addedAt: new Date().toISOString(),
-          addedBy: window.sgdPermissions.currentUser || 'desconhecido',
-          allowedChannels: getChannelsFallback(),
-          role: 'comum'
-        })
+      const response = await callDatabaseWrite(`${RTDB_EDITORS_URL}/${targetKey}.json`, 'PUT', {
+        name: trimmedName,
+        addedAt: new Date().toISOString(),
+        addedBy: window.sgdPermissions.currentUser || 'desconhecido',
+        allowedChannels: getChannelsFallback(),
+        role: 'comum'
       })
 
       if (!response.ok) throw new Error('Falha ao adicionar editor')
@@ -664,9 +682,7 @@
     }
 
     try {
-      const response = await fetch(`${RTDB_EDITORS_URL}/${firebaseId}.json`, {
-        method: 'DELETE'
-      })
+      const response = await callDatabaseWrite(`${RTDB_EDITORS_URL}/${firebaseId}.json`, 'DELETE')
 
       if (!response.ok) throw new Error('Falha ao remover editor')
 
@@ -681,11 +697,7 @@
       }
 
       try {
-        const responseViewer = await fetch(`${RTDB_VIEWERS_URL}/${firebaseId}.json`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(viewerData)
-        })
+        const responseViewer = await callDatabaseWrite(`${RTDB_VIEWERS_URL}/${firebaseId}.json`, 'PUT', viewerData)
         if (!responseViewer.ok) {
           console.warn('[SGD Permissions] Editor removido, mas falha ao recriar registro como visualizador.')
         }
@@ -715,11 +727,7 @@
       const editorObj = editors.find(e => e.id === editorId)
       const name = editorObj ? editorObj.name : 'Desconhecido'
 
-      const response = await fetch(`${RTDB_EDITORS_URL}/${editorId}.json`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ allowedChannels })
-      })
+      const response = await callDatabaseWrite(`${RTDB_EDITORS_URL}/${editorId}.json`, 'PATCH', { allowedChannels })
       if (!response.ok) throw new Error('Falha ao atualizar canais')
       
       await writeAuditLog('UPDATE_EDITOR_CHANNELS', name, `Canais: ${allowedChannels.join(', ') || 'Nenhum'}`)
@@ -744,11 +752,7 @@
       const editorObj = editors.find(e => e.id === editorId)
       const name = editorObj ? editorObj.name : 'Desconhecido'
 
-      const response = await fetch(`${RTDB_EDITORS_URL}/${editorId}.json`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role })
-      })
+      const response = await callDatabaseWrite(`${RTDB_EDITORS_URL}/${editorId}.json`, 'PATCH', { role })
       if (!response.ok) throw new Error('Falha ao atualizar cargo')
 
       await writeAuditLog('UPDATE_EDITOR_ROLE', name, `Cargo: ${role}`)
@@ -770,11 +774,7 @@
       const viewerObj = viewers.find(v => v.id === viewerId)
       const name = viewerObj ? viewerObj.name : 'Desconhecido'
 
-      const response = await fetch(`${RTDB_VIEWERS_URL}/${viewerId}.json`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ allowedChannels })
-      })
+      const response = await callDatabaseWrite(`${RTDB_VIEWERS_URL}/${viewerId}.json`, 'PATCH', { allowedChannels })
       if (!response.ok) throw new Error('Falha ao atualizar canais')
 
       await writeAuditLog('UPDATE_VIEWER_CHANNELS', name, `Canais: ${allowedChannels.join(', ') || 'Nenhum'}`)
@@ -811,11 +811,7 @@
           channels.unshift('Geral')
         }
 
-        return fetch(`${RTDB_VIEWERS_URL}/${id}.json`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ allowedChannels: channels })
-        })
+        return callDatabaseWrite(`${RTDB_VIEWERS_URL}/${id}.json`, 'PATCH', { allowedChannels: channels })
       })
 
       await Promise.all(promises)
@@ -845,25 +841,19 @@
       const viewerObj = viewers.find(v => v.id === viewerId)
       const isEquipeAT = viewerObj ? viewerObj.isEquipeAT === true : false
 
-      const responseAdd = await fetch(`${RTDB_EDITORS_URL}/${viewerId}.json`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: trimmedName,
-          addedAt: new Date().toISOString(),
-          addedBy: window.sgdPermissions.currentUser || 'desconhecido',
-          allowedChannels: getChannelsFallback(),
-          role: role,
-          isEquipeAT: isEquipeAT
-        })
+      const responseAdd = await callDatabaseWrite(`${RTDB_EDITORS_URL}/${viewerId}.json`, 'PUT', {
+        name: trimmedName,
+        addedAt: new Date().toISOString(),
+        addedBy: window.sgdPermissions.currentUser || 'desconhecido',
+        allowedChannels: getChannelsFallback(),
+        role: role,
+        isEquipeAT: isEquipeAT
       })
 
       if (!responseAdd.ok) throw new Error('Falha ao adicionar editor')
 
       // 2. Remove do viewers
-      const responseDel = await fetch(`${RTDB_VIEWERS_URL}/${viewerId}.json`, {
-        method: 'DELETE'
-      })
+      const responseDel = await callDatabaseWrite(`${RTDB_VIEWERS_URL}/${viewerId}.json`, 'DELETE')
 
       if (!responseDel.ok) {
         console.warn('[SGD Permissions] Editor adicionado, mas falha ao remover registro de visualizador.')
@@ -881,7 +871,7 @@
   // Perfis de Canais CRUD
   async function getChannelProfiles() {
     try {
-      const response = await fetch(`${RTDB_BASE_URL}/permissions/channel_profiles.json`, { cache: 'no-store' })
+      const response = await callDatabaseRead(`${RTDB_BASE_URL}/permissions/channel_profiles.json`)
       if (!response.ok) return []
       const result = await response.json()
       if (!result || typeof result !== 'object') return []
@@ -900,11 +890,7 @@
     if (!window.sgdPermissions.isEditor) return false
     const key = cleanFirebaseKey(name)
     try {
-      const response = await fetch(`${RTDB_BASE_URL}/permissions/channel_profiles/${key}.json`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, channels })
-      })
+      const response = await callDatabaseWrite(`${RTDB_BASE_URL}/permissions/channel_profiles/${key}.json`, 'PUT', { name, channels })
       if (response.ok) {
         await writeAuditLog('SAVE_CHANNEL_PROFILE', name, `Canais: ${channels.join(', ')}`)
         return true
@@ -919,9 +905,7 @@
   async function deleteChannelProfile(profileId) {
     if (!window.sgdPermissions.isEditor) return false
     try {
-      const response = await fetch(`${RTDB_BASE_URL}/permissions/channel_profiles/${profileId}.json`, {
-        method: 'DELETE'
-      })
+      const response = await callDatabaseWrite(`${RTDB_BASE_URL}/permissions/channel_profiles/${profileId}.json`, 'DELETE')
       if (response.ok) {
         await writeAuditLog('DELETE_CHANNEL_PROFILE', profileId)
         return true
@@ -979,7 +963,7 @@
   // Canais Dinâmicos CRUD
   async function loadActiveChannels() {
     try {
-      const response = await fetch(`${RTDB_BASE_URL}/permissions/channels.json`, { cache: 'no-store' })
+      const response = await callDatabaseRead(`${RTDB_BASE_URL}/permissions/channels.json`)
       if (response.ok) {
         const data = await response.json()
         if (Array.isArray(data) && data.length > 0) {
@@ -991,7 +975,6 @@
     } catch (e) {
       console.warn('[SGD Permissions] Erro ao buscar canais do Firebase:', e)
     }
-    // Fallback para storage local ou constante global WARNING_CHANNELS
     const stored = await chrome.storage.local.get(['warningChannels'])
     const list = stored.warningChannels || [...WARNING_CHANNELS]
     window.sgdPermissions.channels = list
@@ -1001,11 +984,7 @@
   async function saveActiveChannels(channelsList) {
     if (!window.sgdPermissions.isEditor || window.sgdPermissions.role !== 'master') return false
     try {
-      const response = await fetch(`${RTDB_BASE_URL}/permissions/channels.json`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(channelsList)
-      })
+      const response = await callDatabaseWrite(`${RTDB_BASE_URL}/permissions/channels.json`, 'PUT', channelsList)
       if (response.ok) {
         window.sgdPermissions.channels = channelsList
         await chrome.storage.local.set({ warningChannels: channelsList })
@@ -1027,11 +1006,7 @@
     const url = isEditor ? `${RTDB_EDITORS_URL}/${userId}.json` : `${RTDB_VIEWERS_URL}/${userId}.json`
     const targetStatus = !currentStatus
     try {
-      const response = await fetch(url, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isEquipeAT: targetStatus })
-      })
+      const response = await callDatabaseWrite(url, 'PATCH', { isEquipeAT: targetStatus })
       if (response.ok) {
         const listName = isEditor ? 'editores' : 'visualizadores'
         await writeAuditLog('TOGGLE_EQUIPE_AT', userId, `Ação: ${targetStatus ? 'Ativar' : 'Desativar'} na Equipe AT (${listName})`)
@@ -1052,7 +1027,6 @@
    * Deve ser chamado assim que o DOM estiver disponível.
    */
   async function initPermissions() {
-    // Sincroniza configurações remotas em segundo plano
     syncRemoteConfig().catch(err => console.warn('[SGD Permissions] Falha ao sincronizar configs:', err))
 
     const userName = captureLoggedUserName()
@@ -1063,10 +1037,8 @@
       chrome.storage.local.set({ currentUser: userName }).catch(() => {});
     }
 
-    // Carrega canais dinâmicos antes de mais nada
     await loadActiveChannels()
 
-    // 1. Tenta carregar dados cacheados locais de imediato
     const localData = await chrome.storage.local.get(['allowedChannels', 'isCurrentUserEditor'])
     if (localData.allowedChannels) {
       window.sgdPermissions.allowedChannels = localData.allowedChannels
@@ -1084,13 +1056,19 @@
       const lastUser = heartbeat.lastPermissionsHeartbeatUser || ''
       
       if ((Date.now() - lastTime) > 24 * 60 * 60 * 1000 || lastUser !== userName) {
-        await registerUserActivity(userName)
-        await chrome.storage.local.set({
-          lastPermissionsHeartbeat: Date.now(),
-          lastPermissionsHeartbeatUser: userName
-        })
+        const jitterMs = Math.floor(Math.random() * 30000);
+        setTimeout(async () => {
+          try {
+            await registerUserActivity(userName)
+            await chrome.storage.local.set({
+              lastPermissionsHeartbeat: Date.now(),
+              lastPermissionsHeartbeatUser: userName
+            })
+          } catch (e) {
+            console.warn('[SGD Permissions] Erro no registro de atividade com jitter:', e);
+          }
+        }, jitterMs);
       } else {
-        // Busca em segundo plano de forma assíncrona para garantir sincronia
         isCurrentUserEditor().then(async () => {
           let allowed = getChannelsFallback()
           const editors = await getEditorsList()
