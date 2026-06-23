@@ -367,3 +367,29 @@ function normalizeName(name) {
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/\s+/g, ' ')
 }
+
+/**
+ * Verifica se um usuário específico é o destinatário de um aviso.
+ * @param {object} w - O objeto do aviso.
+ * @param {string} currentUser - O nome do usuário atual.
+ * @returns {boolean} Verdadeiro se o usuário é destinatário do aviso.
+ */
+function isUserRecipient(w, currentUser) {
+  if (!currentUser) return false
+  if (!w) return false
+
+  // 1. Apenas para mim (Somente o autor)
+  if (w.onlySelf) {
+    if (!w.author || w.author.trim().toLowerCase() !== currentUser.trim().toLowerCase()) {
+      return false
+    }
+  }
+
+  // 2. Colaboradores específicos
+  if (w.targetUsers && Array.isArray(w.targetUsers) && w.targetUsers.length > 0) {
+    const normCurrentUser = normalizeName(currentUser)
+    return w.targetUsers.some(u => normalizeName(u) === normCurrentUser)
+  }
+
+  return true
+}
