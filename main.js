@@ -579,7 +579,6 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
     setupUserSelectionListener(textArea)
     setupSituationListener(textArea)
     performAutoFill(textArea)
-    verificarDuplicatas()
 
     if (typeof initializeNotesPanel === 'function') {
       initializeNotesPanel()
