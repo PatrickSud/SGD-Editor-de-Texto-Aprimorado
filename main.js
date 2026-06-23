@@ -2432,6 +2432,48 @@ async function initializeExtension() {
       }
     }, 1000)
   }
+
+  // Verifica se deve abrir um aviso específico diretamente pelo parâmetro URL
+  const openWarningId = urlParams.get('open_warning_id')
+  if (openWarningId && typeof window.openWarningDetailModal === 'function') {
+    setTimeout(async () => {
+      try {
+        const warnings = await window.warningsService.getWarnings()
+        const warning = warnings.find(w => w.id === openWarningId)
+        if (warning) {
+          // Marca como lido e atualiza notificações
+          if (typeof window.markWarningAsRead === 'function') {
+            await window.markWarningAsRead(warning.id)
+          }
+
+          // Fecha o toast na aba atual, se existir
+          const toastEl = document.getElementById(`sgd-toast-${warning.id}`)
+          if (toastEl) {
+            toastEl.style.animation = 'sgdToastOut 0.3s ease forwards'
+            setTimeout(() => toastEl.remove(), 300)
+          }
+
+          // Sincroniza fechamento do toast com as demais abas
+          if (window.sgdChannel) {
+            window.sgdChannel.postMessage({ action: 'CLOSE_TOAST', id: warning.id })
+          }
+
+          // Abre o modal de detalhes do aviso
+          window.openWarningDetailModal(
+            warning.id,
+            warning.title,
+            warning.message,
+            warning.type || 'info',
+            !!warning.requiredReading
+          )
+        } else {
+          console.warn('[SGD Editor] Aviso não encontrado:', openWarningId)
+        }
+      } catch (err) {
+        console.error('[SGD Editor] Erro ao abrir aviso via URL:', err)
+      }
+    }, 1000)
+  }
 }
 
 /**
@@ -4288,7 +4330,9 @@ async function updateNotificationStatus() {
         const wChannel = w.channel || 'Geral';
         const isAllowed = window.sgdPermissions?.allowedChannels?.includes(wChannel) ?? (window.sgdPermissions?.isEditor ? true : wChannel === 'Geral');
         if (subscribed.includes(wChannel) && isAllowed) {
-          window.warningsService.recordWarningReceipt(w.id, currentUser);
+          if (typeof isUserRecipient === 'function' && isUserRecipient(w, currentUser)) {
+            window.warningsService.recordWarningReceipt(w.id, currentUser);
+          }
         }
       });
     }

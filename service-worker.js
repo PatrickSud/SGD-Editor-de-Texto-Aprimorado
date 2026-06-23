@@ -813,14 +813,14 @@ async function checkWarningsAndNotify() {
     const meta = typeMap[type] || typeMap.info;
     const cleanMessage = message.replace(/<[^>]+>/g, '').trim();
 
-    const notificationId = `warning-${Date.now()}`;
+    const notificationId = `warning:${newestWarning.id || 'unknown'}:${Date.now()}`;
     chrome.notifications.create(notificationId, {
       type: 'basic',
       iconUrl: 'logo.png',
       title: `${meta.icon} ${meta.label} ${title}`,
       message: cleanMessage,
       priority: 2,
-      buttons: [{ title: 'Abrir SGD e Ver Avisos' }, { title: 'Dispensar' }],
+      buttons: [{ title: 'Ver Aviso' }],
       requireInteraction: true
     });
 
@@ -1793,9 +1793,18 @@ chrome.alarms.onAlarm.addListener(async alarm => {
   }
 })
 
+// Controle temporário para ignorar o clique no corpo da notificação quando um botão é clicado
+const buttonClickIgnoredNotifications = new Set()
+
 // Listener para cliques nos botões da notificação do Windows
 chrome.notifications.onButtonClicked.addListener(
   (notificationId, buttonIndex) => {
+    // Registra que a notificação foi tratada por um botão para evitar propagação/duplicação no onClicked
+    buttonClickIgnoredNotifications.add(notificationId)
+    setTimeout(() => {
+      buttonClickIgnoredNotifications.delete(notificationId)
+    }, 1000)
+
     // Tratamento para notificações de Pendências (prefixo 'pending-')
     if (notificationId.startsWith('pending-')) {
       if (buttonIndex === 0) {
@@ -1811,13 +1820,21 @@ chrome.notifications.onButtonClicked.addListener(
       return
     }
 
-    // Tratamento para Avisos (prefixo 'warning-')
-    if (notificationId.startsWith('warning-')) {
+    // Tratamento para Avisos (prefixo 'warning-' ou 'warning:')
+    if (notificationId.startsWith('warning-') || notificationId.startsWith('warning:')) {
       if (buttonIndex === 0) {
-        // Abre o SGD e o painel focado na aba de Avisos
-        chrome.tabs.create({
-          url: 'https://sgd.dominiosistemas.com.br/sgpub/faces/filtro-listas.html?open_sgd_panel=true&target_tab=notices'
-        })
+        if (notificationId.startsWith('warning:')) {
+          const parts = notificationId.split(':')
+          const warningId = parts[1]
+          chrome.tabs.create({
+            url: `https://sgd.dominiosistemas.com.br/sgsa/faces/noticias.html?open_warning_id=${warningId}`
+          })
+        } else {
+          // Fallback antigo para warning-
+          chrome.tabs.create({
+            url: 'https://sgd.dominiosistemas.com.br/sgpub/faces/filtro-listas.html?open_sgd_panel=true&target_tab=notices'
+          })
+        }
       }
       chrome.notifications.clear(notificationId)
       return
@@ -1842,21 +1859,37 @@ chrome.notifications.onButtonClicked.addListener(
 
 // Listener para cliques no CORPO da notificação (Windows)
 chrome.notifications.onClicked.addListener((notificationId) => {
-  // Se clicar no corpo da notificação de pendências, age como o botão "Visualizar"
-  if (notificationId.startsWith('pending-')) {
-    chrome.tabs.create({
-      url: 'https://sgd.dominiosistemas.com.br/sgpub/faces/filtro-listas.html?open_sgd_panel=true'
-    })
-    chrome.notifications.clear(notificationId)
-  }
+  // Pequeno delay para garantir que, se um botão foi clicado, o onButtonClicked seja processado primeiro e popule o set de ignorados
+  setTimeout(() => {
+    // Ignora se o clique veio de um botão já tratado (como Dispensar)
+    if (buttonClickIgnoredNotifications.has(notificationId)) {
+      return
+    }
 
-  // Se clicar no corpo da notificação de avisos, abre o painel focado na aba de Avisos
-  if (notificationId.startsWith('warning-')) {
-    chrome.tabs.create({
-      url: 'https://sgd.dominiosistemas.com.br/sgpub/faces/filtro-listas.html?open_sgd_panel=true&target_tab=notices'
-    })
-    chrome.notifications.clear(notificationId)
-  }
+    // Se clicar no corpo da notificação de pendências, age como o botão "Visualizar"
+    if (notificationId.startsWith('pending-')) {
+      chrome.tabs.create({
+        url: 'https://sgd.dominiosistemas.com.br/sgpub/faces/filtro-listas.html?open_sgd_panel=true'
+      })
+      chrome.notifications.clear(notificationId)
+    }
+
+    // Se clicar no corpo da notificação de avisos (ou fallback de clique de botão), abre o aviso correspondente
+    if (notificationId.startsWith('warning-') || notificationId.startsWith('warning:')) {
+      if (notificationId.startsWith('warning:')) {
+        const parts = notificationId.split(':')
+        const warningId = parts[1]
+        chrome.tabs.create({
+          url: `https://sgd.dominiosistemas.com.br/sgsa/faces/noticias.html?open_warning_id=${warningId}`
+        })
+      } else {
+        chrome.tabs.create({
+          url: 'https://sgd.dominiosistemas.com.br/sgpub/faces/filtro-listas.html?open_sgd_panel=true&target_tab=notices'
+        })
+      }
+      chrome.notifications.clear(notificationId)
+    }
+  }, 150)
 })
 
 /**

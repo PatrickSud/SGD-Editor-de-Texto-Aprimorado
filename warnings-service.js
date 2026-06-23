@@ -310,16 +310,40 @@ async function recordWarningReceipt(warningId, userName) {
   const safeKey = safeFirebaseKey(userName);
   const now = new Date().toISOString();
   try {
-    const storage = await chrome.storage.local.get(['dbReceivedWarnings']);
+    const storage = await chrome.storage.local.get(['dbReceivedWarnings', 'cachedWarnings']);
     const dbReceived = storage.dbReceivedWarnings || {};
     if (dbReceived[warningId]) return;
+
+    let reason = 'Aviso geral ou não encontrado em cache';
+    const cached = storage.cachedWarnings || [];
+    const w = cached.find(x => x.id === warningId);
+    if (w) {
+      const wChannel = w.channel || 'Geral';
+      if (w.onlySelf) {
+        reason = `Aviso criado exclusivamente para o autor (Apenas para mim) no canal "${wChannel}"`;
+      } else if (w.targetUsers && Array.isArray(w.targetUsers) && w.targetUsers.length > 0) {
+        reason = `Direcionado especificamente para este colaborador no canal "${wChannel}"`;
+      } else {
+        reason = `Aviso geral enviado para o canal "${wChannel}"`;
+      }
+    }
+
+    const payload = {
+      name: userName.trim(),
+      timestamp: now,
+      reason: reason,
+      userAgent: navigator.userAgent,
+      version: chrome.runtime.getManifest().version,
+      isEditor: !!(window.sgdPermissions?.isEditor),
+      isDevMode: !!(window.sgdPermissions?.isDevMode)
+    };
 
     try {
       const swResponse = await chrome.runtime.sendMessage({
         action: 'WRITE_PERMISSIONS_ACTION',
         path: `/warning_metrics/${warningId}/receipts/${safeKey}.json`,
         method: 'PUT',
-        data: { name: userName.trim(), timestamp: now }
+        data: payload
       });
       if (swResponse && swResponse.success) {
         dbReceived[warningId] = true;
@@ -329,7 +353,7 @@ async function recordWarningReceipt(warningId, userName) {
       const response = await fetch(`${RTDB_BASE_URL}/warning_metrics/${warningId}/receipts/${safeKey}.json`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: userName.trim(), timestamp: now })
+        body: JSON.stringify(payload)
       });
 
       if (response.ok) {
@@ -347,16 +371,40 @@ async function recordWarningView(warningId, userName) {
   const safeKey = safeFirebaseKey(userName);
   const now = new Date().toISOString();
   try {
-    const storage = await chrome.storage.local.get(['dbViewedWarnings']);
+    const storage = await chrome.storage.local.get(['dbViewedWarnings', 'cachedWarnings']);
     const dbViewed = storage.dbViewedWarnings || {};
     if (dbViewed[warningId]) return;
+
+    let reason = 'Visualizado';
+    const cached = storage.cachedWarnings || [];
+    const w = cached.find(x => x.id === warningId);
+    if (w) {
+      const wChannel = w.channel || 'Geral';
+      if (w.onlySelf) {
+        reason = `Visualizado pelo autor do aviso (Apenas para mim) no canal "${wChannel}"`;
+      } else if (w.targetUsers && Array.isArray(w.targetUsers) && w.targetUsers.length > 0) {
+        reason = `Visualizado pelo colaborador direcionado no canal "${wChannel}"`;
+      } else {
+        reason = `Visualizado pelo colaborador inscrito no canal "${wChannel}"`;
+      }
+    }
+
+    const payload = {
+      name: userName.trim(),
+      timestamp: now,
+      reason: reason,
+      userAgent: navigator.userAgent,
+      version: chrome.runtime.getManifest().version,
+      isEditor: !!(window.sgdPermissions?.isEditor),
+      isDevMode: !!(window.sgdPermissions?.isDevMode)
+    };
 
     try {
       const swResponse = await chrome.runtime.sendMessage({
         action: 'WRITE_PERMISSIONS_ACTION',
         path: `/warning_metrics/${warningId}/views/${safeKey}.json`,
         method: 'PUT',
-        data: { name: userName.trim(), timestamp: now }
+        data: payload
       });
       if (swResponse && swResponse.success) {
         dbViewed[warningId] = true;
@@ -366,7 +414,7 @@ async function recordWarningView(warningId, userName) {
       const response = await fetch(`${RTDB_BASE_URL}/warning_metrics/${warningId}/views/${safeKey}.json`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: userName.trim(), timestamp: now })
+        body: JSON.stringify(payload)
       });
 
       if (response.ok) {

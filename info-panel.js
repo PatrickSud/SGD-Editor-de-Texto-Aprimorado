@@ -1870,11 +1870,13 @@ async function loadWarnings(sectionElement, forceRefresh = false) {
     if (currentUser && window.warningsService && activeTab === 'active') {
       warnings.forEach(w => {
         if (!w.isScheduled) {
-          if (typeof window.warningsService.recordWarningReceipt === 'function') {
-            window.warningsService.recordWarningReceipt(w.id, currentUser);
-          }
-          if (typeof window.warningsService.recordWarningView === 'function') {
-            window.warningsService.recordWarningView(w.id, currentUser);
+          if (typeof isUserRecipient === 'function' && isUserRecipient(w, currentUser)) {
+            if (typeof window.warningsService.recordWarningReceipt === 'function') {
+              window.warningsService.recordWarningReceipt(w.id, currentUser);
+            }
+            if (typeof window.warningsService.recordWarningView === 'function') {
+              window.warningsService.recordWarningView(w.id, currentUser);
+            }
           }
         }
       });
@@ -2839,6 +2841,76 @@ function createWarningCard(warning, metrics = {}) {
 /**
  * Abre modal com os detalhes de métricas de recebimento e visualização do aviso
  */
+function showUserWarningLogModal(data) {
+  const modalHtml = `
+    <div style="padding: 10px; font-family: 'Inter', system-ui, sans-serif;">
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <tr style="border-bottom: 1px solid var(--border-color, #e5e7eb);">
+          <td style="padding: 10px 8px; font-size: 13px; font-weight: 600; color: var(--text-color-muted); width: 140px;">Colaborador</td>
+          <td style="padding: 10px 8px; font-size: 13px; color: var(--text-color-main); font-weight: 700;">${escapeHTML(data.name)}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-color, #e5e7eb);">
+          <td style="padding: 10px 8px; font-size: 13px; font-weight: 600; color: var(--text-color-muted);">Registro</td>
+          <td style="padding: 10px 8px; font-size: 13px; color: var(--text-color-main);">${escapeHTML(data.type)}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-color, #e5e7eb);">
+          <td style="padding: 10px 8px; font-size: 13px; font-weight: 600; color: var(--text-color-muted);">Data/Hora</td>
+          <td style="padding: 10px 8px; font-size: 13px; color: var(--text-color-main);">${escapeHTML(data.time)}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-color, #e5e7eb);">
+          <td style="padding: 10px 8px; font-size: 13px; font-weight: 600; color: var(--text-color-muted); vertical-align: top;">Motivo</td>
+          <td style="padding: 10px 8px; font-size: 13px; color: var(--action-blue, #3b82f6); line-height: 1.4; font-weight: 600;">${escapeHTML(data.reason)}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-color, #e5e7eb);">
+          <td style="padding: 10px 8px; font-size: 13px; font-weight: 600; color: var(--text-color-muted);">Versão da Extensão</td>
+          <td style="padding: 10px 8px; font-size: 13px; color: var(--text-color-main);">${escapeHTML(data.ver)}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-color, #e5e7eb);">
+          <td style="padding: 10px 8px; font-size: 13px; font-weight: 600; color: var(--text-color-muted);">Perfil</td>
+          <td style="padding: 10px 8px; font-size: 13px; color: var(--text-color-main);">
+            <span style="margin-right: 12px;">Editor: <b>${escapeHTML(data.editor)}</b></span>
+            <span>Modo Dev: <b>${escapeHTML(data.dev)}</b></span>
+          </td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-color, #e5e7eb);">
+          <td style="padding: 10px 8px; font-size: 13px; font-weight: 600; color: var(--text-color-muted); vertical-align: top;">Navegador</td>
+          <td style="padding: 10px 8px; font-size: 11px; color: var(--text-color-muted); word-break: break-all; line-height: 1.4;">${escapeHTML(data.ua)}</td>
+        </tr>
+      </table>
+      
+      <div style="display: flex; justify-content: flex-end; margin-top: 15px;">
+        <button id="close-user-log-btn" class="ip-add-closing-btn" style="width: auto; padding: 6px 16px; font-size: 12px;">Fechar</button>
+      </div>
+    </div>
+  `;
+
+  const logModal = createModal(
+    'Detalhes do Registro de Notificação',
+    modalHtml,
+    null,
+    {
+      isManagementModal: false,
+      modalId: 'warning-user-log-modal',
+      showShareButton: false
+    }
+  );
+
+  const defaultActions = logModal.querySelector('.se-modal-actions');
+  if (defaultActions) defaultActions.remove();
+
+  logModal.style.zIndex = '10004'; // Maior que o modal de métricas (10003)
+
+  document.body.appendChild(logModal);
+
+  const closeBtn = logModal.querySelector('#close-user-log-btn');
+  const xBtn = logModal.querySelector('.se-close-modal-btn');
+  
+  const cleanup = () => logModal.remove();
+
+  if (closeBtn) closeBtn.addEventListener('click', cleanup);
+  if (xBtn) xBtn.addEventListener('click', cleanup);
+}
+
 function openWarningMetricsModal(warning, metrics) {
   const receipts = Object.values(metrics.receipts || {});
   const views = Object.values(metrics.views || {});
@@ -2864,21 +2936,59 @@ function openWarningMetricsModal(warning, metrics) {
   };
 
   const receiptsRows = receipts.length > 0
-    ? receipts.map(r => `
+    ? receipts.map(r => {
+        const uReason = r.reason || 'Sem informações de motivo (registro antigo).';
+        const uUa = r.userAgent || 'Não registrado';
+        const uVer = r.version || 'Não registrado';
+        const uEditor = r.isEditor ? 'Sim' : 'Não';
+        const uDev = r.isDevMode ? 'Sim' : 'Não';
+        return `
         <tr style="border-bottom: 1px solid var(--border-color, #e5e7eb);">
-          <td style="padding: 8px; font-size: 12px; color: var(--text-color-main);">${escapeHTML(r.name)}</td>
+          <td style="padding: 8px; font-size: 12px; color: var(--text-color-main);">
+            <span class="warn-metric-user-name" 
+                  style="cursor: pointer; text-decoration: underline; color: var(--primary-color, #6366f1); font-weight: 500;" 
+                  data-name="${escapeHTML(r.name)}" 
+                  data-time="${escapeHTML(formatDate(r.timestamp))}"
+                  data-reason="${escapeHTML(uReason)}"
+                  data-ua="${escapeHTML(uUa)}"
+                  data-ver="${escapeHTML(uVer)}"
+                  data-editor="${uEditor}"
+                  data-dev="${uDev}"
+                  data-type="Recebimento">
+              ${escapeHTML(r.name)}
+            </span>
+          </td>
           <td style="padding: 8px; font-size: 12px; color: var(--text-color-muted); text-align: right; white-space: nowrap;">${formatDate(r.timestamp)}</td>
         </tr>
-      `).join('')
+      `}).join('')
     : `<tr><td colspan="2" style="padding: 16px; font-size: 12px; color: var(--text-color-muted); text-align: center;">Nenhum registro de recebimento.</td></tr>`;
 
   const viewsRows = views.length > 0
-    ? views.map(v => `
+    ? views.map(v => {
+        const uReason = v.reason || 'Sem informações de motivo (registro antigo).';
+        const uUa = v.userAgent || 'Não registrado';
+        const uVer = v.version || 'Não registrado';
+        const uEditor = v.isEditor ? 'Sim' : 'Não';
+        const uDev = v.isDevMode ? 'Sim' : 'Não';
+        return `
         <tr style="border-bottom: 1px solid var(--border-color, #e5e7eb);">
-          <td style="padding: 8px; font-size: 12px; color: var(--text-color-main);">${escapeHTML(v.name)}</td>
+          <td style="padding: 8px; font-size: 12px; color: var(--text-color-main);">
+            <span class="warn-metric-user-name" 
+                  style="cursor: pointer; text-decoration: underline; color: var(--primary-color, #6366f1); font-weight: 500;" 
+                  data-name="${escapeHTML(v.name)}" 
+                  data-time="${escapeHTML(formatDate(v.timestamp))}"
+                  data-reason="${escapeHTML(uReason)}"
+                  data-ua="${escapeHTML(uUa)}"
+                  data-ver="${escapeHTML(uVer)}"
+                  data-editor="${uEditor}"
+                  data-dev="${uDev}"
+                  data-type="Visualização">
+              ${escapeHTML(v.name)}
+            </span>
+          </td>
           <td style="padding: 8px; font-size: 12px; color: var(--text-color-muted); text-align: right; white-space: nowrap;">${formatDate(v.timestamp)}</td>
         </tr>
-      `).join('')
+      `}).join('')
     : `<tr><td colspan="2" style="padding: 16px; font-size: 12px; color: var(--text-color-muted); text-align: center;">Nenhum registro de visualização.</td></tr>`;
 
   const modalHtml = `
@@ -2954,6 +3064,16 @@ function openWarningMetricsModal(warning, metrics) {
   modal.style.zIndex = '10003';
 
   document.body.appendChild(modal);
+
+  // Adiciona listener para cliques nos nomes de usuário
+  modal.querySelectorAll('.warn-metric-user-name').forEach(span => {
+    span.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      const dataset = span.dataset;
+      showUserWarningLogModal(dataset);
+    });
+  });
 
   const closeBtn = modal.querySelector('#close-metrics-btn');
   const xBtn = modal.querySelector('.se-close-modal-btn');
@@ -3554,6 +3674,16 @@ function openCreateWarningModal(existingWarning = null) {
 
     const isTargeted = modal.querySelector('#warn-is-targeted').checked
     const targetUsers = isTargeted ? selectedUsers : []
+
+    // Adiciona automaticamente o autor aos usuários direcionados caso ele não esteja na lista,
+    // garantindo que ele tenha acesso para visualização e controle do aviso.
+    if (isTargeted && targetUsers.length > 0 && author) {
+      const authorNormalized = author.trim().toLowerCase()
+      const hasAuthor = targetUsers.some(u => u.trim().toLowerCase() === authorNormalized)
+      if (!hasAuthor) {
+        targetUsers.push(author)
+      }
+    }
 
     const publishedAtInput = modal.querySelector('#warn-published-at').value
     const expiresAtInput = modal.querySelector('#warn-expires-at').value

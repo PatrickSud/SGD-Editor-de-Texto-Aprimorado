@@ -239,7 +239,7 @@ if (!document.getElementById('sgd-toast-styles-v9')) {
  */
 async function markWarningAsRead(id) {
   try {
-    const storage = await chrome.storage.local.get(['readWarnings', 'readWarningIds']);
+    const storage = await chrome.storage.local.get(['readWarnings', 'readWarningIds', 'cachedWarnings']);
     const read = storage.readWarnings || [];
     const readIds = storage.readWarningIds || [];
     
@@ -258,7 +258,15 @@ async function markWarningAsRead(id) {
       
       const currentUser = window.sgdPermissions?.currentUser;
       if (currentUser && window.warningsService?.recordWarningView) {
-        window.warningsService.recordWarningView(id, currentUser);
+        const cached = storage.cachedWarnings || [];
+        const w = cached.find(x => x.id === id);
+        if (w) {
+          if (typeof isUserRecipient === 'function' && isUserRecipient(w, currentUser)) {
+            window.warningsService.recordWarningView(id, currentUser);
+          }
+        } else {
+          window.warningsService.recordWarningView(id, currentUser);
+        }
       }
 
       if (typeof updateNotificationStatus === 'function') {
@@ -270,6 +278,8 @@ async function markWarningAsRead(id) {
     console.error('Erro ao marcar aviso como lido:', err);
   }
 }
+
+window.markWarningAsRead = markWarningAsRead;
 
 /**
  * Processa HTML seguro local para o modal de avisos (White-list simples)
@@ -442,6 +452,8 @@ function openWarningDetailModal(id, title, message, type, isRequired = false) {
     closeBtn.focus();
   });
 }
+
+window.openWarningDetailModal = openWarningDetailModal;
 
 /**
  * Cria e exibe um Toast moderno com pausa no hover e sincronização entre abas.
