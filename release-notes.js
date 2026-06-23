@@ -1,4 +1,10 @@
 const RELEASE_NOTES = {
+  '3.0.5.10': {
+    title: '✨ Segurança e Estabilidade de Avisos — Versão 3.0.5.10',
+    features: [
+      '<b>🔒 Segurança e Estabilidade:</b> Migradas todas as operações de banco de dados para o Service Worker sob MV3, adicionada validação para avisos direcionados impedindo o envio com lista de colaboradores vazia, implementado jitter (atraso aleatório de até 30s) no heartbeat diário de registro de atividade, e corrigida redeclaração duplicada da constante isEditor.'
+    ]
+  },
   '3.0.5.9': {
     title: '✨ Reformulação do Layout de Avisos — Versão 3.0.5.9',
     features: [
