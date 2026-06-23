@@ -806,6 +806,9 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
     : ''
 
   const isSscPage = window.location.pathname.includes('/sgsc/faces/ssc.html')
+  if (isSscPage) {
+  iniciarVerificacaoDuplicidadeSSC()
+  }
   const devMode = await isDevModeEnabled()
   const pinnedAIButtons = settings.pinnedAIButtons || []
 
@@ -2387,6 +2390,15 @@ async function initializeExtension() {
   observeForSscAttachmentField()
   observeForSolutionResponseRadio()
   observeForClassificationDefault()
+  observeForSscAttachmentField()
+  observeForSolutionResponseRadio()
+  observeForClassificationDefault()
+
+  if (window.location.pathname.includes('/sgsc/faces/ssc.html')) {
+    iniciarVerificacaoDuplicidadeSSC()
+  }
+
+  await checkVersionAndShowWhatsNew()
   await checkVersionAndShowWhatsNew()
 
   // Inicializa a verificação de pendências

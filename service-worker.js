@@ -50,7 +50,6 @@ const AI_CHAINS = {
   'ASSISTENTE - Manual Cadastro de SSs': '27921542-92d4-408a-a3cb-bb4372553e43',
   'ASSISTENTE: Cadastro de SA/NE': '3ef5f8c0-721e-4ee1-bf3a-48e37ec9f9e2',
   'LISTAGEM DE SANES E SAILS - GERAL': 'cb5f81b8-40eb-4f61-b155-e70a51525103',
-  'Analisador - Consultar SSCs recentes do mesmo cliente': '1c742809-5c60-4e38-9432-cd350906de7c',
   'APOIO AO SUPORTE - Boas práticas telefone/laptop': '4f0e3f37-e63f-4188-8c15-373eb75c77c8',
   'GERADOR DE RELATÓRIOS - Criar arquivo BGR com consultas SQL': 'c5c03c64-1577-4e1d-bf7a-61723a450449',
   'GERADOR DE RELATÓRIOS - Criação de Computados': '7459b824-1a6b-4548-9a3a-6716e1dc5a79',
