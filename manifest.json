@@ -35,6 +35,7 @@
         "editor-core.js",
         "features.js",
         "pending-service.js",
+        "duplicate-checker.js",
         "quick-messages.js",
         "forms-service.js",
         "system-status-service.js",
