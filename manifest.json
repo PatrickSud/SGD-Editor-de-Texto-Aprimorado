@@ -44,7 +44,8 @@
         "permissions-service.js",
         "info-panel.js",
         "release-notes.js",
-        "main.js"
+        "editor-ui.js",
+        "app.js"
       ],
       "css": [
         "styles/base.css",

@@ -223,7 +223,6 @@ const PICKER_EMOJIS = [
   { char: '😭', code: '&#128557;' },
   { char: '😱', code: '&#128561;' },
   { char: '😠', code: '&#128544;' },
-  { char: '😢', code: '&#128546;' },
   { char: '👋', code: '&#128075;' },
   { char: '👏', code: '&#128079;' },
   { char: '🙌', code: '&#128588;' },
@@ -302,3 +301,16 @@ const WARNING_CHANNELS = [
   'Fila 61',
   'Fila 62'
 ]
+
+// ─── FEATURE FLAGS ───────────────────────────────────────────────────────────
+// Para reativar, mude para true e recarregue a extensão.
+const FEATURE_SUGERIR_SAM = true
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── CONSTANTES DE TEMPORIZAÇÃO ──────────────────────────────────────────────
+const SGD_BUTTON_FEEDBACK_MS = 1500       // Duração do feedback visual em botões (ex: "Indisponível")
+const SGD_TOAST_FADE_MS = 300             // Deve coincidir com a duração da animação CSS sgdToastOut (0.3s)
+const SGD_TAB_NAV_INITIAL_DELAY_MS = 300  // Delay antes da primeira tentativa de navegar para uma aba
+const SGD_TAB_NAV_RETRY_MS = 200          // Intervalo entre tentativas de navegação de aba
+const SGD_CLICK_GUARD_DELAY_MS = 100      // Delay para registrar listener de clique-fora (evita capturar o clique de abertura)
+// ─────────────────────────────────────────────────────────────────────────────

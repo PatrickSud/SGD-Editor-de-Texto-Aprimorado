@@ -287,6 +287,10 @@ async function getSettings() {
       uiSettings: {
         ...DEFAULT_SETTINGS.uiSettings,
         ...(settings.uiSettings || {})
+      },
+      preferences: {
+        ...DEFAULT_SETTINGS.preferences,
+        ...(settings.preferences || {})
       }
     }
 
@@ -359,15 +363,6 @@ async function saveSettings(newSettings) {
     throw error // Propaga o erro para a UI apenas se não for contexto invalidado
   }
 }
-
-// /**
-//  * Helper específico para obter a chave de API do Gemini.
-//  * @returns {Promise<string>} A chave de API ou string vazia.
-//  */
-// async function getGeminiApiKey() {
-//   const settings = await getSettings()
-//   return settings.geminiApiKey || ''
-// }
 
 // --- GERENCIAMENTO DE TEMA (Atualizado para usar Settings) ---
 
@@ -462,9 +457,7 @@ async function getPreviewOrientationState() {
  * @param {'horizontal'|'vertical'} orientation - A orientação a ser salva.
  */
 async function savePreviewOrientationState(orientation) {
-  const settings = await getSettings()
-  settings.previewOrientation = orientation
-  await saveSettings(settings)
+  await saveSettings({ previewOrientation: orientation })
 }
 
 /**
@@ -1098,7 +1091,7 @@ async function getGreetingsAndClosings(classification = 'solution') {
       }
     }
 
-    // MIRAÇÃO: Se os dados estiverem no formato antigo (direto no objeto), move para 'solution'
+    // MIGRAÇÃO: Se os dados estiverem no formato antigo (direto no objeto), move para 'solution'
     if (rawData.greetings !== undefined || rawData.closings !== undefined) {
       console.log(
         'Editor SGD: Migrando dados de saudações para novo formato por classificação.'
