@@ -48,7 +48,7 @@ async function getWarnings(forceRefresh = false) {
           const isDevMode = !!(storage.infoDevMode);
           const isEditor = !!(storage.infoDevMode || storage.isCurrentUserEditor || window.sgdPermissions?.isEditor);
           const activeChannelsList = storage.warningChannels || [
-            'Geral', 'AT', 'Onvio', 'Onvio Processos/Messenger',
+            'Geral', 'AT', 'Onvio', 'Dominio Processos/Messenger',
             'Folha de pagamento', 'Escrita Fiscal', 'Contabilidade',
             'Serviços Digitais', 'Fila 61', 'Fila 62'
           ];

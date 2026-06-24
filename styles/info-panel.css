@@ -1334,3 +1334,19 @@
   box-shadow: var(--shadow-lg);
 }
 
+.ip-pause-order-badge {
+  background: linear-gradient(135deg, var(--action-orange) 0%, var(--action-orange-hover) 100%);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+
+

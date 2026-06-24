@@ -293,7 +293,7 @@ const WARNING_CHANNELS = [
   'Geral',
   'AT',
   'Onvio',
-  'Onvio Processos/Messenger',
+  'Dominio Processos/Messenger',
   'Folha de pagamento',
   'Escrita Fiscal',
   'Contabilidade',

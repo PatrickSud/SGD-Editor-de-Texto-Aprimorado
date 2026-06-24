@@ -28,6 +28,11 @@
     channels: []          // Lista de canais carregados dinamicamente
   }
 
+  function normalizeAllowedChannels(channels) {
+    if (!channels || !Array.isArray(channels)) return channels
+    return channels.map(c => c === 'Onvio Processos/Messenger' ? 'Dominio Processos/Messenger' : c)
+  }
+
   function getChannelsFallback() {
     return (window.sgdPermissions && window.sgdPermissions.channels && window.sgdPermissions.channels.length > 0)
       ? [...window.sgdPermissions.channels]
@@ -36,10 +41,11 @@
 
   function getViewerAllowedChannels(allowedChannels) {
     const allChs = getChannelsFallback()
-    if (!allowedChannels || !Array.isArray(allowedChannels) || allowedChannels.length >= allChs.length) {
+    const normalized = normalizeAllowedChannels(allowedChannels)
+    if (!normalized || !Array.isArray(normalized) || normalized.length >= allChs.length) {
       return ['Geral']
     }
-    return allowedChannels
+    return normalized
   }
 
   // ─── Captura do Nome e ID do Técnico Logado ──────────────────────────────────
@@ -193,7 +199,7 @@
         name: data.name || '',
         addedAt: data.addedAt || '',
         addedBy: data.addedBy || '',
-        allowedChannels: data.allowedChannels || getChannelsFallback(),
+        allowedChannels: normalizeAllowedChannels(data.allowedChannels) || getChannelsFallback(),
         role: data.role || 'comum',
         lastSeen: data.lastSeen || '',
         isEquipeAT: data.isEquipeAT === true
@@ -917,8 +923,27 @@
     }
   }
 
-  // Grupos de Visualizadores CRUD (Armazenamento Local)
+  // Grupos de Visualizadores CRUD (Firebase RTDB + Armazenamento Local Fallback)
   async function getViewerGroups() {
+    try {
+      const response = await callDatabaseRead(`${RTDB_BASE_URL}/permissions/viewer_groups.json`)
+      if (response.ok) {
+        const result = await response.json()
+        if (result && typeof result === 'object') {
+          const groups = Object.entries(result).map(([id, data]) => ({
+            id,
+            name: data.name || '',
+            viewers: data.viewers || []
+          }))
+          // Mantém o storage local sincronizado
+          await chrome.storage.local.set({ viewerGroups: groups })
+          return groups
+        }
+      }
+    } catch (e) {
+      console.warn('[SGD Permissions] Erro ao buscar grupos de visualizadores do Firebase RTDB, usando local:', e)
+    }
+    // Fallback local
     try {
       const local = await chrome.storage.local.get(['viewerGroups'])
       return local.viewerGroups || []
@@ -932,15 +957,21 @@
     if (!window.sgdPermissions.isEditor) return false
     const key = cleanFirebaseKey(name)
     try {
+      // 1. Salva no Firebase RTDB
+      const response = await callDatabaseWrite(`${RTDB_BASE_URL}/permissions/viewer_groups/${key}.json`, 'PUT', { name, viewers })
+      if (!response.ok) throw new Error('Falha ao salvar no Firebase')
+
+      // 2. Salva localmente para manter sincronizado
       const local = await chrome.storage.local.get(['viewerGroups'])
       let groups = local.viewerGroups || []
       groups = groups.filter(g => g.id !== key)
       groups.push({ id: key, name, viewers })
       await chrome.storage.local.set({ viewerGroups: groups })
-      await writeAuditLog('SAVE_VIEWER_GROUP_LOCAL', name, `Visualizadores: ${viewers.length} usuários`)
+
+      await writeAuditLog('SAVE_VIEWER_GROUP', name, `Visualizadores: ${viewers.length} usuários`)
       return true
     } catch (err) {
-      console.error('[SGD Permissions] Erro ao salvar grupo localmente:', err)
+      console.error('[SGD Permissions] Erro ao salvar grupo:', err)
       return false
     }
   }
@@ -948,14 +979,20 @@
   async function deleteViewerGroup(groupId) {
     if (!window.sgdPermissions.isEditor) return false
     try {
+      // 1. Remove do Firebase RTDB
+      const response = await callDatabaseWrite(`${RTDB_BASE_URL}/permissions/viewer_groups/${groupId}.json`, 'DELETE')
+      if (!response.ok) throw new Error('Falha ao excluir no Firebase')
+
+      // 2. Remove localmente para manter sincronizado
       const local = await chrome.storage.local.get(['viewerGroups'])
       let groups = local.viewerGroups || []
       groups = groups.filter(g => g.id !== groupId)
       await chrome.storage.local.set({ viewerGroups: groups })
-      await writeAuditLog('DELETE_VIEWER_GROUP_LOCAL', groupId)
+
+      await writeAuditLog('DELETE_VIEWER_GROUP', groupId)
       return true
     } catch (err) {
-      console.error('[SGD Permissions] Erro ao excluir grupo localmente:', err)
+      console.error('[SGD Permissions] Erro ao excluir grupo:', err)
       return false
     }
   }
@@ -1123,6 +1160,98 @@
     )
   }
 
+  function getTabsConfigDiffSummary(oldConfig, newConfig) {
+    if (!oldConfig || !oldConfig.categories) return 'Configuração inicial das guias salva'
+    if (!newConfig || !newConfig.categories) return 'Configuração das guias limpa/esvaziada'
+    
+    const changes = []
+    const oldCats = oldConfig.categories
+    const newCats = newConfig.categories
+    
+    const oldCatNames = oldCats.map(c => c.category)
+    const newCatNames = newCats.map(c => c.category)
+    
+    const addedCats = newCatNames.filter(n => !oldCatNames.includes(n))
+    const removedCats = oldCatNames.filter(n => !newCatNames.includes(n))
+    
+    if (addedCats.length > 0) {
+      changes.push(`Adicionou seções: ${addedCats.join(', ')}`)
+    }
+    if (removedCats.length > 0) {
+      changes.push(`Removeu seções: ${removedCats.join(', ')}`)
+    }
+    
+    oldCats.forEach(oldCat => {
+      const newCat = newCats.find(c => c.category === oldCat.category)
+      if (newCat) {
+        const oldItems = oldCat.items || []
+        const newItems = newCat.items || []
+        
+        const oldTitles = oldItems.map(i => i.title).filter(Boolean)
+        const newTitles = newItems.map(i => i.title).filter(Boolean)
+        
+        const addedItems = newTitles.filter(t => !oldTitles.includes(t))
+        const removedItems = oldTitles.filter(t => !newTitles.includes(t))
+        
+        if (addedItems.length > 0) {
+          changes.push(`Na seção "${oldCat.category}", adicionou: ${addedItems.join(', ')}`)
+        }
+        if (removedItems.length > 0) {
+          changes.push(`Na seção "${oldCat.category}", removeu: ${removedItems.join(', ')}`)
+        }
+        
+        oldItems.forEach(oldItem => {
+          const newItem = newItems.find(i => i.title === oldItem.title)
+          if (newItem) {
+            const itemChanges = []
+            if (oldItem.description !== newItem.description) itemChanges.push('descrição')
+            if (oldItem.url !== newItem.url) itemChanges.push('URL')
+            if (oldItem.type !== newItem.type) itemChanges.push('tipo')
+            if (oldItem.icon !== newItem.icon) itemChanges.push('ícone')
+            if (oldItem.content !== newItem.content) itemChanges.push('conteúdo HTML')
+            
+            if (itemChanges.length > 0) {
+              changes.push(`No card "${oldItem.title}" (${oldCat.category}), modificou: ${itemChanges.join(', ')}`)
+            }
+          }
+        })
+      }
+    })
+    
+    if (changes.length === 0) return 'Configuração salva sem alterações'
+    const summary = changes.join('; ')
+    return summary.length > 400 ? summary.substring(0, 397) + '...' : summary
+  }
+
+  async function saveTabsConfig(configData) {
+    if (!window.sgdPermissions.isMaster) {
+      console.warn('[SGD Permissions] Acesso negado: apenas editores master podem alterar configuração de guias.')
+      return false
+    }
+    try {
+      // Recupera configuração antiga para comparar
+      const stored = await chrome.storage.local.get(['cachedFormsData'])
+      const oldConfig = stored.cachedFormsData
+      const diffSummary = getTabsConfigDiffSummary(oldConfig, configData)
+
+      const response = await callDatabaseWrite(`${RTDB_BASE_URL}/permissions/forms_config.json`, 'PUT', configData)
+      if (!response.ok) throw new Error('Falha ao atualizar configuração das guias')
+      
+      await writeAuditLog('UPDATE_TABS_CONFIG', 'configuração de guias', diffSummary)
+      await invalidateFormsCache()
+      return true
+    } catch (error) {
+      console.error('[SGD Permissions] Erro ao salvar configuração de guias:', error)
+      return false
+    }
+  }
+
+  async function invalidateFormsCache() {
+    await chrome.storage.local.set({ 
+      cachedFormsCacheTime: 0 
+    })
+  }
+
   // ─── API Pública ──────────────────────────────────────────────────────────────
   window.sgdPermissions.init = initPermissions
   window.sgdPermissions.getEditorsList = getEditorsList
@@ -1147,6 +1276,9 @@
   window.sgdPermissions.getAuditLogs = getAuditLogs
   window.sgdPermissions.writeAuditLog = writeAuditLog
   window.sgdPermissions.toggleUserEquipeAT = toggleUserEquipeAT
+  window.sgdPermissions.saveTabsConfig = saveTabsConfig
+  window.sgdPermissions.invalidateFormsCache = invalidateFormsCache
+
   window.sgdPermissions.refreshEditors = async () => {
     const list = await getEditorsList(true)
     window.sgdPermissions.editorsList = list

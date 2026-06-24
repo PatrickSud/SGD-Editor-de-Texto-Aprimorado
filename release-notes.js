@@ -1,4 +1,11 @@
 const RELEASE_NOTES = {
+  '3.0.5.11': {
+    title: '✨ Ordem de Pausa e Ajuste de Presença — Versão 3.0.5.11',
+    features: [
+      '<b>👥 Ordem de Pausa e Presença:</b> Adicionado controle de ordem de pausa em tempo real com coloração dinâmica (do vermelho escuro ao verde) para técnicos no status Fora da Fila, e removido o destaque em vermelho e contagem de pausa para usuários desconectados.',
+      '<b>✏️ Edição Visual das Guias (Master):</b> Adicionado editor visual interativo no canto superior direito das guias Formulários, AI Chains e Extensões para Editores Master, permitindo criar, excluir, reordenar (🔽/🔼) e modificar seções e cards com validação inteligente de URLs e alerta de alterações não salvas.'
+    ]
+  },
   '3.0.5.10': {
     title: '✨ Segurança e Estabilidade de Avisos — Versão 3.0.5.10',
     features: [

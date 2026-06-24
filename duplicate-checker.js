@@ -169,6 +169,18 @@ function abrirModalResultadosSSC(resultados) {
 let verificacaoDuplicidadeEmAndamento = false
 
 async function iniciarVerificacaoDuplicidadeSSC() {
+  // Verifica se a funcionalidade está habilitada nas configurações do usuário
+  try {
+    const settings = await getSettings()
+    if (!settings?.preferences?.enableDuplicateChecker) {
+      console.log('[DEBUG] Verificação de duplicidade desabilitada nas configurações.')
+      return
+    }
+  } catch (e) {
+    console.error('[Verificador de Duplicidade] Erro ao carregar configurações:', e)
+    return
+  }
+
   // Impede que uma nova execução comece enquanto outra ainda está em andamento
   if (verificacaoDuplicidadeEmAndamento) {
     console.log('[DEBUG] Verificação já em andamento, ignorando nova chamada.')

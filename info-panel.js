@@ -263,6 +263,9 @@ async function openInfoPanel(initialTabId = 'pending') {
             searchInput.dataset.listenerSet = 'true'
           }
         }
+        if (targetId === 'extensions') {
+          loadForms(targetSection, 'extensions')
+        }
 
         // Lógica de Busca e Ordenação para Equipe AT (Team Status)
         if (targetId === 'team-status') {
@@ -632,6 +635,54 @@ async function openInfoPanel(initialTabId = 'pending') {
       '<strong>⚠️ Modo Desenvolvedor Ativo:</strong> Você tem acesso a recursos experimentais e de edição.'
     modal.querySelector('.ip-content-area').appendChild(devMessage)
   }
+
+  // Delegated listener for toggling edit mode of editable tabs (forms, ai, extensions)
+  modal.addEventListener('click', async (e) => {
+    const editBtn = e.target.closest('.ip-toggle-edit-tab-btn')
+    if (editBtn) {
+      e.stopPropagation()
+      const tab = editBtn.dataset.tab
+      const targetSectionId = tab === 'ai' ? 'ai-chains' : (tab === 'forms' ? 'forms' : 'extensions')
+      const targetSection = modal.querySelector(`#ip-section-${targetSectionId}`)
+      if (targetSection) {
+        window.sgdPermissions.editStates = window.sgdPermissions.editStates || {}
+        const isEditing = !window.sgdPermissions.editStates[tab]
+        window.sgdPermissions.editStates[tab] = isEditing
+        
+        if (isEditing) {
+          try {
+            const currentData = await fetchFormsData()
+            window.sgdPermissions.tempFormsConfig = JSON.parse(JSON.stringify(currentData))
+            
+            // Tag each category with its index and original tab mapping
+            window.sgdPermissions.tempFormsConfig.categories.forEach((cat, idx) => {
+              cat.originalIndex = idx
+              const title = cat.category.toLowerCase()
+              const isExtensionsCategory = title.includes('extensões') || title.includes('extensions') || title.includes('apps')
+              const isAiCategory = !isExtensionsCategory && (
+                title.includes('ai') || title.includes('chain') || title.includes('assistente') || title.includes('apoio') ||
+                title.includes('filas') || title.includes('módulo') || title.includes('folha') || title.includes('fiscal') ||
+                title.includes('contabilidade') || title.includes('relatório') || title.includes('utilitário') ||
+                title === 'outros' || title === 'at' ||
+                (cat.items && cat.items.some(item => item.url && (item.url.includes('aiplatform') || item.url.includes('ai-chains'))))
+              )
+              
+              if (isExtensionsCategory) cat.tempTab = 'extensions'
+              else if (isAiCategory) cat.tempTab = 'ai'
+              else cat.tempTab = 'forms'
+            })
+            window.sgdPermissions.originalFormsConfig = JSON.parse(JSON.stringify(window.sgdPermissions.tempFormsConfig))
+          } catch (err) {
+            console.error('Erro ao clonar configurações para edição:', err)
+            window.sgdPermissions.editStates[tab] = false
+            return
+          }
+        }
+        
+        loadForms(targetSection, tab)
+      }
+    }
+  })
 
   document.body.appendChild(modal)
 
@@ -2162,6 +2213,39 @@ async function loadTeamStatus(sectionElement, forceRefresh = false, isAutoRefres
       }
     }
 
+    // --- CÁLCULO DE ORDEM GLOBAL DE PAUSAS ---
+    const pausedMembers = allTeamMembers
+      .filter(m => {
+        const statusStr = (m.currentStatus || '').trim().toLowerCase()
+        const presenceStr = (m.presence || '').trim().toLowerCase()
+        const isNaFila =
+          statusStr === 'conversando' ||
+          statusStr === 'ocioso' ||
+          statusStr.includes('na fila')
+        const isSemStatus = !statusStr
+        const isDisconnectedForaFila = presenceStr.includes('desconectad') && (statusStr.includes('fora da fila') || statusStr.includes('fora fila'))
+        return !isNaFila && !isSemStatus && !isDisconnectedForaFila
+      })
+      .sort((a, b) => {
+        const timeA = a.duration || '00:00:00'
+        const timeB = b.duration || '00:00:00'
+        return timeB.localeCompare(timeA) // Longest duration first (paused first)
+      })
+
+    const pauseOrderMap = new Map()
+    pausedMembers.forEach((m, index) => {
+      const key = m.name?.trim().toLowerCase().replace(/\s+/g, ' ') || ''
+      pauseOrderMap.set(key, index + 1)
+    })
+
+    // Atribui a ordem dos pauses global
+    allTeamMembers.forEach(m => {
+      const key = m.name?.trim().toLowerCase().replace(/\s+/g, ' ') || ''
+      m.pauseOrder = pauseOrderMap.get(key) || null
+    })
+
+    window.totalPausedGlobal = pausedMembers.length
+
     // --- APLICAÇÃO DE FILTROS E ORDENAÇÃO ---
 
     // 1. Busca preferências (PIN, HIDE, WATCH, VIEW_MODE)
@@ -2210,15 +2294,17 @@ async function loadTeamStatus(sectionElement, forceRefresh = false, isAutoRefres
     if (statusFilterValue !== 'all') {
       filteredMembers = filteredMembers.filter(m => {
         const status = (m.currentStatus || '').trim().toLowerCase()
+        const presence = (m.presence || '').trim().toLowerCase()
         const isNaFila =
           status === 'conversando' ||
           status === 'ocioso' ||
           status.includes('na fila')
         const isSemStatus = !status
+        const isDisconnectedForaFila = presence.includes('desconectad') && (status.includes('fora da fila') || status.includes('fora fila'))
 
         if (statusFilterValue === 'na-fila') return isNaFila
-        if (statusFilterValue === 'sem-status') return isSemStatus
-        if (statusFilterValue === 'fora-fila') return !isNaFila && !isSemStatus
+        if (statusFilterValue === 'sem-status') return isSemStatus || isDisconnectedForaFila
+        if (statusFilterValue === 'fora-fila') return !isNaFila && !isSemStatus && !isDisconnectedForaFila
         return true
       })
     }
@@ -2238,11 +2324,21 @@ async function loadTeamStatus(sectionElement, forceRefresh = false, isAutoRefres
     const sortValue = sortSelect?.value || 'not-ready'
 
     filteredMembers.sort((a, b) => {
-      // Prioridade global: Fixados (Pinned) -> Resto -> Ocultos (Hidden)
+      const statusA = (a.currentStatus || '').trim().toLowerCase()
+      const presenceA = (a.presence || '').trim().toLowerCase()
+      const isDiscA = presenceA.includes('desconectad') && (statusA.includes('fora da fila') || statusA.includes('fora fila'))
+
+      const statusB = (b.currentStatus || '').trim().toLowerCase()
+      const presenceB = (b.presence || '').trim().toLowerCase()
+      const isDiscB = presenceB.includes('desconectad') && (statusB.includes('fora da fila') || statusB.includes('fora fila'))
+
+      // Prioridade global: Fixados (Pinned) -> Resto -> Desconectados Fora Fila -> Ocultos (Hidden)
       if (a.isPinned && !b.isPinned) return -1
       if (!a.isPinned && b.isPinned) return 1
       if (a.isHidden && !b.isHidden) return 1
       if (!a.isHidden && b.isHidden) return -1
+      if (isDiscA && !isDiscB) return 1
+      if (!isDiscA && isDiscB) return -1
 
       // Dentro de cada categoria, aplica a ordenação escolhida
       if (sortValue === 'name') {
@@ -2252,6 +2348,16 @@ async function loadTeamStatus(sectionElement, forceRefresh = false, isAutoRefres
         const timeA = a.duration || '00:00:00'
         const timeB = b.duration || '00:00:00'
         return timeB.localeCompare(timeA)
+      } else if (sortValue === 'pause-order') {
+        const hasA = a.pauseOrder !== null
+        const hasB = b.pauseOrder !== null
+        if (hasA && hasB) {
+          return a.pauseOrder - b.pauseOrder
+        }
+        if (hasA && !hasB) return -1
+        if (!hasA && hasB) return 1
+        // Fallback para alfabética se nenhum estiver pausado
+        return a.name.localeCompare(b.name)
       } else {
         // Padrão: Not Ready (%)
         return (b.percentNotReady || 0) - (a.percentNotReady || 0)
@@ -2287,8 +2393,9 @@ async function loadTeamStatus(sectionElement, forceRefresh = false, isAutoRefres
     filteredMembers.forEach(m => {
       const status = (m.currentStatus || '').trim()
       const statusLower = status.toLowerCase()
+      const presenceLower = (m.presence || '').trim().toLowerCase()
 
-      if (!status) {
+      if (!status || (presenceLower.includes('desconectad') && (statusLower.includes('fora da fila') || statusLower.includes('fora fila')))) {
         countSemStatus++
       } else if (
         statusLower === 'conversando' ||
@@ -2342,22 +2449,39 @@ function createTeamMemberCard(member) {
   const statusEmoji =
     window.teamService?.getTeamStatusEmoji(member.status) || '⚪'
 
-  // Define a cor da porcentagem baseado na gravidade
-  let percentColor = 'var(--action-green)' // Padrão: verde
-  if (member.percentNotReady > 20) {
-    percentColor = 'var(--action-red)'
-  } else if (member.percentNotReady > 16) {
-    percentColor = 'var(--action-yellow)'
-  }
-
   // Verifica status Fora da Fila
   const statusStr = (member.currentStatus || '').trim().toLowerCase()
+  const presenceStr = (member.presence || '').trim().toLowerCase()
   const isNaFila =
     statusStr === 'conversando' ||
     statusStr === 'ocioso' ||
     statusStr.includes('na fila')
   const isSemStatus = !statusStr
-  const isForaFila = !isNaFila && !isSemStatus
+  
+  // Custom check: Disconnected and Fora da Fila
+  const isDisconnectedForaFila = presenceStr.includes('desconectad') && (statusStr.includes('fora da fila') || statusStr.includes('fora fila'))
+  const isForaFila = !isNaFila && !isSemStatus && !isDisconnectedForaFila
+
+  // Define a cor da porcentagem baseado na gravidade
+  let percentColor = 'var(--action-green)' // Padrão: verde
+  if (isDisconnectedForaFila) {
+    percentColor = 'var(--text-color-muted)' // Cinza lateral esquerda para desconectados fora da fila
+  } else if (member.percentNotReady > 20) {
+    percentColor = 'var(--action-red)'
+  } else if (member.percentNotReady > 16) {
+    percentColor = 'var(--action-yellow)'
+  }
+
+  let badgeStyle = ''
+  if (member.pauseOrder && window.totalPausedGlobal) {
+    const total = window.totalPausedGlobal
+    const order = member.pauseOrder
+    const t = total > 1 ? (order - 1) / (total - 1) : 0
+    const h = Math.round(t * 120) // 0 (vermelho) a 120 (verde)
+    const s = Math.round(80 - t * 15) // 80% a 65%
+    const l = Math.round(35 + t * 5) // 35% a 40%
+    badgeStyle = `style="background: hsl(${h}, ${s}%, ${l}%) !important;"`
+  }
 
   return `
     <div class="ip-card ip-team-member-card ${member.isPinned ? 'is-pinned' : ''} ${member.isHidden ? 'is-dimmed' : ''} ${isForaFila ? 'is-fora-fila' : ''}" 
@@ -2368,8 +2492,11 @@ function createTeamMemberCard(member) {
         
         <!-- Linha 1: Nome e Badge -->
         <div style="display: flex; align-items: flex-start; justify-content: space-between;">
-           <div style="font-weight: 600; font-size: 13px; color: var(--text-color-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%;" title="${escapeHTML(member.name)}">
-              ${escapeHTML(member.name)}
+           <div style="font-weight: 600; font-size: 13px; color: var(--text-color-main); display: flex; align-items: center; gap: 4px; overflow: hidden; max-width: 70%;">
+              <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHTML(member.name)}">
+                 ${escapeHTML(member.name)}
+              </span>
+              ${member.pauseOrder ? `<span class="ip-pause-order-badge" ${badgeStyle} title="Ordem de pausa: ${member.pauseOrder}º a pausar">#${member.pauseOrder}</span>` : ''}
            </div>
            <span class="ip-card-badge ${badgeClass}" style="font-size: 10px; padding: 2px 6px; flex-shrink: 0;">
               ${statusEmoji} ${escapeHTML(member.status)}
@@ -4141,10 +4268,11 @@ function getSectionContent(sectionId) {
 
             <div style="display: flex; gap: 4px; align-items: center;">
               <span style="font-size: 11px; color: var(--text-color-muted);">Ordenar:</span>
-              <select id="team-sort-filter" class="ip-filter-select compact" style="width: 110px;">
+              <select id="team-sort-filter" class="ip-filter-select compact" style="width: 130px;">
                 <option value="not-ready">📊 Indisponibilidade</option>
                 <option value="name">🔤 Alfabética</option>
                 <option value="time">⏱️ Tempo</option>
+                <option value="pause-order">⏸️ Ordem de Pausa</option>
               </select>
             </div>
             <button id="toggle-team-view-btn" class="action-btn secondary-btn compact" title="Alternar Visualização (Compacta/Detalhada)">
@@ -4198,77 +4326,16 @@ function getSectionContent(sectionId) {
 
     case 'extensions':
       return `
-        <p class="ip-section-desc">Extensões recomendadas e ferramentas úteis para produtividade.</p>
-        <div class="ip-grid">
-          <div class="ip-card">
-            <div class="ip-card-header">
-              <h4 class="ip-card-title">Sider - Assistente de IA</h4>
-            </div>
-            <div class="ip-card-content">
-              Assistente de IA para ajudar com a escrita e melhorar a produtividade.
-              <a
-                href="https://chromewebstore.google.com/detail/sider-chatgpt-sidebar-%2B-g/difoiogjjojoaoomphldepapgpbgkhkb"
-                class="ip-link-btn"
-                target="_blank"
-                rel="noopener noreferrer"
-              >Instalar</a>
-            </div>
-          </div>
-          <div class="ip-card">
-            <div class="ip-card-header">
-              <h4 class="ip-card-title">LanguageTool - Corretor inteligente</h4>
-            </div>
-            <div class="ip-card-content">
-              Corretor gramatical e de estilo para melhorar a qualidade dos textos.
-              <a
-                href="https://chromewebstore.google.com/detail/ai-grammar-checker-paraph/oldceeleldhonbafppcapldpdifcinji"
-                class="ip-link-btn"
-                target="_blank"
-                rel="noopener noreferrer"
-              >Instalar</a>
-            </div>
-          </div>
-          <div class="ip-card">
-            <div class="ip-card-header">
-              <h4 class="ip-card-title">aText</h4>
-            </div>
-            <div class="ip-card-content">
-              Ferramenta de expansão de texto e automação.
-              <a
-                href="https://www.trankynam.com/atext/"
-                class="ip-link-btn"
-                target="_blank"
-                rel="noopener noreferrer"
-              >Instalar</a>
-            </div>
-          </div>
-          <div class="ip-card">
-            <div class="ip-card-header">
-              <h4 class="ip-card-title">Assistente Técnico</h4>
-            </div>
-            <div class="ip-card-content">
-              Automatize instalações e atualizações da Domínio Sistemas.
-              <a
-                href="https://github.com/PatrickSud/assistente-tecnico/releases/latest/download/Assistente_Tecnico.exe"
-                class="ip-link-btn"
-                target="_blank"
-                rel="noopener noreferrer"
-              >Instalar</a>
-            </div>
-          </div>
-          <div class="ip-card">
-            <div class="ip-card-header">
-              <h4 class="ip-card-title">Lightshot</h4>
-            </div>
-            <div class="ip-card-content">
-              Captura de tela rápida e fácil com ferramentas de edição integradas.
-              <a
-                href="https://app.prntscr.com/build/setup-lightshot.exe"
-                class="ip-link-btn"
-                target="_blank"
-                rel="noopener noreferrer"
-              >Instalar</a>
-            </div>
+        <div class="ip-section-header-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px;">
+          <p class="ip-section-desc" style="margin: 0;">Extensões recomendadas e ferramentas úteis para produtividade.</p>
+          ${window.sgdPermissions && window.sgdPermissions.isMaster ? `
+            <button class="ip-toggle-edit-tab-btn" data-tab="extensions" style="background: none; border: none; font-size: 16px; cursor: pointer; padding: 4px 8px; border-radius: 4px; display: flex; align-items: center; gap: 4px; opacity: 0.7; transition: all 0.2s ease-in-out;" onmouseover="this.style.opacity='1'; this.style.transform='scale(1.15)';" onmouseout="this.style.opacity='0.7'; this.style.transform='scale(1)';" title="Editar esta guia">✏️</button>
+          ` : ''}
+        </div>
+        <div id="extensions-container" class="ip-forms-container">
+          <div class="ip-loading-container">
+            <div class="ip-spinner"></div>
+            <span>Carregando extensões...</span>
           </div>
         </div>
       `
@@ -4320,30 +4387,40 @@ function getSectionContent(sectionId) {
 
     case 'ai-chains':
       return `
-         <p class="ip-section-desc">Assistentes inteligentes e padrões de fluxos.</p>
-         <div class="ip-pending-controls" style="margin-bottom: 12px; display: flex; gap: 8px;">
-           <div class="ip-search-wrapper" style="flex: 1; display: flex; align-items: center; gap: 8px;">
-             <span class="ip-search-icon">🔍</span>
-             <input type="text" id="ai-chains-search" placeholder="Buscar assistente..." class="ip-filter-input compact" style="flex: 1;">
-           </div>
-         </div>
-         <div id="ai-chains-container" class="ip-forms-container">
-           <div class="ip-loading-container">
-             <div class="ip-spinner"></div>
-             <span>Carregando assistentes...</span>
-           </div>
-         </div>
+        <div class="ip-section-header-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px;">
+          <p class="ip-section-desc" style="margin: 0;">Assistentes inteligentes e padrões de fluxos.</p>
+          ${window.sgdPermissions && window.sgdPermissions.isMaster ? `
+            <button class="ip-toggle-edit-tab-btn" data-tab="ai" style="background: none; border: none; font-size: 16px; cursor: pointer; padding: 4px 8px; border-radius: 4px; display: flex; align-items: center; gap: 4px; opacity: 0.7; transition: all 0.2s ease-in-out;" onmouseover="this.style.opacity='1'; this.style.transform='scale(1.15)';" onmouseout="this.style.opacity='0.7'; this.style.transform='scale(1)';" title="Editar esta guia">✏️</button>
+          ` : ''}
+        </div>
+        <div class="ip-pending-controls" style="margin-bottom: 12px; display: flex; gap: 8px;">
+          <div class="ip-search-wrapper" style="flex: 1; display: flex; align-items: center; gap: 8px;">
+            <span class="ip-search-icon">🔍</span>
+            <input type="text" id="ai-chains-search" placeholder="Buscar assistente..." class="ip-filter-input compact" style="flex: 1;">
+          </div>
+        </div>
+        <div id="ai-chains-container" class="ip-forms-container">
+          <div class="ip-loading-container">
+            <div class="ip-spinner"></div>
+            <span>Carregando assistentes...</span>
+          </div>
+        </div>
       `
 
     case 'forms':
       return `
-         <p class="ip-section-desc">Links rápidos para formulários e documentos internos.</p>
-         <div id="forms-container" class="ip-forms-container">
-           <div class="ip-loading-container">
-             <div class="ip-spinner"></div>
-             <span>Carregando formulários...</span>
-           </div>
-         </div>
+        <div class="ip-section-header-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px;">
+          <p class="ip-section-desc" style="margin: 0;">Links rápidos para formulários e documentos internos.</p>
+          ${window.sgdPermissions && window.sgdPermissions.isMaster ? `
+            <button class="ip-toggle-edit-tab-btn" data-tab="forms" style="background: none; border: none; font-size: 16px; cursor: pointer; padding: 4px 8px; border-radius: 4px; display: flex; align-items: center; gap: 4px; opacity: 0.7; transition: all 0.2s ease-in-out;" onmouseover="this.style.opacity='1'; this.style.transform='scale(1.15)';" onmouseout="this.style.opacity='0.7'; this.style.transform='scale(1)';" title="Editar esta guia">✏️</button>
+          ` : ''}
+        </div>
+        <div id="forms-container" class="ip-forms-container">
+          <div class="ip-loading-container">
+            <div class="ip-spinner"></div>
+            <span>Carregando formulários...</span>
+          </div>
+        </div>
       `
 
     case 'pending':
@@ -4684,12 +4761,12 @@ async function loadAccessControl(sectionElement) {
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div style="display: flex; align-items: center; gap: 8px; position: relative;">
               <input type="checkbox" class="ac-viewer-select-checkbox" id="ac-viewer-cb-${escapeHTML(viewer.id)}" data-viewer-id="${escapeHTML(viewer.id)}" ${isCheckedInGroup ? 'checked' : ''}>
-              <label for="ac-viewer-cb-${escapeHTML(viewer.id)}" style="margin: 0; cursor: pointer; display: flex; flex-direction: column; padding-left: 26px; justify-content: center; position: relative; min-height: 32px;">
+              <label for="ac-viewer-cb-${escapeHTML(viewer.id)}" style="margin: 0; cursor: pointer; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding-left: 26px; position: relative; min-height: 24px;">
                 <span class="ip-access-editor-name" style="font-weight: 500; font-size: 13px; color: var(--text-color-main); display: flex; align-items: center; gap: 4px;">
                   👁️ ${escapeHTML(viewer.name)}
                 </span>
-                <span class="ip-access-editor-meta" style="display: block; font-size: 11px; color: var(--text-color-muted); margin-top: 2px;">
-                  Primeiro acesso em ${addedDate}
+                <span class="ip-access-editor-meta" style="font-size: 11px; color: var(--text-color-muted);">
+                  (Primeiro acesso em ${addedDate})
                 </span>
               </label>
             </div>
@@ -4809,6 +4886,7 @@ async function loadAccessControl(sectionElement) {
             </button>
           ` : ''}
           ${isMaster ? `
+            <button id="ac-edit-tabs-btn" class="action-btn secondary-btn compact" title="Editar conteúdo das guias" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">📝 Editar Guias</button>
             <button id="ac-config-channels-btn" class="action-btn secondary-btn compact" title="Configurar canais disponíveis" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">⚙️ Canais</button>
             <button id="ac-audit-logs-btn" class="action-btn secondary-btn compact" title="Ver logs de auditoria" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">📋 Auditoria</button>
           ` : ''}
@@ -4821,26 +4899,35 @@ async function loadAccessControl(sectionElement) {
 
       <div style="margin: 16px 0; border-top: 1px solid var(--border-color);"></div>
 
-      <!-- Seção de Editores com busca dedicada -->
-      <div style="margin-bottom: 12px;">
-        <strong style="font-size: 14px; color: var(--text-color-main);">✏️ Editores (${editors.length})</strong>
-      </div>
-      <div style="margin-bottom: 12px;">
-        <input 
-          type="text" 
-          id="ac-search-editors-input" 
-          placeholder="🔎 Pesquisar editor por nome..." 
-          class="ip-filter-input" 
-          style="width: 100%; padding: 8px 12px; font-size: 13px; border-radius: var(--border-radius-sm, 4px); border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;"
-        >
-      </div>
+      <!-- Seção de Editores com busca dedicada (Recolhível) -->
+      <div class="ac-editors-section" style="margin-top: 10px; padding: 12px; background: var(--background-secondary, #f3f4f6); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm, 4px);">
+        <div id="ac-toggle-editors-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
+          <strong style="font-size: 13px; color: var(--text-color-main); display: flex; align-items: center; gap: 6px;">
+            ✏️ Editores (${editors.length})
+            ${pendingRequestsHtml ? `<span class="ac-pending-badge" style="background: var(--action-red, #ef4444); color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; animation: pulse-soft 2s infinite;" title="Existem solicitações de Modo Dev pendentes!">⚠️ Novo Pedido DEV</span>` : ''}
+          </strong>
+          <span id="ac-editors-arrow" style="font-size: 11px; color: var(--text-color-muted); font-weight: 600;">▶ Expandir</span>
+        </div>
 
-      <div id="ip-editors-list" style="margin-bottom: 16px;">
-        ${pendingRequestsHtml}
-        ${editors.length > 0
-          ? editors.map(renderEditorRow).join('')
-          : '<p style="color: var(--text-color-muted); font-size: 13px; text-align: center; padding: 16px 0;">Nenhum editor cadastrado ainda.</p>'
-        }
+        <div id="ac-editors-content" style="display: none; margin-top: 10px; border-top: 1px dashed var(--border-color); padding-top: 10px;">
+          <div style="margin-bottom: 12px;">
+            <input 
+              type="text" 
+              id="ac-search-editors-input" 
+              placeholder="🔎 Pesquisar editor por nome..." 
+              class="ip-filter-input" 
+              style="width: 100%; padding: 8px 12px; font-size: 13px; border-radius: var(--border-radius-sm, 4px); border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;"
+            >
+          </div>
+
+          <div id="ip-editors-list" style="margin-bottom: 8px;">
+            ${pendingRequestsHtml}
+            ${editors.length > 0
+              ? editors.map(renderEditorRow).join('')
+              : '<p style="color: var(--text-color-muted); font-size: 13px; text-align: center; padding: 16px 0;">Nenhum editor cadastrado ainda.</p>'
+            }
+          </div>
+        </div>
       </div>
 
       <div style="margin: 20px 0; border-top: 1px solid var(--border-color);"></div>
@@ -4932,6 +5019,24 @@ async function loadAccessControl(sectionElement) {
         } finally {
           auditBtn.disabled = false
           auditBtn.textContent = origText
+        }
+      })
+    }
+
+    // Botão de Editar Guias click
+    const editTabsBtn = container.querySelector('#ac-edit-tabs-btn')
+    if (editTabsBtn) {
+      editTabsBtn.addEventListener('click', async () => {
+        editTabsBtn.disabled = true
+        const origText = editTabsBtn.textContent
+        editTabsBtn.textContent = 'Carregando...'
+        try {
+          await openEditTabsConfigModal(sectionElement)
+        } catch (e) {
+          alert('Erro ao abrir editor: ' + e.message)
+        } finally {
+          editTabsBtn.disabled = false
+          editTabsBtn.textContent = origText
         }
       })
     }
@@ -5167,6 +5272,18 @@ async function loadAccessControl(sectionElement) {
         const isHidden = profilesContent.style.display === 'none'
         profilesContent.style.display = isHidden ? 'block' : 'none'
         profilesArrow.textContent = isHidden ? '▼ Recolher' : '▶ Expandir'
+      })
+    }
+
+    // Alternar visualização da seção de editores
+    const editorsHeader = container.querySelector('#ac-toggle-editors-header')
+    const editorsContent = container.querySelector('#ac-editors-content')
+    const editorsArrow = container.querySelector('#ac-editors-arrow')
+    if (editorsHeader && editorsContent && editorsArrow) {
+      editorsHeader.addEventListener('click', () => {
+        const isHidden = editorsContent.style.display === 'none'
+        editorsContent.style.display = isHidden ? 'block' : 'none'
+        editorsArrow.textContent = isHidden ? '▼ Recolher' : '▶ Expandir'
       })
     }
 
@@ -5872,97 +5989,232 @@ function openConfigChannelsModal(initialChannels, sectionElement) {
   }
 }
 
+async function openEditTabsConfigModal(sectionElement) {
+  showNotification('Carregando configuração das guias...', 'info')
+  
+  let currentConfig
+  try {
+    currentConfig = await fetchFormsData(true)
+  } catch (err) {
+    showNotification('Erro ao carregar dados atuais.', 'error')
+    return
+  }
+
+  const jsonString = JSON.stringify(currentConfig, null, 2)
+  
+  const modalHtml = `
+    <div style="padding: 10px; display: flex; flex-direction: column; width: 750px; height: 600px; box-sizing: border-box;">
+      <p style="font-size: 13px; color: var(--text-color-muted); margin-bottom: 12px; margin-top: 0;">
+        Edite a configuração em formato JSON para as guias <strong>Formulários & Documentos</strong>, <strong>AI Chains - Assistentes</strong> e <strong>Extensões & Apps</strong>.
+      </p>
+      
+      <div style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
+        <textarea id="etc-json-textarea" style="flex: 1; width: 100%; height: 100%; font-family: monospace; font-size: 12px; padding: 12px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box; resize: none; tab-size: 2; white-space: pre; overflow: auto;"></textarea>
+        <div id="etc-validation-error" style="color: var(--action-red, #ef4444); font-size: 11px; margin-top: 6px; font-weight: bold; min-height: 18px;"></div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 12px; flex-shrink: 0;">
+        <button id="etc-cancel-btn" class="action-btn secondary-btn compact" style="padding: 8px 16px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">Cancelar</button>
+        <button id="etc-save-btn" class="action-btn small-btn" style="background: var(--action-green, #22c55e); color: white; border: none; padding: 8px 20px; cursor: pointer; font-size: 13px; border-radius: 4px; font-weight: bold;">Salvar Alterações</button>
+      </div>
+    </div>
+  `
+
+  const modal = createModal(
+    'Editar Conteúdo das Guias',
+    modalHtml,
+    null,
+    {
+      isManagementModal: false,
+      modalId: 'edit-tabs-config-modal',
+      showShareButton: false
+    }
+  )
+
+  const defaultActions = modal.querySelector('.se-modal-actions')
+  if (defaultActions) defaultActions.remove()
+
+  modal.style.zIndex = '10003'
+  document.body.appendChild(modal)
+
+  const textarea = modal.querySelector('#etc-json-textarea')
+  const errorDiv = modal.querySelector('#etc-validation-error')
+  const saveBtn = modal.querySelector('#etc-save-btn')
+  const cancelBtn = modal.querySelector('#etc-cancel-btn')
+  const xBtn = modal.querySelector('.se-close-modal-btn')
+
+  if (textarea) {
+    textarea.value = jsonString
+    textarea.addEventListener('click', e => e.stopPropagation())
+    textarea.addEventListener('keydown', e => {
+      e.stopPropagation()
+      if (e.key === 'Tab') {
+        e.preventDefault()
+        const start = textarea.selectionStart
+        const end = textarea.selectionEnd
+        const val = textarea.value
+        textarea.value = val.substring(0, start) + "  " + val.substring(end)
+        textarea.selectionStart = textarea.selectionEnd = start + 2
+      }
+    })
+    
+    textarea.addEventListener('input', () => {
+      try {
+        const parsed = JSON.parse(textarea.value)
+        if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.categories)) {
+          errorDiv.textContent = 'JSON inválido: O objeto raiz deve conter a propriedade "categories" (Array).'
+          saveBtn.disabled = true
+        } else {
+          errorDiv.textContent = ''
+          saveBtn.disabled = false
+        }
+      } catch (err) {
+        errorDiv.textContent = 'Erro de sintaxe JSON: ' + err.message
+        saveBtn.disabled = true
+      }
+    })
+  }
+
+  const cleanup = () => modal.remove()
+  if (cancelBtn) cancelBtn.addEventListener('click', e => { e.stopPropagation(); cleanup(); })
+  if (xBtn) xBtn.addEventListener('click', e => { e.stopPropagation(); cleanup(); })
+
+  if (saveBtn) {
+    saveBtn.addEventListener('click', async (e) => {
+      e.stopPropagation()
+      try {
+        const configData = JSON.parse(textarea.value)
+        saveBtn.disabled = true
+        saveBtn.textContent = 'Salvando...'
+        const success = await window.sgdPermissions.saveTabsConfig(configData)
+        if (success) {
+          showNotification('Configuração das guias atualizada com sucesso!', 'success')
+          cleanup()
+          if (sectionElement) {
+            const activeTab = sectionElement.querySelector('.ip-nav-item.active')?.dataset.target || 'forms'
+            loadForms(sectionElement, activeTab)
+          }
+        } else {
+          alert('Erro ao salvar as configurações.')
+          saveBtn.disabled = false
+          saveBtn.textContent = 'Salvar Alterações'
+        }
+      } catch (err) {
+        alert('Erro ao salvar: ' + err.message)
+        saveBtn.disabled = false
+        saveBtn.textContent = 'Salvar Alterações'
+      }
+    })
+  }
+}/**
+ * Coleta os valores digitados nos inputs/textareas de seções e itens em modo de edição visual,
+ * e atualiza o objeto tempConfig.categories correspondente.
+ */
+function gatherEditState(container, tempConfig) {
+  if (!tempConfig || !tempConfig.categories) return
+
+  const categoryDivs = container.querySelectorAll('.ip-forms-category')
+  
+  categoryDivs.forEach(catDiv => {
+    const origIdx = parseInt(catDiv.dataset.originalIndex, 10)
+    if (isNaN(origIdx) || origIdx < 0 || origIdx >= tempConfig.categories.length) return
+    
+    const titleInput = catDiv.querySelector('.etc-section-title-input')
+    const categoryName = titleInput ? titleInput.value.trim() : ''
+    
+    const items = []
+    const cardDivs = catDiv.querySelectorAll('.edit-mode-card')
+    cardDivs.forEach(cardDiv => {
+      const typeSelect = cardDiv.querySelector('.etc-item-type')
+      const type = typeSelect ? typeSelect.value : 'link'
+      const iconInput = cardDiv.querySelector('.etc-item-icon')
+      const titleInput = cardDiv.querySelector('.etc-item-title')
+      const descInput = cardDiv.querySelector('.etc-item-desc')
+      
+      const item = {
+        type: type,
+        icon: iconInput ? iconInput.value.trim() : '🔗',
+        title: titleInput ? titleInput.value.trim() : '',
+        description: descInput ? descInput.value.trim() : ''
+      }
+      
+      if (type === 'link') {
+        const urlInput = cardDiv.querySelector('.etc-item-url')
+        item.url = urlInput ? urlInput.value.trim() : ''
+      } else if (type === 'document') {
+        const contentArea = cardDiv.querySelector('.etc-item-content')
+        item.content = contentArea ? contentArea.value : ''
+      } else if (type === 'action-closing') {
+        const closingTitle = cardDiv.querySelector('.etc-item-closing-title')
+        const closingContent = cardDiv.querySelector('.etc-item-closing-content')
+        item.closingData = {
+          title: closingTitle ? closingTitle.value.trim() : '',
+          content: closingContent ? closingContent.value : ''
+        }
+      }
+      items.push(item)
+    })
+    
+    tempConfig.categories[origIdx].category = categoryName
+    tempConfig.categories[origIdx].items = items
+  })
+}
 
 /**
  * Carrega e renderiza os formulários na seção correspondente
  * @param {HTMLElement} sectionElement - Elemento da seção de formulários
- * @param {string} filterType - Tipo de filtro ('forms' ou 'ai')
+ * @param {string} filterType - Tipo de filtro ('forms', 'ai' ou 'extensions')
+ * @param {string} searchQuery - Query de busca para filtrar itens
  */
-
 async function loadForms(
   sectionElement,
   filterType = 'forms',
   searchQuery = ''
 ) {
   // Define o seletor do container baseado no filtro/seção
-  const containerId =
-    filterType === 'ai' ? '#ai-chains-container' : '#forms-container'
+  let containerId
+  if (filterType === 'ai') {
+    containerId = '#ai-chains-container'
+  } else if (filterType === 'extensions') {
+    containerId = '#extensions-container'
+  } else {
+    containerId = '#forms-container'
+  }
   const container = sectionElement.querySelector(containerId)
   if (!container) return
 
+  const isEditing = window.sgdPermissions && window.sgdPermissions.editStates && window.sgdPermissions.editStates[filterType]
+
+  // Show/Hide search controls in AI chains tab
+  const searchControls = sectionElement.querySelector('.ip-pending-controls')
+  if (searchControls && filterType === 'ai') {
+    searchControls.style.display = isEditing ? 'none' : 'flex'
+  }
+
   try {
-    // Buscar dados dos formulários
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        location: 'info-panel.js:loadForms',
-        message: 'Function entry',
-        data: { filterType, containerId },
-        timestamp: Date.now(),
-        sessionId: 'debug-session',
-        runId: 'run1',
-        hypothesisId: 'A'
-      })
-    }).catch(() => { })
-    // #endregion
-
-    const formsData = await fetchFormsData()
-
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        location: 'info-panel.js:loadForms',
-        message: 'Forms data received',
-        data: {
-          hasData: !!formsData,
-          hasCategories: !!formsData?.categories,
-          categoriesCount: formsData?.categories?.length,
-          isArray: Array.isArray(formsData)
-        },
-        timestamp: Date.now(),
-        sessionId: 'debug-session',
-        runId: 'run1',
-        hypothesisId: 'A'
-      })
-    }).catch(() => { })
-    // #endregion
+    // Buscar dados dos formulários (usa configuração temporária se estiver editando)
+    const formsData = isEditing ? window.sgdPermissions.tempFormsConfig : await fetchFormsData()
 
     if (!formsData || !formsData.categories) {
-      // #region agent log
-      fetch(
-        'http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            location: 'info-panel.js:loadForms',
-            message: 'Invalid forms data',
-            data: {
-              hasData: !!formsData,
-              hasCategories: !!formsData?.categories
-            },
-            timestamp: Date.now(),
-            sessionId: 'debug-session',
-            runId: 'run1',
-            hypothesisId: 'A'
-          })
-        }
-      ).catch(() => { })
-      // #endregion
       throw new Error('Dados de formulários inválidos')
     }
 
-    // Filtragem simples baseada no título da categoria (Case Insensitive)
-    // Se for 'ai', pega categorias que contenham "AI", "Chain", "Assistente" ou termos associados de IA/Chain
-    // Se for 'forms', pega o resto.
-    const filteredCategories = formsData.categories
+    // Filtragem de categorias:
+    // Mapear originalIndex para identificar onde cada categoria está no array principal
+    const categoriesWithIdx = formsData.categories.map((cat, idx) => ({
+      ...cat,
+      originalIndex: idx
+    }))
+
+    const filteredCategories = categoriesWithIdx
       .filter(cat => {
+        if (isEditing) {
+          return cat.tempTab === filterType
+        }
+
         const title = cat.category.toLowerCase()
-        const isAiCategory =
+        const isExtensionsCategory = title.includes('extensões') || title.includes('extensions') || title.includes('apps')
+        const isAiCategory = !isExtensionsCategory && (
           title.includes('ai') ||
           title.includes('chain') ||
           title.includes('assistente') ||
@@ -5977,11 +6229,14 @@ async function loadForms(
           title === 'outros' ||
           title === 'at' ||
           (cat.items && cat.items.some(item => item.url && (item.url.includes('aiplatform') || item.url.includes('ai-chains'))))
+        )
 
-        return filterType === 'ai' ? isAiCategory : !isAiCategory
+        if (filterType === 'ai') return isAiCategory
+        if (filterType === 'extensions') return isExtensionsCategory
+        return !isAiCategory && !isExtensionsCategory
       })
       .map(cat => {
-        if (searchQuery && searchQuery.trim() !== '') {
+        if (!isEditing && searchQuery && searchQuery.trim() !== '') {
           const query = searchQuery.toLowerCase().trim()
           const filteredItems = cat.items.filter(item => {
             return (
@@ -5994,240 +6249,538 @@ async function loadForms(
         }
         return cat
       })
-      .filter(cat => cat.items.length > 0)
+      .filter(cat => isEditing || cat.items.length > 0)
 
     // Renderizar categorias e itens
     let html = ''
 
-    if (filteredCategories.length === 0) {
-      html = `
-            <div class="ip-empty-state">
-                <h4>Nenhum item encontrado nesta seção.</h4>
+    if (isEditing) {
+      // ─── MODO DE EDIÇÃO ATIVO ───
+      html += `
+        <div class="etc-edit-controls-bar" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--bg-secondary, #f3f4f6); border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 16px; box-sizing: border-box;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 18px;">✏️</span>
+            <div>
+              <strong style="font-size: 13px; color: var(--text-color-main); display: block;">Modo Edição Ativo</strong>
+              <span style="font-size: 11px; color: var(--text-color-muted); display: block;">Modifique o conteúdo desta guia visualmente. Lembre-se de salvar.</span>
             </div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="etc-cancel-edit-btn action-btn secondary-btn compact" style="padding: 6px 12px; font-size: 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer; border-radius: 4px;">Cancelar</button>
+            <button class="etc-save-edit-btn action-btn small-btn" style="padding: 6px 16px; font-size: 12px; background: var(--action-green, #22c55e); color: white; border: none; font-weight: bold; cursor: pointer; border-radius: 4px;">💾 Salvar Alterações</button>
+          </div>
+        </div>
+      `
+
+      if (filteredCategories.length === 0) {
+        html += `
+          <div class="ip-empty-state" style="padding: 30px; text-align: center; border: 1px dashed var(--border-color); border-radius: 6px; margin-bottom: 16px;">
+            <h4 style="margin: 0 0 8px 0; color: var(--text-color-muted); font-size: 14px;">Nenhuma seção nesta guia ainda.</h4>
+            <p style="font-size: 12px; color: var(--text-color-muted); margin: 0;">Clique no botão abaixo para adicionar a primeira seção.</p>
+          </div>
         `
-    } else {
-      filteredCategories.forEach(category => {
-        html += `
-            <div class="ip-forms-category">
-              <h4 class="ip-forms-category-title">${escapeHTML(
-          category.category
-        )}</h4>
-              <div class="ip-forms-grid">
-          `
-
-        category.items.forEach((item, itemIndex) => {
-          // #region agent log
-          fetch(
-            'http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                location: 'info-panel.js:loadForms',
-                message: 'Processing item',
-                data: {
-                  category: category.category,
-                  itemIndex,
-                  itemType: item.type,
-                  hasTitle: !!item.title,
-                  hasClosingData: !!item.closingData
-                },
-                timestamp: Date.now(),
-                sessionId: 'debug-session',
-                runId: 'run1',
-                hypothesisId: 'C'
-              })
-            }
-          ).catch(() => { })
-          // #endregion
-
-          if (item.type === 'link') {
-            html += `
-                <a href="${escapeHTML(
-              item.url
-            )}" target="_blank" class="ip-form-card">
-                  <div class="ip-form-icon">${item.icon}</div>
-                  <div class="ip-form-content">
-                    <h5 class="ip-form-title">${escapeHTML(item.title)}</h5>
-                    <p class="ip-form-desc">${escapeHTML(item.description)}</p>
-                  </div>
-                  <div class="ip-form-arrow">↗</div>
-                </a>
-              `
-          } else if (item.type === 'document') {
-            html += `
-                <div class="ip-form-card ip-form-document" data-content="${escapeHTML(
-              item.content
-            )}">
-                  <div class="ip-form-icon">${item.icon}</div>
-                  <div class="ip-form-content">
-                    <h5 class="ip-form-title">${escapeHTML(item.title)}</h5>
-                    <p class="ip-form-desc">${escapeHTML(item.description)}</p>
-                  </div>
-                  <div class="ip-form-arrow">📄</div>
+      } else {
+        filteredCategories.forEach(category => {
+          const catIndex = category.originalIndex
+          const isFirstCat = filteredCategories[0].originalIndex === catIndex
+          const isLastCat = filteredCategories[filteredCategories.length - 1].originalIndex === catIndex
+          
+          html += `
+            <div class="ip-forms-category" data-original-index="${catIndex}" style="margin-bottom: 24px; border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; background: var(--background-main); box-sizing: border-box;">
+              <!-- Seção: Nome e Exclusão -->
+              <div class="etc-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px; border-bottom: 1px dashed var(--border-color); padding-bottom: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+                  <span style="font-size: 16px; line-height: 1;">📂</span>
+                  <input type="text" class="etc-section-title-input" value="${escapeHTML(category.category)}" placeholder="Nome da Seção (ex: Apoio e Geral)" style="font-size: 13px; font-weight: bold; border: 1px solid var(--border-color); border-radius: 4px; padding: 6px 10px; flex: 1; max-width: 350px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
                 </div>
-              `
-          } else if (item.type === 'action-closing') {
-            // #region agent log
-            try {
-              const hasClosingData = !!item.closingData
-              const closingDataKeys = item.closingData
-                ? Object.keys(item.closingData)
-                : []
-              fetch(
-                'http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',
-                {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    location: 'info-panel.js:loadForms',
-                    message: 'Processing action-closing item',
-                    data: {
-                      hasClosingData,
-                      closingDataKeys,
-                      hasTitle: !!item.closingData?.title,
-                      hasContent: !!item.closingData?.content
-                    },
-                    timestamp: Date.now(),
-                    sessionId: 'debug-session',
-                    runId: 'run1',
-                    hypothesisId: 'C'
-                  })
-                }
-              ).catch(() => { })
-
-              if (!item.closingData) {
-                throw new Error('closingData is missing')
-              }
-              const jsonString = JSON.stringify(item.closingData)
-              const encoded = encodeURIComponent(jsonString)
-              fetch(
-                'http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',
-                {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    location: 'info-panel.js:loadForms',
-                    message: 'action-closing encoding success',
-                    data: {
-                      jsonLength: jsonString.length,
-                      encodedLength: encoded.length
-                    },
-                    timestamp: Date.now(),
-                    sessionId: 'debug-session',
-                    runId: 'run1',
-                    hypothesisId: 'E'
-                  })
-                }
-              ).catch(() => { })
-            } catch (error) {
-              fetch(
-                'http://127.0.0.1:7242/ingest/25d49048-d157-41a6-b992-3f42235cf282',
-                {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    location: 'info-panel.js:loadForms',
-                    message: 'action-closing encoding error',
-                    data: { error: error.message, stack: error.stack },
-                    timestamp: Date.now(),
-                    sessionId: 'debug-session',
-                    runId: 'run1',
-                    hypothesisId: 'E'
-                  })
-                }
-              ).catch(() => { })
-              throw error
-            }
-            // #endregion
-
-            const closingDataEncoded = encodeURIComponent(
-              JSON.stringify(item.closingData)
-            )
-            html += `
-                <div class="ip-form-card ip-form-action" data-closing="${closingDataEncoded}">
-                  <div class="ip-form-icon">${item.icon}</div>
-                  <div class="ip-form-content">
-                    <h5 class="ip-form-title">${escapeHTML(item.title)}</h5>
-                    <p class="ip-form-desc">${escapeHTML(item.description)}</p>
-                    <button class="ip-add-closing-btn enhanced-btn" style="margin-top: 12px;">
-                      <span class="ip-btn-icon">➕</span>
-                      <span class="ip-btn-text">Adicionar aos meus encerramentos</span>
-                    </button>
-                  </div>
+                <div style="display: flex; gap: 4px; align-items: center;">
+                  <button class="etc-move-section-up-btn action-btn secondary-btn compact" data-category-index="${catIndex}" ${isFirstCat ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : 'style="cursor:pointer;"'} title="Mover seção para cima">🔼 Subir</button>
+                  <button class="etc-move-section-down-btn action-btn secondary-btn compact" data-category-index="${catIndex}" ${isLastCat ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : 'style="cursor:pointer;"'} title="Mover seção para baixo">🔽 Descer</button>
+                  <button class="etc-delete-section-btn" data-category-index="${catIndex}" style="background: none; border: none; cursor: pointer; color: var(--action-red, #ef4444); font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 2px; padding: 4px 8px; border-radius: 4px;" title="Excluir esta seção e todos os itens dela">🗑️ Excluir Seção</button>
                 </div>
-              `
-          }
-        })
-
-        html += `
               </div>
-            </div>
+              
+              <!-- Cards Grid -->
+              <div class="ip-forms-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">
           `
-      })
+
+          category.items.forEach((item, itemIndex) => {
+            const isFirstItem = itemIndex === 0
+            const isLastItem = itemIndex === category.items.length - 1
+            
+            html += `
+              <div class="ip-form-card edit-mode-card" style="display: flex; flex-direction: column; gap: 8px; cursor: default; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--background-secondary); box-sizing: border-box; position: relative;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div style="display: flex; align-items: center; gap: 4px;">
+                    <span style="font-weight: bold; font-size: 10px; color: var(--text-color-muted); text-transform: uppercase; margin-right: 4px;">Item #${itemIndex + 1}</span>
+                    <button class="etc-move-item-up-btn" data-category-index="${catIndex}" data-item-index="${itemIndex}" ${isFirstItem ? 'disabled style="opacity:0.3; cursor:not-allowed; border-color:transparent; background:none; border:none;"' : 'style="background:none; border:1px solid var(--border-color); cursor:pointer;"'} style="font-size: 9px; padding: 1px 3px; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center; height: 16px; color: var(--text-color-main);" title="Mover para cima">🔼</button>
+                    <button class="etc-move-item-down-btn" data-category-index="${catIndex}" data-item-index="${itemIndex}" ${isLastItem ? 'disabled style="opacity:0.3; cursor:not-allowed; border-color:transparent; background:none; border:none;"' : 'style="background:none; border:1px solid var(--border-color); cursor:pointer;"'} style="font-size: 9px; padding: 1px 3px; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center; height: 16px; color: var(--text-color-main);" title="Mover para baixo">🔽</button>
+                  </div>
+                  <button class="etc-delete-item-btn" data-category-index="${catIndex}" data-item-index="${itemIndex}" style="background: none; border: none; cursor: pointer; color: var(--action-red, #ef4444); font-size: 11px; padding: 2px 4px; border-radius: 4px;" title="Remover item">🗑️ Remover</button>
+                </div>
+                
+                <div style="display: flex; gap: 6px;">
+                  <!-- Icon input -->
+                  <input type="text" class="etc-item-icon" placeholder="Emoji" value="${escapeHTML(item.icon || '🔗')}" style="width: 36px; text-align: center; font-size: 15px; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px; box-sizing: border-box; background: var(--background-main); color: var(--text-color-main);" title="Emoji do ícone">
+                  <!-- Title input -->
+                  <input type="text" class="etc-item-title" placeholder="Título do Card" value="${escapeHTML(item.title || '')}" style="flex: 1; font-weight: bold; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 8px; font-size: 12px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
+                </div>
+                
+                <!-- Description input -->
+                <textarea class="etc-item-desc" placeholder="Descrição curta do item..." style="width: 100%; height: 38px; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 8px; font-size: 11px; resize: none; box-sizing: border-box; background: var(--background-main); color: var(--text-color-main);">${escapeHTML(item.description || '')}</textarea>
+                
+                <!-- Type select -->
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-top: 2px;">
+                  <span style="font-size: 10px; color: var(--text-color-muted);">Tipo de Item:</span>
+                  <select class="etc-item-type" style="font-size: 11px; padding: 2px 4px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main);">
+                    <option value="link" ${item.type === 'link' ? 'selected' : ''}>Link</option>
+                    <option value="document" ${item.type === 'document' ? 'selected' : ''}>Documento</option>
+                    <option value="action-closing" ${item.type === 'action-closing' ? 'selected' : ''}>Encerramento</option>
+                  </select>
+                </div>
+
+                <!-- Type specific fields -->
+                <div class="etc-type-fields-container" style="margin-top: 4px; border-top: 1px dashed var(--border-color); padding-top: 6px;">
+                  <!-- Link URL -->
+                  <div class="etc-fields-link" style="display: ${item.type === 'link' ? 'block' : 'none'};">
+                    <input type="text" class="etc-item-url" placeholder="Endereço da URL (https://...)" value="${escapeHTML(item.url || '')}" style="width: 100%; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 8px; font-size: 11px; box-sizing: border-box; background: var(--background-main); color: var(--text-color-main);">
+                  </div>
+                  
+                  <!-- Document Content -->
+                  <div class="etc-fields-document" style="display: ${item.type === 'document' ? 'block' : 'none'};">
+                    <textarea class="etc-item-content" placeholder="Conteúdo HTML do documento..." style="width: 100%; height: 50px; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 8px; font-size: 11px; resize: vertical; box-sizing: border-box; background: var(--background-main); color: var(--text-color-main);">${escapeHTML(item.content || '')}</textarea>
+                  </div>
+                  
+                  <!-- Closing Content -->
+                  <div class="etc-fields-closing" style="display: ${item.type === 'action-closing' ? 'block' : 'none'};">
+                    <input type="text" class="etc-item-closing-title" placeholder="Título Interno (ex: Acesso Remoto)" value="${escapeHTML(item.closingData?.title || '')}" style="width: 100%; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 8px; font-size: 11px; box-sizing: border-box; margin-bottom: 4px; background: var(--background-main); color: var(--text-color-main);">
+                    <textarea class="etc-item-closing-content" placeholder="Texto com tags HTML..." style="width: 100%; height: 50px; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 8px; font-size: 11px; resize: vertical; box-sizing: border-box; background: var(--background-main); color: var(--text-color-main);">${escapeHTML(item.closingData?.content || '')}</textarea>
+                  </div>
+                </div>
+              </div>
+            `
+          })
+
+          html += `
+              </div> <!-- grid end -->
+              
+              <!-- Add Item Button -->
+              <div style="margin-top: 14px; display: flex; justify-content: flex-start;">
+                <button class="etc-add-item-btn action-btn secondary-btn compact" data-category-index="${catIndex}" style="font-size: 11px; padding: 6px 12px; display: flex; align-items: center; gap: 4px; background: var(--background-main); color: var(--text-color-main); border: 1px solid var(--border-color); cursor: pointer; border-radius: 4px; transition: background 0.2s;" onmouseover="this.style.background='var(--background-secondary)'" onmouseout="this.style.background='var(--background-main)'">
+                  ➕ Adicionar Item nesta Seção
+                </button>
+              </div>
+            </div> <!-- category end -->
+          `
+        })
+      }
+
+      // Add Nova Seção Button
+      html += `
+        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color); display: flex; justify-content: center; box-sizing: border-box;">
+          <button class="etc-add-section-btn action-btn secondary-btn" style="font-size: 12px; padding: 8px 20px; display: flex; align-items: center; gap: 6px; background: var(--background-main); color: var(--text-color-main); border: 1px solid var(--border-color); cursor: pointer; border-radius: 4px; font-weight: bold; transition: background 0.2s;" onmouseover="this.style.background='var(--background-secondary)'" onmouseout="this.style.background='var(--background-main)'">
+            ➕ Adicionar Nova Seção nesta Guia
+          </button>
+        </div>
+      `
+    } else {
+      // ─── MODO DE VISUALIZAÇÃO COMUM ───
+      if (filteredCategories.length === 0) {
+        html = `
+              <div class="ip-empty-state">
+                  <h4>Nenhum item encontrado nesta seção.</h4>
+              </div>
+          `
+      } else {
+        filteredCategories.forEach(category => {
+          html += `
+              <div class="ip-forms-category">
+                <h4 class="ip-forms-category-title">${escapeHTML(
+            category.category
+          )}</h4>
+                <div class="ip-forms-grid">
+            `
+
+          category.items.forEach((item, itemIndex) => {
+            if (item.type === 'link') {
+              html += `
+                  <a href="${escapeHTML(
+                item.url
+              )}" target="_blank" class="ip-form-card">
+                    <div class="ip-form-icon">${item.icon}</div>
+                    <div class="ip-form-content">
+                      <h5 class="ip-form-title">${escapeHTML(item.title)}</h5>
+                      <p class="ip-form-desc">${escapeHTML(item.description)}</p>
+                    </div>
+                    <div class="ip-form-arrow">↗</div>
+                  </a>
+                `
+            } else if (item.type === 'document') {
+              html += `
+                  <div class="ip-form-card ip-form-document" data-content="${escapeHTML(
+                item.content
+              )}">
+                    <div class="ip-form-icon">${item.icon}</div>
+                    <div class="ip-form-content">
+                      <h5 class="ip-form-title">${escapeHTML(item.title)}</h5>
+                      <p class="ip-form-desc">${escapeHTML(item.description)}</p>
+                    </div>
+                    <div class="ip-form-arrow">📄</div>
+                  </div>
+                `
+            } else if (item.type === 'action-closing') {
+              const closingDataEncoded = encodeURIComponent(
+                JSON.stringify(item.closingData)
+              )
+              html += `
+                  <div class="ip-form-card ip-form-action" data-closing="${closingDataEncoded}">
+                    <div class="ip-form-icon">${item.icon}</div>
+                    <div class="ip-form-content">
+                      <h5 class="ip-form-title">${escapeHTML(item.title)}</h5>
+                      <p class="ip-form-desc">${escapeHTML(item.description)}</p>
+                      <button class="ip-add-closing-btn enhanced-btn" style="margin-top: 12px;">
+                        <span class="ip-btn-icon">➕</span>
+                        <span class="ip-btn-text">Adicionar aos meus encerramentos</span>
+                      </button>
+                    </div>
+                  </div>
+                `
+            }
+          })
+
+          html += `
+                </div>
+              </div>
+            `
+        })
+      }
     }
 
     container.innerHTML = html
 
-    // Adicionar event listeners para documentos
-    container.querySelectorAll('.ip-form-document').forEach(card => {
-      card.addEventListener('click', () => {
-        const content = card.getAttribute('data-content')
-        showDocumentModal(content)
+    if (isEditing) {
+      // ── Listeners de Edição ──
+      
+      // 1. Alternador de tipo do item
+      container.querySelectorAll('.etc-item-type').forEach(select => {
+        select.addEventListener('change', (e) => {
+          const card = e.target.closest('.edit-mode-card')
+          if (!card) return
+          const type = e.target.value
+          card.querySelector('.etc-fields-link').style.display = type === 'link' ? 'block' : 'none'
+          card.querySelector('.etc-fields-document').style.display = type === 'document' ? 'block' : 'none'
+          card.querySelector('.etc-fields-closing').style.display = type === 'action-closing' ? 'block' : 'none'
+        })
       })
-    })
 
-    // Adicionar event listeners para ações (add-closing)
-    container.querySelectorAll('.ip-form-action').forEach(card => {
-      const btn = card.querySelector('.ip-add-closing-btn')
-      if (btn) {
-        btn.addEventListener('click', async e => {
+      // 2. Excluir item
+      container.querySelectorAll('.etc-delete-item-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
           e.stopPropagation()
-          const btnIcon = btn.querySelector('.ip-btn-icon')
-          const btnText = btn.querySelector('.ip-btn-text')
-          const originalIcon = btnIcon.textContent
-          const originalText = btnText.textContent
+          const catIdx = parseInt(btn.dataset.categoryIndex, 10)
+          const itemIdx = parseInt(btn.dataset.itemIndex, 10)
+          
+          gatherEditState(container, window.sgdPermissions.tempFormsConfig)
+          window.sgdPermissions.tempFormsConfig.categories[catIdx].items.splice(itemIdx, 1)
+          loadForms(sectionElement, filterType, searchQuery)
+        })
+      })
 
+      // 3. Adicionar item
+      container.querySelectorAll('.etc-add-item-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation()
+          const catIdx = parseInt(btn.dataset.categoryIndex, 10)
+          
+          gatherEditState(container, window.sgdPermissions.tempFormsConfig)
+          const newItem = {
+            type: 'link',
+            title: 'Novo Item',
+            description: 'Descrição do novo item',
+            url: 'https://',
+            icon: filterType === 'ai' ? '🤖' : (filterType === 'extensions' ? '🧩' : '🔗')
+          }
+          window.sgdPermissions.tempFormsConfig.categories[catIdx].items.push(newItem)
+          loadForms(sectionElement, filterType, searchQuery)
+        })
+      })
+
+      // 4. Excluir seção
+      container.querySelectorAll('.etc-delete-section-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation()
+          const catIdx = parseInt(btn.dataset.categoryIndex, 10)
+          
+          if (confirm('Tem certeza de que deseja excluir esta seção inteira e todos os seus itens?')) {
+            gatherEditState(container, window.sgdPermissions.tempFormsConfig)
+            window.sgdPermissions.tempFormsConfig.categories.splice(catIdx, 1)
+            loadForms(sectionElement, filterType, searchQuery)
+          }
+        })
+      })
+
+      // 5. Adicionar seção
+      const addSectionBtn = container.querySelector('.etc-add-section-btn')
+      if (addSectionBtn) {
+        addSectionBtn.addEventListener('click', (e) => {
+          e.stopPropagation()
+          gatherEditState(container, window.sgdPermissions.tempFormsConfig)
+          
+          const newCatName = filterType === 'ai' ? 'Nova Categoria IA' : (filterType === 'extensions' ? 'Nova Categoria Extensões' : 'Nova Categoria Formulários')
+          window.sgdPermissions.tempFormsConfig.categories.push({
+            category: newCatName,
+            items: [],
+            tempTab: filterType,
+            originalIndex: window.sgdPermissions.tempFormsConfig.categories.length
+          })
+          loadForms(sectionElement, filterType, searchQuery)
+        })
+      }
+
+      // 6. Cancelar edição
+      const cancelBtn = container.querySelector('.etc-cancel-edit-btn')
+      if (cancelBtn) {
+        cancelBtn.addEventListener('click', (e) => {
+          e.stopPropagation()
+          gatherEditState(container, window.sgdPermissions.tempFormsConfig)
+          const hasChanges = JSON.stringify(window.sgdPermissions.tempFormsConfig.categories) !== JSON.stringify(window.sgdPermissions.originalFormsConfig.categories)
+          if (hasChanges && !confirm('Você possui alterações não salvas. Tem certeza que deseja cancelar e descartar as alterações?')) {
+            return
+          }
+          window.sgdPermissions.editStates[filterType] = false
+          loadForms(sectionElement, filterType, searchQuery)
+        })
+      }
+
+      // 7. Mover seção para cima
+      container.querySelectorAll('.etc-move-section-up-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation()
+          const catIdx = parseInt(btn.dataset.categoryIndex, 10)
+          gatherEditState(container, window.sgdPermissions.tempFormsConfig)
+          const cats = window.sgdPermissions.tempFormsConfig.categories
+          let prevIdx = -1
+          for (let i = catIdx - 1; i >= 0; i--) {
+            if (cats[i].tempTab === filterType) {
+              prevIdx = i
+              break
+            }
+          }
+          if (prevIdx !== -1) {
+            const temp = cats[catIdx]
+            cats[catIdx] = cats[prevIdx]
+            cats[prevIdx] = temp
+            loadForms(sectionElement, filterType, searchQuery)
+          }
+        })
+      })
+
+      // 8. Mover seção para baixo
+      container.querySelectorAll('.etc-move-section-down-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation()
+          const catIdx = parseInt(btn.dataset.categoryIndex, 10)
+          gatherEditState(container, window.sgdPermissions.tempFormsConfig)
+          const cats = window.sgdPermissions.tempFormsConfig.categories
+          let nextIdx = -1
+          for (let i = catIdx + 1; i < cats.length; i++) {
+            if (cats[i].tempTab === filterType) {
+              nextIdx = i
+              break
+            }
+          }
+          if (nextIdx !== -1) {
+            const temp = cats[catIdx]
+            cats[catIdx] = cats[nextIdx]
+            cats[nextIdx] = temp
+            loadForms(sectionElement, filterType, searchQuery)
+          }
+        })
+      })
+
+      // 9. Mover item para cima
+      container.querySelectorAll('.etc-move-item-up-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation()
+          const catIdx = parseInt(btn.dataset.categoryIndex, 10)
+          const itemIdx = parseInt(btn.dataset.itemIndex, 10)
+          if (itemIdx > 0) {
+            gatherEditState(container, window.sgdPermissions.tempFormsConfig)
+            const items = window.sgdPermissions.tempFormsConfig.categories[catIdx].items
+            const temp = items[itemIdx]
+            items[itemIdx] = items[itemIdx - 1]
+            items[itemIdx - 1] = temp
+            loadForms(sectionElement, filterType, searchQuery)
+          }
+        })
+      })
+
+      // 10. Mover item para baixo
+      container.querySelectorAll('.etc-move-item-down-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation()
+          const catIdx = parseInt(btn.dataset.categoryIndex, 10)
+          const itemIdx = parseInt(btn.dataset.itemIndex, 10)
+          gatherEditState(container, window.sgdPermissions.tempFormsConfig)
+          const items = window.sgdPermissions.tempFormsConfig.categories[catIdx].items
+          if (itemIdx < items.length - 1) {
+            const temp = items[itemIdx]
+            items[itemIdx] = items[itemIdx + 1]
+            items[itemIdx + 1] = temp
+            loadForms(sectionElement, filterType, searchQuery)
+          }
+        })
+      })
+
+      // 11. Salvar edições
+      const saveBtn = container.querySelector('.etc-save-edit-btn')
+      if (saveBtn) {
+        saveBtn.addEventListener('click', async (e) => {
+          e.stopPropagation()
+          gatherEditState(container, window.sgdPermissions.tempFormsConfig)
+          
+          // Validação
+          let isValid = true
+          let errorMsg = ''
+          
+          const tabCategories = window.sgdPermissions.tempFormsConfig.categories.filter(cat => cat.tempTab === filterType)
+          
+          for (const cat of tabCategories) {
+            if (!cat.category.trim()) {
+              isValid = false
+              errorMsg = 'O nome de todas as seções deve ser preenchido.'
+              break
+            }
+            for (const item of cat.items) {
+              if (!item.title.trim()) {
+                isValid = false
+                errorMsg = `O título do item em "${cat.category}" não pode ficar vazio.`
+                break
+              }
+              if (item.type === 'link') {
+                const url = item.url.trim()
+                if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('mailto:') && !url.startsWith('tel:')) {
+                  isValid = false
+                  errorMsg = `A URL "${url}" do card "${item.title}" em "${cat.category}" deve começar com http:// ou https://`
+                  break
+                }
+              }
+            }
+            if (!isValid) break
+          }
+          
+          if (!isValid) {
+            alert(errorMsg)
+            return
+          }
+          
+          saveBtn.disabled = true
+          saveBtn.textContent = 'Salvando...'
+          
           try {
-            // Estado de carregamento
-            btnIcon.textContent = '⏳'
-            btnText.textContent = 'Adicionando...'
-            btn.disabled = true
-
-            const closingData = JSON.parse(
-              decodeURIComponent(card.dataset.closing)
-            )
-            await addClosingToPersonal(closingData)
-
-            // Estado de sucesso
-            btn.classList.add('success')
-            btnIcon.textContent = '✓'
-            btnText.textContent = 'Adicionado com sucesso!'
-
-            setTimeout(() => {
-              btn.classList.remove('success')
-              btnIcon.textContent = originalIcon
-              btnText.textContent = originalText
-              btn.disabled = false
-            }, 2500)
-          } catch (error) {
-            console.error(error)
-            // Estado de erro
-            btnIcon.textContent = '⚠️'
-            btnText.textContent = 'Erro ao adicionar'
-            btn.style.background =
-              'linear-gradient(135deg, #dc3545, #c82333) !important'
-
-            setTimeout(() => {
-              btnIcon.textContent = originalIcon
-              btnText.textContent = originalText
-              btn.style.background = ''
-              btn.disabled = false
-            }, 2500)
+            // Cria um payload limpo do tempFormsConfig
+            const cleanConfig = {
+              categories: window.sgdPermissions.tempFormsConfig.categories.map(cat => ({
+                category: cat.category,
+                items: cat.items.map(item => {
+                  const cleanItem = {
+                    type: item.type,
+                    icon: item.icon,
+                    title: item.title,
+                    description: item.description
+                  }
+                  if (item.type === 'link') {
+                    cleanItem.url = item.url
+                  } else if (item.type === 'document') {
+                    cleanItem.content = item.content
+                  } else if (item.type === 'action-closing') {
+                    cleanItem.closingData = {
+                      title: item.closingData?.title || '',
+                      content: item.closingData?.content || ''
+                    }
+                  }
+                  return cleanItem
+                })
+              }))
+            }
+            
+            const success = await window.sgdPermissions.saveTabsConfig(cleanConfig)
+            if (success) {
+              showNotification('Configuração das guias atualizada com sucesso!', 'success')
+              window.sgdPermissions.editStates[filterType] = false
+              
+              // Forçar refresh no cache e re-renderizar
+              await fetchFormsData(true)
+              loadForms(sectionElement, filterType, searchQuery)
+            } else {
+              alert('Erro ao salvar as alterações no banco de dados. Tente novamente.')
+              saveBtn.disabled = false
+              saveBtn.textContent = '💾 Salvar Alterações'
+            }
+          } catch (err) {
+            alert('Erro ao salvar: ' + err.message)
+            saveBtn.disabled = false
+            saveBtn.textContent = '💾 Salvar Alterações'
           }
         })
       }
-    })
+    } else {
+      // ── Listeners Normais de Visualização ──
+      container.querySelectorAll('.ip-form-document').forEach(card => {
+        card.addEventListener('click', () => {
+          const content = card.getAttribute('data-content')
+          showDocumentModal(content)
+        })
+      })
+
+      container.querySelectorAll('.ip-form-action').forEach(card => {
+        const btn = card.querySelector('.ip-add-closing-btn')
+        if (btn) {
+          btn.addEventListener('click', async e => {
+            e.stopPropagation()
+            const btnIcon = btn.querySelector('.ip-btn-icon')
+            const btnText = btn.querySelector('.ip-btn-text')
+            const originalIcon = btnIcon.textContent
+            const originalText = btnText.textContent
+
+            try {
+              btnIcon.textContent = '⏳'
+              btnText.textContent = 'Adicionando...'
+              btn.disabled = true
+
+              const closingData = JSON.parse(
+                decodeURIComponent(card.dataset.closing)
+              )
+              await addClosingToPersonal(closingData)
+
+              btn.classList.add('success')
+              btnIcon.textContent = '✓'
+              btnText.textContent = 'Adicionado com sucesso!'
+
+              setTimeout(() => {
+                btn.classList.remove('success')
+                btnIcon.textContent = originalIcon
+                btnText.textContent = originalText
+                btn.disabled = false
+              }, 2500)
+            } catch (error) {
+              console.error(error)
+              btnIcon.textContent = '⚠️'
+              btnText.textContent = 'Erro ao adicionar'
+              btn.style.background =
+                'linear-gradient(135deg, #dc3545, #c82333) !important'
+
+              setTimeout(() => {
+                btnIcon.textContent = originalIcon
+                btnText.textContent = originalText
+                btn.style.background = ''
+                btn.disabled = false
+              }, 2500)
+            }
+          })
+        }
+      })
+    }
   } catch (error) {
     console.error('Erro ao carregar formulários:', error)
     container.innerHTML = `
