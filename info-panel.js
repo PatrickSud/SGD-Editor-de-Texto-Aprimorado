@@ -733,6 +733,9 @@ document.addEventListener('click', e => {
 let availableTagsCache = []
 let pendingTagsMapCache = {}
 
+// Throttle em memória para evitar relatos duplicados de instabilidade (chave: system.id, valor: timestamp)
+const systemReportCooldownMap = new Map()
+
 // Controle do modo desenvolvedor
 let developerMode = false
 
@@ -6959,10 +6962,9 @@ function renderSystemsStatus(container, systems, userReports = {}) {
     }
 
     // Verifica se o usuário já reportou recentemente
-    const lastReportTime = localStorage.getItem(`last_report_${system.id}`)
+    const lastReportTime = systemReportCooldownMap.get(system.id)
     const COOLDOWN = 30 * 60 * 1000
-    const canReport =
-      !lastReportTime || Date.now() - parseInt(lastReportTime) > COOLDOWN
+    const canReport = !lastReportTime || Date.now() - lastReportTime > COOLDOWN
 
     const reportBtnHtml = `
         <button class="ip-report-btn ${canReport ? '' : 'disabled'}" 
@@ -7046,7 +7048,7 @@ function renderSystemsStatus(container, systems, userReports = {}) {
 
       try {
         await window.systemStatusService.reportUserInstability(sysId)
-        localStorage.setItem(`last_report_${sysId}`, Date.now())
+        systemReportCooldownMap.set(sysId, Date.now())
         btn.textContent = '✅ Reportado'
         if (typeof showNotification === 'function') {
           showNotification(

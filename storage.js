@@ -32,8 +32,28 @@ function isContextInvalidatedError(error) {
 }
 
 /**
+ * Migra dados de chrome.storage.sync para chrome.storage.local, se necessário.
+ * Retorna o valor encontrado (em local ou sync) ou null se não existir.
+ * @param {string} key - A chave de armazenamento a ser migrada.
+ * @returns {Promise<any>} O valor armazenado ou null.
+ */
+async function migrateFromSync(key) {
+  const localResult = await chrome.storage.local.get(key)
+  if (localResult[key] !== undefined) return localResult[key]
+
+  const syncResult = await chrome.storage.sync.get(key)
+  if (syncResult[key] !== undefined) {
+    console.log(`Editor SGD: Migrando "${key}" do storage.sync para storage.local.`)
+    await chrome.storage.local.set({ [key]: syncResult[key] })
+    await chrome.storage.sync.remove(key)
+    return syncResult[key]
+  }
+
+  return null
+}
+
+/**
  * Recupera os dados armazenados, executando migrações se necessário.
- * Esta versão inclui uma migração transparente de chrome.storage.sync para chrome.storage.local.
  */
 async function getStoredData() {
   // Verifica se o contexto está válido antes de tentar acessar o storage
@@ -42,30 +62,7 @@ async function getStoredData() {
   }
 
   try {
-    // 1. Tenta ler do novo local de armazenamento (local)
-    let localResult = await chrome.storage.local.get(STORAGE_KEY)
-    let data = localResult[STORAGE_KEY]
-
-    // 2. Se não encontrou dados no local, verifica o local antigo (sync)
-    if (!data) {
-      const syncResult = await chrome.storage.sync.get(STORAGE_KEY)
-      const syncData = syncResult[STORAGE_KEY]
-
-      // 3. Se encontrou dados no sync, migra para o local
-      if (syncData) {
-        console.log(
-          'Editor SGD: Migrando dados do storage.sync para storage.local.'
-        )
-        await chrome.storage.local.set({ [STORAGE_KEY]: syncData }) // Salva no local
-        await chrome.storage.sync.remove(STORAGE_KEY) // Limpa o local antigo
-        data = syncData // Usa os dados migrados para continuar
-        showNotification(
-          'Dados da extensão atualizados para a nova versão!',
-          'info',
-          4000
-        )
-      }
-    }
+    let data = await migrateFromSync(STORAGE_KEY)
 
     // A partir daqui, o código original de migração de versão continua
     if (!data || data.version !== DATA_VERSION || Array.isArray(data)) {
@@ -533,25 +530,7 @@ function getInitialNotesData() {
  */
 async function getSavedNotes() {
   try {
-    // 1. Tenta ler do novo local de armazenamento (local)
-    const localResult = await chrome.storage.local.get(NOTES_STORAGE_KEY)
-    let notesData = localResult[NOTES_STORAGE_KEY]
-
-    // 2. Se não encontrou dados no local, verifica o local antigo (sync)
-    if (!notesData) {
-      const syncResult = await chrome.storage.sync.get(NOTES_STORAGE_KEY)
-      const syncData = syncResult[NOTES_STORAGE_KEY]
-
-      // 3. Se encontrou dados no sync, migra para o local
-      if (syncData) {
-        console.log(
-          'Editor SGD: Migrando anotações do storage.sync para storage.local.'
-        )
-        await chrome.storage.local.set({ [NOTES_STORAGE_KEY]: syncData })
-        await chrome.storage.sync.remove(NOTES_STORAGE_KEY)
-        notesData = syncData
-      }
-    }
+    let notesData = await migrateFromSync(NOTES_STORAGE_KEY)
 
     // Se não houver dados, inicializa com a nova estrutura.
     if (!notesData) {
@@ -629,25 +608,7 @@ async function getReminders() {
     // Limpa lembretes antigos/disparados antes de retornar os ativos.
     await cleanupOldReminders()
 
-    // 1. Tenta ler do novo local de armazenamento (local)
-    const localResult = await chrome.storage.local.get(REMINDERS_STORAGE_KEY)
-    let reminders = localResult[REMINDERS_STORAGE_KEY]
-
-    // 2. Se não encontrou dados no local, verifica o local antigo (sync)
-    if (!reminders) {
-      const syncResult = await chrome.storage.sync.get(REMINDERS_STORAGE_KEY)
-      const syncData = syncResult[REMINDERS_STORAGE_KEY]
-
-      // 3. Se encontrou dados no sync, migra para o local
-      if (syncData) {
-        console.log(
-          'Editor SGD: Migrando lembretes do storage.sync para storage.local.'
-        )
-        await chrome.storage.local.set({ [REMINDERS_STORAGE_KEY]: syncData })
-        await chrome.storage.sync.remove(REMINDERS_STORAGE_KEY)
-        reminders = syncData
-      }
-    }
+    const reminders = await migrateFromSync(REMINDERS_STORAGE_KEY)
     return reminders || {}
   } catch (error) {
     console.error('Editor SGD: Erro ao carregar lembretes.', error)
@@ -1111,25 +1072,7 @@ function reportarUsoSaudacaoEncerramento(data) {
  */
 async function getGreetingsAndClosings(classification = 'solution') {
   try {
-    // 1. Tenta ler do novo local de armazenamento (local)
-    const localResult = await chrome.storage.local.get(GREETINGS_CLOSINGS_KEY)
-    let rawData = localResult[GREETINGS_CLOSINGS_KEY]
-
-    // 2. Se não encontrou dados no local, verifica o local antigo (sync)
-    if (!rawData) {
-      const syncResult = await chrome.storage.sync.get(GREETINGS_CLOSINGS_KEY)
-      const syncData = syncResult[GREETINGS_CLOSINGS_KEY]
-
-      // 3. Se encontrou dados no sync, migra para o local
-      if (syncData) {
-        console.log(
-          'Editor SGD: Migrando saudações e encerramentos do storage.sync para storage.local.'
-        )
-        await chrome.storage.local.set({ [GREETINGS_CLOSINGS_KEY]: syncData }) // Salva no local
-        await chrome.storage.sync.remove(GREETINGS_CLOSINGS_KEY) // Limpa o local antigo
-        rawData = syncData // Usa os dados migrados para continuar
-      }
-    }
+    let rawData = await migrateFromSync(GREETINGS_CLOSINGS_KEY)
 
     // Se não houver dados, inicializa a estrutura
     if (!rawData) {
@@ -1407,25 +1350,7 @@ async function saveGreetingsAndClosings(
  */
 async function getFollowedAttendances() {
   try {
-    // 1. Tenta ler do novo local de armazenamento (local)
-    const localResult = await chrome.storage.local.get(FOLLOWED_ATTENDANCES_KEY)
-    let followed = localResult[FOLLOWED_ATTENDANCES_KEY]
-
-    // 2. Se não encontrou dados no local, verifica o local antigo (sync)
-    if (!followed) {
-      const syncResult = await chrome.storage.sync.get(FOLLOWED_ATTENDANCES_KEY)
-      const syncData = syncResult[FOLLOWED_ATTENDANCES_KEY]
-
-      // 3. Se encontrou dados no sync, migra para o local
-      if (syncData) {
-        console.log(
-          'Editor SGD: Migrando atendimentos seguidos do storage.sync para storage.local.'
-        )
-        await chrome.storage.local.set({ [FOLLOWED_ATTENDANCES_KEY]: syncData })
-        await chrome.storage.sync.remove(FOLLOWED_ATTENDANCES_KEY)
-        followed = syncData
-      }
-    }
+    const followed = await migrateFromSync(FOLLOWED_ATTENDANCES_KEY)
     return followed || {}
   } catch (error) {
     console.error('Editor SGD: Erro ao carregar atendimentos seguidos.', error)

@@ -91,6 +91,7 @@ function getSelectedResponseClassification() {
 let activeBasicEditor = null
 let hideToolbarTimeout = null
 let sharedToolbarInitialized = false
+let previewSyncInterval = null
 
 /**
  * Extrai apenas o conteúdo interno do texto, removendo saudação e encerramento.
@@ -221,6 +222,14 @@ async function addGreetingAndClosing(
  * @param {HTMLTextAreaElement} textArea - O textarea do editor principal.
  */
 function setupSituationListener(textArea) {
+  // Delays necessários para aguardar o processamento interno do SGD após mudança de situação.
+  // SGD_CHANGE_SETTLE: tempo para o SGD processar o evento de change antes de lermos select.value.
+  // SGD_NATIVE_FUNCTION_DELAY: tempo para a função nativa do SGD (carregaDescricaoTramite...) executar.
+  // SGD_BUTTON_FINISH_DELAY: tempo extra para garantir que o SGD terminou (ex: botão azul de confirmação).
+  const SGD_CHANGE_SETTLE_MS = 100
+  const SGD_NATIVE_FUNCTION_DELAY_MS = 700
+  const SGD_BUTTON_FINISH_DELAY_MS = 1000
+
   const situationSelects = [
     document.getElementById('cadSscForm:situacaoTramite'),
     document.getElementById('sscForm:situacaoTramite'),
@@ -236,7 +245,7 @@ function setupSituationListener(textArea) {
       temporaryGreetingClosing = { greeting: '', closing: '' }
 
       // Pequeno delay para permitir que o SGD processe a mudança internamente
-      await new Promise(resolve => setTimeout(resolve, 100))
+      await new Promise(resolve => setTimeout(resolve, SGD_CHANGE_SETTLE_MS))
       const selectedValue = select.value
 
       // Aguarda a função nativa do SGD executar primeiro (carregaDescricaoTramiteSaudacaoBySituacaoTipoResposta)
@@ -299,7 +308,7 @@ function setupSituationListener(textArea) {
                 textArea.dispatchEvent(new Event('input', { bubbles: true }))
               }
             }
-          }, 1000) // Aumentado para 1s para garantir que o SGD terminou (botão azul)
+          }, SGD_BUTTON_FINISH_DELAY_MS)
         } else {
           // Remover saudação e encerramento (manter apenas conteúdo)
           // Inclui casos como 14 (Em Análise - Técnico), 6 (Aguardando Resposta - Interna) e 4 (Aguardando resposta do Suporte)
@@ -319,7 +328,7 @@ function setupSituationListener(textArea) {
             }
           }
         }
-      }, 700) // Aumentado ligeiramente para dar tempo ao SGD
+      }, SGD_NATIVE_FUNCTION_DELAY_MS)
     })
   })
 }
@@ -934,13 +943,15 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
 
 /**
  * Cria e anexa um banner de aviso sobre as configurações do SGSC, se ainda não foi dispensado.
+ * Nota: função atualmente não utilizada (aviso descontinuado).
  * @param {HTMLElement} masterContainer - O contêiner principal do editor.
  */
-function createAndAppendSgscWarning(masterContainer) {
+async function createAndAppendSgscWarning(masterContainer) {
   const warningDismissedKey = 'sgscWarningDismissed_v1' // Chave versionada
 
   // Não mostrar se já foi dispensado
-  if (localStorage.getItem(warningDismissedKey) === 'true') {
+  const stored = await chrome.storage.local.get(warningDismissedKey)
+  if (stored[warningDismissedKey] === true) {
     return
   }
 
@@ -958,7 +969,7 @@ function createAndAppendSgscWarning(masterContainer) {
   const dismissButton = warningBanner.querySelector('.dismiss-warning-btn')
   dismissButton.addEventListener('click', () => {
     warningBanner.style.display = 'none'
-    localStorage.setItem(warningDismissedKey, 'true')
+    chrome.storage.local.set({ [warningDismissedKey]: true })
   })
 }
 
@@ -967,6 +978,9 @@ function createAndAppendSgscWarning(masterContainer) {
  * @param {HTMLTextAreaElement} textArea - O elemento textarea do editor.
  */
 async function performAutoFill(textArea) {
+  // Delay para aguardar o SGD aplicar a situação/descrição via carregamento dinâmico.
+  const SGD_DYNAMIC_LOAD_DELAY_MS = 800
+
   if (textArea.value.trim() !== '') {
     return
   }
@@ -992,7 +1006,7 @@ async function performAutoFill(textArea) {
   }
 
   // Aguarda o site aplicar a situação/descrição (carregamento dinâmico), então revalida
-  await new Promise(resolve => setTimeout(resolve, 800)) // Aumentado para 800ms
+  await new Promise(resolve => setTimeout(resolve, SGD_DYNAMIC_LOAD_DELAY_MS))
   situationSelects = getSituationSelects()
   if (situationSelects.some(s => s && restrictedValues.includes(s.value))) {
     const parts = extractContentParts(textArea.value)
@@ -1429,7 +1443,8 @@ function setupEditorInstanceListeners(
     })
 
     if (instanceId === 'main') {
-      setInterval(() => {
+      if (previewSyncInterval) clearInterval(previewSyncInterval)
+      previewSyncInterval = setInterval(() => {
         if (textArea.value !== lastKnownTextAreaValue) {
           lastKnownTextAreaValue = textArea.value
           updatePreview(textArea)

@@ -7,6 +7,7 @@ const TERMOS_ANTIGOS = [
     'SGD - Editor de Texto Aprimorado',
     'SGD-Editor-de-Texto-Aprimorado',
     'SGD Editor',
+    'Editor SGD',    
     'Editor de Texto Aprimorado',
     'sgd-editor-de-texto'
 ];
