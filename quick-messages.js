@@ -2768,6 +2768,7 @@ async function renderButtonVisibilitySettings(modal) {
     notes: '✍️ Anotações',
     fab: '🔘 Acesso Rápido (FAB)',
     goToTop: '🔼 Ir ao Topo',
+    iagente: '<img src="https://suporte.dominioatendimento.com/central/imagens/tria10.png" alt="IAgente" style="width:16px;height:16px;object-fit:contain;border-radius:50%;vertical-align:middle;margin-right:4px;"> IAgente',
     searchAnswerButton: '🔍 Pesquisar Resposta',
     separator2: 'Divisor 1',
     separator3: 'Divisor 2',

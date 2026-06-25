@@ -2112,6 +2112,9 @@ async function loadWarnings(sectionElement, forceRefresh = false) {
 let allTeamMembers = []
 let teamStatusAutoRefreshInterval = null
 
+// Normaliza strings vindas do Power BI: lower-case + substitui espaços não-quebráveis (U+00A0) por espaço normal
+const normalizeTeamStr = str => (str || '').trim().toLowerCase().replace(/\u00a0/g, ' ')
+
 /**
  * Carrega e renderiza o status da equipe.
  * @param {HTMLElement} sectionElement - O elemento da seção.
@@ -2219,8 +2222,8 @@ async function loadTeamStatus(sectionElement, forceRefresh = false, isAutoRefres
     // --- CÁLCULO DE ORDEM GLOBAL DE PAUSAS ---
     const pausedMembers = allTeamMembers
       .filter(m => {
-        const statusStr = (m.currentStatus || '').trim().toLowerCase()
-        const presenceStr = (m.presence || '').trim().toLowerCase()
+        const statusStr = normalizeTeamStr(m.currentStatus)
+        const presenceStr = normalizeTeamStr(m.presence)
         const isNaFila =
           statusStr === 'conversando' ||
           statusStr === 'ocioso' ||
@@ -2296,8 +2299,8 @@ async function loadTeamStatus(sectionElement, forceRefresh = false, isAutoRefres
     const statusFilterValue = statusSelect?.value || 'all'
     if (statusFilterValue !== 'all') {
       filteredMembers = filteredMembers.filter(m => {
-        const status = (m.currentStatus || '').trim().toLowerCase()
-        const presence = (m.presence || '').trim().toLowerCase()
+        const status = normalizeTeamStr(m.currentStatus)
+        const presence = normalizeTeamStr(m.presence)
         const isNaFila =
           status === 'conversando' ||
           status === 'ocioso' ||
@@ -2327,12 +2330,12 @@ async function loadTeamStatus(sectionElement, forceRefresh = false, isAutoRefres
     const sortValue = sortSelect?.value || 'not-ready'
 
     filteredMembers.sort((a, b) => {
-      const statusA = (a.currentStatus || '').trim().toLowerCase()
-      const presenceA = (a.presence || '').trim().toLowerCase()
+      const statusA = normalizeTeamStr(a.currentStatus)
+      const presenceA = normalizeTeamStr(a.presence)
       const isDiscA = presenceA.includes('desconectad') && (statusA.includes('fora da fila') || statusA.includes('fora fila'))
 
-      const statusB = (b.currentStatus || '').trim().toLowerCase()
-      const presenceB = (b.presence || '').trim().toLowerCase()
+      const statusB = normalizeTeamStr(b.currentStatus)
+      const presenceB = normalizeTeamStr(b.presence)
       const isDiscB = presenceB.includes('desconectad') && (statusB.includes('fora da fila') || statusB.includes('fora fila'))
 
       // Prioridade global: Fixados (Pinned) -> Resto -> Desconectados Fora Fila -> Ocultos (Hidden)
@@ -2394,11 +2397,10 @@ async function loadTeamStatus(sectionElement, forceRefresh = false, isAutoRefres
     let countSemStatus = 0
 
     filteredMembers.forEach(m => {
-      const status = (m.currentStatus || '').trim()
-      const statusLower = status.toLowerCase()
-      const presenceLower = (m.presence || '').trim().toLowerCase()
+      const statusLower = normalizeTeamStr(m.currentStatus)
+      const presenceLower = normalizeTeamStr(m.presence)
 
-      if (!status || (presenceLower.includes('desconectad') && (statusLower.includes('fora da fila') || statusLower.includes('fora fila')))) {
+      if (!statusLower || (presenceLower.includes('desconectad') && (statusLower.includes('fora da fila') || statusLower.includes('fora fila')))) {
         countSemStatus++
       } else if (
         statusLower === 'conversando' ||
@@ -2453,8 +2455,8 @@ function createTeamMemberCard(member) {
     window.teamService?.getTeamStatusEmoji(member.status) || '⚪'
 
   // Verifica status Fora da Fila
-  const statusStr = (member.currentStatus || '').trim().toLowerCase()
-  const presenceStr = (member.presence || '').trim().toLowerCase()
+  const statusStr = normalizeTeamStr(member.currentStatus)
+  const presenceStr = normalizeTeamStr(member.presence)
   const isNaFila =
     statusStr === 'conversando' ||
     statusStr === 'ocioso' ||
@@ -2473,6 +2475,23 @@ function createTeamMemberCard(member) {
     percentColor = 'var(--action-red)'
   } else if (member.percentNotReady > 16) {
     percentColor = 'var(--action-yellow)'
+  }
+
+  // Monta as linhas de detalhe separadamente para evitar template literals muito aninhados
+  let detailsLines
+  if (isDisconnectedForaFila) {
+    detailsLines = '<span class="ip-compact-hidden" style="color: var(--text-color-muted); font-style: italic;">📵 Desconectado — fora do atendimento</span>'
+  } else {
+    const presenceLine = member.presence
+      ? `<span class="ip-compact-hidden">📍 Presença: <strong>${escapeHTML(member.presence)}</strong></span>`
+      : ''
+    const statusLine = member.currentStatus
+      ? `<span class="ip-compact-hidden">💬 Status: <strong>${escapeHTML(member.currentStatus)}</strong></span>`
+      : ''
+    const durationLine = member.duration && member.duration !== '00:00:00'
+      ? `<span class="ip-compact-hidden">⏱️ Tempo: <strong>${escapeHTML(member.duration)}</strong></span>`
+      : ''
+    detailsLines = [presenceLine, statusLine, durationLine].filter(Boolean).join('\n            ')
   }
 
   let badgeStyle = ''
@@ -2526,9 +2545,7 @@ function createTeamMemberCard(member) {
               </div>
             </div>
 
-            <span class="ip-compact-hidden">${member.presence ? `📍 Presença: <strong>${escapeHTML(member.presence)}</strong>` : ''}</span>
-            <span class="ip-compact-hidden">${member.currentStatus ? `💬 Status: <strong>${escapeHTML(member.currentStatus)}</strong>` : ''}</span>
-            <span class="ip-compact-hidden">${member.duration && member.duration !== '00:00:00' ? `⏱️ Tempo: <strong>${escapeHTML(member.duration)}</strong>` : ''}</span>
+            ${detailsLines}
         </div>
 
       </div>

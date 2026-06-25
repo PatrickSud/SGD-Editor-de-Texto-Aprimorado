@@ -2,14 +2,16 @@
 
 /* Modal Content Override for Dashboard */
 #info-panel-modal .se-modal-content {
-  width: 1600px;
+  width: 98vw;
   max-width: 98vw;
-  height: 92vh;
-  max-height: 980px;
+  height: 96vh;
+  max-height: 96vh;
   display: flex;
   flex-direction: column;
   padding: 0;
   overflow: hidden;
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-color);
 }
 
 #info-panel-modal .se-modal-body {
@@ -21,6 +23,7 @@
   max-height: none;
   /* Override default modal body scroll */
 }
+
 
 /* --- SIDEBAR (Left) --- */
 .ip-sidebar {

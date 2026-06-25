@@ -1380,10 +1380,14 @@ async function createFloatingActionButtons() {
   })
 
   // Monta o HTML dos widgets baseado na ordem
+  const widgetClassMap = {
+    'fab-copy-ssc-wrapper': 'fab-copy-ssc-wrapper',
+    'fab-stopwatch-wrapper': 'fab-stopwatch-wrapper'
+  }
   let widgetsHtml = ''
   widgetsOrder.forEach(id => {
     if (widgetsContent[id]) {
-      widgetsHtml += `<div class="${id === 'fab-copy-ssc-wrapper' ? 'fab-copy-ssc-wrapper' : 'fab-stopwatch-wrapper'}" id="${id}" draggable="true">${widgetsContent[id]}</div>`
+      widgetsHtml += `<div class="${widgetClassMap[id] || id}" id="${id}" draggable="true">${widgetsContent[id]}</div>`
     }
   })
 
@@ -1453,6 +1457,7 @@ function setupFabListeners() {
       copySscLink()
       return
     }
+
 
     // Verifica se o clique foi no botão de Toggle (Play/Pause)
     const toggleBtn = e.target.closest('#fab-timer-toggle')
@@ -1760,6 +1765,224 @@ Sigo a disposição.`
     })
 }
 
+// URL do assistente de suporte IAgente
+const IAGENTE_URL =
+  'https://tria.plugsocial.online/?assunto=sped&codigoCliente=96797&identificacaoRevenda=3'
+
+/**
+ * Abre/minimiza a janela flutuante (Pop-Up) do IAgente.
+ * - Primeiro clique: cria (se necessário) e exibe a janela.
+ * - Clique seguinte com a janela visível: minimiza (oculta).
+ * - Clique seguinte com a janela oculta: restaura.
+ *
+ * Observação: a conversa não persiste entre recarregamentos (a sessão da Tria
+ * é server-side e o iframe recarrega do zero).
+ */
+function toggleIAgentePopup() {
+  const popup = document.getElementById('iagente-popup')
+
+  // Primeira abertura: cria a janela já visível e encerra (sem alternar estado).
+  if (!popup) {
+    createIAgentePopup()
+    updateIAgenteFabState(true)
+    return
+  }
+
+  // Janela já existe: alterna entre minimizada e visível.
+  const willShow = popup.classList.contains('minimized')
+  popup.classList.toggle('minimized', !willShow)
+  updateIAgenteFabState(willShow)
+  setIAgenteTabSignal(willShow)
+}
+
+/**
+ * Sincroniza o estado visual do botão IAgente com a janela.
+ * @param {boolean} isVisible - Se a janela está visível.
+ */
+function updateIAgenteFabState(isVisible) {
+  const btn = document.getElementById('iagente-scroll-btn')
+  if (!btn) return
+  btn.classList.toggle('active', isVisible)
+  btn.title = isVisible ? 'IAgente - Minimizar janela' : 'IAgente - Abrir janela'
+}
+
+// Sinalização na guia do navegador (título) enquanto o chat está aberto.
+const IAGENTE_TITLE_PREFIX = '🔴 IAgente • '
+let iagenteOriginalTitle = null
+
+/**
+ * Ativa/desativa a sinalização na guia do navegador indicando que o chat do
+ * IAgente está aberto nesta guia (altera apenas o título da aba).
+ * @param {boolean} active
+ */
+function setIAgenteTabSignal(active) {
+  try {
+    if (active) {
+      if (iagenteOriginalTitle === null) iagenteOriginalTitle = document.title
+      if (!document.title.startsWith(IAGENTE_TITLE_PREFIX)) {
+        document.title = IAGENTE_TITLE_PREFIX + document.title
+      }
+    } else {
+      if (iagenteOriginalTitle !== null) {
+        document.title = iagenteOriginalTitle
+        iagenteOriginalTitle = null
+      } else if (document.title.startsWith(IAGENTE_TITLE_PREFIX)) {
+        document.title = document.title.slice(IAGENTE_TITLE_PREFIX.length)
+      }
+    }
+  } catch (e) {
+    /* Sinalização é apenas cosmética; ignora falhas. */
+  }
+}
+
+/**
+ * Cria a janela flutuante (Pop-Up) do IAgente com um iframe do assistente.
+ * A janela é arrastável pelo cabeçalho e possui botões de minimizar e fechar.
+ * @returns {HTMLDivElement} O elemento da janela popup criado.
+ */
+function createIAgentePopup() {
+  const popup = document.createElement('div')
+  popup.id = 'iagente-popup'
+  popup.className = 'iagente-popup'
+
+  popup.innerHTML = `
+    <div class="iagente-popup-header" id="iagente-popup-header">
+      <span class="iagente-popup-title"><img src="https://suporte.dominioatendimento.com/central/imagens/tria10.png" alt="IAgente" class="iagente-popup-title-icon"> IAgente - Suporte</span>
+      <div class="iagente-popup-actions">
+        <button type="button" class="iagente-popup-btn" id="iagente-popup-minimize" title="Minimizar">—</button>
+        <button type="button" class="iagente-popup-btn" id="iagente-popup-close" title="Fechar">&times;</button>
+      </div>
+    </div>
+    <div class="iagente-popup-body">
+      <iframe src="${IAGENTE_URL}" class="iagente-popup-iframe" title="IAgente" allow="clipboard-read; clipboard-write; microphone; camera"></iframe>
+    </div>
+  `
+
+  document.body.appendChild(popup)
+
+  // Sinaliza na guia do navegador que o chat está aberto aqui.
+  setIAgenteTabSignal(true)
+
+  // Restaura a última posição em que o usuário deixou a janela.
+  applyIAgenteSavedPosition(popup)
+
+  // Botão Minimizar -> mesmo comportamento de minimizar pelo botão flutuante
+  const minimizeBtn = popup.querySelector('#iagente-popup-minimize')
+  if (minimizeBtn) {
+    minimizeBtn.addEventListener('click', e => {
+      e.stopPropagation()
+      toggleIAgentePopup()
+    })
+  }
+
+  // Botão Fechar -> remove a janela completamente
+  const closeBtn = popup.querySelector('#iagente-popup-close')
+  if (closeBtn) {
+    closeBtn.addEventListener('click', e => {
+      e.stopPropagation()
+      popup.remove()
+      const btn = document.getElementById('iagente-scroll-btn')
+      if (btn) {
+        btn.classList.remove('active')
+        btn.title = 'IAgente - Solicitar Suporte'
+      }
+      setIAgenteTabSignal(false)
+    })
+  }
+
+  makeIAgentePopupDraggable(popup)
+
+  return popup
+}
+
+/**
+ * Aplica a posição salva da janela do IAgente (lembrada entre aberturas),
+ * mantendo-a dentro da viewport.
+ * @param {HTMLElement} popup
+ */
+async function applyIAgenteSavedPosition(popup) {
+  try {
+    const data = await chrome.storage.local.get(['iagentePopupPosition'])
+    const pos = data.iagentePopupPosition
+    if (pos && typeof pos.left === 'number' && typeof pos.top === 'number') {
+      const maxLeft = window.innerWidth - popup.offsetWidth
+      const maxTop = window.innerHeight - popup.offsetHeight
+      popup.style.left = `${Math.max(0, Math.min(pos.left, maxLeft))}px`
+      popup.style.top = `${Math.max(0, Math.min(pos.top, maxTop))}px`
+      popup.style.right = 'auto'
+      popup.style.bottom = 'auto'
+    }
+  } catch (e) {
+    /* Ignora falhas de storage. */
+  }
+}
+
+/**
+ * Habilita o arraste da janela do IAgente através do seu cabeçalho e salva
+ * a posição final para lembrá-la nas próximas aberturas.
+ * @param {HTMLElement} popup - Elemento da janela popup.
+ */
+function makeIAgentePopupDraggable(popup) {
+  const header = popup.querySelector('#iagente-popup-header')
+  if (!header) return
+
+  let isDragging = false
+  let offsetX = 0
+  let offsetY = 0
+
+  header.addEventListener('mousedown', e => {
+    // Ignora cliques nos botões de ação do cabeçalho
+    if (e.target.closest('.iagente-popup-btn')) return
+
+    isDragging = true
+    const rect = popup.getBoundingClientRect()
+    offsetX = e.clientX - rect.left
+    offsetY = e.clientY - rect.top
+
+    // Converte para posicionamento por left/top e remove o ancoramento padrão
+    popup.style.left = `${rect.left}px`
+    popup.style.top = `${rect.top}px`
+    popup.style.right = 'auto'
+    popup.style.bottom = 'auto'
+
+    popup.classList.add('dragging')
+    document.body.style.userSelect = 'none'
+  })
+
+  document.addEventListener('mousemove', e => {
+    if (!isDragging) return
+
+    let newLeft = e.clientX - offsetX
+    let newTop = e.clientY - offsetY
+
+    // Mantém a janela dentro da viewport
+    const maxLeft = window.innerWidth - popup.offsetWidth
+    const maxTop = window.innerHeight - popup.offsetHeight
+    newLeft = Math.max(0, Math.min(newLeft, maxLeft))
+    newTop = Math.max(0, Math.min(newTop, maxTop))
+
+    popup.style.left = `${newLeft}px`
+    popup.style.top = `${newTop}px`
+  })
+
+  document.addEventListener('mouseup', () => {
+    if (!isDragging) return
+    isDragging = false
+    popup.classList.remove('dragging')
+    document.body.style.userSelect = ''
+
+    // Lembra a posição em que o usuário deixou a janela.
+    const rect = popup.getBoundingClientRect()
+    try {
+      chrome.storage.local.set({
+        iagentePopupPosition: { left: rect.left, top: rect.top }
+      })
+    } catch (e) {
+      /* Ignora falhas de storage. */
+    }
+  })
+}
+
 /**
  * Gerencia o estado de "Fixar" (Pin) dos menus do FAB.
  */
@@ -1821,17 +2044,17 @@ function updateFabOptionsPinnedState() {
  * @param {string} fabPosition - A posição atual do FAB (ex: 'bottom-right').
  */
 function adjustGoToTopButtonPosition(fabPosition) {
-  const goToTopButton = document.getElementById('floating-scroll-top-btn')
-  if (!goToTopButton) return
+  const btnGroup = document.getElementById('scroll-btn-group')
+  if (!btnGroup) return
 
-  // Se o FAB estiver em qualquer canto direito, move o botão 'Ir ao Topo' para a esquerda.
+  // Se o FAB estiver em qualquer canto direito, move o grupo para a esquerda.
   if (fabPosition.includes('right')) {
-    goToTopButton.style.left = '25px'
-    goToTopButton.style.right = 'auto'
+    btnGroup.style.left = '25px'
+    btnGroup.style.right = 'auto'
   } else {
     // Caso contrário, volta para a posição padrão (direita).
-    goToTopButton.style.right = '25px'
-    goToTopButton.style.left = 'auto'
+    btnGroup.style.right = '25px'
+    btnGroup.style.left = 'auto'
   }
 }
 
@@ -1840,11 +2063,38 @@ function adjustGoToTopButtonPosition(fabPosition) {
  * O botão alterna entre 'Ir ao Topo' e 'Ir para Baixo' e fica
  * visível apenas se a página tiver uma barra de rolagem.
  */
-function initializeScrollToTopButton() {
+async function initializeScrollToTopButton() {
+  // Grupo que contém o botão IAgente e o botão Ir ao Topo lado a lado
+  const btnGroup = document.createElement('div')
+  btnGroup.id = 'scroll-btn-group'
+
+  // TODO: Liberar o botão IAgente para todos os usuários quando aprovado.
+  // Por enquanto restrito a usuários com Modo Dev ativo na Central de Informações
+  // (isInfoDevModeEnabled) ou que já sejam editores (sgdPermissions.isEditor).
+  try {
+    const isDevMode = await isInfoDevModeEnabled()
+    const isEditor = !!(window.sgdPermissions?.isEditor)
+    if (isDevMode || isEditor) {
+      const iagenteBtn = document.createElement('button')
+      iagenteBtn.id = 'iagente-scroll-btn'
+      iagenteBtn.className = 'shine-effect'
+      iagenteBtn.title = 'IAgente - Solicitar Suporte'
+      iagenteBtn.innerHTML = '<img src="https://suporte.dominioatendimento.com/central/imagens/tria10.png" alt="IAgente" class="iagente-scroll-icon">'
+      iagenteBtn.addEventListener('click', toggleIAgentePopup)
+      btnGroup.appendChild(iagenteBtn)
+    }
+  } catch (e) {
+    // Falha no setup do IAgente nunca deve impedir a criação do botão de scroll.
+    console.error('Erro ao inicializar o botão IAgente:', e)
+  }
+
+  // Botão Ir ao Topo / Ir para o Final (à direita)
   const scrollButton = document.createElement('button')
   scrollButton.id = 'floating-scroll-top-btn'
   scrollButton.className = 'shine-effect'
-  document.body.appendChild(scrollButton)
+  btnGroup.appendChild(scrollButton)
+
+  document.body.appendChild(btnGroup)
 
   // SVGs para os dois estados do botão
   const svgGoTop = `
@@ -1997,8 +2247,11 @@ async function applyGlobalVisibilitySettings() {
 
   const goToTopButton = document.getElementById('floating-scroll-top-btn')
   if (goToTopButton) {
-    // A visibilidade do botão também depende do scroll, então usamos uma classe
     goToTopButton.style.display = visibility.goToTop === false ? 'none' : ''
+  }
+  const iagenteScrollBtn = document.getElementById('iagente-scroll-btn')
+  if (iagenteScrollBtn) {
+    iagenteScrollBtn.style.display = visibility.iagente === false ? 'none' : ''
   }
 
   // Novo: visibilidade do botão "Pesquisar Resposta" clonado
