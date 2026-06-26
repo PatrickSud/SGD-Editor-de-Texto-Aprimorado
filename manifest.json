@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SGD - Editor de Texto Aprimorado",
-  "version": "3.0.5.10",
+  "version": "3.0.5.12",
   "description": "Adiciona um editor de texto avançado ao site https://sgd.dominiosistemas.com.br/",
   "permissions": [
     "storage",
@@ -15,7 +15,8 @@
     "https://app.powerbi.com/*",
     "wss://wymocw0zke.execute-api.us-east-1.amazonaws.com/*",
     "https://aiplatform.thomsonreuters.com/*",
-    "https://script.google.com/*"
+    "https://script.google.com/*",
+    "https://tria.plugsocial.online/*"
   ],
   "background": {
     "service_worker": "service-worker.js"
@@ -44,7 +45,8 @@
         "permissions-service.js",
         "info-panel.js",
         "release-notes.js",
-        "main.js"
+        "editor-ui.js",
+        "app.js"
       ],
       "css": [
         "styles/base.css",

@@ -2,14 +2,16 @@
 
 /* Modal Content Override for Dashboard */
 #info-panel-modal .se-modal-content {
-  width: 1600px;
+  width: 98vw;
   max-width: 98vw;
-  height: 92vh;
-  max-height: 980px;
+  height: 96vh;
+  max-height: 96vh;
   display: flex;
   flex-direction: column;
   padding: 0;
   overflow: hidden;
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-color);
 }
 
 #info-panel-modal .se-modal-body {
@@ -21,6 +23,7 @@
   max-height: none;
   /* Override default modal body scroll */
 }
+
 
 /* --- SIDEBAR (Left) --- */
 .ip-sidebar {
@@ -1333,4 +1336,20 @@
   animation-play-state: paused;
   box-shadow: var(--shadow-lg);
 }
+
+.ip-pause-order-badge {
+  background: linear-gradient(135deg, var(--action-orange) 0%, var(--action-orange-hover) 100%);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+
 

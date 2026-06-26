@@ -48,7 +48,7 @@ async function getWarnings(forceRefresh = false) {
           const isDevMode = !!(storage.infoDevMode);
           const isEditor = !!(storage.infoDevMode || storage.isCurrentUserEditor || window.sgdPermissions?.isEditor);
           const activeChannelsList = storage.warningChannels || [
-            'Geral', 'AT', 'Onvio', 'Onvio Processos/Messenger',
+            'Geral', 'AT', 'Onvio', 'Dominio Processos/Messenger',
             'Folha de pagamento', 'Escrita Fiscal', 'Contabilidade',
             'Serviços Digitais', 'Fila 61', 'Fila 62'
           ];
@@ -322,7 +322,7 @@ async function recordWarningReceipt(warningId, userName) {
       if (w.onlySelf) {
         reason = `Aviso criado exclusivamente para o autor (Apenas para mim) no canal "${wChannel}"`;
       } else if (w.targetUsers && Array.isArray(w.targetUsers) && w.targetUsers.length > 0) {
-        reason = `Direcionado especificamente para este colaborador no canal "${wChannel}"`;
+        reason = `Direcionado para colaboradores específicos (${w.targetUsers.join(', ')}) no canal "${wChannel}"`;
       } else {
         reason = `Aviso geral enviado para o canal "${wChannel}"`;
       }
@@ -383,7 +383,7 @@ async function recordWarningView(warningId, userName) {
       if (w.onlySelf) {
         reason = `Visualizado pelo autor do aviso (Apenas para mim) no canal "${wChannel}"`;
       } else if (w.targetUsers && Array.isArray(w.targetUsers) && w.targetUsers.length > 0) {
-        reason = `Visualizado pelo colaborador direcionado no canal "${wChannel}"`;
+        reason = `Visualizado por colaborador direcionado em lista específica (${w.targetUsers.join(', ')}) no canal "${wChannel}"`;
       } else {
         reason = `Visualizado pelo colaborador inscrito no canal "${wChannel}"`;
       }

@@ -502,7 +502,7 @@ const WARNING_CHANNELS = [
   'Geral',
   'AT',
   'Onvio',
-  'Onvio Processos/Messenger',
+  'Dominio Processos/Messenger',
   'Folha de pagamento',
   'Escrita Fiscal',
   'Contabilidade',
@@ -530,7 +530,7 @@ async function touchWarningsMetadata(warningDataOrArray) {
     const now = new Date().toISOString();
     const patchData = { lastUpdated: now };
     const allChannels = [
-      'Geral', 'AT', 'Onvio', 'Onvio Processos/Messenger',
+      'Geral', 'AT', 'Onvio', 'Dominio Processos/Messenger',
       'Folha de pagamento', 'Escrita Fiscal', 'Contabilidade',
       'Serviços Digitais', 'Fila 61', 'Fila 62'
     ];
@@ -901,6 +901,27 @@ async function setupInitialAlarms() {
 chrome.runtime.onInstalled.addListener(async details => {
   console.log('Service Worker: Extensão instalada/atualizada.')
   setupInitialAlarms()
+
+  // Migração de canal: Onvio Processos/Messenger -> Dominio Processos/Messenger
+  try {
+    const storage = await chrome.storage.local.get(['subscribedChannels', 'allowedChannels', 'warningChannels']);
+    const updates = {};
+    if (storage.subscribedChannels && Array.isArray(storage.subscribedChannels)) {
+      updates.subscribedChannels = storage.subscribedChannels.map(c => c === 'Onvio Processos/Messenger' ? 'Dominio Processos/Messenger' : c);
+    }
+    if (storage.allowedChannels && Array.isArray(storage.allowedChannels)) {
+      updates.allowedChannels = storage.allowedChannels.map(c => c === 'Onvio Processos/Messenger' ? 'Dominio Processos/Messenger' : c);
+    }
+    if (storage.warningChannels && Array.isArray(storage.warningChannels)) {
+      updates.warningChannels = storage.warningChannels.map(c => c === 'Onvio Processos/Messenger' ? 'Dominio Processos/Messenger' : c);
+    }
+    if (Object.keys(updates).length > 0) {
+      await chrome.storage.local.set(updates);
+      console.log('Service Worker: Canais migrados com sucesso para Dominio Processos/Messenger.');
+    }
+  } catch (err) {
+    console.error('Erro na migração de canais no Service Worker:', err);
+  }
 
   if (details.reason === 'update') {
     try {

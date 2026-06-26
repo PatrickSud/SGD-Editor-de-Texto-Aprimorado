@@ -265,6 +265,7 @@ function exibirWidgetDuplicidadeSSC(resultados) {
 let verificacaoDuplicidadeEmAndamento = false
 
 async function iniciarVerificacaoDuplicidadeSSC() {
+  // Impede que uma nova execução comece enquanto outra ainda está em andamento
   if (verificacaoDuplicidadeEmAndamento) {
     console.log('[DEBUG] Verificação já em andamento, ignorando nova chamada.')
     return

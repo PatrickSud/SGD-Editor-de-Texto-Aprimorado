@@ -366,11 +366,20 @@
   border: 2px solid var(--background-main);
 }
 
-/* --- BOTÃO "IR AO TOPO/BAIXO" --- */
-#floating-scroll-top-btn {
+/* --- GRUPO DE BOTÕES FLUTUANTES (IAgente + Ir ao Topo/Baixo) --- */
+#scroll-btn-group {
   position: fixed;
   bottom: 25px;
   right: 25px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 1050;
+}
+
+/* Estilo base compartilhado pelos dois botões do grupo */
+#iagente-scroll-btn,
+#floating-scroll-top-btn {
   width: 40px;
   height: 40px;
   background: rgba(0, 0, 0, 0.6);
@@ -384,7 +393,38 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 1050;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+#iagente-scroll-btn {
+  font-size: 18px;
+  line-height: 1;
+  padding: 6px;
+  background: rgba(200, 200, 200, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.iagente-scroll-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  border-radius: 50%;
+}
+
+#iagente-scroll-btn.active {
+  background: #102518;
+  box-shadow: 0 0 0 3px rgba(16, 37, 24, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+#iagente-scroll-btn:hover,
+#floating-scroll-top-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+}
+
+/* Botão de scroll: inicia oculto e aparece via classe .visible */
+#floating-scroll-top-btn {
   opacity: 0;
   visibility: hidden;
   transform: translateY(10px);
@@ -396,11 +436,6 @@
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
-}
-
-#floating-scroll-top-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
 }
 
 #floating-scroll-top-btn svg {
@@ -875,4 +910,126 @@
 .is-dragging .fab-pin-btn {
   display: none !important;
 }
+
+/* --- JANELA POP-UP DO IAGENTE --- */
+.iagente-popup {
+  position: fixed;
+  bottom: 90px;
+  right: 30px;
+  width: 420px;
+  height: 600px;
+  max-width: 95vw;
+  max-height: 85vh;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 1060;
+  animation: iagentePopupIn 0.25s ease;
+}
+
+@keyframes iagentePopupIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Estado minimizado: oculta a janela mantendo o iframe no DOM */
+.iagente-popup.minimized {
+  display: none;
+}
+
+.iagente-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  color: #fff;
+  cursor: grab;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.iagente-popup.dragging .iagente-popup-header {
+  cursor: grabbing;
+}
+
+.iagente-popup-title {
+  font-size: 14px;
+  font-weight: 600;
+  font-family: system-ui, -apple-system, sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.iagente-popup-title-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.iagente-popup-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.iagente-popup-btn {
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.iagente-popup-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.iagente-popup-btn:active {
+  transform: scale(0.92);
+}
+
+.iagente-popup-body {
+  flex: 1;
+  overflow: hidden;
+  background-color: #fff;
+}
+
+.iagente-popup-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+/* Evita que o iframe "engula" eventos do mouse durante o arraste da janela */
+.iagente-popup.dragging .iagente-popup-iframe {
+  pointer-events: none;
+}
+
 
