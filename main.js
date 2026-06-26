@@ -806,9 +806,6 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
     : ''
 
   const isSscPage = window.location.pathname.includes('/sgsc/faces/ssc.html')
-  if (isSscPage) {
-  iniciarVerificacaoDuplicidadeSSC()
-  }
   const devMode = await isDevModeEnabled()
   const pinnedAIButtons = settings.pinnedAIButtons || []
 
