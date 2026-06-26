@@ -281,9 +281,10 @@ async function openInfoPanel(initialTabId = 'pending') {
             teamSearchInput.dataset.listenerSet = 'true'
           }
           if (teamSortSelect && !teamSortSelect.dataset.listenerSet) {
-            teamSortSelect.addEventListener('change', () =>
+            teamSortSelect.addEventListener('change', async () => {
+              await chrome.storage.local.set({ teamSortMode: teamSortSelect.value })
               loadTeamStatus(targetSection, false)
-            )
+            })
             teamSortSelect.dataset.listenerSet = 'true'
           }
 
@@ -304,7 +305,7 @@ async function openInfoPanel(initialTabId = 'pending') {
           if (toggleViewBtn && !toggleViewBtn.dataset.listenerSet) {
             toggleViewBtn.addEventListener('click', async () => {
               const result = await chrome.storage.local.get(['teamViewMode'])
-              const currentMode = result.teamViewMode || 'normal'
+              const currentMode = result.teamViewMode || 'compact'
               const newMode = currentMode === 'normal' ? 'compact' : 'normal'
               await chrome.storage.local.set({ teamViewMode: newMode })
               loadTeamStatus(targetSection, false) // Recarrega com novo modo
@@ -2254,13 +2255,19 @@ async function loadTeamStatus(sectionElement, forceRefresh = false, isAutoRefres
 
     // --- APLICAÇÃO DE FILTROS E ORDENAÇÃO ---
 
-    // 1. Busca preferências (PIN, HIDE, WATCH, VIEW_MODE)
+    // 1. Busca preferências (PIN, HIDE, WATCH, VIEW_MODE, SORT_MODE)
     const prefs = await chrome.storage.local.get([
       'pinnedTechnicians',
       'hiddenTechnicians',
       'monitoredTechnicians',
-      'teamViewMode'
+      'teamViewMode',
+      'teamSortMode'
     ])
+
+    // Restaura a ordenação salva no select
+    if (sortSelect && prefs.teamSortMode) {
+      sortSelect.value = prefs.teamSortMode
+    }
     const pinnedList = Array.isArray(prefs.pinnedTechnicians)
       ? prefs.pinnedTechnicians
       : []
@@ -2270,7 +2277,7 @@ async function loadTeamStatus(sectionElement, forceRefresh = false, isAutoRefres
     const monitoredList = Array.isArray(prefs.monitoredTechnicians)
       ? prefs.monitoredTechnicians
       : []
-    const isCompactMode = prefs.teamViewMode === 'compact'
+    const isCompactMode = prefs.teamViewMode !== 'normal'
 
     // Aplica o modo de visualização no container
     if (isCompactMode) {
@@ -2385,7 +2392,7 @@ async function loadTeamStatus(sectionElement, forceRefresh = false, isAutoRefres
       container.style.gridTemplateColumns =
         'repeat(auto-fill, minmax(220px, 1fr))'
       container.style.gap = '12px'
-      container.innerHTML = filteredMembers.map(createTeamMemberCard).join('')
+      container.innerHTML = filteredMembers.map(m => createTeamMemberCard(m, isCompactMode)).join('')
     }
 
     // --- CÁLCULO DE ESTATÍSTICAS (Baseado nos itens FILTRADOS, mas contagem global é melhor para resumo) ---
@@ -2447,7 +2454,7 @@ async function loadTeamStatus(sectionElement, forceRefresh = false, isAutoRefres
   }
 }
 
-function createTeamMemberCard(member) {
+function createTeamMemberCard(member, isCompactMode = false) {
   const badgeClass =
     window.teamService?.getTeamStatusBadgeClass(member.percentNotReady) ||
     'badge-success'
@@ -2479,6 +2486,7 @@ function createTeamMemberCard(member) {
 
   // Monta as linhas de detalhe separadamente para evitar template literals muito aninhados
   let detailsLines
+  let compactInlineLine = ''
   if (isDisconnectedForaFila) {
     detailsLines = '<span class="ip-compact-hidden" style="color: var(--text-color-muted); font-style: italic;">📵 Desconectado — fora do atendimento</span>'
   } else {
@@ -2492,6 +2500,18 @@ function createTeamMemberCard(member) {
       ? `<span class="ip-compact-hidden">⏱️ Tempo: <strong>${escapeHTML(member.duration)}</strong></span>`
       : ''
     detailsLines = [presenceLine, statusLine, durationLine].filter(Boolean).join('\n            ')
+
+    // Linha compacta: ⏱️ tempo · 📍 presença (visível apenas no modo compacto)
+    const compactParts = []
+    if (member.duration && member.duration !== '00:00:00') {
+      compactParts.push(`⏱️ ${escapeHTML(member.duration)}`)
+    }
+    if (member.presence) {
+      compactParts.push(`📍 ${escapeHTML(member.presence)}`)
+    }
+    if (compactParts.length > 0) {
+      compactInlineLine = `<div class="ip-compact-only">${compactParts.join('<span style="opacity:0.4; margin: 0 2px;">·</span>')}</div>`
+    }
   }
 
   let badgeStyle = ''
@@ -2521,7 +2541,7 @@ function createTeamMemberCard(member) {
               ${member.pauseOrder ? `<span class="ip-pause-order-badge" ${badgeStyle} title="Ordem de pausa: ${member.pauseOrder}º a pausar">#${member.pauseOrder}</span>` : ''}
            </div>
            <span class="ip-card-badge ${badgeClass}" style="font-size: 10px; padding: 2px 6px; flex-shrink: 0;">
-              ${statusEmoji} ${escapeHTML(member.status)}
+              ${statusEmoji}${isCompactMode ? '' : ' ' + escapeHTML(member.status)}
            </span>
         </div>
 
@@ -2530,7 +2550,7 @@ function createTeamMemberCard(member) {
             
             <!-- Linha de Indisponibilidade + Ações -->
             <div style="display: flex; align-items: center; justify-content: space-between;">
-              <span style="font-weight: 600; color: ${percentColor};">📊 ${escapeHTML(member.percentFormatted)} Indisponível</span>
+              <span style="font-weight: 600; color: ${percentColor};">📊 ${escapeHTML(member.percentFormatted)}${isCompactMode ? '' : ' Indisponível'}</span>
               
               <div class="ip-card-quick-actions">
                 <button class="ip-action-icon-btn watch-btn ${member.isMonitored ? 'active-watch' : ''}" title="${member.isMonitored ? 'Parar monitoramento' : 'Alertar se crítico'}" style="${member.isMonitored ? 'opacity: 1; color: var(--action-blue);' : ''}">
@@ -2545,6 +2565,7 @@ function createTeamMemberCard(member) {
               </div>
             </div>
 
+            ${compactInlineLine}
             ${detailsLines}
         </div>
 

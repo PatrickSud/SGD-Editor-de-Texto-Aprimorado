@@ -1032,4 +1032,16 @@
   pointer-events: none;
 }
 
+/* --- OCULTAÇÃO EM JANELAS PEQUENAS ---
+   Em janelas SGD abertas em tamanho reduzido (< 680px de largura OU < 450px de
+   altura), os botões flutuantes (FAB, IAgente, Ir ao Topo) são ocultados para
+   não atrapalhar a visualização e o clique. Os limiares espelham as constantes
+   FAB_MIN_WINDOW_WIDTH e FAB_MIN_WINDOW_HEIGHT definidas em config.js. */
+@media (max-width: 679px), (max-height: 449px) {
+  .fab-container,
+  .fab-drop-zone-container,
+  #scroll-btn-group {
+    display: none !important;
+  }
+}
 

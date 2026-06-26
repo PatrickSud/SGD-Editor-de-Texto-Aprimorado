@@ -8,6 +8,23 @@
 const RTDB_BASE_URL = 'https://sgd-extension-default-rtdb.firebaseio.com';
 const RTDB_WARNINGS_URL = `${RTDB_BASE_URL}/warnings`;
 const RTDB_WARNINGS_META_URL = `${RTDB_BASE_URL}/metadata/warnings`;
+// Nó de versão minúsculo usado pelo poll de avisos (ver service-worker.js).
+const RTDB_WARNINGS_VERSION_URL = `${RTDB_BASE_URL}/metadata/warnings_version`;
+
+/**
+ * Atualiza o nó de versão dos avisos (atalho de polling).
+ * Chamado nos caminhos de fallback (quando o Service Worker está indisponível),
+ * pois o caminho normal já atualiza a versão via touchWarningsMetadata no SW.
+ */
+async function touchWarningsVersion() {
+  try {
+    await fetch(`${RTDB_WARNINGS_VERSION_URL}.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(new Date().toISOString())
+    });
+  } catch (_) {}
+}
 
 async function getWarnings(forceRefresh = false) {
   try {
@@ -165,6 +182,7 @@ async function createWarning(warningData) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ lastUpdated: new Date().toISOString() })
       }).catch(() => {});
+      await touchWarningsVersion();
     }
 
     chrome.runtime.sendMessage({ action: 'WARNING_CREATED' }).catch(() => {});
@@ -223,6 +241,7 @@ async function deleteWarning(id) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ lastUpdated: new Date().toISOString() })
       }).catch(() => {});
+      await touchWarningsVersion();
     }
 
     if (window.sgdPermissions?.writeAuditLog) {
@@ -273,6 +292,7 @@ async function updateWarning(id, updates) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ lastUpdated: new Date().toISOString() })
       }).catch(() => {});
+      await touchWarningsVersion();
     }
 
     chrome.runtime.sendMessage({ action: 'WARNING_CREATED' }).catch(() => {});
@@ -332,7 +352,6 @@ async function recordWarningReceipt(warningId, userName) {
       name: userName.trim(),
       timestamp: now,
       reason: reason,
-      userAgent: navigator.userAgent,
       version: chrome.runtime.getManifest().version,
       isEditor: !!(window.sgdPermissions?.isEditor),
       isDevMode: !!(window.sgdPermissions?.isDevMode)
@@ -393,7 +412,6 @@ async function recordWarningView(warningId, userName) {
       name: userName.trim(),
       timestamp: now,
       reason: reason,
-      userAgent: navigator.userAgent,
       version: chrome.runtime.getManifest().version,
       isEditor: !!(window.sgdPermissions?.isEditor),
       isDevMode: !!(window.sgdPermissions?.isDevMode)

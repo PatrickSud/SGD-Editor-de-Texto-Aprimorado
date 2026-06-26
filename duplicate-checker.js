@@ -33,49 +33,109 @@ function calcularSimilaridadeSSC(assuntoAtual, assuntoCandidato) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. JANELA OCULTA — ESPERA DE CARREGAMENTO POR TROCA DE DOCUMENTO
+// 2. BUSCA VIA FETCH (SEM JANELA)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function aguardarNovoDocumentoCarregado(win, documentoAnterior) {
-  return new Promise((resolve, reject) => {
-    const inicio = Date.now()
-    const TIMEOUT_MS = 15000
+async function buscarDocumentoSSCsPendentes(clienteId) {
+  const urlBase        = `${window.location.origin}/sgsc/faces/sscs-pendentes.html`
+  const urlVerificacao = `${urlBase}?clienteID=${clienteId}`
+  const parser = new DOMParser()
 
-    const checarPronto = () => {
-      try {
-        if (win.closed) {
-          reject(new Error('Janela foi fechada antes do carregamento terminar.'))
-          return
-        }
-        const documentoTrocou = win.document !== documentoAnterior
-        const carregamentoCompleto = win.document.readyState === 'complete'
+  // 1a. GET sem clienteID: captura o estado real dos filtros que o usuário deixou.
+  // É feito sem o parâmetro clienteID para evitar que o servidor pré-preencha
+  // automaticamente os campos (ex: relSscForm:clientes) com o cliente da SSC atual.
+  const resEstadoUsuario = await fetch(urlBase, { credentials: 'same-origin' })
+  if (!resEstadoUsuario.ok) throw new Error(`Erro ao capturar estado do usuário: ${resEstadoUsuario.status}`)
 
-        if (documentoTrocou && carregamentoCompleto) {
-          resolve(win.document)
-          return
-        }
-      } catch (e) {
-        // Ignora erros temporários de acesso durante a transição de página
-      }
+  const docEstadoUsuario = parser.parseFromString(await resEstadoUsuario.text(), 'text/html')
+  const formEstado = docEstadoUsuario.getElementById('relSscForm')
 
-      if (Date.now() - inicio > TIMEOUT_MS) {
-        reject(new Error('Timeout ao aguardar carregamento da página de SSCs Pendentes.'))
-        return
-      }
+  const clientesOriginal     = docEstadoUsuario.getElementById('relSscForm:clientes')?.value     ?? ''
+  const unidadeNomeOriginal  = docEstadoUsuario.getElementById('relSscForm:unidadeNome')?.value  ?? ''
+  const situacaoOriginal     = docEstadoUsuario.getElementById('relSscForm:situacao')?.value     ?? '0'
+  const responsavelOriginal  = docEstadoUsuario.getElementById('relSscForm:responsavel')?.value  ?? '0'
+  const classificacaoOriginal = docEstadoUsuario.getElementById('relSscForm:classificacao')?.value ?? '0'
 
-      setTimeout(checarPronto, 150)
-    }
+  console.log('[RESTORE-DEBUG] Estado real do usuário (GET sem clienteID):')
+  console.log('[RESTORE-DEBUG]   relSscForm:clientes     =', JSON.stringify(clientesOriginal))
+  console.log('[RESTORE-DEBUG]   relSscForm:unidadeNome  =', JSON.stringify(unidadeNomeOriginal))
+  console.log('[RESTORE-DEBUG]   relSscForm:situacao     =', JSON.stringify(situacaoOriginal))
+  console.log('[RESTORE-DEBUG]   relSscForm:responsavel  =', JSON.stringify(responsavelOriginal))
+  console.log('[RESTORE-DEBUG]   relSscForm:classificacao=', JSON.stringify(classificacaoOriginal))
 
-    checarPronto()
+  // 1b. GET com clienteID: carrega o formulário para a verificação
+  const resInicial = await fetch(urlVerificacao, { credentials: 'same-origin' })
+  if (!resInicial.ok) throw new Error(`Erro ao carregar SSCs Pendentes: ${resInicial.status}`)
+
+  const docInicial = parser.parseFromString(await resInicial.text(), 'text/html')
+  const form = docInicial.getElementById('relSscForm')
+  if (!form) throw new Error('Formulário relSscForm não encontrado')
+
+  const actionUrl = form.action || urlVerificacao
+
+  // 2. POST de verificação: busca todas as SSCs do cliente (filtros zerados)
+  const paramsVerificacao = new URLSearchParams(new FormData(form))
+  paramsVerificacao.set('relSscForm:situacao',    '0')
+  paramsVerificacao.set('relSscForm:responsavel', '0')
+  paramsVerificacao.set('relSscForm:atualizarBtn', 'relSscForm:atualizarBtn')
+
+  const resVerificacao = await fetch(actionUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: paramsVerificacao.toString(),
+    credentials: 'same-origin'
   })
+  if (!resVerificacao.ok) throw new Error(`Erro ao buscar resultados: ${resVerificacao.status}`)
+
+  const docVerificacao = parser.parseFromString(await resVerificacao.text(), 'text/html')
+
+  // 3. POST de restauração: devolve a sessão ao estado real do usuário.
+  // Usa o ViewState retornado pela verificação (o anterior foi consumido pelo JSF).
+  const viewStateAtualizado = docVerificacao.querySelector('[name="javax.faces.ViewState"]')?.value
+  console.log('[RESTORE-DEBUG] ViewState após verificação:', JSON.stringify(viewStateAtualizado))
+
+  const paramsRestauracao = new URLSearchParams(formEstado ? new FormData(formEstado) : {})
+  paramsRestauracao.set('relSscForm:clientes',      clientesOriginal)
+  paramsRestauracao.set('relSscForm:unidadeNome',   unidadeNomeOriginal)
+  paramsRestauracao.set('relSscForm:situacao',      situacaoOriginal)
+  paramsRestauracao.set('relSscForm:responsavel',   responsavelOriginal)
+  paramsRestauracao.set('relSscForm:classificacao', classificacaoOriginal)
+  paramsRestauracao.set('relSscForm:atualizarBtn',  'relSscForm:atualizarBtn')
+  if (viewStateAtualizado) {
+    paramsRestauracao.set('javax.faces.ViewState', viewStateAtualizado)
+  }
+
+  console.log('[RESTORE-DEBUG] Payload do POST de restauração:')
+  for (const [k, v] of paramsRestauracao.entries()) {
+    console.log(`[RESTORE-DEBUG]   ${k} = ${JSON.stringify(v)}`)
+  }
+
+  try {
+    const resRestauracao = await fetch(actionUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: paramsRestauracao.toString(),
+      credentials: 'same-origin'
+    })
+    const docRestauracao = parser.parseFromString(await resRestauracao.text(), 'text/html')
+    console.log('[RESTORE-DEBUG] Status da restauração:', resRestauracao.status)
+    console.log('[RESTORE-DEBUG]   relSscForm:clientes    no doc restaurado =',
+      JSON.stringify(docRestauracao.getElementById('relSscForm:clientes')?.value))
+    console.log('[RESTORE-DEBUG]   relSscForm:unidadeNome no doc restaurado =',
+      JSON.stringify(docRestauracao.getElementById('relSscForm:unidadeNome')?.value))
+  } catch (e) {
+    console.warn('[RESTORE-DEBUG] Erro no POST de restauração:', e)
+  }
+
+  return docVerificacao
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 3. LEITURA DA TABELA DE RESULTADOS
 // ─────────────────────────────────────────────────────────────────────────────
 
-function lerResultadosTabelaSSC(win, assuntoAtual, sscAtualId) {
-  const linhas = win.document.querySelectorAll('table.tableSorter tbody tr')
+function lerResultadosTabelaSSC(doc, assuntoAtual, sscAtualId) {
+  const linhas = doc.querySelectorAll('table.tableSorter tbody tr')
   console.log('[DEBUG] Total de linhas na tabela:', linhas.length)
 
   const resultados = []
@@ -131,8 +191,8 @@ function injetarEstiloWidgetSSC() {
     }
     #ssc-duplicate-widget {
       position: fixed;
-      bottom: 80px;
-      right: 0;
+      bottom: 25px;
+      right: 70px;
       z-index: 999999;
       box-shadow: -2px 2px 12px rgba(0,0,0,0.3);
       border-radius: 8px 0 0 8px;
@@ -197,19 +257,16 @@ function injetarEstiloWidgetSSC() {
 }
 
 function posicionarWidgetAoLadoDoBotaoScroll(widget) {
-  const botaoScroll = document.getElementById('floating-scroll-top-btn')
+  const grupo = document.getElementById('scroll-btn-group')
+  if (!grupo) return
 
-  // Se o botão não existe ou não está visível, mantém a posição padrão do CSS
-  if (!botaoScroll || !botaoScroll.classList.contains('visible')) return
+  const MARGEM_INFERIOR = 20
 
-  const MARGEM_INFERIOR = 20 // espaço mínimo entre o widget e o fundo da tela
-
-  const rectBotao = botaoScroll.getBoundingClientRect()
+  const rectGrupo = grupo.getBoundingClientRect()
   const alturaWidget = widget.offsetHeight
 
-  let topDesejado = rectBotao.top + rectBotao.height / 2 - alturaWidget / 2
+  let topDesejado = rectGrupo.top + rectGrupo.height / 2 - alturaWidget / 2
 
-  // Não deixa o widget passar do limite inferior da tela
   const limiteInferior = window.innerHeight - MARGEM_INFERIOR - alturaWidget
   if (topDesejado > limiteInferior) {
     topDesejado = limiteInferior
@@ -218,7 +275,7 @@ function posicionarWidgetAoLadoDoBotaoScroll(widget) {
   widget.style.bottom = 'auto'
   widget.style.top = `${topDesejado}px`
   widget.style.transform = 'none'
-  widget.style.right = `${window.innerWidth - rectBotao.left + 10}px`
+  widget.style.right = `${window.innerWidth - rectGrupo.left + 10}px`
 }
 
 function exibirWidgetDuplicidadeSSC(resultados) {
@@ -228,7 +285,10 @@ function exibirWidgetDuplicidadeSSC(resultados) {
 
   const plural = resultados.length > 1 ? 's' : ''
   const itensHtml = resultados
-    .map(item => `<a href="${item.href}" target="_blank">${escapeHTML(item.assunto)} — ${item.dias}d</a>`)
+    .map(item => {
+      const href = item.href + (item.href.includes('?') ? '&' : '?') + 'sgd-from-widget=1'
+      return `<a href="${href}" target="_blank">${escapeHTML(item.assunto)} — ${item.dias}d</a>`
+    })
     .join('')
 
   const widget = document.createElement('div')
@@ -265,6 +325,16 @@ function exibirWidgetDuplicidadeSSC(resultados) {
 let verificacaoDuplicidadeEmAndamento = false
 
 async function iniciarVerificacaoDuplicidadeSSC() {
+  const urlParams = new URLSearchParams(window.location.search)
+  if (urlParams.has('permitirUsarTramiteSscComoResposta')) {
+    console.log('[DEBUG] Modo "copiar trâmite" detectado — verificação de duplicidade ignorada.')
+    return
+  }
+  if (urlParams.has('sgd-from-widget')) {
+    console.log('[DEBUG] SSC aberta pelo widget de duplicidade — verificação ignorada.')
+    return
+  }
+
   // Impede que uma nova execução comece enquanto outra ainda está em andamento
   if (verificacaoDuplicidadeEmAndamento) {
     console.log('[DEBUG] Verificação já em andamento, ignorando nova chamada.')
@@ -292,73 +362,18 @@ async function iniciarVerificacaoDuplicidadeSSC() {
       sscAtualId = params.get('ssc')
     }
 
-    const url = `${window.location.origin}/sgsc/faces/sscs-pendentes.html?clienteID=${clienteId}`
     console.log('[DEBUG] clienteId:', clienteId, '| sscAtualId:', sscAtualId, '| assuntoAtual:', assuntoAtual)
 
-    const nomeJanela = `sgd-duplicate-checker-${Date.now()}`
-
-    let win
     try {
-      win = window.open(url, nomeJanela, 'width=300,height=300,left=-3000,top=-3000')
-      if (win) {
-        win.blur()
-        window.focus()
-      }
-    } catch (e) {
-      win = null
-    }
-
-    if (!win) {
-      showNotification(
-        '🔒 Não foi possível verificar atendimentos semelhantes — permita pop-ups para este site.',
-        'error',
-        6000
-      )
-      return
-    }
-
-    try {
-      const documentoEmBranco = win.document
-      await aguardarNovoDocumentoCarregado(win, documentoEmBranco)
-
-      const situacaoSelect = win.document.getElementById('relSscForm:situacao')
-      const responsavelSelect = win.document.getElementById('relSscForm:responsavel')
-      const atualizarBtn = win.document.getElementById('relSscForm:atualizarBtn')
-
-      console.log('[DEBUG] Elementos encontrados na janela?', !!situacaoSelect, !!responsavelSelect, !!atualizarBtn)
-
-      if (!situacaoSelect || !responsavelSelect || !atualizarBtn) {
-        win.close()
-        return
-      }
-
-      situacaoSelect.value = '0'
-      situacaoSelect.dispatchEvent(new Event('change', { bubbles: true }))
-
-      await new Promise(r => setTimeout(r, 500))
-
-      const responsavelSelectAtualizado = win.document.getElementById('relSscForm:responsavel')
-      responsavelSelectAtualizado.value = '0'
-      responsavelSelectAtualizado.dispatchEvent(new Event('change', { bubbles: true }))
-
-      console.log('[DEBUG] Situação:', situacaoSelect.value, '| Responsável:', responsavelSelectAtualizado.value)
-
-      const documentoAntesDoClique = win.document
-      atualizarBtn.click()
-      await aguardarNovoDocumentoCarregado(win, documentoAntesDoClique)
-
-      console.log('[DEBUG] Novo documento carregado após Atualizar.')
-
-      const resultados = lerResultadosTabelaSSC(win, assuntoAtual, sscAtualId)
+      const doc = await buscarDocumentoSSCsPendentes(clienteId)
+      const resultados = lerResultadosTabelaSSC(doc, assuntoAtual, sscAtualId)
       console.log('[DEBUG] Resultados finais:', resultados)
-      win.close()
 
-    if (resultados.length > 0) {
-            exibirWidgetDuplicidadeSSC(resultados)
-          }
+      if (resultados.length > 0) {
+        exibirWidgetDuplicidadeSSC(resultados)
+      }
     } catch (erro) {
       console.error('[Verificador de Duplicidade] Erro:', erro)
-      if (win && !win.closed) win.close()
     }
   } finally {
     verificacaoDuplicidadeEmAndamento = false

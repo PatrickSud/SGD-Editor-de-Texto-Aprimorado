@@ -282,8 +282,18 @@ const TEAM_STATUS_POLL_ALARM = 'team-status-poll';
 // Configurações de Avisos (Firebase Realtime Database)
 const RTDB_BASE_URL = 'https://sgd-extension-default-rtdb.firebaseio.com';
 const RTDB_WARNINGS_META_URL = `${RTDB_BASE_URL}/metadata/warnings`;
+// Nó de versão minúsculo (apenas um timestamp): o poll lê só este valor a cada ciclo
+// e só baixa o metadata detalhado + avisos quando a versão muda. Reduz drasticamente
+// o download do RTDB, sem afetar a entrega de avisos.
+const RTDB_WARNINGS_VERSION_URL = `${RTDB_BASE_URL}/metadata/warnings_version`;
 const RTDB_WARNINGS_URL = `${RTDB_BASE_URL}/warnings`;
 const WARNINGS_POLL_ALARM = 'warnings-poll';
+// Rede de segurança: força uma verificação completa (ignora o atalho de versão)
+// a cada 60 min, garantindo consistência mesmo se o nó de versão dessincronizar.
+const WARNINGS_POLL_FULL_CHECK_MS = 60 * 60 * 1000;
+// Janela de horário do poll de avisos (economia de cota): evita verificações de madrugada.
+const WARNINGS_POLL_START_HOUR = 6;  // inclusive
+const WARNINGS_POLL_END_HOUR = 23;   // exclusive
 
 // --- FUNÇÕES DE ARMAZENAMENTO (STORAGE) ---
 
@@ -575,11 +585,27 @@ async function touchWarningsMetadata(warningDataOrArray) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(patchData)
     });
+
+    // Atualiza o nó de versão (atalho de polling). Qualquer alteração em avisos
+    // bump-a este valor, fazendo os clientes detectarem a mudança lendo poucos bytes.
+    await fetch(`${RTDB_WARNINGS_VERSION_URL}.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(now)
+    }).catch(() => {});
   } catch (e) { console.warn('Falha meta avisos:', e); }
 }
 
-async function checkWarningsAndNotify() {
+async function checkWarningsAndNotify(respectSchedule = true) {
   try {
+    // 0. Janela de horário: evita polls de rotina na madrugada (economia de cota RTDB).
+    // Não se aplica a verificações sob demanda (ex.: editor acabou de criar um aviso),
+    // garantindo entrega imediata de avisos urgentes a qualquer hora.
+    if (respectSchedule) {
+      const hourNow = new Date().getHours();
+      if (hourNow < WARNINGS_POLL_START_HOUR || hourNow >= WARNINGS_POLL_END_HOUR) return;
+    }
+
     const storage = await chrome.storage.local.get([
       'warningsMetaSignature',
       'infoDevMode',
@@ -587,9 +613,26 @@ async function checkWarningsAndNotify() {
       'subscribedChannels',
       'allowedChannels',
       'warningChannels',
-      'isCurrentUserEditor'
+      'isCurrentUserEditor',
+      'warningsVersionSeen',
+      'warningsLastFullCheck'
     ]);
     const localSignature = storage.warningsMetaSignature;
+
+    // 0.1 Atalho de versão: lê um nó minúsculo (apenas um timestamp). Se a versão do
+    // servidor não mudou desde a última verificação, encerra sem baixar metadata/avisos.
+    // A cada WARNINGS_POLL_FULL_CHECK_MS força uma verificação completa (rede de segurança).
+    let serverVersion = null;
+    try {
+      const verResp = await fetch(`${RTDB_WARNINGS_VERSION_URL}.json`, { cache: 'no-store' });
+      if (verResp.ok) serverVersion = await verResp.json();
+    } catch (e) { /* sem versão: cai na verificação completa abaixo */ }
+
+    const lastFullCheck = storage.warningsLastFullCheck || 0;
+    const mustFullCheck = (Date.now() - lastFullCheck) > WARNINGS_POLL_FULL_CHECK_MS;
+    if (!mustFullCheck && serverVersion != null && serverVersion === storage.warningsVersionSeen) {
+      return;
+    }
 
     // 1. Checa a data de última atualização (Metadado) via Realtime Database
     const metaResponse = await fetch(`${RTDB_WARNINGS_META_URL}.json`, { cache: 'no-store' });
@@ -638,8 +681,13 @@ async function checkWarningsAndNotify() {
       }
     }
 
-    // Se não houve alteração relevante para este usuário, encerra
+    // Se não houve alteração relevante para este usuário, encerra.
+    // Registra a versão avaliada para não reprocessar o metadata no próximo ciclo.
     if (!hasChanges) {
+      await chrome.storage.local.set({
+        warningsVersionSeen: serverVersion,
+        warningsLastFullCheck: Date.now()
+      });
       return;
     }
 
@@ -712,7 +760,9 @@ async function checkWarningsAndNotify() {
     if (activeWarnings.length === 0) {
       await chrome.storage.local.set({
         warningsMetaSignature: metaDoc,
-        cachedWarnings: warnings
+        cachedWarnings: warnings,
+        warningsVersionSeen: serverVersion,
+        warningsLastFullCheck: Date.now()
       });
       return;
     }
@@ -726,7 +776,9 @@ async function checkWarningsAndNotify() {
     // 3. Atualiza a assinatura local e o cache de avisos para não repetir a mesma notificação e requisições redundantes
     await chrome.storage.local.set({
       warningsMetaSignature: metaDoc,
-      cachedWarnings: warnings
+      cachedWarnings: warnings,
+      warningsVersionSeen: serverVersion,
+      warningsLastFullCheck: Date.now()
     });
 
     // Evita duplicar notificações se o aviso já foi notificado anteriormente com a mesma data/versão
@@ -869,13 +921,18 @@ async function setupPendingPollAlarm() {
   }
 
   // Alarme para verificação de novos avisos (Realtime Database — cota por bandwidth, não por leituras)
+  // Recria o alarme se ele não existir OU se o período antigo (ex.: 2 min) divergir do atual,
+  // garantindo que usuários já instalados migrem para o novo período ao atualizar a extensão.
   const warningsAlarm = await chrome.alarms.get(WARNINGS_POLL_ALARM)
-  if (!warningsAlarm) {
+  const WARNINGS_POLL_PERIOD_MIN = 5
+  if (!warningsAlarm || warningsAlarm.periodInMinutes !== WARNINGS_POLL_PERIOD_MIN) {
     // Jitter aleatório de 0-1 minuto para distribuir as requisições dos 800 usuários
     const jitterMinutes = Math.random() * 1;
     chrome.alarms.create(WARNINGS_POLL_ALARM, {
       delayInMinutes: 0.5 + jitterMinutes,
-      periodInMinutes: 2  // Verifica a cada 2 minutos (~1.3 GB/mês dos 10 GB — cota RTDB)
+      // Verifica a cada 5 minutos. Com o atalho de versão (lê ~poucos bytes por ciclo)
+      // o custo por verificação caiu de KBs para dezenas de bytes na maioria dos polls.
+      periodInMinutes: WARNINGS_POLL_PERIOD_MIN
     })
   }
 }
@@ -1042,7 +1099,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ success: true })
       } else if (message.action === 'WARNING_CREATED') {
         // Quando um aviso é criado pelo admin, verifica imediatamente para disparar toast
-        await checkWarningsAndNotify();
+        // (ignora a janela de horário para garantir entrega imediata).
+        await checkWarningsAndNotify(false);
         sendResponse({ success: true });
       } else if (message.action === 'BROADCAST_DISMISS' && message.reminderId) {
         // Ação para fechar a notificação em outras abas quando o usuário interage em uma delas

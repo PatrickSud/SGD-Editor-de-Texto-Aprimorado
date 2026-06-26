@@ -1,4 +1,12 @@
 const RELEASE_NOTES = {
+  '3.0.5.13': {
+    title: '✨ Ocultação de Botões Flutuantes em Janelas Pequenas — Versão 3.0.5.13',
+    features: [
+      '<b>🪟 Botões Flutuantes em Janelas Pequenas:</b> O FAB, o botão IAgente e o botão Ir ao Topo/Ir para o Final agora são automaticamente ocultados quando a janela do SGD for menor que 680×450 px, evitando que sobreponham o conteúdo em janelas abertas em tamanho reduzido.',
+      '<b>👥 Equipe AT — Visualização Compacta aprimorada:</b> A visualização Compacta passa a ser o padrão, exibindo abaixo da indisponibilidade uma linha com ⏱️ tempo e 📍 presença sem rótulos; textos "Indisponível", "Normal", "Alerta" e "Crítico" são omitidos no modo compacto para cards mais enxutos. A ordenação selecionada agora é lembrada entre sessões.',
+      '<b>🔍 Verificador de SSCs Duplicadas — Melhorias:</b> A verificação passou a usar requisições em segundo plano (sem abrir janela pop-up), o widget é exibido à esquerda do botão IAgente sem sobreposição, e os filtros da página de SSCs Pendentes são restaurados ao estado anterior após cada verificação. A checagem é ignorada automaticamente ao abrir uma SSC pelo modo "copiar trâmite" ou pelo próprio widget de duplicatas.'
+    ]
+  },
   '3.0.5.11': {
     title: '✨ Ordem de Pausa e Ajuste de Presença — Versão 3.0.5.11',
     features: [

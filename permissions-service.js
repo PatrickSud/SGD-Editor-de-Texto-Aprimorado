@@ -284,6 +284,96 @@
     })
   }
 
+  // ─── Leitura Individual do Registro do Usuário ────────────────────────────────
+  // Em vez de baixar a lista completa de editores/visualizadores (~centenas de
+  // registros) só para classificar o usuário atual, lemos diretamente o registro
+  // dele pela chave (userId ou chave derivada do nome). Reduz drasticamente o
+  // download do RTDB e mantém os dados sempre frescos (sem depender de cache).
+
+  function normalizeEditorRecord(rec) {
+    return {
+      id: rec.id,
+      name: rec.name || '',
+      addedAt: rec.addedAt || '',
+      addedBy: rec.addedBy || '',
+      allowedChannels: normalizeAllowedChannels(rec.allowedChannels) || getChannelsFallback(),
+      role: rec.role || 'comum',
+      lastSeen: rec.lastSeen || '',
+      isEquipeAT: rec.isEquipeAT === true
+    }
+  }
+
+  function normalizeViewerRecord(rec) {
+    return {
+      id: rec.id,
+      name: rec.name || '',
+      firstSeen: rec.firstSeen || '',
+      lastSeen: rec.lastSeen || '',
+      allowedChannels: getViewerAllowedChannels(rec.allowedChannels),
+      isEquipeAT: rec.isEquipeAT === true
+    }
+  }
+
+  /**
+   * Lê o registro do próprio usuário em um nó (editors/viewers) pela chave.
+   * Tenta primeiro por userId (exato) e depois pela chave derivada do nome,
+   * validando o nome neste caso para evitar colisões.
+   * @returns {Promise<object|null>} registro bruto {id, ...} ou null
+   */
+  async function readOwnRecord(baseUrl, userId, userName) {
+    const normalizedTarget = normalizeName(userName)
+    if (userId) {
+      try {
+        const res = await callDatabaseRead(`${baseUrl}/${userId}.json`)
+        if (res.ok) {
+          const data = await res.json()
+          if (data && typeof data === 'object') return { id: userId, ...data }
+        }
+      } catch (_) {}
+    }
+    const nameKey = cleanFirebaseKey(userName)
+    if (nameKey && nameKey !== userId) {
+      try {
+        const res = await callDatabaseRead(`${baseUrl}/${nameKey}.json`)
+        if (res.ok) {
+          const data = await res.json()
+          if (data && typeof data === 'object' && normalizeName(data.name) === normalizedTarget) {
+            return { id: nameKey, ...data }
+          }
+        }
+      } catch (_) {}
+    }
+    return null
+  }
+
+  /**
+   * Localiza o registro de editor do usuário: leitura individual primeiro,
+   * com fallback para a lista cacheada (preserva o matching original por nome).
+   */
+  async function matchEditorRecord(userId, userName, normalizedUserName) {
+    const rec = await readOwnRecord(RTDB_EDITORS_URL, userId, userName)
+    if (rec) return normalizeEditorRecord(rec)
+    const editors = await getEditorsList()
+    let m = null
+    if (userId) m = editors.find(e => e.id === userId)
+    if (!m) m = editors.find(e => normalizeName(e.name) === normalizedUserName)
+    return m || null
+  }
+
+  /**
+   * Localiza o registro de visualizador do usuário: leitura individual primeiro,
+   * com fallback para a lista cacheada.
+   */
+  async function matchViewerRecord(userId, userName, normalizedUserName) {
+    const rec = await readOwnRecord(RTDB_VIEWERS_URL, userId, userName)
+    if (rec) return normalizeViewerRecord(rec)
+    const viewers = await getViewersList()
+    let m = null
+    if (userId) m = viewers.find(v => v.id === userId)
+    if (!m) m = viewers.find(v => normalizeName(v.name) === normalizedUserName)
+    return m || null
+  }
+
   // ─── Verificação de Editor ────────────────────────────────────────────────────
 
   // As chamadas a normalizeName agora utilizam a função global declarada em utils.js
@@ -319,17 +409,13 @@
       return false
     }
 
-    const editors = await getEditorsList()
     const normalizedUserName = normalizeName(userName)
 
-    // 1. Tenta buscar por ID e depois por Nome
-    let matchedEditor = null
-    if (userId) {
-      matchedEditor = editors.find(editor => editor.id === userId)
-    }
-    if (!matchedEditor) {
-      matchedEditor = editors.find(editor => normalizeName(editor.name) === normalizedUserName)
-    }
+    // 1. Busca o registro do próprio usuário (leitura individual barata, com
+    //    fallback para a lista cacheada) — evita baixar a lista completa de editores.
+    let matchedEditor = await matchEditorRecord(userId, userName, normalizedUserName)
+    // Reaproveitado adiante (ex.: sincronização da Equipe AT) para evitar leituras repetidas.
+    let matchedViewer = null
 
     // Verifica se o usuário tem solicitação de Modo Dev aprovada no Firebase
     const infoDevData = await chrome.storage.local.get(['infoDevMode'])
@@ -371,14 +457,7 @@
       window.sgdPermissions.isDevMode = true
     } else if (isApprovedDev) {
       // Usuário comum aprovado no modo Dev
-      const viewers = await getViewersList()
-      let matchedViewer = null
-      if (userId) {
-        matchedViewer = viewers.find(v => v.id === userId)
-      }
-      if (!matchedViewer) {
-        matchedViewer = viewers.find(v => normalizeName(v.name) === normalizedUserName)
-      }
+      matchedViewer = await matchViewerRecord(userId, userName, normalizedUserName)
       if (matchedViewer) {
         allowed = getViewerAllowedChannels(matchedViewer.allowedChannels)
       } else {
@@ -390,14 +469,7 @@
         infoDevMode: true
       })
     } else {
-      const viewers = await getViewersList()
-      let matchedViewer = null
-      if (userId) {
-        matchedViewer = viewers.find(v => v.id === userId)
-      }
-      if (!matchedViewer) {
-        matchedViewer = viewers.find(v => normalizeName(v.name) === normalizedUserName)
-      }
+      matchedViewer = await matchViewerRecord(userId, userName, normalizedUserName)
       if (matchedViewer) {
         allowed = getViewerAllowedChannels(matchedViewer.allowedChannels)
       } else {
@@ -424,13 +496,9 @@
     if (matchedEditor) {
       isUserEquipeAT = matchedEditor.isEquipeAT === true
     } else {
-      const viewers = await getViewersList()
-      let matchedViewer = null
-      if (userId) {
-        matchedViewer = viewers.find(v => v.id === userId)
-      }
+      // Reaproveita matchedViewer se já carregado; senão faz a leitura individual.
       if (!matchedViewer) {
-        matchedViewer = viewers.find(v => normalizeName(v.name) === normalizedUserName)
+        matchedViewer = await matchViewerRecord(userId, userName, normalizedUserName)
       }
       if (matchedViewer) {
         isUserEquipeAT = matchedViewer.isEquipeAT === true
@@ -449,11 +517,19 @@
    */
   async function syncRemoteConfig() {
     try {
+      // Cache com TTL: config remota muda raramente; evita baixar config.json a cada
+      // carregamento de página do SGD (grande fonte de leituras no RTDB).
+      const cached = await chrome.storage.local.get(['remoteConfig', 'remoteConfigCacheTime'])
+      const cacheTime = cached.remoteConfigCacheTime || 0
+      if (cached.remoteConfig && (Date.now() - cacheTime) < REMOTE_CONFIG_CACHE_TTL) {
+        return
+      }
+
       const response = await callDatabaseRead(`${RTDB_BASE_URL}/config.json`)
       if (response.ok) {
         const remoteConfig = await response.json()
         if (remoteConfig && typeof remoteConfig === 'object') {
-          await chrome.storage.local.set({ remoteConfig })
+          await chrome.storage.local.set({ remoteConfig, remoteConfigCacheTime: Date.now() })
         }
       }
     } catch (e) {
@@ -492,15 +568,9 @@
     const userKey = userId || cleanFirebaseKey(userName)
     
     try {
-      // 1. Busca listas atualizadas
-      const editors = await getEditorsList(true)
-      let matchedEditor = null
-      if (userId) {
-        matchedEditor = editors.find(e => e.id === userId)
-      }
-      if (!matchedEditor) {
-        matchedEditor = editors.find(e => normalizeName(e.name) === normalizedUser)
-      }
+      // 1. Localiza o registro do próprio usuário (leitura individual + fallback
+      // cacheado) — evita baixar as listas completas no heartbeat.
+      const matchedEditor = await matchEditorRecord(userId, userName, normalizedUser)
       
       if (matchedEditor) {
         // Atualiza lastSeen do editor no Firebase
@@ -519,14 +589,7 @@
         return
       }
       
-      const viewers = await getViewersList(true)
-      let matchedViewer = null
-      if (userId) {
-        matchedViewer = viewers.find(v => v.id === userId)
-      }
-      if (!matchedViewer) {
-        matchedViewer = viewers.find(v => normalizeName(v.name) === normalizedUser)
-      }
+      const matchedViewer = await matchViewerRecord(userId, userName, normalizedUser)
       
       if (matchedViewer) {
         const allowed = getViewerAllowedChannels(matchedViewer.allowedChannels)
@@ -1000,12 +1063,21 @@
   // Canais Dinâmicos CRUD
   async function loadActiveChannels() {
     try {
+      // Cache com TTL: a lista de canais ativos muda raramente; evita baixar
+      // channels.json a cada carregamento de página do SGD.
+      const cached = await chrome.storage.local.get(['warningChannels', 'channelsCacheTime'])
+      const cacheTime = cached.channelsCacheTime || 0
+      if (Array.isArray(cached.warningChannels) && cached.warningChannels.length > 0 && (Date.now() - cacheTime) < ACTIVE_CHANNELS_CACHE_TTL) {
+        window.sgdPermissions.channels = cached.warningChannels
+        return cached.warningChannels
+      }
+
       const response = await callDatabaseRead(`${RTDB_BASE_URL}/permissions/channels.json`)
       if (response.ok) {
         const data = await response.json()
         if (Array.isArray(data) && data.length > 0) {
           window.sgdPermissions.channels = data
-          await chrome.storage.local.set({ warningChannels: data })
+          await chrome.storage.local.set({ warningChannels: data, channelsCacheTime: Date.now() })
           return data
         }
       }
@@ -1024,7 +1096,7 @@
       const response = await callDatabaseWrite(`${RTDB_BASE_URL}/permissions/channels.json`, 'PUT', channelsList)
       if (response.ok) {
         window.sgdPermissions.channels = channelsList
-        await chrome.storage.local.set({ warningChannels: channelsList })
+        await chrome.storage.local.set({ warningChannels: channelsList, channelsCacheTime: Date.now() })
         await writeAuditLog('UPDATE_CHANNELS', 'Canais', `Novos canais: ${channelsList.join(', ')}`)
         return true
       }
@@ -1105,53 +1177,23 @@
             console.warn('[SGD Permissions] Erro no registro de atividade com jitter:', e);
           }
         }, jitterMs);
-      } else {
-        isCurrentUserEditor().then(async () => {
-          let allowed = getChannelsFallback()
-          const editors = await getEditorsList()
-          const normalUser = normalizeName(userName)
-          
-          let editorObj = null
-          if (userId) {
-            editorObj = editors.find(e => e.id === userId)
-          }
-          if (!editorObj) {
-            editorObj = editors.find(e => normalizeName(e.name) === normalUser)
-          }
-
-          if (editorObj) {
-            allowed = editorObj.allowedChannels || getChannelsFallback()
-          } else if (window.sgdPermissions.isDevMode) {
-            allowed = getChannelsFallback()
-          } else {
-            const viewers = await getViewersList()
-            let viewerObj = null
-            if (userId) {
-              viewerObj = viewers.find(v => v.id === userId)
-            }
-            if (!viewerObj) {
-              viewerObj = viewers.find(v => normalizeName(v.name) === normalUser)
-            }
-            if (viewerObj) {
-              allowed = getViewerAllowedChannels(viewerObj.allowedChannels)
-            } else {
-              allowed = ['Geral']
-            }
-          }
-          window.sgdPermissions.allowedChannels = allowed
-          await chrome.storage.local.set({ 
-            allowedChannels: allowed,
-            isCurrentUserEditor: window.sgdPermissions.isEditor
-          })
-        }).catch(() => {})
       }
+      // Sem bloco "else": isCurrentUserEditor() já foi executado acima e definiu
+      // allowedChannels/isEditor. A recomputação anterior baixava as listas completas
+      // de editores/visualizadores em todo carregamento de página (custo alto no RTDB).
     }
 
-    const editorsList = await getEditorsList()
-    window.sgdPermissions.editorsList = editorsList
+    // As listas completas de editores/visualizadores só são necessárias para os
+    // recursos administrativos (painel de gestão e direcionamento de avisos), que
+    // são exclusivos de editores. Para os demais usuários, não baixamos as listas
+    // completas em todo carregamento de página — grande economia de download do RTDB.
+    if (window.sgdPermissions.isEditor) {
+      const editorsList = await getEditorsList()
+      window.sgdPermissions.editorsList = editorsList
 
-    const viewersList = await getViewersList()
-    window.sgdPermissions.viewersList = viewersList
+      const viewersList = await getViewersList()
+      window.sgdPermissions.viewersList = viewersList
+    }
 
     window.sgdPermissions.initialized = true
 

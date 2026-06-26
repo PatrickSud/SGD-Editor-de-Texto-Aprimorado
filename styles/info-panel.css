@@ -1128,6 +1128,19 @@
   display: none !important;
 }
 
+.ip-compact-only {
+  display: none !important;
+}
+
+.view-compact .ip-compact-only {
+  display: flex !important;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--text-color-muted);
+  margin-top: 2px;
+}
+
 .view-compact .ip-team-details span:first-child {
   display: inline-block !important;
   margin-bottom: 0 !important;

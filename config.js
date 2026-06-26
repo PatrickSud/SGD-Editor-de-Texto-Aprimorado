@@ -23,7 +23,13 @@ const RTDB_EDITORS_URL = `${RTDB_PERMISSIONS_BASE_URL}/editors`
 const RTDB_VIEWERS_URL = `${RTDB_PERMISSIONS_BASE_URL}/viewers`
 const PERMISSIONS_CACHE_KEY = 'cachedEditorPermissions'
 const VIEWERS_CACHE_KEY = 'cachedViewerPermissions'
-const PERMISSIONS_CACHE_TTL = 30 * 60 * 1000 // 30 minutos em ms
+// TTLs para reduzir o consumo de download do RTDB (cota gratuita).
+// Editores/visualizadores mudam raramente; 12h é seguro para as listas.
+// Canais e config remota têm TTL menor (2h) para propagar criação/renomeação
+// de canais e flags remotas com mais agilidade.
+const PERMISSIONS_CACHE_TTL = 12 * 60 * 60 * 1000 // 12 horas em ms
+const REMOTE_CONFIG_CACHE_TTL = 2 * 60 * 60 * 1000  // 2 horas em ms
+const ACTIVE_CHANNELS_CACHE_TTL = 2 * 60 * 60 * 1000 // 2 horas em ms
 
 /**
  * Separadores exclusivos para delimitar saudação e encerramento no texto.
@@ -305,6 +311,13 @@ const WARNING_CHANNELS = [
 // ─── FEATURE FLAGS ───────────────────────────────────────────────────────────
 // Para reativar, mude para true e recarregue a extensão.
 const FEATURE_SUGERIR_SAM = true
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── LIMIARES DE JANELA PARA BOTÕES FLUTUANTES ───────────────────────────────
+// FAB e botões Ir ao Topo/IAgente ficam ocultos quando a janela do navegador
+// for menor que estas dimensões (comum em janelas SGD abertas em tamanho reduzido).
+const FAB_MIN_WINDOW_WIDTH = 680   // px — largura mínima para exibir os botões
+const FAB_MIN_WINDOW_HEIGHT = 450  // px — altura mínima para exibir os botões
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ─── CONSTANTES DE TEMPORIZAÇÃO ──────────────────────────────────────────────

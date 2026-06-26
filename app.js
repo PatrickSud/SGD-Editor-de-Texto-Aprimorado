@@ -2115,13 +2115,21 @@ async function initializeScrollToTopButton() {
   scrollButton.innerHTML = svgGoBottom
   // --- FIM DA CORREÇÃO ---
 
+  // Retorna true quando a janela está pequena demais para exibir os botões flutuantes.
+  // Os limiares espelham FAB_MIN_WINDOW_WIDTH / FAB_MIN_WINDOW_HEIGHT (config.js).
+  // A media query CSS já oculta visualmente os elementos; esta função mantém
+  // a classe .visible sincronizada para que eventos de scroll não a reativem.
+  const isWindowTooSmall = () =>
+    window.innerWidth < FAB_MIN_WINDOW_WIDTH ||
+    window.innerHeight < FAB_MIN_WINDOW_HEIGHT
+
   // Função para verificar se o botão deve estar visível
   const updateButtonVisibility = () => {
-    // O botão só é visível se a altura do conteúdo for maior que a da janela
-    if (document.body.scrollHeight > window.innerHeight) {
-      scrollButton.classList.add('visible')
-    } else {
+    // Oculta se a janela for pequena demais, independente de haver barra de rolagem
+    if (isWindowTooSmall() || document.body.scrollHeight <= window.innerHeight) {
       scrollButton.classList.remove('visible')
+    } else {
+      scrollButton.classList.add('visible')
     }
   }
 
