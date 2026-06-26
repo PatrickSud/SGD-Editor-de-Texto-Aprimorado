@@ -422,6 +422,118 @@ async function broadcastToSgdTabs(message) {
   }
 }
 
+// ─────────────────────────────────────────
+// IAGENTE — Janela dedicada do assistente Tria
+// O assistente não funciona dentro de um iframe (detecção de frame no lado da
+// Tria), então é aberto em uma janela própria do navegador (tipo "popup"/app),
+// onde a Tria volta a ser a página principal e funciona normalmente.
+// ─────────────────────────────────────────
+const IAGENTE_BOUNDS_KEY = 'iagenteWindowBounds'
+const IAGENTE_DEFAULT_BOUNDS = { width: 460, height: 780 }
+let iagenteWindowId = null
+
+/**
+ * Verifica se a janela do IAgente ainda existe.
+ * @returns {Promise<boolean>}
+ */
+async function isIAgenteWindowOpen() {
+  if (iagenteWindowId === null) return false
+  try {
+    await chrome.windows.get(iagenteWindowId)
+    return true
+  } catch (e) {
+    // A janela foi fechada sem disparar o onRemoved capturado; normaliza o estado.
+    iagenteWindowId = null
+    return false
+  }
+}
+
+/**
+ * Abre a janela dedicada do IAgente ou, se já estiver aberta, traz para frente
+ * (restaurando-a caso esteja minimizada). Lembra o tamanho/posição/estado entre
+ * aberturas.
+ * @param {string} url - URL do assistente.
+ * @returns {Promise<boolean>} true se a janela está aberta ao final.
+ */
+async function openOrFocusIAgenteWindow(url) {
+  if (await isIAgenteWindowOpen()) {
+    try {
+      await chrome.windows.update(iagenteWindowId, {
+        focused: true,
+        drawAttention: true,
+        state: 'normal'
+      })
+    } catch (e) {
+      /* Ignora; a janela pode ter fechado nesse instante. */
+    }
+    return true
+  }
+
+  // Recupera tamanho/posição/estado salvos (ou usa o padrão).
+  let bounds = { ...IAGENTE_DEFAULT_BOUNDS }
+  try {
+    const data = await chrome.storage.local.get([IAGENTE_BOUNDS_KEY])
+    const saved = data[IAGENTE_BOUNDS_KEY]
+    if (saved && typeof saved === 'object') bounds = saved
+  } catch (e) {
+    /* Usa o padrão. */
+  }
+
+  const createData = {
+    url: url || 'https://tria.plugsocial.online/',
+    type: 'popup',
+    focused: true
+  }
+
+  // Restaura o último estado do usuário: maximizado ou tamanho/posição normais.
+  if (bounds.state === 'maximized') {
+    createData.state = 'maximized'
+  } else {
+    createData.width = typeof bounds.width === 'number' ? bounds.width : IAGENTE_DEFAULT_BOUNDS.width
+    createData.height = typeof bounds.height === 'number' ? bounds.height : IAGENTE_DEFAULT_BOUNDS.height
+    if (typeof bounds.left === 'number' && typeof bounds.top === 'number') {
+      createData.left = bounds.left
+      createData.top = bounds.top
+    }
+  }
+
+  try {
+    const win = await chrome.windows.create(createData)
+    iagenteWindowId = win.id
+    broadcastToSgdTabs({ action: 'IAGENTE_WINDOW_STATE', open: true })
+    return true
+  } catch (e) {
+    console.error('[IAgente] Erro ao abrir a janela dedicada:', e)
+    return false
+  }
+}
+
+// Salva tamanho/posição/estado sempre que o usuário move, redimensiona ou
+// maximiza a janela — para reabrir exatamente como o usuário deixou.
+if (chrome.windows.onBoundsChanged) {
+  chrome.windows.onBoundsChanged.addListener(win => {
+    if (win.id !== iagenteWindowId) return
+    // Não persiste o estado minimizado (não queremos reabrir minimizado).
+    if (win.state === 'minimized') return
+    chrome.storage.local.set({
+      [IAGENTE_BOUNDS_KEY]: {
+        left: win.left,
+        top: win.top,
+        width: win.width,
+        height: win.height,
+        state: win.state
+      }
+    }).catch(() => {})
+  })
+}
+
+// Detecta o fechamento da janela para sincronizar o botão em todas as abas do SGD.
+chrome.windows.onRemoved.addListener(windowId => {
+  if (windowId !== iagenteWindowId) return
+  iagenteWindowId = null
+  broadcastToSgdTabs({ action: 'IAGENTE_WINDOW_STATE', open: false })
+})
+
 // ATENÇÃO: A função showChromeNotification foi REMOVIDA - agora usamos apenas notificações internas
 
 /**
@@ -1752,6 +1864,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           }
         })();
         return true; // Resposta assíncrona
+
+      } else if (message.action === 'IAGENTE_OPEN_WINDOW') {
+        // Abre (ou foca) a janela dedicada do assistente IAgente.
+        const open = await openOrFocusIAgenteWindow(message.url)
+        sendResponse({ open })
+
+      } else if (message.action === 'IAGENTE_GET_STATE') {
+        // Informa ao content script se a janela do IAgente está aberta.
+        sendResponse({ open: await isIAgenteWindowOpen() })
 
       }
     } catch (error) {

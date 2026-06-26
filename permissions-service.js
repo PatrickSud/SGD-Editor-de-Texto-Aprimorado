@@ -18,7 +18,8 @@
     currentUser: null,    // Nome capturado do SGD
     currentUserId: null,  // ID capturado do SGD (Ex: "776356")
     isEditor: false,      // true se o usuário está na lista de editores
-    isMaster: false,      // true se o usuário atual é Master Editor
+    isMaster: false,      // true se o usuário atual é Master Editor (inclui bypass do Modo Dev)
+    isMasterEditor: false,// true SOMENTE se o cargo real cadastrado for 'master' (sem bypass do Modo Dev)
     role: 'comum',        // cargo do usuário ('master' ou 'comum')
     isDevMode: false,     // true se o modo dev está ativo
     initialized: false,  // true após a primeira verificação
@@ -485,6 +486,8 @@
     window.sgdPermissions.allowedChannels = allowed
     window.sgdPermissions.role = role
     window.sgdPermissions.isMaster = (role === 'master' || isDevMode)
+    // Cargo Master genuíno (cadastrado no banco), independente do bypass do Modo Dev/5 cliques
+    window.sgdPermissions.isMasterEditor = (!!matchedEditor && matchedEditor.role === 'master')
 
     await chrome.storage.local.set({ 
       allowedChannels: allowed, 
@@ -586,6 +589,7 @@
         window.sgdPermissions.isEditor = true
         window.sgdPermissions.role = existingRole
         window.sgdPermissions.isMaster = (existingRole === 'master')
+        window.sgdPermissions.isMasterEditor = (existingRole === 'master')
         return
       }
       

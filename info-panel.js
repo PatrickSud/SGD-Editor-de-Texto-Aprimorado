@@ -81,9 +81,6 @@ async function openInfoPanel(initialTabId = 'pending') {
   const infoDevMode = await isInfoDevModeEnabled() // Ativado via Cliques no Painel
   developerMode = infoDevMode // Para este painel, usamos o modo específico
 
-  const storageResult = await chrome.storage.local.get(['accessControlTabUnlocked'])
-  const accessControlTabUnlocked = storageResult.accessControlTabUnlocked === true
-
   // 1.1 Inicializar / atualizar permissões do usuário logado
   if (window.sgdPermissions) {
     // Re-verifica devMode, pois pode ter mudado desde a inicialização automática
@@ -95,6 +92,9 @@ async function openInfoPanel(initialTabId = 'pending') {
     }
   }
   const isEditor = !!(window.sgdPermissions?.isEditor)
+  // Controle de Acesso é liberado exclusivamente para Editores Master genuínos (cargo
+  // cadastrado no banco). NÃO depende dos 5 cliques no modal de configurações.
+  const isMasterEditor = !!(window.sgdPermissions?.isMasterEditor)
   const currentUserName = window.sgdPermissions?.currentUser || null
 
   const equipeATEnabled = await isEquipeATEnabled()
@@ -117,9 +117,10 @@ async function openInfoPanel(initialTabId = 'pending') {
       return equipeATEnabled
     }
 
-    // Controle de Acesso visível apenas se desbloqueado nas Configurações
+    // Controle de Acesso visível apenas para Editores Master (cargo cadastrado),
+    // independentemente do gatilho dos 5 cliques no modal de configurações.
     if (section.id === 'access-control') {
-      return accessControlTabUnlocked
+      return isMasterEditor
     }
 
     // Outras abas aparecem se estiver em modo dev

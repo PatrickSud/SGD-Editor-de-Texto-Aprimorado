@@ -1189,14 +1189,13 @@ async function openManagementModal() {
         const newVal = !currentVal
         await chrome.storage.local.set({ 
           developerModeEnabled: newVal,
-          accessControlTabUnlocked: newVal,
           teamManagementSecretUnlocked: newVal
         })
 
-        const status = newVal ? 'HABILITADA' : 'DESABILITADA'
+        const status = newVal ? 'HABILITADO' : 'DESABILITADO'
 
         showNotification(
-          `Guia de Controle de Acesso e Modo Dev ${status}! O modal de Configurações será recarregado.`,
+          `Modo Dev ${status}! O modal de Configurações será recarregado.`,
           'info',
           3000
         )
