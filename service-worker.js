@@ -13,6 +13,7 @@ const CHAIN_SS_WORKFLOW_ID = '27921542-92d4-408a-a3cb-bb4372553e43'
 const WS_BASE_URL = 'wss://wymocw0zke.execute-api.us-east-1.amazonaws.com/prod'
 const AI_PLATFORM_LOGIN_URL = 'https://aiplatform.thomsonreuters.com/ai-platform/ai-chains/use/' + CHAIN_SS_WORKFLOW_ID
 const FALLBACK_WORKFLOW_ID = '4b95e35f-e8ea-44e6-ad74-555bf39be13f' // Chain genérica — fallback ESTOURO
+const COMPARACAO_SSC_WORKFLOW_ID = FALLBACK_WORKFLOW_ID // Gemini Flash — mesma chain genérica/rápida
 
 /**
  * Mapa de chains da plataforma de IA Thomson Reuters.
@@ -1504,6 +1505,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       } else if (message.action === 'buscarSAMSimilares' && sender.tab?.id) {
         // ── Busca SAMs similares antes de cadastrar ───────────────────────
         const BUSCA_SAM_WORKFLOW_ID = AI_CHAINS['LISTAGEM DE SANES E SAILS - GERAL']
+      
+      } else if (message.action === 'compararSSCsSimilares' && sender.tab?.id) {
+        // ── Comparação de assuntos de SSCs via IA (Gemini Flash) ──────────
+        handleGerarSugestao(message.prompt, sender.tab.id, COMPARACAO_SSC_WORKFLOW_ID, 'comparacaoSSCCompleta', 'comparacaoSSCErro')
 
         handleGerarSugestao(message.prompt, sender.tab.id, BUSCA_SAM_WORKFLOW_ID, 'buscaSAMCompleta', 'buscaSAMErro')
       } else if (message.action === 'resumirChat' && sender.tab?.id) {

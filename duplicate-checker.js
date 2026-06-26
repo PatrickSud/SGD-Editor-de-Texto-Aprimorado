@@ -32,6 +32,51 @@ function calcularSimilaridadeSSC(assuntoAtual, assuntoCandidato) {
   return matches >= 2
 }
 
+function montarPromptComparacaoSSC(assuntoAtual, candidatos) {
+  const listaTexto = candidatos
+    .map((c, i) => `${i}: "${c.assunto}"`)
+    .join('\n')
+
+  return `Você está comparando o ASSUNTO de uma solicitação de suporte (SSC) com uma lista de outras SSCs do mesmo cliente, para identificar se alguma trata do MESMO problema técnico, mesmo usando palavras diferentes (sinônimos, abreviações ou descrições do mesmo evento).
+
+ASSUNTO ATUAL:
+"${assuntoAtual}"
+
+LISTA DE CANDIDATOS (índice: assunto):
+${listaTexto}
+
+INSTRUÇÕES:
+- Responda APENAS com um JSON, sem nenhum texto antes ou depois, no formato: {"indices": [0, 2, 5]}
+- Inclua apenas os índices que tratam do MESMO problema, mesmo com palavras diferentes.
+- Se nenhum candidato for relacionado, responda: {"indices": []}
+- Não inclua explicações, comentários ou texto fora do JSON.`
+}
+
+function compararSSCsComIA(assuntoAtual, candidatos) {
+  return new Promise((resolve, reject) => {
+    const prompt = montarPromptComparacaoSSC(assuntoAtual, candidatos)
+
+    const onResponse = (message) => {
+      if (message.action === 'comparacaoSSCCompleta') {
+        chrome.runtime.onMessage.removeListener(onResponse)
+        try {
+          const limpo = message.data.replace(/```json|```/g, '').trim()
+          const parsed = JSON.parse(limpo)
+          resolve(Array.isArray(parsed.indices) ? parsed.indices : [])
+        } catch (e) {
+          reject(new Error('Resposta da IA em formato inválido: ' + e.message))
+        }
+      } else if (message.action === 'comparacaoSSCErro') {
+        chrome.runtime.onMessage.removeListener(onResponse)
+        reject(new Error(message.data))
+      }
+    }
+
+    chrome.runtime.onMessage.addListener(onResponse)
+    chrome.runtime.sendMessage({ action: 'compararSSCsSimilares', prompt })
+  })
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 2. BUSCA VIA FETCH (SEM JANELA)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -134,11 +179,9 @@ async function buscarDocumentoSSCsPendentes(clienteId) {
 // 3. LEITURA DA TABELA DE RESULTADOS
 // ─────────────────────────────────────────────────────────────────────────────
 
-function lerResultadosTabelaSSC(doc, assuntoAtual, sscAtualId) {
+function lerResultadosTabelaSSC(doc, sscAtualId) {
   const linhas = doc.querySelectorAll('table.tableSorter tbody tr')
-  console.log('[DEBUG] Total de linhas na tabela:', linhas.length)
-
-  const resultados = []
+  const candidatos = []
 
   linhas.forEach(tr => {
     const diasTd = tr.querySelector('td[id^="td:dias_"]')
@@ -146,34 +189,21 @@ function lerResultadosTabelaSSC(doc, assuntoAtual, sscAtualId) {
     if (!diasTd || !assuntoTd) return
 
     const dias = parseInt(diasTd.textContent.trim(), 10)
+    if (isNaN(dias) || dias > 90) return
+
     const link = assuntoTd.querySelector('a')
-    const assuntoCandidato = link ? link.textContent.trim() : '(sem link)'
-
-    console.log('[DEBUG] Linha encontrada — assunto:', assuntoCandidato, '| dias:', dias, '| href:', link?.href)
-
-    if (isNaN(dias) || dias > 90) {
-      console.log('[DEBUG]   -> descartada: fora do prazo de 90 dias')
-      return
-    }
     if (!link) return
 
-    if (sscAtualId && link.href.includes(`ssc=${sscAtualId}`)) {
-      console.log('[DEBUG]   -> descartada: é a própria SSC atual')
-      return
-    }
+    if (sscAtualId && link.href.includes(`ssc=${sscAtualId}`)) return
 
-    const parecido = calcularSimilaridadeSSC(assuntoAtual, assuntoCandidato)
-    console.log('[DEBUG]   -> parecido com a atual?', parecido)
-    if (!parecido) return
-
-    resultados.push({
-      assunto: assuntoCandidato,
+    candidatos.push({
+      assunto: link.textContent.trim(),
       href: link.href,
       dias
     })
   })
 
-  return resultados
+  return candidatos
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -364,10 +394,21 @@ async function iniciarVerificacaoDuplicidadeSSC() {
 
     console.log('[DEBUG] clienteId:', clienteId, '| sscAtualId:', sscAtualId, '| assuntoAtual:', assuntoAtual)
 
-    try {
+try {
       const doc = await buscarDocumentoSSCsPendentes(clienteId)
-      const resultados = lerResultadosTabelaSSC(doc, assuntoAtual, sscAtualId)
-      console.log('[DEBUG] Resultados finais:', resultados)
+      const candidatos = lerResultadosTabelaSSC(doc, sscAtualId)
+
+      if (candidatos.length === 0) return
+
+      let resultados = []
+      try {
+        const indicesParecidos = await compararSSCsComIA(assuntoAtual, candidatos)
+        resultados = indicesParecidos.map(i => candidatos[i]).filter(Boolean)
+      } catch (erroIA) {
+        console.error('[Verificador de Duplicidade] Erro na comparação por IA. Usando fallback por palavras-chave:', erroIA)
+        showNotification('IA indisponível — usando comparação por palavras-chave.', 'info', 4000)
+        resultados = candidatos.filter(c => calcularSimilaridadeSSC(assuntoAtual, c.assunto))
+      }
 
       if (resultados.length > 0) {
         exibirWidgetDuplicidadeSSC(resultados)
@@ -375,6 +416,7 @@ async function iniciarVerificacaoDuplicidadeSSC() {
     } catch (erro) {
       console.error('[Verificador de Duplicidade] Erro:', erro)
     }
+    
   } finally {
     verificacaoDuplicidadeEmAndamento = false
   }
