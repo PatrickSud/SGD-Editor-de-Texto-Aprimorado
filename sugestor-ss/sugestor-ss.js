@@ -402,7 +402,7 @@ Detalhe todas as consultas, testes e análises realizadas:
 [tudo que foi feito pelo N1. Testes que foram indicados em SUGESTOES_VERIFICACAO que ainda precisam ser realizados devem aparecer entre colchetes. Faça a quebra de linha de cada um dos itens, informando um hífen no começo de cada texto de teste realizado.]
 
 Passos para reproduzir a situação:
-[passos para reproduzir, ou "N/A - situação ocorre apenas no ambiente do cliente" se não for reproduzível]
+[passos para reproduzir o problema enfrentado, ou "N/A - Não é possível reproduzir pois só ocorre apenas no ambiente do cliente" se não for reproduzível]
 
 Qual a sua dúvida neste suporte:
 [dúvida objetiva a ser respondida pelo N2]
