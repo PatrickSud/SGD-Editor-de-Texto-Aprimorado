@@ -432,6 +432,45 @@ async function broadcastToSgdTabs(message) {
 const IAGENTE_BOUNDS_KEY = 'iagenteWindowBounds'
 const IAGENTE_DEFAULT_BOUNDS = { width: 460, height: 780 }
 let iagenteWindowId = null
+let iagenteTabId = null
+let iagenteRegion = 'SUL'
+
+/**
+ * Injeta via chrome.scripting um MutationObserver para manter o título da janela personalizado.
+ */
+function injectIAgenteTitle(tabId, regionName) {
+  if (!tabId) return
+  chrome.scripting.executeScript({
+    target: { tabId: tabId },
+    func: (region) => {
+      const expectedTitle = `TRIA - IAgente - [${region}]`
+      document.title = expectedTitle
+      
+      // Remove observer antigo se houver
+      if (window.iagenteTitleObserver) {
+        window.iagenteTitleObserver.disconnect()
+      }
+      
+      // Monitora mudanças no título
+      window.iagenteTitleObserver = new MutationObserver(() => {
+        if (document.title !== expectedTitle) {
+          document.title = expectedTitle
+        }
+      })
+      
+      const titleEl = document.querySelector('title')
+      if (titleEl) {
+        window.iagenteTitleObserver.observe(titleEl, { childList: true })
+      } else {
+        window.iagenteTitleObserver.observe(document.documentElement, {
+          subtree: true,
+          childList: true
+        })
+      }
+    },
+    args: [regionName]
+  }).catch(err => console.warn('[IAgente] Falha ao injetar script de título:', err))
+}
 
 /**
  * Verifica se a janela do IAgente ainda existe.
@@ -501,6 +540,25 @@ async function openOrFocusIAgenteWindow(url) {
   try {
     const win = await chrome.windows.create(createData)
     iagenteWindowId = win.id
+    if (win.tabs && win.tabs[0]) {
+      iagenteTabId = win.tabs[0].id
+      
+      // Determina a região a partir do link aberto
+      const localData = await chrome.storage.local.get(['remoteConfig'])
+      const remoteConfig = localData.remoteConfig || {}
+      const urlSul = remoteConfig.iagente_url_sul || 'https://tria.plugsocial.online/?assunto=sped&codigoCliente=96797&identificacaoRevenda=3'
+      const urlSudeste = remoteConfig.iagente_url_sudeste
+      
+      if (url === urlSudeste) {
+        iagenteRegion = 'SUDESTE'
+      } else if (url === urlSul) {
+        iagenteRegion = 'SUL'
+      } else {
+        iagenteRegion = url.includes('identificacaoRevenda=3') ? 'SUL' : 'SUDESTE'
+      }
+      
+      injectIAgenteTitle(iagenteTabId, iagenteRegion)
+    }
     broadcastToSgdTabs({ action: 'IAGENTE_WINDOW_STATE', open: true })
     return true
   } catch (e) {
@@ -532,7 +590,22 @@ if (chrome.windows.onBoundsChanged) {
 chrome.windows.onRemoved.addListener(windowId => {
   if (windowId !== iagenteWindowId) return
   iagenteWindowId = null
+  iagenteTabId = null
   broadcastToSgdTabs({ action: 'IAGENTE_WINDOW_STATE', open: false })
+})
+
+// Escuta atualizações de abas para manter o título injetado durante carregamentos/reloads
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (tabId === iagenteTabId && (changeInfo.status === 'loading' || changeInfo.status === 'complete')) {
+    injectIAgenteTitle(tabId, iagenteRegion)
+  }
+})
+
+// Escuta remoção da aba do IAgente
+chrome.tabs.onRemoved.addListener((tabId) => {
+  if (tabId === iagenteTabId) {
+    iagenteTabId = null
+  }
 })
 
 // ATENÇÃO: A função showChromeNotification foi REMOVIDA - agora usamos apenas notificações internas
