@@ -4,6 +4,15 @@
  * dentro de um período de 90 dias.
  */
 
+const DEBUG_ENABLED = false
+
+function logDebug(...args) {
+  if (DEBUG_ENABLED) {
+    console.log(...args)
+  }
+}
+
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. NORMALIZAÇÃO E COMPARAÇÃO DE TEXTO
 // ─────────────────────────────────────────────────────────────────────────────
@@ -82,7 +91,7 @@ function compararSSCsComIA(assuntoAtual, candidatos) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function buscarDocumentoSSCsPendentes(clienteId) {
-  const urlBase        = `${window.location.origin}/sgsc/faces/sscs-pendentes.html`
+  const urlBase = `${window.location.origin}/sgsc/faces/sscs-pendentes.html`
   const urlVerificacao = `${urlBase}?clienteID=${clienteId}`
   const parser = new DOMParser()
 
@@ -95,18 +104,18 @@ async function buscarDocumentoSSCsPendentes(clienteId) {
   const docEstadoUsuario = parser.parseFromString(await resEstadoUsuario.text(), 'text/html')
   const formEstado = docEstadoUsuario.getElementById('relSscForm')
 
-  const clientesOriginal     = docEstadoUsuario.getElementById('relSscForm:clientes')?.value     ?? ''
-  const unidadeNomeOriginal  = docEstadoUsuario.getElementById('relSscForm:unidadeNome')?.value  ?? ''
-  const situacaoOriginal     = docEstadoUsuario.getElementById('relSscForm:situacao')?.value     ?? '0'
-  const responsavelOriginal  = docEstadoUsuario.getElementById('relSscForm:responsavel')?.value  ?? '0'
+  const clientesOriginal = docEstadoUsuario.getElementById('relSscForm:clientes')?.value ?? ''
+  const unidadeNomeOriginal = docEstadoUsuario.getElementById('relSscForm:unidadeNome')?.value ?? ''
+  const situacaoOriginal = docEstadoUsuario.getElementById('relSscForm:situacao')?.value ?? '0'
+  const responsavelOriginal = docEstadoUsuario.getElementById('relSscForm:responsavel')?.value ?? '0'
   const classificacaoOriginal = docEstadoUsuario.getElementById('relSscForm:classificacao')?.value ?? '0'
 
-  console.log('[RESTORE-DEBUG] Estado real do usuário (GET sem clienteID):')
-  console.log('[RESTORE-DEBUG]   relSscForm:clientes     =', JSON.stringify(clientesOriginal))
-  console.log('[RESTORE-DEBUG]   relSscForm:unidadeNome  =', JSON.stringify(unidadeNomeOriginal))
-  console.log('[RESTORE-DEBUG]   relSscForm:situacao     =', JSON.stringify(situacaoOriginal))
-  console.log('[RESTORE-DEBUG]   relSscForm:responsavel  =', JSON.stringify(responsavelOriginal))
-  console.log('[RESTORE-DEBUG]   relSscForm:classificacao=', JSON.stringify(classificacaoOriginal))
+  logDebug('[RESTORE-DEBUG] Estado real do usuário (GET sem clienteID):')
+  logDebug('[RESTORE-DEBUG]   relSscForm:clientes     =', JSON.stringify(clientesOriginal))
+  logDebug('[RESTORE-DEBUG]   relSscForm:unidadeNome  =', JSON.stringify(unidadeNomeOriginal))
+  logDebug('[RESTORE-DEBUG]   relSscForm:situacao     =', JSON.stringify(situacaoOriginal))
+  logDebug('[RESTORE-DEBUG]   relSscForm:responsavel  =', JSON.stringify(responsavelOriginal))
+  logDebug('[RESTORE-DEBUG]   relSscForm:classificacao=', JSON.stringify(classificacaoOriginal))
 
   // 1b. GET com clienteID: carrega o formulário para a verificação
   const resInicial = await fetch(urlVerificacao, { credentials: 'same-origin' })
@@ -120,7 +129,7 @@ async function buscarDocumentoSSCsPendentes(clienteId) {
 
   // 2. POST de verificação: busca todas as SSCs do cliente (filtros zerados)
   const paramsVerificacao = new URLSearchParams(new FormData(form))
-  paramsVerificacao.set('relSscForm:situacao',    '0')
+  paramsVerificacao.set('relSscForm:situacao', '0')
   paramsVerificacao.set('relSscForm:responsavel', '0')
   paramsVerificacao.set('relSscForm:atualizarBtn', 'relSscForm:atualizarBtn')
 
@@ -137,22 +146,24 @@ async function buscarDocumentoSSCsPendentes(clienteId) {
   // 3. POST de restauração: devolve a sessão ao estado real do usuário.
   // Usa o ViewState retornado pela verificação (o anterior foi consumido pelo JSF).
   const viewStateAtualizado = docVerificacao.querySelector('[name="javax.faces.ViewState"]')?.value
-  console.log('[RESTORE-DEBUG] ViewState após verificação:', JSON.stringify(viewStateAtualizado))
+  logDebug('[RESTORE-DEBUG] ViewState após verificação:', JSON.stringify(viewStateAtualizado))
 
   const paramsRestauracao = new URLSearchParams(formEstado ? new FormData(formEstado) : {})
-  paramsRestauracao.set('relSscForm:clientes',      clientesOriginal)
-  paramsRestauracao.set('relSscForm:unidadeNome',   unidadeNomeOriginal)
-  paramsRestauracao.set('relSscForm:situacao',      situacaoOriginal)
-  paramsRestauracao.set('relSscForm:responsavel',   responsavelOriginal)
+  paramsRestauracao.set('relSscForm:clientes', clientesOriginal)
+  paramsRestauracao.set('relSscForm:unidadeNome', unidadeNomeOriginal)
+  paramsRestauracao.set('relSscForm:situacao', situacaoOriginal)
+  paramsRestauracao.set('relSscForm:responsavel', responsavelOriginal)
   paramsRestauracao.set('relSscForm:classificacao', classificacaoOriginal)
-  paramsRestauracao.set('relSscForm:atualizarBtn',  'relSscForm:atualizarBtn')
+  paramsRestauracao.set('relSscForm:atualizarBtn', 'relSscForm:atualizarBtn')
   if (viewStateAtualizado) {
     paramsRestauracao.set('javax.faces.ViewState', viewStateAtualizado)
   }
 
-  console.log('[RESTORE-DEBUG] Payload do POST de restauração:')
-  for (const [k, v] of paramsRestauracao.entries()) {
-    console.log(`[RESTORE-DEBUG]   ${k} = ${JSON.stringify(v)}`)
+  logDebug('[RESTORE-DEBUG] Payload do POST de restauração:')
+  if (DEBUG_ENABLED) {
+    for (const [k, v] of paramsRestauracao.entries()) {
+      console.log(`[RESTORE-DEBUG]   ${k} = ${JSON.stringify(v)}`)
+    }
   }
 
   try {
@@ -163,13 +174,15 @@ async function buscarDocumentoSSCsPendentes(clienteId) {
       credentials: 'same-origin'
     })
     const docRestauracao = parser.parseFromString(await resRestauracao.text(), 'text/html')
-    console.log('[RESTORE-DEBUG] Status da restauração:', resRestauracao.status)
-    console.log('[RESTORE-DEBUG]   relSscForm:clientes    no doc restaurado =',
+    logDebug('[RESTORE-DEBUG] Status da restauração:', resRestauracao.status)
+    logDebug('[RESTORE-DEBUG]   relSscForm:clientes    no doc restaurado =',
       JSON.stringify(docRestauracao.getElementById('relSscForm:clientes')?.value))
-    console.log('[RESTORE-DEBUG]   relSscForm:unidadeNome no doc restaurado =',
+    logDebug('[RESTORE-DEBUG]   relSscForm:unidadeNome no doc restaurado =',
       JSON.stringify(docRestauracao.getElementById('relSscForm:unidadeNome')?.value))
   } catch (e) {
-    console.warn('[RESTORE-DEBUG] Erro no POST de restauração:', e)
+    if (DEBUG_ENABLED) {
+      console.warn('[RESTORE-DEBUG] Erro no POST de restauração:', e)
+    }
   }
 
   return docVerificacao
@@ -332,7 +345,7 @@ function exibirWidgetDuplicidadeSSC(resultados) {
     <div id="ssc-duplicate-widget-body">${itensHtml}</div>
   `
 
-    widget.querySelector('[data-action="toggle"]').addEventListener('click', e => {
+  widget.querySelector('[data-action="toggle"]').addEventListener('click', e => {
     e.stopPropagation()
     const expandido = widget.classList.toggle('expanded')
     e.currentTarget.textContent = expandido ? '▾' : '▲'
@@ -357,17 +370,17 @@ let verificacaoDuplicidadeEmAndamento = false
 async function iniciarVerificacaoDuplicidadeSSC() {
   const urlParams = new URLSearchParams(window.location.search)
   if (urlParams.has('permitirUsarTramiteSscComoResposta')) {
-    console.log('[DEBUG] Modo "copiar trâmite" detectado — verificação de duplicidade ignorada.')
+    logDebug('[DEBUG] Modo "copiar trâmite" detectado — verificação de duplicidade ignorada.')
     return
   }
   if (urlParams.has('sgd-from-widget')) {
-    console.log('[DEBUG] SSC aberta pelo widget de duplicidade — verificação ignorada.')
+    logDebug('[DEBUG] SSC aberta pelo widget de duplicidade — verificação ignorada.')
     return
   }
 
   // Impede que uma nova execução comece enquanto outra ainda está em andamento
   if (verificacaoDuplicidadeEmAndamento) {
-    console.log('[DEBUG] Verificação já em andamento, ignorando nova chamada.')
+    logDebug('[DEBUG] Verificação já em andamento, ignorando nova chamada.')
     return
   }
   verificacaoDuplicidadeEmAndamento = true
@@ -392,9 +405,9 @@ async function iniciarVerificacaoDuplicidadeSSC() {
       sscAtualId = params.get('ssc')
     }
 
-    console.log('[DEBUG] clienteId:', clienteId, '| sscAtualId:', sscAtualId, '| assuntoAtual:', assuntoAtual)
+    logDebug('[DEBUG] clienteId:', clienteId, '| sscAtualId:', sscAtualId, '| assuntoAtual:', assuntoAtual)
 
-try {
+    try {
       const doc = await buscarDocumentoSSCsPendentes(clienteId)
       const candidatos = lerResultadosTabelaSSC(doc, sscAtualId)
 
@@ -416,7 +429,7 @@ try {
     } catch (erro) {
       console.error('[Verificador de Duplicidade] Erro:', erro)
     }
-    
+
   } finally {
     verificacaoDuplicidadeEmAndamento = false
   }
