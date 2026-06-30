@@ -1,137 +1,65 @@
 const RELEASE_NOTES = {
-  '3.0.5.13': {
-    title: '✨ Ocultação de Botões Flutuantes em Janelas Pequenas — Versão 3.0.5.13',
+  '3.0.6': {
+    title: '🚀 Consolidação e Novidades da Versão 3.0.6',
     features: [
-      '<b>🪟 Botões Flutuantes em Janelas Pequenas:</b> O FAB, o botão IAgente e o botão Ir ao Topo/Ir para o Final agora são automaticamente ocultados quando a janela do SGD for menor que 680×450 px, evitando que sobreponham o conteúdo em janelas abertas em tamanho reduzido.',
-      '<b>🤖 IAgente (Tria) em Janela Dedicada:</b> O assistente agora abre em uma janela própria do navegador (estilo aplicativo), em vez da janela flutuante embutida. Isso resolve o problema em que a conversa não carregava por completo, pois o assistente não inicializava quando exibido dentro da página do SGD. Na janela dedicada o atendimento funciona normalmente, com maximizar, minimizar e redimensionar nativos do sistema. A janela lembra o tamanho, a posição e se foi deixada maximizada, reabrindo exatamente como você a deixou; clicar novamente no botão traz a janela para frente (ou a restaura, se minimizada).',
-      '<b>👥 Equipe AT — Visualização Compacta aprimorada:</b> A visualização Compacta passa a ser o padrão, exibindo abaixo da indisponibilidade uma linha com ⏱️ tempo e 📍 presença sem rótulos; textos "Indisponível", "Normal", "Alerta" e "Crítico" são omitidos no modo compacto para cards mais enxutos. A ordenação selecionada agora é lembrada entre sessões.',
-      '<b>🔍 Verificador de SSCs Duplicadas — Melhorias:</b> A verificação passou a usar requisições em segundo plano (sem abrir janela pop-up), o widget é exibido à esquerda do botão IAgente sem sobreposição, e os filtros da página de SSCs Pendentes são restaurados ao estado anterior após cada verificação. A checagem é ignorada automaticamente ao abrir uma SSC pelo modo "copiar trâmite" ou pelo próprio widget de duplicatas.'
-    ]
-  },
-  '3.0.5.11': {
-    title: '✨ Ordem de Pausa e Ajuste de Presença — Versão 3.0.5.11',
-    features: [
-      '<b>👥 Ordem de Pausa e Presença:</b> Adicionado controle de ordem de pausa em tempo real com coloração dinâmica (do vermelho escuro ao verde) para técnicos no status Fora da Fila, e removido o destaque em vermelho e contagem de pausa para usuários desconectados.',
-      '<b>✏️ Edição Visual das Guias (Master):</b> Adicionado editor visual interativo no canto superior direito das guias Formulários, AI Chains e Extensões para Editores Master, permitindo criar, excluir, reordenar (🔽/🔼) e modificar seções e cards com validação inteligente de URLs e alerta de alterações não salvas.',
-      '<b>🤖 IAgente (Tria):</b> Adicionado botão IAgente ao lado do botão Ir ao Topo (disponível para editores/Modo Dev), abrindo o assistente Tria em janela flutuante com posição lembrada entre sessões e sinalização na aba do navegador enquanto o chat está aberto.'
-    ]
-  },
-  '3.0.5.10': {
-    title: '✨ Segurança e Estabilidade de Avisos — Versão 3.0.5.10',
-    features: [
-      '<b>🔒 Segurança e Estabilidade:</b> Migradas todas as operações de banco de dados para o Service Worker sob MV3, adicionada validação para avisos direcionados impedindo o envio com lista de colaboradores vazia, implementado jitter (atraso aleatório de até 30s) no heartbeat diário de registro de atividade, e corrigida redeclaração duplicada da constante isEditor.'
-    ]
-  },
-  '3.0.5.9': {
-    title: '✨ Reformulação do Layout de Avisos — Versão 3.0.5.9',
-    features: [
-      '<b>📢 Reformulação de Layout:</b> Seletores de Tipo, Canal e campo de direcionamento de colaboradores específicos movidos para cima do título, checkboxes de opções inferiores organizados lado a lado (2 por linha) e largura máxima do modal aumentada para 1100px para acomodar o novo layout flexível.'
-    ]
-  },
-  '3.0.5.8': {
-    title: '✨ Ocultar Recursos de IA — Versão 3.0.5.8',
-    features: [
-      '<b>🤖 Ocultar Recursos de IA:</b> Adicionada a opção nas Configurações de Visibilidade dos Botões para ocultar/exibir o menu de Recursos de IA da barra de ferramentas.',
-      '<b>🛠️ Novo Fluxo do Modo Dev:</b> Ativação do Modo Dev por solicitação e aprovação via Firebase Realtime Database (sem senhas), destacando pendências piscantes no Controle de Acesso para usuários Master.',
-      '<b>📢 Correção e Visibilidade:</b> Correção de entrega do aviso "Apenas para mim" com o Modo Dev inativo, ajuste nos estilos globais para exibição correta dos checkboxes ocultos no Controle de Acesso, e retorno automático de editores removidos para a lista de visualizadores.',
-      '<b>⏱️ Múltiplas Guias de Pendências:</b> Suporte a múltiplas guias de pendências ativas com a aba "Todas" unificada (sem duplicados), limpeza automática e sequencial de filtros via formulário JSF com reabertura automática da Central apenas após a finalização da rotina de todas as guias dos usuários, e botão de correção pulsante.',
-      '<b>⚙️ Classificação Padrão Controlada:</b> Implementação de toggle nas preferências para a classificação padrão (desativado por padrão) com suporte a override e ativação/desativação remota via Firebase Realtime Database.'
-    ]
-  },
-  '3.0.5.6': {
-    title: '✨ Gestão Avançada de Acesso e Avisos — Versão 3.0.5.6',
-    features: [
-      '<b>📅 Agendamento e Expiração:</b> Suporte a agendamento de publicação no futuro e datas de expiração customizadas para avisos.',
-      '<b>📥 Histórico e Arquivo de Avisos:</b> Sub-abas no painel de avisos (Ativos vs. Arquivo/Histórico) e botões para arquivar/desarquivar avisos manualmente.',
-      '<b>👑 Níveis de Permissão de Editor:</b> Separação de Editores em Master e Comum. Apenas Master pode alterar cargos, remover editores, limitar canais de editores ou visualizar logs.',
-      '<b>📋 Perfis de Canais:</b> Criação, salvamento no Firebase e aplicação (individual e em lote) de perfis predefinidos de canais de avisos.',
-      '<b>🔍 Busca e Promoção de Editores:</b> Campo de pesquisa em tempo real para filtrar visualizadores e editores, e botão para promover visualizadores a editores diretamente no painel.',
-      '<b>📊 Log de Auditoria e Métricas:</b> Modal de logs de auditoria completo para ações administrativas e tamanho do modal de métricas ampliado para melhor legibilidade.',
-      '<b>⚙️ Canais Dinâmicos:</b> Nova tela de gerenciamento de canais disponível para Editores Master (Adicionar, Renomear e Excluir canais diretamente do Firebase).',
-      '<b>⚡ Ações em Lote Compactadas:</b> Redesenho da interface de ações em lote para exibição inline e sem quebras de linha.',
-      '<b>🛠️ Correções de Clicabilidade:</b> Resolvido problema em que cliques nos checkboxes de perfis eram bloqueados por scripts nativos do SGD.',
-      '<b>🔧 Correção de Comunicação Firebase:</b> Ajustada a resolução de URLs internas da extensão para o banco de dados do Realtime Database e refinada a propagação de eventos no DOM.'
-    ]
-  },
-  '3.0.5.5': {
-    title: '✨ Correção nas Notificações do Modo Dev — Versão 3.0.5.5',
-    features: [
-      '<b>🚀 Correção do Modo Dev nos Avisos:</b> Corrigida a sincronização de chaves de storage (`infoDevMode`, `developerMode` e `developerModeEnabled`) e a associação do clique secreto para garantir que usuários em Modo Dev recebam corretamente as notificações de teste e visualizem avisos em Modo de Teste/Demonstração.'
-    ]
-  },
-  '3.0.5.4': {
-    title: '✨ Leitura Obrigatória nos Avisos — Versão 3.0.5.4',
-    features: [
-      '<b>⚠️ Leitura Obrigatória nos Avisos:</b> Adicionada a opção de leitura obrigatória para avisos críticos, exibindo apenas o botão "Ver Aviso (Obrigatório)" sem fechamento automático e abrindo em modal exclusivo com cronômetro de 10 segundos.'
-    ]
-  },
-  '3.0.5.3': {
-    title: '✨ Novo Editor de Avisos WYSIWYG — Versão 3.0.5.3',
-    features: [
-      '<b>📣 Editor de Avisos WYSIWYG:</b> Novo campo de mensagem com edição em tempo real (WYSIWYG) no modal de Avisos, suportando formatação, links, cores, destaques e emojis.',
-      '<b>🎯 Correção no Hover do FAB:</b> Corrigido o comportamento de expansão do menu de ações rápidas (FAB) para ativar apenas ao passar o mouse diretamente sobre o botão "+", prevenindo aberturas acidentais.',
-      '<b>⏰ Correção nos Lembretes:</b> Resolvido problema de sincronização de armazenamento que impedia o disparo de notificações internas de lembretes e avisos no SGD.'
-    ]
-  },
-  '3.0.5.2': {
-    title: '✨ Melhorias e Correções — Versão 3.0.5.2',
-    features: [
-      '<b>🤖 Recursos de IA na Barra Simples:</b>' +
+      '<b>🤖 Recursos de IA & Sugestores:</b>' +
       '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-      '<li>Corrigido o comportamento onde botões de Recursos de IA fixados/com PIN apareciam indevidamente na barra de ferramentas simples flutuante.</li>' +
+      '<li><b>Sugestor de SAM:</b> Nova ferramenta para gerar sugestão estruturada de SAM de forma automática via IA.</li>' +
+      '<li><b>Menu de IA:</b> Botões unificados em um menu suspenso com suporte a fixação (PIN) individual.</li>' +
+      '<li><b>Sugestor de SS:</b> Estabilizações na coleta de trâmite confidencial e envio para a API da Thomson Reuters.</li>' +
       '</ul>',
 
-      '<b>✨ Novo Visual e Comportamento de Notificações (Toasts):</b> Melhorado o design (Glassmorphism), adicionada barra de progresso (45s) e ação "Ver Mais" sincronizada entre as abas.'
-    ]
-  },
-  '3.0.5.1': {
-    title: '🔧 Correções de Estabilidade — Versão 3.0.5.1',
-    features: [
-      '<b>🔄 Estabilidade em Saudações/Encerramentos:</b>' +
+      '<b>📢 Painel de Avisos & Comunicados (Master):</b>' +
       '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-      '<li>Melhorada a sincronização com o SGD para evitar falhas na classificação ao carregar a página e garantida a preservação integral do conteúdo digitado pelo usuário ao alternar entre situações.</li>' +
+      '<li><b>Editor WYSIWYG:</b> Novo editor visual integrado para formatação rica de comunicados.</li>' +
+      '<li><b>Leitura Obrigatória:</b> Modal de leitura obrigatória para avisos críticos com temporizador de 10 segundos.</li>' +
+      '<li><b>Controle Avançado:</b> Suporte a agendamento, expiração em 7 dias, arquivamento manual e auditoria.</li>' +
       '</ul>',
 
-      '<b>🤖 Sugestor de SS:</b>' +
+      '<b>👥 Equipe AT & Presença:</b>' +
       '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-      '<li>Corrigido erro que travava a geração de sugestão antes de enviar para a IA — o plugin voltou a funcionar normalmente.' +
+      '<li><b>Ordem de Pausa:</b> Controle visual dinâmico com cores em tempo real do status de pausa dos técnicos.</li>' +
+      '<li><b>Visualização Compacta:</b> Cards de equipe otimizados omitindo rótulos desnecessários e mantendo a ordenação.</li>' +
+      '</ul>',
+
+      '<b>🪟 Interface & Usabilidade:</b>' +
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      '<li><b>IAgente em Janela Dedicada:</b> O assistente Tria agora abre em janela popup estilo App (lembra tamanho e posição).</li>' +
+      '<li><b>Responsividade dos Botões:</b> Ocultação automática de botões flutuantes (FAB, IAgente) em telas muito pequenas (menores que 680×450px).</li>' +
+      '<li><b>Drag & Drop no FAB:</b> Reordenação visual por clique e arraste dos atalhos do menu flutuante.</li>' +
+      '<li><b>Verificador Otimizado:</b> Checagem de SSCs duplicadas feita em segundo plano com restauração automática de filtros.</li>' +
       '</ul>'
     ]
   },
   '3.0.5': {
-    title: '✨ Novidades da Versão 3.0.5',
+    title: '🚀 Consolidação e Novidades da Versão 3.0.5',
     features: [
-      '<b>📋 Classificação de Saudações e Encerramentos:</b>' +
+      '<b>🤖 Recursos de IA & Sugestores:</b>' +
       '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-      '<li><b>Novas Categorias:</b> Agora você pode salvar saudações e encerramentos específicos para três situações: <b>Solução</b>, <b>Pedir Informações</b> e <b>Em Análise</b>.</li>' +
-      '<li><b>Troca Inteligente:</b> Ao alternar entre as opções no SGD ou mudar a situação do trâmite, o editor troca automaticamente o texto pelos padrões definidos na categoria correspondente.</li>' +
-      '<li><b>Gestão Independente:</b> Cada aba permite definir favoritos, editar e excluir itens de forma isolada, garantindo a mensagem certa para cada contexto de atendimento.</li>' +
+      '<li><b>Sugestor de SAM:</b> Nova ferramenta para gerar sugestão estruturada de SAM de forma automática via IA.</li>' +
+      '<li><b>Menu de IA:</b> Botões unificados em um menu suspenso com suporte a fixação (PIN) individual.</li>' +
+      '<li><b>Sugestor de SS:</b> Estabilizações na coleta de trâmite confidencial e envio para a API da Thomson Reuters.</li>' +
       '</ul>',
 
-      '<b>✨ Sugestor de SAM com IA:</b>' +
+      '<b>📢 Painel de Avisos & Comunicados (Master):</b>' +
       '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-      '<li>Novo botão <b>Sugerir SAM</b> na toolbar da SSC, ao lado do Sugerir SS.</li>' +
-      '<li>O técnico descreve o problema com suas próprias palavras e a IA estrutura a sugestão de SAM automaticamente.</li>' +
-      '<li>Opção de leitura do atendimento completo para geração da SAM sem precisar digitar nada.</li>' +
-      '<li>Busca automática por SAMs similares já cadastradas antes de gerar uma nova, evitando duplicatas.</li>' +
+      '<li><b>Editor WYSIWYG:</b> Novo editor visual integrado para formatação rica de comunicados.</li>' +
+      '<li><b>Leitura Obrigatória:</b> Modal de leitura obrigatória para avisos críticos com temporizador de 10 segundos.</li>' +
+      '<li><b>Controle Avançado:</b> Suporte a agendamento, expiração em 7 dias, arquivamento manual e auditoria.</li>' +
       '</ul>',
 
-      '<b>🤖 Menu de Recursos de IA:</b>' +
+      '<b>👥 Equipe AT & Presença:</b>' +
       '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-      '<li><b>Integração:</b> Os botões Sugerir SS e Sugerir SAM agora estão organizados dentro de um novo menu suspenso chamado <b>Recursos de IA</b>.</li>' +
-      '<li><b>📌 Fixação (PIN) Individual:</b> Agora você pode fixar seus recursos de IA favoritos diretamente na toolbar! Basta clicar no ícone de pin 📌 dentro do menu para criar um atalho rápido.</li>' +
+      '<li><b>Ordem de Pausa:</b> Controle visual dinâmico com cores em tempo real do status de pausa dos técnicos.</li>' +
+      '<li><b>Visualização Compacta:</b> Cards de equipe otimizados omitindo rótulos desnecessários e mantendo a ordenação.</li>' +
       '</ul>',
 
-      '<b>🔗 Copiar Link SSC diretamente do FAB (Menu Flutuante):</b>' +
+      '<b>🪟 Interface & Usabilidade:</b>' +
       '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-      '<li>Novo botão flutuante <b>🔗 Copiar Link SSC</b> disponível no menu de Acesso Rápido (FAB).</li>' +
-      '<li>Permite copiar rapidamente o link da SSC, formatando um texto pronto para envio ao cliente em um novo trâmite que existe outra SSC de mesmo assunto.</li>' +
-      '</ul>',
-
-      '<b>↕️ Reordenação e PIN no FAB (Menu Flutuante):</b>' +
-      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-      '<li>Implementada a funcionalidade de reordenação por clique e arraste (Drag and Drop) para todos os botões do menu flutuante (FAB).</li>' +
-      '<li>Melhorado o funcionamento do PIN no FAB.</li>' +
+      '<li><b>IAgente em Janela Dedicada:</b> O assistente Tria agora abre em janela popup estilo App (lembra tamanho e posição).</li>' +
+      '<li><b>Responsividade dos Botões:</b> Ocultação automática de botões flutuantes (FAB, IAgente) em telas muito pequenas (menores que 680×450px).</li>' +
+      '<li><b>Drag & Drop no FAB:</b> Reordenação visual por clique e arraste dos atalhos do menu flutuante.</li>' +
+      '<li><b>Verificador Otimizado:</b> Checagem de SSCs duplicadas feita em segundo plano com restauração automática de filtros.</li>' +
       '</ul>'
     ]
   },
