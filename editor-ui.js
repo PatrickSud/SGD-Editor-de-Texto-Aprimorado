@@ -419,7 +419,7 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
     masterContainer.appendChild(contentWrapper)
   } else {
     console.error(
-      'Editor SGD: Não foi possível encontrar o elemento pai do textarea.'
+      'SGD - PowerTools: Não foi possível encontrar o elemento pai do textarea.'
     )
     return
   }

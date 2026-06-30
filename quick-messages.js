@@ -165,7 +165,7 @@ function createMessageElement(message, editorContainer) {
       insertAtCursor(targetTextArea, resolvedContent)
     } else {
       console.error(
-        'Editor SGD: Não foi possível encontrar o textarea associado ao inserir trâmite rápido.'
+        'SGD - PowerTools: Não foi possível encontrar o textarea associado ao inserir trâmite rápido.'
       )
     }
   })
@@ -1353,7 +1353,7 @@ async function openManagementModal() {
   versionSpan.id = 'extension-version-button';
   versionSpan.title = 'Clique para ver as novidades da versão';
   const currentVersion = chrome.runtime.getManifest().version;
-  versionSpan.textContent = `SGD Editor Aprimorado v${currentVersion}`;
+  versionSpan.textContent = `SGD - PowerTools Aprimorado v${currentVersion}`;
   versionFooter.appendChild(versionSpan);
   modal.querySelector('.se-modal-content').appendChild(versionFooter);
 

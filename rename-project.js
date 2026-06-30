@@ -19,8 +19,23 @@ const IGNORAR = [
     'node_modules',
     '.git',
     '.DS_Store',
+    '.vscode',
+    '.cursor',
     'rename-project.js' // Ignora o próprio script
 ];
+
+// Extensões de arquivos de texto permitidas (para evitar corromper binários)
+const EXTENSOES_PERMITIDAS = [
+    '.js',
+    '.json',
+    '.css',
+    '.md',
+    '.html',
+    '.txt'
+];
+
+// Se true, apenas lista os arquivos que seriam modificados, sem alterar nada no disco
+const DRY_RUN = false;
 // ================================================
 
 function substituirNoArquivo(caminhoArquivo) {
@@ -38,8 +53,12 @@ function substituirNoArquivo(caminhoArquivo) {
 
         // Só reescreve o arquivo se alguma alteração real tiver acontecido
         if (arquivoModificado) {
-            fs.writeFileSync(caminhoArquivo, conteudo, 'utf8');
-            console.log(`✅ Atualizado: ${caminhoArquivo}`);
+            if (DRY_RUN) {
+                console.log(`🔍 [DRY RUN] Seria atualizado: ${caminhoArquivo}`);
+            } else {
+                fs.writeFileSync(caminhoArquivo, conteudo, 'utf8');
+                console.log(`✅ Atualizado: ${caminhoArquivo}`);
+            }
         }
     } catch (erro) {
         console.error(`❌ Erro ao processar o arquivo ${caminhoArquivo}:`, erro.message);
@@ -60,11 +79,17 @@ function percorrerDiretorio(diretorioAtual) {
         if (estatisticas.isDirectory()) {
             percorrerDiretorio(caminhoCompleto);
         } else if (estatisticas.isFile()) {
-            substituirNoArquivo(caminhoCompleto);
+            const ext = path.extname(item).toLowerCase();
+            if (EXTENSOES_PERMITIDAS.includes(ext)) {
+                substituirNoArquivo(caminhoCompleto);
+            }
         }
     });
 }
 
-console.log(`🚀 Iniciando a substituição dos termos antigos por "${TERMO_NOVO}"...`);
+if (DRY_RUN) {
+    console.log(`🔍 MODO SIMULAÇÃO (DRY RUN) ATIVO. Nenhum arquivo será modificado.`);
+}
+console.log(`🚀 Iniciando a verificação/substituição dos termos antigos por "${TERMO_NOVO}"...`);
 percorrerDiretorio(__dirname);
 console.log('🏁 Processo concluído com sucesso!');

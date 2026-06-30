@@ -1184,13 +1184,13 @@ chrome.runtime.onInstalled.addListener(async details => {
           data.closings.push(newClosing)
           await setStorageData(GREETINGS_CLOSINGS_KEY, data, 'sync')
           console.log(
-            'Editor SGD: Encerramento "Acesso Remoto" adicionado para usuário existente.'
+            'SGD - PowerTools: Encerramento "Acesso Remoto" adicionado para usuário existente.'
           )
         }
       }
     } catch (error) {
       console.error(
-        'Editor SGD: Falha ao adicionar encerramento "Acesso Remoto" na atualização.',
+        'SGD - PowerTools: Falha ao adicionar encerramento "Acesso Remoto" na atualização.',
         error
       )
     }

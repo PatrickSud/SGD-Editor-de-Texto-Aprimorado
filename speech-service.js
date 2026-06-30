@@ -273,7 +273,7 @@ const SpeechService = (() => {
     if (isListening) return
     if (!recognition) {
       console.error(
-        'Editor SGD: Serviço de reconhecimento de voz não inicializado.'
+        'SGD - PowerTools: Serviço de reconhecimento de voz não inicializado.'
       )
       return
     }
@@ -347,7 +347,7 @@ const SpeechService = (() => {
         4000
       )
     } catch (e) {
-      console.error('Editor SGD: Erro ao iniciar o reconhecimento de voz.', e)
+      console.error('SGD - PowerTools: Erro ao iniciar o reconhecimento de voz.', e)
       isListening = false
       updateMicButtonState(false)
       

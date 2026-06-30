@@ -205,7 +205,7 @@ async function initializeExtension() {
     if (button) {
       e.preventDefault()
       const extensionUrl =
-        'https://chromewebstore.google.com/detail/sgd-editor-de-texto-aprim/gheenkbjmfijkelccofdnlcfbfeinfpe?authuser=0&hl=pt-BR'
+        'https://chromewebstore.google.com/detail/sgd-powertools/gheenkbjmfijkelccofdnlcfbfeinfpe'
       try {
         await navigator.clipboard.writeText(extensionUrl)
         showNotification('Link da extensão copiado!', 'success')
@@ -387,10 +387,10 @@ async function initializeExtension() {
             !!warning.requiredReading
           )
         } else {
-          console.warn('[SGD Editor] Aviso não encontrado:', openWarningId)
+          console.warn('[SGD - PowerTools] Aviso não encontrado:', openWarningId)
         }
       } catch (err) {
-        console.error('[SGD Editor] Erro ao abrir aviso via URL:', err)
+        console.error('[SGD - PowerTools] Erro ao abrir aviso via URL:', err)
       }
     }, 1000)
   }
@@ -2276,7 +2276,7 @@ async function updateNotificationStatus() {
       bellIcon.classList.remove('pulsing')
     }
   } catch (error) {
-    console.error('Editor SGD: Erro ao atualizar status de notificação.', error)
+    console.error('SGD - PowerTools: Erro ao atualizar status de notificação.', error)
   }
 }
 
@@ -2354,7 +2354,7 @@ async function checkAndShowPendingWarningToasts() {
       }
     }
   } catch (error) {
-    console.error('Editor SGD: Erro ao verificar avisos pendentes na inicialização.', error);
+    console.error('SGD - PowerTools: Erro ao verificar avisos pendentes na inicialização.', error);
   }
 }
 
@@ -2380,7 +2380,7 @@ function createAndInjectBellIcon() {
     // Só mostra o aviso se não estivermos em uma página de login
     if (!currentPath.includes('login')) {
       console.warn(
-        'Editor SGD: Ponto de injeção do ícone de sino não encontrado.'
+        'SGD - PowerTools: Ponto de injeção do ícone de sino não encontrado.'
       )
     }
     return
@@ -2547,7 +2547,7 @@ async function checkVersionAndShowWhatsNew() {
     }
   } catch (error) {
     console.error(
-      'Editor SGD: Erro ao verificar a versão para novidades.',
+      'SGD - PowerTools: Erro ao verificar a versão para novidades.',
       error
     )
   }
@@ -2657,7 +2657,7 @@ if (tabsToClearStr) {
           sessionStorage.setItem('autoOpenPendingPanel', 'true')
         }
 
-        console.log('[SGD Editor] Limpando filtros da guia ativa: ' + (currentFiltro || 'padrão'))
+        console.log('[SGD - PowerTools] Limpando filtros da guia ativa: ' + (currentFiltro || 'padrão'))
         setTimeout(() => {
           if (typeof resetSiteFilter === 'function') {
             resetSiteFilter().catch(err =>
@@ -2666,12 +2666,12 @@ if (tabsToClearStr) {
           }
         }, 600)
       } else {
-        console.log('[SGD Editor] Redirecionando para a guia na fila de limpeza: ' + (targetFiltro || 'padrão'))
+        console.log('[SGD - PowerTools] Redirecionando para a guia na fila de limpeza: ' + (targetFiltro || 'padrão'))
         window.location.href = nextUrl
       }
     }
   } catch (e) {
-    console.error('[SGD Editor] Erro ao processar fila de limpeza de filtros:', e)
+    console.error('[SGD - PowerTools] Erro ao processar fila de limpeza de filtros:', e)
     sessionStorage.removeItem('tabsToClear')
   }
 }
@@ -2681,7 +2681,7 @@ if (sessionStorage.getItem('autoOpenPendingPanel') === 'true' && !isExecutingQue
   sessionStorage.removeItem('autoOpenPendingPanel')
   setTimeout(() => {
     if (typeof openInfoPanel === 'function') {
-      console.log('[SGD Editor] Reabrindo Painel de Pendências após limpeza de filtros...')
+      console.log('[SGD - PowerTools] Reabrindo Painel de Pendências após limpeza de filtros...')
       openInfoPanel('pending').catch(err =>
         console.error('Erro ao reabrir painel de pendências:', err)
       )

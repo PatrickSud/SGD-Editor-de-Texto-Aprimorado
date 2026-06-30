@@ -2807,7 +2807,7 @@ function showWhatsNewModal(notes) {
 
   const contentHtml = `
     <div class="whats-new-content">
-      <p>Confira as principais novidades do <strong>SGD - Editor de Texto Aprimorado</strong>:</p>
+      <p>Confira as principais novidades do <strong>SGD - PowerTools</strong>:</p>
       <ul style="margin-top: 8px;">${featuresHtml}</ul>
       <br>
       <p>Espero que goste das melhorias! Para reportar bugs ou sugerir melhorias, entre em contato conosco no Teams &#129309;</p>

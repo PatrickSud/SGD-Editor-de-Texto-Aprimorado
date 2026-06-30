@@ -1,4 +1,4 @@
-# Regras de Estilo de Codificação - SGD Editor de Texto Aprimorado
+# Regras de Estilo de Codificação - SGD - PowerTools de Texto Aprimorado
 
 Este documento define as regras de estilo de codificação que devem ser seguidas para manter a consistência do projeto.
 
@@ -304,12 +304,12 @@ return result
 // ✅ Correto
 function insertAtCursor(textArea, text, options = {}) {
   if (!textArea || typeof textArea.value !== 'string') {
-    console.error('Editor SGD: textArea inválido')
+    console.error('SGD - PowerTools: textArea inválido')
     return
   }
 
   if (typeof text !== 'string') {
-    console.error('Editor SGD: texto inválido')
+    console.error('SGD - PowerTools: texto inválido')
     return
   }
 

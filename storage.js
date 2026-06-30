@@ -43,7 +43,7 @@ async function migrateFromSync(key) {
 
   const syncResult = await chrome.storage.sync.get(key)
   if (syncResult[key] !== undefined) {
-    console.log(`Editor SGD: Migrando "${key}" do storage.sync para storage.local.`)
+    console.log(`SGD - PowerTools: Migrando "${key}" do storage.sync para storage.local.`)
     await chrome.storage.local.set({ [key]: syncResult[key] })
     await chrome.storage.sync.remove(key)
     return syncResult[key]
@@ -84,7 +84,7 @@ async function getStoredData() {
     if (isContextInvalidatedError(error)) {
       return initializeDefaultData(false)
     }
-    console.error('Editor SGD: Erro ao carregar dados.', error)
+    console.error('SGD - PowerTools: Erro ao carregar dados.', error)
     return initializeDefaultData(false)
   }
 }
@@ -98,7 +98,7 @@ async function saveStoredData(data) {
     // Agora sempre salva no local, que tem mais espaço.
     await chrome.storage.local.set({ [STORAGE_KEY]: data })
   } catch (error) {
-    console.error('Editor SGD: Erro ao salvar dados.', error)
+    console.error('SGD - PowerTools: Erro ao salvar dados.', error)
     showNotification('Falha ao salvar alterações.', 'error')
   }
 }
@@ -139,7 +139,7 @@ async function runDataMigration(data) {
 
   // 1. Migração de V1 (ou sem versão) para V2 (Estruturado).
   if (Array.isArray(data) || !data.version || data.version < 2) {
-    console.log('Editor SGD: Iniciando migração para V2.')
+    console.log('SGD - PowerTools: Iniciando migração para V2.')
     // Mantém a migração antiga para preservar dados do usuário.
     const defaultCategoryId = `cat-${Date.now()}`
     let newCategories = [
@@ -192,7 +192,7 @@ async function runDataMigration(data) {
 
   // 2. Migração de V2 para V3 (Adicionando propriedade 'order').
   if (newData.version < 3) {
-    console.log('Editor SGD: Iniciando migração para V3 (Ordenação).')
+    console.log('SGD - PowerTools: Iniciando migração para V3 (Ordenação).')
 
     // Agrupa mensagens por categoria para definir a ordem sequencialmente.
     const messagesByCat = {}
@@ -320,7 +320,7 @@ async function getSettings() {
     if (isContextInvalidatedError(error)) {
       return { ...DEFAULT_SETTINGS }
     }
-    console.error('Editor SGD: Erro ao carregar configurações.', error)
+    console.error('SGD - PowerTools: Erro ao carregar configurações.', error)
     return { ...DEFAULT_SETTINGS } // Retorna padrões em caso de erro
   }
 }
@@ -333,7 +333,7 @@ async function saveSettings(newSettings) {
   // Verifica se o contexto está válido antes de tentar salvar
   if (!isExtensionContextValid()) {
     console.warn(
-      'Editor SGD: Contexto da extensão invalidado. Não é possível salvar configurações.'
+      'SGD - PowerTools: Contexto da extensão invalidado. Não é possível salvar configurações.'
     )
     return
   }
@@ -355,11 +355,11 @@ async function saveSettings(newSettings) {
     // Se for erro de contexto invalidado, apenas retorna sem propagar
     if (isContextInvalidatedError(error)) {
       console.warn(
-        'Editor SGD: Contexto da extensão invalidado. Não é possível salvar configurações.'
+        'SGD - PowerTools: Contexto da extensão invalidado. Não é possível salvar configurações.'
       )
       return
     }
-    console.error('Editor SGD: Erro ao salvar configurações.', error)
+    console.error('SGD - PowerTools: Erro ao salvar configurações.', error)
     throw error // Propaga o erro para a UI apenas se não for contexto invalidado
   }
 }
@@ -390,7 +390,7 @@ async function loadSavedTheme() {
 async function setTheme(themeName) {
   // Valida se o tema existe na lista de temas permitidos
   if (!THEMES.includes(themeName)) {
-    console.error(`Editor SGD: Tema inválido "${themeName}".`)
+    console.error(`SGD - PowerTools: Tema inválido "${themeName}".`)
     return
   }
 
@@ -547,7 +547,7 @@ async function getSavedNotes() {
 
     return notesData
   } catch (error) {
-    console.error('Editor SGD: Erro ao carregar anotações.', error)
+    console.error('SGD - PowerTools: Erro ao carregar anotações.', error)
     return getInitialNotesData()
   }
 }
@@ -560,7 +560,7 @@ async function saveNotes(data) {
   try {
     await chrome.storage.local.set({ [NOTES_STORAGE_KEY]: data })
   } catch (error) {
-    console.error('Editor SGD: Erro ao salvar anotações.', error)
+    console.error('SGD - PowerTools: Erro ao salvar anotações.', error)
   }
 }
 
@@ -604,7 +604,7 @@ async function getReminders() {
     const reminders = await migrateFromSync(REMINDERS_STORAGE_KEY)
     return reminders || {}
   } catch (error) {
-    console.error('Editor SGD: Erro ao carregar lembretes.', error)
+    console.error('SGD - PowerTools: Erro ao carregar lembretes.', error)
     return {}
   }
 }
@@ -660,7 +660,7 @@ async function cleanupOldReminders() {
       await chrome.storage.local.set({ [REMINDERS_STORAGE_KEY]: reminders })
     }
   } catch (error) {
-    console.error('Editor SGD: Erro ao limpar lembretes antigos.', error)
+    console.error('SGD - PowerTools: Erro ao limpar lembretes antigos.', error)
   }
 }
 
@@ -723,7 +723,7 @@ async function saveReminder(reminderData) {
     return reminderId
   } catch (error) {
     console.error(
-      'Editor SGD: Erro ao salvar lembrete ou agendar alarme.',
+      'SGD - PowerTools: Erro ao salvar lembrete ou agendar alarme.',
       error
     )
 
@@ -764,7 +764,7 @@ async function deleteReminder(reminderId) {
       reminderId: reminderId
     }).catch(error => {
       console.warn(
-        `Editor SGD: Não foi possível garantir que o alarme ${reminderId} foi limpo no background:`,
+        `SGD - PowerTools: Não foi possível garantir que o alarme ${reminderId} foi limpo no background:`,
         error
       )
     })
@@ -785,7 +785,7 @@ async function deleteReminder(reminderId) {
       })
     }
   } catch (error) {
-    console.error(`Editor SGD: Erro ao excluir lembrete ${reminderId}.`, error)
+    console.error(`SGD - PowerTools: Erro ao excluir lembrete ${reminderId}.`, error)
     throw error
   }
 }
@@ -829,7 +829,7 @@ async function deleteMultipleReminders(reminderIds) {
       })
     }
   } catch (error) {
-    console.error(`Editor SGD: Erro ao excluir múltiplos lembretes.`, error)
+    console.error(`SGD - PowerTools: Erro ao excluir múltiplos lembretes.`, error)
     throw error
   }
 }
@@ -842,7 +842,7 @@ async function saveFabPosition(position) {
   try {
     await saveSettings({ fabPosition: position })
   } catch (error) {
-    console.error('Editor SGD: Erro ao salvar a posição do FAB.', error)
+    console.error('SGD - PowerTools: Erro ao salvar a posição do FAB.', error)
   }
 }
 
@@ -881,7 +881,7 @@ async function getUserResponseSamples() {
     // Retorna o array de amostras ou um array vazio se não existir.
     return result[USER_RESPONSE_SAMPLES_KEY] || []
   } catch (error) {
-    console.error('Editor SGD: Erro ao carregar amostras de respostas.', error)
+    console.error('SGD - PowerTools: Erro ao carregar amostras de respostas.', error)
     return []
   }
 }
@@ -904,7 +904,7 @@ async function saveUserResponseSample(responseText) {
     // Salva o array atualizado.
     await chrome.storage.local.set({ [USER_RESPONSE_SAMPLES_KEY]: samples })
   } catch (error) {
-    console.error('Editor SGD: Erro ao salvar amostra de resposta.', error)
+    console.error('SGD - PowerTools: Erro ao salvar amostra de resposta.', error)
   }
 }
 
@@ -935,7 +935,7 @@ async function updateCategoryShortcut(categoryId, newShortcut) {
       throw new Error('Categoria não encontrada para atualizar o atalho.')
     }
   } catch (error) {
-    console.error('Editor SGD: Erro ao salvar o atalho da categoria.', error)
+    console.error('SGD - PowerTools: Erro ao salvar o atalho da categoria.', error)
     // Propaga o erro para a UI poder notificar o usuário.
     throw error
   }
@@ -970,7 +970,7 @@ async function updateCategoryName(categoryId, newName) {
     category.name = trimmed
     await saveStoredData(data)
   } catch (error) {
-    console.error('Editor SGD: Erro ao atualizar nome da categoria.', error)
+    console.error('SGD - PowerTools: Erro ao atualizar nome da categoria.', error)
     // Propaga o erro para a UI poder notificar o usuário.
     throw error
   }
@@ -987,7 +987,7 @@ async function isDevModeEnabled() {
     return result[DEV_MODE_KEY] === true
   } catch (error) {
     console.error(
-      'Editor SGD: Erro ao verificar o modo de desenvolvedor.',
+      'SGD - PowerTools: Erro ao verificar o modo de desenvolvedor.',
       error
     )
     return false
@@ -1007,7 +1007,7 @@ async function toggleDevMode() {
     return newState
   } catch (error) {
     console.error(
-      'Editor SGD: Erro ao alternar o modo de desenvolvedor.',
+      'SGD - PowerTools: Erro ao alternar o modo de desenvolvedor.',
       error
     )
     return isEnabled // Retorna ao estado anterior em caso de erro
@@ -1022,7 +1022,7 @@ async function saveAllReminders(reminders) {
   try {
     await chrome.storage.local.set({ [REMINDERS_STORAGE_KEY]: reminders })
   } catch (error) {
-    console.error('Editor SGD: Erro ao salvar todos os lembretes.', error)
+    console.error('SGD - PowerTools: Erro ao salvar todos os lembretes.', error)
     throw error // Propaga o erro para a UI
   }
 }
@@ -1094,7 +1094,7 @@ async function getGreetingsAndClosings(classification = 'solution') {
     // MIGRAÇÃO: Se os dados estiverem no formato antigo (direto no objeto), move para 'solution'
     if (rawData.greetings !== undefined || rawData.closings !== undefined) {
       console.log(
-        'Editor SGD: Migrando dados de saudações para novo formato por classificação.'
+        'SGD - PowerTools: Migrando dados de saudações para novo formato por classificação.'
       )
       const oldData = {
         greetings: rawData.greetings || [],
@@ -1225,7 +1225,7 @@ Seguimos à disposição.
     return rawData[classification]
   } catch (error) {
     console.error(
-      'Editor SGD: Erro ao carregar saudações e encerramentos.',
+      'SGD - PowerTools: Erro ao carregar saudações e encerramentos.',
       error
     )
     return {
@@ -1328,7 +1328,7 @@ async function saveGreetingsAndClosings(
     )
   } catch (error) {
     console.error(
-      'Editor SGD: Erro ao salvar saudações e encerramentos.',
+      'SGD - PowerTools: Erro ao salvar saudações e encerramentos.',
       error
     )
     showNotification('Falha ao salvar as configurações.', 'error')
@@ -1346,7 +1346,7 @@ async function getFollowedAttendances() {
     const followed = await migrateFromSync(FOLLOWED_ATTENDANCES_KEY)
     return followed || {}
   } catch (error) {
-    console.error('Editor SGD: Erro ao carregar atendimentos seguidos.', error)
+    console.error('SGD - PowerTools: Erro ao carregar atendimentos seguidos.', error)
     return {}
   }
 }
@@ -1359,7 +1359,7 @@ async function saveFollowedAttendances(attendances) {
   try {
     await chrome.storage.local.set({ [FOLLOWED_ATTENDANCES_KEY]: attendances })
   } catch (error) {
-    console.error('Editor SGD: Erro ao salvar atendimentos seguidos.', error)
+    console.error('SGD - PowerTools: Erro ao salvar atendimentos seguidos.', error)
     throw error
   }
 }
@@ -1411,7 +1411,7 @@ async function saveFollowedAttendance(attendanceData) {
 
     return attendances[attendanceData.id]
   } catch (error) {
-    console.error('Editor SGD: Erro ao salvar atendimento seguido.', error)
+    console.error('SGD - PowerTools: Erro ao salvar atendimento seguido.', error)
     throw error
   }
 }
@@ -1435,7 +1435,7 @@ async function removeFollowedAttendance(attendanceId) {
     }
   } catch (error) {
     console.error(
-      `Editor SGD: Erro ao remover atendimento seguido ${attendanceId}.`,
+      `SGD - PowerTools: Erro ao remover atendimento seguido ${attendanceId}.`,
       error
     )
     throw error
@@ -1471,7 +1471,7 @@ async function getLastSeenVersion() {
     const result = await chrome.storage.local.get(LAST_SEEN_VERSION_KEY)
     return result[LAST_SEEN_VERSION_KEY] || null
   } catch (error) {
-    console.error('Editor SGD: Erro ao obter a última versão vista.', error)
+    console.error('SGD - PowerTools: Erro ao obter a última versão vista.', error)
     return null
   }
 }
@@ -1484,7 +1484,7 @@ async function setLastSeenVersion(version) {
   try {
     await chrome.storage.local.set({ [LAST_SEEN_VERSION_KEY]: version })
   } catch (error) {
-    console.error('Editor SGD: Erro ao salvar a última versão vista.', error)
+    console.error('SGD - PowerTools: Erro ao salvar a última versão vista.', error)
   }
 }
 
@@ -1499,7 +1499,7 @@ async function getPendingMinorNotes() {
     return Array.isArray(notes) ? notes : []
   } catch (error) {
     console.error(
-      'Editor SGD: Erro ao obter notas pendentes de versões menores.',
+      'SGD - PowerTools: Erro ao obter notas pendentes de versões menores.',
       error
     )
     return []
@@ -1518,7 +1518,7 @@ async function addPendingMinorNote(note) {
     await chrome.storage.local.set({ [PENDING_MINOR_NOTES_KEY]: existing })
   } catch (error) {
     console.error(
-      'Editor SGD: Erro ao adicionar nota pendente de versão menor.',
+      'SGD - PowerTools: Erro ao adicionar nota pendente de versão menor.',
       error
     )
   }
@@ -1532,7 +1532,7 @@ async function clearPendingMinorNotes() {
     await chrome.storage.local.remove(PENDING_MINOR_NOTES_KEY)
   } catch (error) {
     console.error(
-      'Editor SGD: Erro ao limpar notas pendentes de versões menores.',
+      'SGD - PowerTools: Erro ao limpar notas pendentes de versões menores.',
       error
     )
   }

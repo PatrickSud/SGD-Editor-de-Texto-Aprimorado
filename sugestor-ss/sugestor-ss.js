@@ -1,8 +1,8 @@
 // sugestor-ss.js
-// Injetado APENAS na página ssc.html pelo manifest do SGD Editor.
+// Injetado APENAS na página ssc.html pelo manifest do SGD - PowerTools.
 //
 // DIFERENÇA em relação ao content.js original do Sugestor SS:
-//   - criarBotao() foi REMOVIDO — o botão agora fica na toolbar do SGD Editor (main.js)
+//   - criarBotao() foi REMOVIDO — o botão agora fica na toolbar do SGD - PowerTools (main.js)
 //   - iniciarSugestao() foi exposta como window.iniciarSugestao para que o main.js
 //     consiga chamá-la ao clicar no botão da toolbar (ambos rodam na mesma página)
 //   - criarOverlayLoading() ainda é chamada na inicialização — o overlay de loading
@@ -612,7 +612,7 @@ function registrarUso(acao) {
   });
 }
 
-// Exposta no window para que o SGD Editor (main.js) possa chamá-la
+// Exposta no window para que o SGD - PowerTools (main.js) possa chamá-la
 // ao clicar no botão da toolbar. Ambos os scripts rodam na mesma página.
 window.iniciarSugestao = async function iniciarSugestao() {
   registrarUso('Botão clicado');
@@ -1027,6 +1027,6 @@ function abrirFormulario(textoFormulario) {
 // ─────────────────────────────────────────
 // INICIALIZAÇÃO
 // Apenas o overlay de loading é criado aqui.
-// O botão de acionamento fica na toolbar do SGD Editor (main.js).
+// O botão de acionamento fica na toolbar do SGD - PowerTools (main.js).
 // ─────────────────────────────────────────
 criarOverlayLoading();

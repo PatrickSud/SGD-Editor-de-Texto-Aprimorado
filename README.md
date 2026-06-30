@@ -1,6 +1,6 @@
 ## 📖 Sobre o Projeto
 
-O **SGD - Editor de Texto Aprimorado** é uma extensão para navegador projetada para turbinar a interface de edição de texto do sistema SGD da Domínio Sistemas. A extensão substitui o editor padrão por uma ferramenta moderna e cheia de funcionalidades, otimizando o fluxo de trabalho de analistas de suporte e outros usuários do sistema.
+O **SGD - PowerTools** é uma extensão para navegador projetada para turbinar a interface de edição de texto do sistema SGD da Domínio Sistemas. A extensão substitui o editor padrão por uma ferramenta moderna e cheia de funcionalidades, otimizando o fluxo de trabalho de analistas de suporte e outros usuários do sistema.
 
 O foco é oferecer uma experiência de escrita mais rica, ágil e personalizável, com recursos que vão desde formatação avançada até automação com atalhos e integração com Inteligência Artificial.
 
@@ -68,6 +68,6 @@ O código-fonte é modular e bem organizado, com cada arquivo tendo uma responsa
 ## 🚀 Como Instalar
 
 - **Chrome Web Store**:
-  1.  Acesse o link da extensão na Chrome Web Store (**[SGD - Editor de Texto Aprimorado](https://chromewebstore.google.com/detail/sgd-editor-de-texto-aprim/gheenkbjmfijkelccofdnlcfbfeinfpe?authuser=0&hl=pt-BR)**).
+  1.  Acesse o link da extensão na Chrome Web Store (**[SGD - PowerTools](https://chromewebstore.google.com/detail/sgd-powertools/gheenkbjmfijkelccofdnlcfbfeinfpe)**).
   2.  Clique em "Usar no Chrome".
   3.  Acesse o site do SGD e a extensão será carregada automaticamente.

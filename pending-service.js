@@ -589,7 +589,7 @@ async function resetSiteFilter(targetUrl) {
 
       const form = btn.form || document.getElementById('filtrosForm')
       if (form) {
-        console.log('[SGD Editor] Submetendo formulário com campo oculto para JSF...')
+        console.log('[SGD - PowerTools] Submetendo formulário com campo oculto para JSF...')
         let hiddenInput = form.querySelector(`input[name="${btn.name}"]`)
         if (!hiddenInput) {
           hiddenInput = document.createElement('input')

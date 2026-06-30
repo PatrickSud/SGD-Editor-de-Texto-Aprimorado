@@ -13,7 +13,7 @@ function registrarUsoFeatures(acao) {
       usuario,
       ssc: 'N/A',
       acao,
-      guia: 'Editor SGD'
+      guia: 'SGD - PowerTools'
     })
   });
 }
@@ -35,13 +35,13 @@ function isUserNameInsertionAvailable() {
 
   // Debug: Log dos elementos encontrados
   console.log(
-    'Editor SGD: Debug username elements - USER_NAME_SELECT_ID:',
+    'SGD - PowerTools: Debug username elements - USER_NAME_SELECT_ID:',
     USER_NAME_SELECT_ID,
     'found:',
     !!userSelectElement
   )
   console.log(
-    'Editor SGD: Debug username elements - USER_NAME_LOGGED_ID:',
+    'SGD - PowerTools: Debug username elements - USER_NAME_LOGGED_ID:',
     USER_NAME_LOGGED_ID,
     'found:',
     !!userLoggedElement
@@ -64,7 +64,7 @@ function isUserNameInsertionAvailable() {
         const element = document.querySelector(selector)
         if (element) {
           console.log(
-            'Editor SGD: Elemento alternativo encontrado:',
+            'SGD - PowerTools: Elemento alternativo encontrado:',
             selector,
             element
           )
