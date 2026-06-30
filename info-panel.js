@@ -4611,6 +4611,53 @@ async function loadAccessControl(sectionElement) {
     const currentUserNorm = (window.sgdPermissions.currentUser || '').trim().toLowerCase()
     const isMaster = !!window.sgdPermissions.isMaster
 
+    const localConfig = await chrome.storage.local.get(['remoteConfig'])
+    const remoteConfig = localConfig.remoteConfig || {}
+
+    const checkUserIAgenteAccessStatus = (user) => {
+      // Editores Master genuínos sempre têm acesso bypass
+      if (user.role === 'master') {
+        return { active: true, reason: 'Master' }
+      }
+
+      if (user.iagenteDisabled === true) {
+        return { active: false, reason: 'Bloqueado individualmente' }
+      }
+      
+      const unit = user.unidade ? user.unidade.trim() : ''
+      if (!unit || unit === '' || unit === 'Unidade não capturada') {
+        return { active: false, reason: 'Unidade não capturada' }
+      }
+      
+      const enabledUnidades = remoteConfig.iagente_enabled_unidades || []
+      const isUnitEnabled = enabledUnidades.some(eu => eu.trim().toLowerCase() === unit.toLowerCase())
+      if (!isUnitEnabled) {
+        return { active: false, reason: 'Unidade não liberada' }
+      }
+      
+      return { active: true, reason: 'Ativo' }
+    }
+
+    const resolveUserRegion = (user) => {
+      if (user.regiao === 'sul' || user.regiao === 'sudeste') {
+        return user.regiao
+      }
+      const unit = user.unidade ? user.unidade.trim() : ''
+      if (unit) {
+        const unitRegionMap = remoteConfig.iagente_unidade_regiao || {}
+        const mappedRegion = unitRegionMap[unit]
+        if (mappedRegion === 'sul' || mappedRegion === 'sudeste') {
+          return mappedRegion
+        }
+        
+        const lowerUnit = unit.toLowerCase()
+        const sudesteKeywords = ['campinas', 'sao paulo', 'são paulo', 'sp', 'rio de janeiro', 'rj', 'belo horizonte', 'mg', 'espirito santo', 'espírito santo', 'es', 'sudeste']
+        const isSudeste = sudesteKeywords.some(keyword => lowerUnit.includes(keyword))
+        return isSudeste ? 'sudeste' : 'sul'
+      }
+      return 'sul'
+    }
+
     const RTDB_BASE_URL = 'https://sgd-extension-default-rtdb.firebaseio.com'
     let pendingRequestsHtml = ''
     if (isMaster) {
@@ -4704,6 +4751,39 @@ async function loadAccessControl(sectionElement) {
         `
         : ''
 
+      // Controles do IAgente (Apenas Master pode editar, Comum vê apenas leitura)
+      const isIAgenteDisabled = editor.iagenteDisabled === true
+      const accessStatus = checkUserIAgenteAccessStatus(editor)
+      const iagenteBtnHtml = isMaster
+        ? `
+          <button class="action-btn small-btn ac-toggle-iagente-btn" 
+            data-user-id="${escapeHTML(editor.id)}" 
+            data-is-editor="true" 
+            data-current-status="${isIAgenteDisabled}"
+            style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: 1px solid var(--border-color); background: ${accessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-red, #ef4444)'}; color: white; cursor: pointer; border-radius: 4px;"
+            title="${accessStatus.active ? 'Ativo' : 'Inativo: ' + accessStatus.reason}">
+            ${accessStatus.active ? '🤖 IAgente: Ativo' : '🤖 IAgente: ' + accessStatus.reason}
+          </button>
+        `
+        : `
+          <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: ${accessStatus.active ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)'}; border: 1px solid var(--border-color); color: ${accessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-red, #ef4444)'}; font-weight: 600;"
+            title="${accessStatus.active ? 'Ativo' : 'Inativo: ' + accessStatus.reason}">
+            ${accessStatus.active ? '🤖 Ativo' : '🤖 ' + accessStatus.reason}
+          </span>
+        `
+
+      const resolvedRegion = resolveUserRegion(editor)
+      const regionSelectorHtml = (isMaster && accessStatus.active)
+        ? `
+          <select class="ac-user-region-select" data-user-id="${escapeHTML(editor.id)}" data-is-editor="true" style="font-size: 11px; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); outline: none;">
+            <option value="sul" ${resolvedRegion === 'sul' ? 'selected' : ''}>Região: Sul</option>
+            <option value="sudeste" ${resolvedRegion === 'sudeste' ? 'selected' : ''}>Região: Sudeste</option>
+          </select>
+        `
+        : (accessStatus.active ? `
+          <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: var(--background-secondary); border: 1px solid var(--border-color); color: var(--text-color-muted); font-weight: 600;">Região: ${escapeHTML(resolvedRegion.toUpperCase())}</span>
+        ` : '')
+
       // Aplicação de Perfil individual na lista de editores (apenas Master)
       const profileSelectHtml = isMaster
         ? `
@@ -4726,10 +4806,12 @@ async function loadAccessControl(sectionElement) {
                 ${isSelf ? '<span class="ip-access-you-badge" style="background: var(--accent-color, #6366f1); color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 4px; margin-left: 5px; font-weight: 500;">Você</span>' : ''}
               </span>
               <span class="ip-access-editor-meta" style="display: block; font-size: 11px; color: var(--text-color-muted); margin-top: 2px;">
-                Adicionado em ${addedDate}${editor.addedBy ? ` por ${escapeHTML(editor.addedBy)}` : ''}
+                Adicionado em ${addedDate}${editor.addedBy ? ` por ${escapeHTML(editor.addedBy)}` : ''} | 🏢 <b>${escapeHTML(editor.unidade || 'Unidade não capturada')}</b>
               </span>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
+              ${iagenteBtnHtml}
+              ${regionSelectorHtml}
               ${teamBtnHtml}
               ${roleSelectorHtml}
               ${removeBtnHtml}
@@ -4795,6 +4877,39 @@ async function loadAccessControl(sectionElement) {
         `
         : ''
 
+      // Controles do IAgente (Apenas Master pode editar, Comum vê apenas leitura)
+      const isIAgenteDisabled = viewer.iagenteDisabled === true
+      const accessStatus = checkUserIAgenteAccessStatus(viewer)
+      const iagenteBtnHtml = isMaster
+        ? `
+          <button class="action-btn small-btn ac-toggle-iagente-btn" 
+            data-user-id="${escapeHTML(viewer.id)}" 
+            data-is-editor="false" 
+            data-current-status="${isIAgenteDisabled}"
+            style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: 1px solid var(--border-color); background: ${accessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-red, #ef4444)'}; color: white; cursor: pointer; border-radius: 4px;"
+            title="${accessStatus.active ? 'Ativo' : 'Inativo: ' + accessStatus.reason}">
+            ${accessStatus.active ? '🤖 IAgente: Ativo' : '🤖 IAgente: ' + accessStatus.reason}
+          </button>
+        `
+        : `
+          <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: ${accessStatus.active ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)'}; border: 1px solid var(--border-color); color: ${accessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-red, #ef4444)'}; font-weight: 600;"
+            title="${accessStatus.active ? 'Ativo' : 'Inativo: ' + accessStatus.reason}">
+            ${accessStatus.active ? '🤖 Ativo' : '🤖 ' + accessStatus.reason}
+          </span>
+        `
+
+      const resolvedRegion = resolveUserRegion(viewer)
+      const regionSelectorHtml = (isMaster && accessStatus.active)
+        ? `
+          <select class="ac-user-region-select" data-user-id="${escapeHTML(viewer.id)}" data-is-editor="false" style="font-size: 11px; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); outline: none;">
+            <option value="sul" ${resolvedRegion === 'sul' ? 'selected' : ''}>Região: Sul</option>
+            <option value="sudeste" ${resolvedRegion === 'sudeste' ? 'selected' : ''}>Região: Sudeste</option>
+          </select>
+        `
+        : (accessStatus.active ? `
+          <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: var(--background-secondary); border: 1px solid var(--border-color); color: var(--text-color-muted); font-weight: 600;">Região: ${escapeHTML(resolvedRegion.toUpperCase())}</span>
+        ` : '')
+
       const isCheckedInGroup = editingGroup && editingGroup.viewers && editingGroup.viewers.includes(viewer.id)
 
       // Todos os editores (Master e Comum) podem limitar/atualizar os canais de Visualizadores
@@ -4808,9 +4923,13 @@ async function loadAccessControl(sectionElement) {
                   👁️ ${escapeHTML(viewer.name)}
                 </span>
                 <span class="ip-access-editor-meta" style="font-size: 11px; color: var(--text-color-muted);">
-                  (Primeiro acesso em ${addedDate})
+                  (Primeiro acesso em ${addedDate}) | 🏢 <b>${escapeHTML(viewer.unidade || 'Unidade não capturada')}</b>
                 </span>
               </label>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              ${iagenteBtnHtml}
+              ${regionSelectorHtml}
             </div>
           </div>
 
@@ -4930,6 +5049,7 @@ async function loadAccessControl(sectionElement) {
           ${isMaster ? `
             <button id="ac-edit-tabs-btn" class="action-btn secondary-btn compact" title="Editar conteúdo das guias" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">📝 Editar Guias</button>
             <button id="ac-config-channels-btn" class="action-btn secondary-btn compact" title="Configurar canais disponíveis" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">⚙️ Canais</button>
+            <button id="ac-config-iagente-btn" class="action-btn secondary-btn compact" title="Configurar IAgente por Unidades" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">🤖 IAgente</button>
             <button id="ac-audit-logs-btn" class="action-btn secondary-btn compact" title="Ver logs de auditoria" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">📋 Auditoria</button>
           ` : ''}
           <button id="ac-refresh-btn" class="action-btn secondary-btn compact" title="Atualizar lista" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">🔄 Atualizar</button>
@@ -5768,6 +5888,74 @@ async function loadAccessControl(sectionElement) {
       })
     })
 
+    // Altera a região do usuário (Sul vs Sudeste)
+    container.querySelectorAll('.ac-user-region-select').forEach(select => {
+      select.addEventListener('change', async (e) => {
+        const userId = select.dataset.userId
+        const isEditor = select.dataset.isEditor === 'true'
+        const region = select.value
+        const row = select.closest('.ip-access-editor-row') || select.closest('.ip-access-viewer-row')
+        const userName = row ? row.querySelector('.ip-access-editor-name').textContent.trim().split('\n')[0] : 'Usuário'
+        
+        select.disabled = true
+        const success = await window.sgdPermissions.updateUserRegion(userId, isEditor, region)
+        if (success) {
+          showNotification(`Região de "${userName}" atualizada para ${region ? region.toUpperCase() : 'Auto'}!`, 'success')
+          loadAccessControl(sectionElement)
+        } else {
+          showNotification('Erro ao atualizar região do usuário.', 'error')
+          select.disabled = false
+        }
+      })
+    })
+
+    // Alterna o status do IAgente individual
+    container.querySelectorAll('.ac-toggle-iagente-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        
+        const userId = btn.dataset.userId
+        const isEditor = btn.dataset.isEditor === 'true'
+        const currentStatus = btn.dataset.currentStatus === 'true'
+        const row = btn.closest('.ip-access-editor-row') || btn.closest('.ip-access-viewer-row')
+        const userName = row ? row.querySelector('.ip-access-editor-name').textContent.trim().split('\n')[0] : 'Usuário'
+        
+        btn.disabled = true
+        btn.textContent = 'Aguarde...'
+        
+        const success = await window.sgdPermissions.toggleUserIAgente(userId, isEditor, currentStatus)
+        if (success) {
+          showNotification(`Acesso de "${userName}" ao IAgente ${!currentStatus ? 'desativado' : 'ativado'}!`, 'success')
+          loadAccessControl(sectionElement)
+        } else {
+          showNotification('Erro ao alterar acesso do IAgente.', 'error')
+          btn.disabled = false
+          btn.textContent = currentStatus ? '🤖 IAgente: Bloqueado' : '🤖 IAgente: Ativo'
+        }
+      })
+    })
+
+    // Botão de Configuração do IAgente
+    const configIAgenteBtn = container.querySelector('#ac-config-iagente-btn')
+    if (configIAgenteBtn) {
+      configIAgenteBtn.addEventListener('click', async (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        configIAgenteBtn.disabled = true
+        const origText = configIAgenteBtn.textContent
+        configIAgenteBtn.textContent = 'Carregando...'
+        try {
+          await openConfigIAgenteModal(sectionElement)
+        } catch (err) {
+          alert('Erro ao abrir configurações do IAgente: ' + err.message)
+        } finally {
+          configIAgenteBtn.disabled = false
+          configIAgenteBtn.textContent = origText
+        }
+      })
+    }
+
   } catch (error) {
     console.error('[SGD Permissions] Erro ao carregar controle de acesso:', error)
     container.innerHTML = `
@@ -6024,6 +6212,299 @@ function openConfigChannelsModal(initialChannels, sectionElement) {
         if (sectionElement) loadAccessControl(sectionElement)
       } else {
         alert('Erro ao salvar os canais. Tente novamente.')
+        saveBtn.disabled = false
+        saveBtn.textContent = 'Salvar Alterações'
+      }
+    })
+  }
+}
+
+async function openConfigIAgenteModal(sectionElement) {
+  // 1. Carrega as configurações remotas
+  const localData = await chrome.storage.local.get(['remoteConfig'])
+  const remoteConfig = localData.remoteConfig || {}
+  
+  const defaultSul = 'https://tria.plugsocial.online/?assunto=sped&codigoCliente=96797&identificacaoRevenda=3'
+  let urlSul = remoteConfig.iagente_url_sul || defaultSul
+  let urlSudeste = remoteConfig.iagente_url_sudeste || urlSul
+  let enabledUnits = remoteConfig.iagente_enabled_unidades ? [...remoteConfig.iagente_enabled_unidades] : []
+  
+  const unitRegionChanges = remoteConfig.iagente_unidade_regiao ? { ...remoteConfig.iagente_unidade_regiao } : {}
+  
+  // 2. Coleta todas as unidades mapeadas na base local (editors e viewers) e calcula a contagem de usuários por unidade
+  const uniqueUnits = new Set()
+  const editors = window.sgdPermissions.editorsList || []
+  const viewers = window.sgdPermissions.viewersList || []
+  const unitUserCount = {}
+  
+  editors.forEach(e => { 
+    if (e.unidade) {
+      const u = e.unidade.trim()
+      uniqueUnits.add(u)
+      unitUserCount[u] = (unitUserCount[u] || 0) + 1
+    }
+  })
+  viewers.forEach(v => { 
+    if (v.unidade) {
+      const u = v.unidade.trim()
+      uniqueUnits.add(u)
+      unitUserCount[u] = (unitUserCount[u] || 0) + 1
+    }
+  })
+  
+  // Adiciona também as unidades que já estão no array de ativas para garantir que apareçam
+  enabledUnits.forEach(u => { if (u) uniqueUnits.add(u.trim()) })
+  
+  const sortedUnits = Array.from(uniqueUnits).sort((a, b) => a.localeCompare(b))
+  
+  function renderUnitsList(modalBody, filterText = '') {
+    const listDiv = modalBody.querySelector('#cia-units-list')
+    if (!listDiv) return
+    
+    const filtered = sortedUnits.filter(u => u.toLowerCase().includes(filterText.toLowerCase()))
+    
+    if (filtered.length === 0) {
+      listDiv.innerHTML = '<p style="color: var(--text-color-muted); font-size: 11px; margin: 8px 0;">Nenhuma unidade encontrada.</p>'
+      return
+    }
+    
+    listDiv.innerHTML = filtered.map((unit, idx) => {
+      const isAllowed = enabledUnits.some(eu => eu.trim().toLowerCase() === unit.trim().toLowerCase())
+      const cbId = `cia-unit-cb-${idx}`
+      const count = unitUserCount[unit] || 0
+      const usersLabel = count === 1 ? '1 usuário' : `${count} usuários`
+      
+      let currentRegion = unitRegionChanges[unit]
+      if (!currentRegion) {
+        const lowerUnit = unit.toLowerCase()
+        const sudesteKeywords = ['campinas', 'sao paulo', 'são paulo', 'sp', 'rio de janeiro', 'rj', 'belo horizonte', 'mg', 'espirito santo', 'espírito santo', 'es', 'sudeste']
+        currentRegion = sudesteKeywords.some(keyword => lowerUnit.includes(keyword)) ? 'sudeste' : 'sul'
+      }
+      
+      return `
+        <div class="cia-unit-row" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-bottom: 1px solid var(--border-color); font-size: 12px; color: var(--text-color-main);">
+          <span style="font-weight: 500;">
+            ${escapeHTML(unit)}
+            <span style="font-size: 10px; color: var(--text-color-muted); font-weight: normal; margin-left: 6px; background: var(--background-secondary); padding: 2px 6px; border-radius: 10px;">
+              ${usersLabel}
+            </span>
+          </span>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <!-- Seletor de Região da Unidade -->
+            <select class="cia-unit-region-select" data-unit="${escapeHTML(unit)}" style="font-size: 11px; padding: 2px 4px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); outline: none;">
+              <option value="sul" ${currentRegion === 'sul' ? 'selected' : ''}>Sul</option>
+              <option value="sudeste" ${currentRegion === 'sudeste' ? 'selected' : ''}>Sudeste</option>
+            </select>
+            
+            <div style="display: flex; align-items: center; position: relative;">
+              <input type="checkbox" class="cia-unit-checkbox" id="${cbId}" data-unit="${escapeHTML(unit)}" ${isAllowed ? 'checked' : ''}>
+              <label for="${cbId}" style="font-size: 11px; cursor: pointer; color: var(--text-color-main); padding-left: 26px; min-height: 18px; margin: 0; position: relative; display: inline-flex; align-items: center;">
+                Liberar
+              </label>
+            </div>
+          </div>
+        </div>
+      `
+    }).join('')
+    
+    // Bind click/change listener on checkboxes
+    listDiv.querySelectorAll('.cia-unit-checkbox').forEach(cb => {
+      cb.addEventListener('click', e => e.stopPropagation())
+      cb.addEventListener('change', () => {
+        const unitName = cb.dataset.unit
+        const checked = cb.checked
+        if (checked) {
+          if (!enabledUnits.some(eu => eu.toLowerCase() === unitName.toLowerCase())) {
+            enabledUnits.push(unitName)
+          }
+        } else {
+          enabledUnits = enabledUnits.filter(eu => eu.toLowerCase() !== unitName.toLowerCase())
+        }
+      })
+    })
+
+    // Bind change listener on region selects
+    listDiv.querySelectorAll('.cia-unit-region-select').forEach(sel => {
+      sel.addEventListener('click', e => e.stopPropagation())
+      sel.addEventListener('change', () => {
+        const unitName = sel.dataset.unit
+        unitRegionChanges[unitName] = sel.value
+      })
+    })
+  }
+  
+  const modalHtml = `
+    <div style="padding: 10px; max-height: 620px; display: flex; flex-direction: column; width: 480px; box-sizing: border-box;">
+      <p style="font-size: 12px; color: var(--text-color-muted); margin-bottom: 15px; margin-top: 0;">
+        Gerencie as URLs de atendimento regional e controle o acesso do assistente IAgente (Tria) liberando por unidade de atendimento do SGD. Por padrão, todas as unidades iniciam bloqueadas.
+      </p>
+      
+      <!-- Seção de URLs -->
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <label style="font-size: 11px; font-weight: bold; color: var(--text-color-muted);">URL do IAgente - SUL:</label>
+          <input type="text" id="cia-url-sul" value="${escapeHTML(urlSul)}" placeholder="URL do time do Sul" style="width: 100%; padding: 6px 10px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 4px;">
+          <label style="font-size: 11px; font-weight: bold; color: var(--text-color-muted);">URL do IAgente - SUDESTE:</label>
+          <input type="text" id="cia-url-sudeste" value="${escapeHTML(urlSudeste)}" placeholder="URL do time do Sudeste" style="width: 100%; padding: 6px 10px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
+        </div>
+      </div>
+      
+      <!-- Seção de Filtro e Busca -->
+      <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
+        <input type="text" id="cia-search-units" placeholder="🔎 Pesquisar unidade mapeada..." style="flex: 1; padding: 6px 10px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
+      </div>
+
+      <!-- Formulário para adicionar unidade personalizada -->
+      <div style="display: flex; gap: 6px; margin-bottom: 10px; padding: 6px; background: var(--background-secondary, #f9fafb); border: 1px solid var(--border-color); border-radius: 4px; align-items: center;">
+        <input type="text" id="cia-custom-unit" placeholder="Outra unidade (Ex: Filial Campinas)..." style="flex: 1; padding: 5px 8px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
+        <button id="cia-add-custom-btn" class="action-btn small-btn" style="background: var(--primary-color, #6366f1); color: white; border: none; padding: 5px 10px; cursor: pointer; font-size: 11px; border-radius: 4px; font-weight: bold; white-space: nowrap;">Liberar Unidade</button>
+      </div>
+
+      <!-- Lista de Unidades -->
+      <div style="flex: 1; overflow-y: auto; max-height: 250px; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 6px;" id="cia-units-list-container">
+        <div id="cia-units-list"></div>
+      </div>
+      
+      <!-- Footer do Modal -->
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+        <button id="cia-cancel-btn" class="action-btn secondary-btn compact" style="padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer; font-size: 12px;">Cancelar</button>
+        <button id="cia-save-btn" class="action-btn small-btn" style="background: var(--action-green, #22c55e); color: white; border: none; padding: 6px 16px; cursor: pointer; font-size: 12px; border-radius: 4px; font-weight: bold;">Salvar Alterações</button>
+      </div>
+    </div>
+  `
+  
+  const modal = createModal(
+    'Configurar IAgente por Unidades',
+    modalHtml,
+    null,
+    {
+      isManagementModal: false,
+      modalId: 'config-iagente-units-modal',
+      showShareButton: false
+    }
+  )
+  
+  const defaultActions = modal.querySelector('.se-modal-actions')
+  if (defaultActions) defaultActions.remove()
+  
+  modal.style.zIndex = '10003'
+  document.body.appendChild(modal)
+  
+  const modalBody = modal.querySelector('.se-modal-body') || modal
+  renderUnitsList(modalBody)
+  
+  // Custom unit input and button logic
+  const customUnitInput = modal.querySelector('#cia-custom-unit')
+  const addCustomBtn = modal.querySelector('#cia-add-custom-btn')
+  
+  if (customUnitInput) {
+    customUnitInput.addEventListener('click', e => e.stopPropagation())
+    customUnitInput.addEventListener('keydown', e => {
+      e.stopPropagation()
+      if (e.key === 'Enter') {
+        addCustomBtn.click()
+      }
+    })
+  }
+  
+  if (addCustomBtn) {
+    addCustomBtn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const newUnit = customUnitInput ? customUnitInput.value.trim() : ''
+      if (!newUnit) {
+        alert('Por favor, digite o nome da unidade para liberar.')
+        return
+      }
+      
+      // Adiciona na lista geral se não existir
+      if (!sortedUnits.includes(newUnit)) {
+        sortedUnits.push(newUnit)
+        sortedUnits.sort((a, b) => a.localeCompare(b))
+      }
+      
+      // Adiciona na lista de liberados se não estiver lá
+      if (!enabledUnits.some(eu => eu.toLowerCase() === newUnit.toLowerCase())) {
+        enabledUnits.push(newUnit)
+      }
+      
+      if (customUnitInput) customUnitInput.value = ''
+      
+      const searchInput = modal.querySelector('#cia-search-units')
+      const searchVal = searchInput ? searchInput.value.trim() : ''
+      renderUnitsList(modalBody, searchVal)
+      showNotification(`Unidade "${newUnit}" adicionada e liberada!`, 'success')
+    })
+  }
+  
+  // Search input filter logic
+  const searchUnitsInput = modal.querySelector('#cia-search-units')
+  if (searchUnitsInput) {
+    searchUnitsInput.addEventListener('click', e => e.stopPropagation())
+    searchUnitsInput.addEventListener('keydown', e => e.stopPropagation())
+    searchUnitsInput.addEventListener('input', () => {
+      const text = searchUnitsInput.value.trim()
+      renderUnitsList(modalBody, text)
+    })
+  }
+  
+  // URL Input event listeners (stop propagation)
+  const urlSulInput = modal.querySelector('#cia-url-sul')
+  const urlSudesteInput = modal.querySelector('#cia-url-sudeste')
+  if (urlSulInput) {
+    urlSulInput.addEventListener('click', e => e.stopPropagation())
+    urlSulInput.addEventListener('keydown', e => e.stopPropagation())
+  }
+  if (urlSudesteInput) {
+    urlSudesteInput.addEventListener('click', e => e.stopPropagation())
+    urlSudesteInput.addEventListener('keydown', e => e.stopPropagation())
+  }
+
+  // Cancel and Close listeners
+  const cleanup = () => modal.remove()
+  const cancelBtn = modal.querySelector('#cia-cancel-btn')
+  const xBtn = modal.querySelector('.se-close-modal-btn')
+  
+  if (cancelBtn) cancelBtn.addEventListener('click', (e) => { e.stopPropagation(); cleanup(); })
+  if (xBtn) xBtn.addEventListener('click', (e) => { e.stopPropagation(); cleanup(); })
+  
+  // Save button logic
+  const saveBtn = modal.querySelector('#cia-save-btn')
+  if (saveBtn) {
+    saveBtn.addEventListener('click', async (e) => {
+      e.stopPropagation()
+      
+      const valSul = urlSulInput ? urlSulInput.value.trim() : ''
+      const valSudeste = urlSudesteInput ? urlSudesteInput.value.trim() : ''
+      
+      if (!valSul) {
+        alert('O link do IAgente SUL é obrigatório.')
+        return
+      }
+      
+      saveBtn.disabled = true
+      saveBtn.textContent = 'Salvando...'
+      
+      // Atualiza o objeto remoteConfig completo
+      const updatedConfig = {
+        ...remoteConfig,
+        iagente_url_sul: valSul,
+        iagente_url_sudeste: valSudeste || valSul,
+        iagente_enabled_unidades: enabledUnits,
+        iagente_unidade_regiao: unitRegionChanges
+      }
+      
+      // Remove a propriedade obsoleta iagente_disabled_unidades se houver
+      delete updatedConfig.iagente_disabled_unidades
+      
+      const success = await window.sgdPermissions.saveRemoteConfig(updatedConfig)
+      if (success) {
+        showNotification('Configurações do IAgente atualizadas com sucesso!', 'success')
+        cleanup()
+        if (sectionElement) loadAccessControl(sectionElement)
+      } else {
+        alert('Erro ao salvar as configurações. Tente novamente.')
         saveBtn.disabled = false
         saveBtn.textContent = 'Salvar Alterações'
       }

@@ -1781,10 +1781,11 @@ const IAGENTE_URL =
  * (detecção de frame no lado da Tria). Em janela própria, a Tria volta a ser a
  * página principal e funciona normalmente, com maximizar/redimensionar nativos.
  */
-function toggleIAgenteWindow() {
+async function toggleIAgenteWindow() {
   try {
+    const url = window.sgdPermissions?.getIAgenteUrl ? await window.sgdPermissions.getIAgenteUrl() : IAGENTE_URL
     chrome.runtime.sendMessage(
-      { action: 'IAGENTE_OPEN_WINDOW', url: IAGENTE_URL },
+      { action: 'IAGENTE_OPEN_WINDOW', url: url },
       resp => {
         if (chrome.runtime.lastError) return
         if (resp && typeof resp.open === 'boolean') {
@@ -1927,11 +1928,10 @@ async function initializeScrollToTopButton() {
 
   // TODO: Liberar o botão IAgente para todos os usuários quando aprovado.
   // Por enquanto restrito a usuários com Modo Dev ativo na Central de Informações
-  // (isInfoDevModeEnabled) ou que já sejam editores (sgdPermissions.isEditor).
+  // (isInfoDevModeEnabled) ou que já sejam editores (sgdPermissions.isEditor) ou que possuam acesso ativo.
   try {
-    const isDevMode = await isInfoDevModeEnabled()
-    const isEditor = !!(window.sgdPermissions?.isEditor)
-    if (isDevMode || isEditor) {
+    const hasAccess = window.sgdPermissions?.hasIAgenteAccess ? await window.sgdPermissions.hasIAgenteAccess() : false
+    if (hasAccess) {
       const iagenteBtn = document.createElement('button')
       iagenteBtn.id = 'iagente-scroll-btn'
       iagenteBtn.className = 'shine-effect'

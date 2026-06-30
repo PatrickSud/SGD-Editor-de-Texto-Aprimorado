@@ -56,16 +56,34 @@
    * @returns {string|null} ID do usuário ou null se não encontrado
    */
   function captureLoggedUserId() {
+    console.log('[SGD Permissions] Iniciando captura do ID de usuário logado...');
     const userLinks = document.querySelectorAll('a[href*="alt-usuario.html"]')
+    console.log('[SGD Permissions] Elementos a[href*="alt-usuario.html"] encontrados:', userLinks.length)
     for (const link of userLinks) {
       const href = link.getAttribute('href')
+      console.log('[SGD Permissions] Verificando link href:', href)
       if (href) {
         const match = href.match(/[?&]usuario=(\d+)/)
         if (match && match[1]) {
+          console.log('[SGD Permissions] ID de usuário capturado com sucesso:', match[1])
           return match[1]
         }
       }
     }
+    // Fallback: Tenta procurar no DOM inteiro por qualquer link contendo alt-usuario.html
+    console.log('[SGD Permissions] ID não encontrado nos links específicos. Tentando fallback no DOM...')
+    const allLinks = document.querySelectorAll('a')
+    for (const link of allLinks) {
+      const href = link.getAttribute('href') || ''
+      if (href.includes('alt-usuario.html')) {
+        const match = href.match(/[?&]usuario=(\d+)/)
+        if (match && match[1]) {
+          console.log('[SGD Permissions] ID de usuário capturado no fallback:', match[1])
+          return match[1]
+        }
+      }
+    }
+    console.warn('[SGD Permissions] Falha ao capturar ID de usuário logado (todos os seletores retornaram null)')
     return null
   }
 
@@ -107,6 +125,100 @@
       } catch (_) { /* seletor inválido, ignora */ }
     }
 
+    return null
+  }
+
+  /**
+   * Tenta capturar a unidade do usuário conectando no link alt-usuario.html em background.
+   * @param {string} userId - ID do usuário no SGD.
+   * @returns {Promise<string|null>} Nome da unidade ou null se falhar.
+   */
+  async function fetchLoggedUserUnidade(userId) {
+    if (!userId) {
+      console.warn('[SGD Permissions] fetchLoggedUserUnidade abortado: userId está nulo ou indefinido')
+      return null
+    }
+    
+    // Evita consultas excessivas em caso de falhas repetidas (cooldown de 30 minutos)
+    try {
+      const cache = await chrome.storage.local.get(['lastUnitFetchAttempt'])
+      const lastAttempt = cache.lastUnitFetchAttempt || 0
+      const cooldownMs = 30 * 60 * 1000 // 30 minutos
+      if (Date.now() - lastAttempt < cooldownMs) {
+        console.log('[SGD Permissions] Captura de unidade ignorada temporariamente (cooldown de retentativas ativo)')
+        return null
+      }
+      await chrome.storage.local.set({ lastUnitFetchAttempt: Date.now() })
+    } catch (_) {}
+
+    console.log('[SGD Permissions] Buscando unidade para o usuário:', userId)
+    try {
+      // Se já estivermos na própria página do perfil, lemos do DOM diretamente
+      if (window.location.href.includes('alt-usuario.html') && window.location.href.includes(`usuario=${userId}`)) {
+        console.log('[SGD Permissions] Já estamos na página de alteração do usuário, lendo do DOM...')
+        const labels = document.querySelectorAll('td.tableCadastroLabel')
+        for (const label of labels) {
+          if (label.textContent.trim().startsWith('Unidade:')) {
+            const field = label.nextElementSibling
+            if (field) {
+              const bold = field.querySelector('b')
+              const unitName = bold ? bold.textContent.trim() : field.textContent.trim()
+              console.log('[SGD Permissions] Unidade capturada do DOM da página atual:', unitName)
+              if (unitName) return unitName
+            }
+          }
+        }
+      }
+
+      const url = `/comum/faces/alt-usuario.html?usuario=${userId}&cadastro=1`
+      console.log('[SGD Permissions] Executando fetch em background para:', url)
+      const response = await fetch(url)
+      console.log('[SGD Permissions] Fetch background status:', response.status, response.statusText)
+      if (!response.ok) return null
+      
+      const htmlText = await response.text()
+      console.log('[SGD Permissions] HTML retornado pelo fetch. Tamanho:', htmlText.length)
+      
+      const parser = new DOMParser()
+      const doc = parser.parseFromString(htmlText, 'text/html')
+      const labels = doc.querySelectorAll('td.tableCadastroLabel')
+      console.log('[SGD Permissions] td.tableCadastroLabel encontrados no documento:', labels.length)
+      
+      for (const label of labels) {
+        const text = label.textContent.trim()
+        if (text.startsWith('Unidade:')) {
+          console.log('[SGD Permissions] Label "Unidade:" encontrado.')
+          const field = label.nextElementSibling
+          if (field) {
+            const bold = field.querySelector('b')
+            const unitName = bold ? bold.textContent.trim() : field.textContent.trim()
+            console.log('[SGD Permissions] Unidade obtida do HTML parseado:', unitName)
+            if (unitName) return unitName
+          } else {
+            console.warn('[SGD Permissions] Próximo elemento irmão da label Unidade não existe')
+          }
+        }
+      }
+      
+      // Fallback secundário: buscar qualquer td após a palavra "Unidade:"
+      console.log('[SGD Permissions] Tentando fallback para encontrar unidade no HTML parseado...')
+      const tds = doc.querySelectorAll('td')
+      for (let i = 0; i < tds.length; i++) {
+        if (tds[i].textContent.trim().startsWith('Unidade:')) {
+          if (i + 1 < tds.length) {
+            const field = tds[i+1]
+            const bold = field.querySelector('b')
+            const unitName = bold ? bold.textContent.trim() : field.textContent.trim()
+            console.log('[SGD Permissions] Unidade obtida no fallback secundário:', unitName)
+            if (unitName) return unitName
+          }
+        }
+      }
+      
+    } catch (e) {
+      console.warn('[SGD Permissions] Erro ao buscar unidade do usuário em background:', e)
+    }
+    console.warn('[SGD Permissions] Não foi possível encontrar a unidade do usuário.')
     return null
   }
 
@@ -195,16 +307,9 @@
         return []
       }
 
-      const editorsList = Object.entries(result).map(([id, data]) => ({
-        id,
-        name: data.name || '',
-        addedAt: data.addedAt || '',
-        addedBy: data.addedBy || '',
-        allowedChannels: normalizeAllowedChannels(data.allowedChannels) || getChannelsFallback(),
-        role: data.role || 'comum',
-        lastSeen: data.lastSeen || '',
-        isEquipeAT: data.isEquipeAT === true
-      }))
+      const editorsList = Object.entries(result).map(([id, data]) => 
+        normalizeEditorRecord({ id, ...data })
+      )
 
       await chrome.storage.local.set({
         [PERMISSIONS_CACHE_KEY]: editorsList,
@@ -251,14 +356,9 @@
         return []
       }
 
-      const viewersList = Object.entries(result).map(([id, data]) => ({
-        id,
-        name: data.name || '',
-        firstSeen: data.firstSeen || '',
-        lastSeen: data.lastSeen || '',
-        allowedChannels: getViewerAllowedChannels(data.allowedChannels),
-        isEquipeAT: data.isEquipeAT === true
-      }))
+      const viewersList = Object.entries(result).map(([id, data]) => 
+        normalizeViewerRecord({ id, ...data })
+      )
 
       viewersList.sort((a, b) => a.name.localeCompare(b.name))
 
@@ -300,7 +400,10 @@
       allowedChannels: normalizeAllowedChannels(rec.allowedChannels) || getChannelsFallback(),
       role: rec.role || 'comum',
       lastSeen: rec.lastSeen || '',
-      isEquipeAT: rec.isEquipeAT === true
+      isEquipeAT: rec.isEquipeAT === true,
+      unidade: rec.unidade || '',
+      regiao: rec.regiao || '',
+      iagenteDisabled: rec.iagenteDisabled === true
     }
   }
 
@@ -311,7 +414,10 @@
       firstSeen: rec.firstSeen || '',
       lastSeen: rec.lastSeen || '',
       allowedChannels: getViewerAllowedChannels(rec.allowedChannels),
-      isEquipeAT: rec.isEquipeAT === true
+      isEquipeAT: rec.isEquipeAT === true,
+      unidade: rec.unidade || '',
+      regiao: rec.regiao || '',
+      iagenteDisabled: rec.iagenteDisabled === true
     }
   }
 
@@ -452,6 +558,19 @@
         infoDevMode: true
       })
       window.sgdPermissions.isDevMode = true
+      // Se não tem unidade no Firebase, tenta buscar agora mesmo!
+      if (!matchedEditor.unidade && userId) {
+        console.log('[SGD Permissions] Unidade não encontrada no matchedEditor. Buscando agora...')
+        const unit = await fetchLoggedUserUnidade(userId)
+        if (unit) {
+          matchedEditor.unidade = unit
+          await chrome.storage.local.set({ userUnidade: unit })
+          await callDatabaseWrite(`${RTDB_EDITORS_URL}/${matchedEditor.id}.json`, 'PATCH', { unidade: unit })
+          console.log('[SGD Permissions] Unidade salva com sucesso para Editor no Firebase:', unit)
+        }
+      } else if (matchedEditor.unidade) {
+        await chrome.storage.local.set({ userUnidade: matchedEditor.unidade })
+      }
     } else if (isDevMode) {
       allowed = getChannelsFallback()
       role = 'master'
@@ -461,6 +580,19 @@
       matchedViewer = await matchViewerRecord(userId, userName, normalizedUserName)
       if (matchedViewer) {
         allowed = getViewerAllowedChannels(matchedViewer.allowedChannels)
+        // Se não tem unidade no Firebase, tenta buscar agora mesmo!
+        if (!matchedViewer.unidade && userId) {
+          console.log('[SGD Permissions] Unidade não encontrada no matchedViewer (Approved Dev). Buscando agora...')
+          const unit = await fetchLoggedUserUnidade(userId)
+          if (unit) {
+            matchedViewer.unidade = unit
+            await chrome.storage.local.set({ userUnidade: unit })
+            await callDatabaseWrite(`${RTDB_VIEWERS_URL}/${matchedViewer.id}.json`, 'PATCH', { unidade: unit })
+            console.log('[SGD Permissions] Unidade salva com sucesso para Viewer no Firebase:', unit)
+          }
+        } else if (matchedViewer.unidade) {
+          await chrome.storage.local.set({ userUnidade: matchedViewer.unidade })
+        }
       } else {
         allowed = ['Geral']
       }
@@ -473,6 +605,19 @@
       matchedViewer = await matchViewerRecord(userId, userName, normalizedUserName)
       if (matchedViewer) {
         allowed = getViewerAllowedChannels(matchedViewer.allowedChannels)
+        // Se não tem unidade no Firebase, tenta buscar agora mesmo!
+        if (!matchedViewer.unidade && userId) {
+          console.log('[SGD Permissions] Unidade não encontrada no matchedViewer. Buscando agora...')
+          const unit = await fetchLoggedUserUnidade(userId)
+          if (unit) {
+            matchedViewer.unidade = unit
+            await chrome.storage.local.set({ userUnidade: unit })
+            await callDatabaseWrite(`${RTDB_VIEWERS_URL}/${matchedViewer.id}.json`, 'PATCH', { unidade: unit })
+            console.log('[SGD Permissions] Unidade salva com sucesso para Viewer no Firebase:', unit)
+          }
+        } else if (matchedViewer.unidade) {
+          await chrome.storage.local.set({ userUnidade: matchedViewer.unidade })
+        }
       } else {
         allowed = ['Geral']
       }
@@ -576,8 +721,21 @@
       const matchedEditor = await matchEditorRecord(userId, userName, normalizedUser)
       
       if (matchedEditor) {
+        const patchData = { lastSeen: nowStr }
+        // Se o editor ainda não tem unidade no Firebase, tenta buscar e salvar
+        if (!matchedEditor.unidade && userId) {
+          const unit = await fetchLoggedUserUnidade(userId)
+          if (unit) {
+            patchData.unidade = unit
+            matchedEditor.unidade = unit
+            await chrome.storage.local.set({ userUnidade: unit })
+          }
+        } else if (matchedEditor.unidade) {
+          await chrome.storage.local.set({ userUnidade: matchedEditor.unidade })
+        }
+
         // Atualiza lastSeen do editor no Firebase
-        await callDatabaseWrite(`${RTDB_EDITORS_URL}/${matchedEditor.id}.json`, 'PATCH', { lastSeen: nowStr })
+        await callDatabaseWrite(`${RTDB_EDITORS_URL}/${matchedEditor.id}.json`, 'PATCH', patchData)
         
         const allowed = matchedEditor.allowedChannels || getChannelsFallback()
         const existingRole = matchedEditor.role || 'comum'
@@ -599,6 +757,18 @@
         const allowed = getViewerAllowedChannels(matchedViewer.allowedChannels)
         const patchData = { lastSeen: nowStr }
         
+        // Se o visualizador ainda não tem unidade no Firebase, tenta buscar e salvar
+        if (!matchedViewer.unidade && userId) {
+          const unit = await fetchLoggedUserUnidade(userId)
+          if (unit) {
+            patchData.unidade = unit
+            matchedViewer.unidade = unit
+            await chrome.storage.local.set({ userUnidade: unit })
+          }
+        } else if (matchedViewer.unidade) {
+          await chrome.storage.local.set({ userUnidade: matchedViewer.unidade })
+        }
+
         const allChs = getChannelsFallback()
         if (matchedViewer.allowedChannels && Array.isArray(matchedViewer.allowedChannels) && matchedViewer.allowedChannels.length >= allChs.length) {
           patchData.allowedChannels = allowed
@@ -616,11 +786,17 @@
       } else {
         // Cadastra novo visualizador via PUT usando a chave gerada por userId
         const defaultChannels = ['Geral']
+        const unit = userId ? await fetchLoggedUserUnidade(userId) : null
+        if (unit) {
+          await chrome.storage.local.set({ userUnidade: unit })
+        }
+
         const response = await callDatabaseWrite(`${RTDB_VIEWERS_URL}/${userKey}.json`, 'PUT', {
           name: userName.trim(),
           firstSeen: nowStr,
           lastSeen: nowStr,
-          allowedChannels: defaultChannels
+          allowedChannels: defaultChannels,
+          unidade: unit || ''
         })
         
         if (response.ok) {
@@ -1292,6 +1468,170 @@
     }
   }
 
+  async function saveRemoteConfig(configData) {
+    if (!window.sgdPermissions.isEditor || window.sgdPermissions.role !== 'master') return false
+    try {
+      const response = await callDatabaseWrite(`${RTDB_BASE_URL}/config.json`, 'PUT', configData)
+      if (response.ok) {
+        await chrome.storage.local.set({ remoteConfig: configData, remoteConfigCacheTime: Date.now() })
+        await writeAuditLog('UPDATE_REMOTE_CONFIG', 'Configurações Globais', JSON.stringify(configData))
+        return true
+      }
+      return false
+    } catch (e) {
+      console.error('[SGD Permissions] Erro ao salvar configurações remotas:', e)
+      return false
+    }
+  }
+
+  async function updateUserRegion(userId, isEditor, region) {
+    if (!window.sgdPermissions.isEditor) return false
+    const url = isEditor ? `${RTDB_EDITORS_URL}/${userId}.json` : `${RTDB_VIEWERS_URL}/${userId}.json`
+    try {
+      const response = await callDatabaseWrite(url, 'PATCH', { regiao: region })
+      if (response.ok) {
+        const listName = isEditor ? 'editores' : 'visualizadores'
+        await writeAuditLog('UPDATE_USER_REGION', userId, `Região alterada para "${region}" (${listName})`)
+        await invalidatePermissionsCache()
+        return true
+      }
+      return false
+    } catch (e) {
+      console.error('[SGD Permissions] Erro ao atualizar região do usuário:', e)
+      return false
+    }
+  }
+
+  async function toggleUserIAgente(userId, isEditor, currentStatus) {
+    if (!window.sgdPermissions.isEditor) return false
+    const url = isEditor ? `${RTDB_EDITORS_URL}/${userId}.json` : `${RTDB_VIEWERS_URL}/${userId}.json`
+    const targetStatus = !currentStatus
+    try {
+      const response = await callDatabaseWrite(url, 'PATCH', { iagenteDisabled: targetStatus })
+      if (response.ok) {
+        const listName = isEditor ? 'editores' : 'visualizadores'
+        await writeAuditLog('TOGGLE_USER_IAGENTE', userId, `Ação: ${targetStatus ? 'Desativar' : 'Ativar'} IAgente (${listName})`)
+        await invalidatePermissionsCache()
+        return true
+      }
+      return false
+    } catch (e) {
+      console.error('[SGD Permissions] Erro ao alternar status do IAgente do usuário:', e)
+      return false
+    }
+  }
+
+  async function hasIAgenteAccess() {
+    const userName = window.sgdPermissions?.currentUser
+    const userId = window.sgdPermissions?.currentUserId
+    const devData = await chrome.storage.local.get(['developerModeEnabled'])
+    const isDevMode = devData.developerModeEnabled === true
+    
+    // Se for Master/Dev, sempre tem acesso (bypass)
+    if (isDevMode || (window.sgdPermissions?.isMaster)) return true
+    
+    if (!userName) return false
+    const normalizedUser = normalizeName(userName)
+    
+    // 1. Verificar no Firebase se o usuário individual está desativado
+    let isIndividualDisabled = false
+    let userUnidade = null
+    
+    const matchedEditor = await matchEditorRecord(userId, userName, normalizedUser)
+    if (matchedEditor) {
+      isIndividualDisabled = matchedEditor.iagenteDisabled === true
+      userUnidade = matchedEditor.unidade
+    } else {
+      const matchedViewer = await matchViewerRecord(userId, userName, normalizedUser)
+      if (matchedViewer) {
+        isIndividualDisabled = matchedViewer.iagenteDisabled === true
+        userUnidade = matchedViewer.unidade
+      }
+    }
+    
+    if (isIndividualDisabled) return false
+    
+    // 2. Se não temos a unidade cadastrada no matched record, pega do cache local
+    if (!userUnidade) {
+      const cachedUserInfo = await chrome.storage.local.get(['userUnidade'])
+      userUnidade = cachedUserInfo.userUnidade
+    }
+    
+    // Se a unidade não foi capturada ou está vazia, não libera o IAgente
+    if (!userUnidade || userUnidade.trim() === '' || userUnidade.trim() === 'Unidade não capturada') {
+      return false
+    }
+    
+    if (userUnidade) {
+      const trimmedUnit = userUnidade.trim().toLowerCase()
+      
+      // 3. Verificar se a unidade do usuário está na lista de unidades liberadas (Allowlist)
+      const localConfig = await chrome.storage.local.get(['remoteConfig'])
+      const remoteConfig = localConfig.remoteConfig || {}
+      const enabledUnidades = remoteConfig.iagente_enabled_unidades || []
+      
+      const isUnitEnabled = enabledUnidades.some(enabledUnit => 
+        trimmedUnit === enabledUnit.trim().toLowerCase()
+      )
+      if (!isUnitEnabled) return false
+    }
+    
+    return true
+  }
+
+  async function getIAgenteUrl() {
+    const userName = window.sgdPermissions?.currentUser
+    const userId = window.sgdPermissions?.currentUserId
+    const normalizedUser = normalizeName(userName)
+    
+    const localConfig = await chrome.storage.local.get(['remoteConfig'])
+    const remoteConfig = localConfig.remoteConfig || {}
+    
+    const defaultSul = 'https://tria.plugsocial.online/?assunto=sped&codigoCliente=96797&identificacaoRevenda=3'
+    const urlSul = remoteConfig.iagente_url_sul || defaultSul
+    const urlSudeste = remoteConfig.iagente_url_sudeste || urlSul
+    
+    // 1. Verificar se o usuário tem região explicitamente atribuída no Firebase
+    let userRegion = null
+    let userUnidade = null
+    
+    const matchedEditor = await matchEditorRecord(userId, userName, normalizedUser)
+    if (matchedEditor) {
+      userRegion = matchedEditor.regiao
+      userUnidade = matchedEditor.unidade
+    } else {
+      const matchedViewer = await matchViewerRecord(userId, userName, normalizedUser)
+      if (matchedViewer) {
+        userRegion = matchedViewer.regiao
+        userUnidade = matchedViewer.unidade
+      }
+    }
+    
+    if (userRegion === 'sudeste') return urlSudeste
+    if (userRegion === 'sul') return urlSul
+    
+    // 2. Se não temos no Firebase, tentar ler do cache local
+    if (!userUnidade) {
+      const cachedUserInfo = await chrome.storage.local.get(['userUnidade'])
+      userUnidade = cachedUserInfo.userUnidade
+    }
+    
+    // 3. Mapeamento da unidade ou fallback por palavra-chave na unidade
+    if (userUnidade) {
+      const unitRegionMap = remoteConfig.iagente_unidade_regiao || {}
+      const mappedRegion = unitRegionMap[userUnidade.trim()]
+      if (mappedRegion === 'sudeste') return urlSudeste
+      if (mappedRegion === 'sul') return urlSul
+      
+      const lowerUnit = userUnidade.toLowerCase()
+      const sudesteKeywords = ['campinas', 'sao paulo', 'são paulo', 'sp', 'rio de janeiro', 'rj', 'belo horizonte', 'mg', 'espirito santo', 'espírito santo', 'es', 'sudeste']
+      const isSudeste = sudesteKeywords.some(keyword => lowerUnit.includes(keyword))
+      if (isSudeste) return urlSudeste
+    }
+    
+    return urlSul
+  }
+
   async function invalidateFormsCache() {
     await chrome.storage.local.set({ 
       cachedFormsCacheTime: 0 
@@ -1324,6 +1664,11 @@
   window.sgdPermissions.toggleUserEquipeAT = toggleUserEquipeAT
   window.sgdPermissions.saveTabsConfig = saveTabsConfig
   window.sgdPermissions.invalidateFormsCache = invalidateFormsCache
+  window.sgdPermissions.saveRemoteConfig = saveRemoteConfig
+  window.sgdPermissions.updateUserRegion = updateUserRegion
+  window.sgdPermissions.toggleUserIAgente = toggleUserIAgente
+  window.sgdPermissions.hasIAgenteAccess = hasIAgenteAccess
+  window.sgdPermissions.getIAgenteUrl = getIAgenteUrl
 
   window.sgdPermissions.refreshEditors = async () => {
     const list = await getEditorsList(true)
