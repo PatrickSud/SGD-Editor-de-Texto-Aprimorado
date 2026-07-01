@@ -771,6 +771,11 @@ function handleAISuggestSAM() {
 function _buscarESugerirSAM(conteudo, veioDoAtendimento) {
   showNotification('Buscando SAMs similares... 🔍', 'info', 10000)
 
+  console.log('[SugerirSAM] Enviando buscarSAMSimilares ao service worker.', {
+    veioDoAtendimento,
+    conteudoLength: conteudo?.length ?? 0
+  })
+
   // Ativa loading no botão Sugerir SAM
   const btnSAM = document.querySelector('[data-action="sugerir-sam"]')
   if (btnSAM) {
@@ -780,9 +785,38 @@ function _buscarESugerirSAM(conteudo, veioDoAtendimento) {
     btnSAM.disabled = true
   }
 
+  // Timeout de segurança: se o service worker não responder (ex.: handler
+  // quebrado, chain mal configurada), evita deixar o botão travado em loading
+  // para sempre e sinaliza claramente o problema no console.
+  // OBS: a chain "LISTAGEM DE SANES E SAILS - GERAL" faz uma busca/retrieval
+  // e já foi observada levando ~54s para responder — por isso o timeout
+  // precisa de folga generosa (180s) para não disparar antes da resposta real.
+  const SAM_TIMEOUT_MS = 180000
+  let resolvido = false
+  const timeoutId = setTimeout(() => {
+    if (resolvido) return
+    resolvido = true
+    chrome.runtime.onMessage.removeListener(onBusca)
+
+    console.error('[SugerirSAM] Timeout: nenhuma resposta (buscaSAMCompleta/buscaSAMErro) recebida do service worker em', SAM_TIMEOUT_MS, 'ms. Verifique o handler "buscarSAMSimilares" em service-worker.js e o AI_CHAINS["LISTAGEM DE SANES E SAILS - GERAL"].')
+
+    if (btnSAM) {
+      btnSAM.innerHTML = btnSAM.dataset.originalHtml || '📋 Sugerir SAM'
+      btnSAM.classList.remove('ai-loading')
+      btnSAM.disabled = false
+    }
+
+    showNotification('Tempo esgotado ao buscar SAMs similares. Veja o console para detalhes.', 'error', 8000)
+  }, SAM_TIMEOUT_MS)
+
   const onBusca = (message) => {
     if (message.action === 'buscaSAMCompleta') {
+      if (resolvido) return
+      resolvido = true
+      clearTimeout(timeoutId)
       chrome.runtime.onMessage.removeListener(onBusca)
+
+      console.log('[SugerirSAM] buscaSAMCompleta recebido. Tamanho da resposta:', message.data?.length ?? 0)
 
       // Desativa loading
       if (btnSAM) {
@@ -794,7 +828,12 @@ function _buscarESugerirSAM(conteudo, veioDoAtendimento) {
       _mostrarResultadosBusca(message.data, conteudo, veioDoAtendimento)
 
     } else if (message.action === 'buscaSAMErro') {
+      if (resolvido) return
+      resolvido = true
+      clearTimeout(timeoutId)
       chrome.runtime.onMessage.removeListener(onBusca)
+
+      console.error('[SugerirSAM] buscaSAMErro recebido:', message.data)
 
       // Desativa loading
       if (btnSAM) {

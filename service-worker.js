@@ -1578,12 +1578,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       } else if (message.action === 'buscarSAMSimilares' && sender.tab?.id) {
         // ── Busca SAMs similares antes de cadastrar ───────────────────────
         const BUSCA_SAM_WORKFLOW_ID = AI_CHAINS['LISTAGEM DE SANES E SAILS - GERAL']
-      
+        console.log('[AI WS][buscarSAMSimilares] Mensagem recebida. tabId:', sender.tab.id, '| workflowId:', BUSCA_SAM_WORKFLOW_ID, '| prompt length:', message.prompt?.length ?? 0)
+
+        if (!BUSCA_SAM_WORKFLOW_ID) {
+          console.error('[AI WS][buscarSAMSimilares] BUSCA_SAM_WORKFLOW_ID não encontrado em AI_CHAINS["LISTAGEM DE SANES E SAILS - GERAL"]. Verifique o mapa AI_CHAINS.')
+          chrome.tabs.sendMessage(sender.tab.id, {
+            action: 'buscaSAMErro',
+            data: 'Configuração da chain "LISTAGEM DE SANES E SAILS - GERAL" não encontrada.'
+          })
+        } else {
+          handleGerarSugestao(message.prompt, sender.tab.id, BUSCA_SAM_WORKFLOW_ID, 'buscaSAMCompleta', 'buscaSAMErro')
+        }
+
       } else if (message.action === 'compararSSCsSimilares' && sender.tab?.id) {
         // ── Comparação de assuntos de SSCs via IA (Gemini Flash) ──────────
+        console.log('[AI WS][compararSSCsSimilares] Mensagem recebida. tabId:', sender.tab.id, '| workflowId:', COMPARACAO_SSC_WORKFLOW_ID)
         handleGerarSugestao(message.prompt, sender.tab.id, COMPARACAO_SSC_WORKFLOW_ID, 'comparacaoSSCCompleta', 'comparacaoSSCErro')
 
-        handleGerarSugestao(message.prompt, sender.tab.id, BUSCA_SAM_WORKFLOW_ID, 'buscaSAMCompleta', 'buscaSAMErro')
       } else if (message.action === 'resumirChat' && sender.tab?.id) {
         // ── Pré-resumo de chat ou transcrição via chain rápida (Gemini Flash) ──
         const RESUMO_CHAT_WORKFLOW_ID = '4b95e35f-e8ea-44e6-ad74-555bf39be13f'

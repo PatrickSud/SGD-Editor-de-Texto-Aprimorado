@@ -1,4 +1,10 @@
 const RELEASE_NOTES = {
+  '3.0.6.3': {
+    title: '🐛 Ajustes — Versão 3.0.6.3',
+    features: [
+      '<b>🤖 Sugerir SAM:</b> Corrigido bug que travava a busca de SAMs similares sem resposta, com aumento do tempo máximo de espera para 3 minutos.'
+    ]
+  },
   '3.0.6.2': {
     title: '🚀 Ajustes e Otimizações — Versão 3.0.6.2',
     features: [
