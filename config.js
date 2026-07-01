@@ -43,6 +43,8 @@ function sgdError(...args) {
   if (sgdDebugLogsEnabled) console.error(...args)
 }
 
+// Implementação real (só existe aqui, no "mundo isolado" do content script,
+// que é o único lugar com acesso à API chrome.storage).
 window.sgdDebug = {
   ativar() {
     sgdDebugLogsEnabled = true
@@ -59,6 +61,30 @@ window.sgdDebug = {
     return sgdDebugLogsEnabled
   }
 }
+
+// ─── Ponte com o console (mundo principal da página) ───────────────────────
+// O DevTools Console, por padrão, executa comandos no "mundo principal" da
+// página — não no "mundo isolado" onde os content scripts (e o objeto acima)
+// rodam. Por isso "sgdDebug.ativar()" digitado direto no console dava
+// "ReferenceError: sgdDebug is not defined": window.sgdDebug só existia no
+// mundo isolado.
+//
+// Tentamos primeiro injetar uma tag <script> inline (sem precisar de arquivo
+// separado), mas o SGD tem uma Content-Security-Policy que bloqueia scripts
+// inline — a injeção falha silenciosamente (sem lançar exceção; o navegador
+// só recusa a execução). Por isso voltamos ao arquivo debug-bridge.js,
+// declarado no manifest.json com "world": "MAIN": scripts de content script
+// injetados dessa forma são executados pelo próprio Chrome e não passam
+// pela CSP da página, então funcionam mesmo em páginas restritivas.
+// Esse arquivo só expõe um window.sgdDebug "fininho" que repassa o comando
+// para cá via CustomEvent, já que o mundo principal não tem acesso à API
+// chrome.storage.
+window.addEventListener('sgd-debug-command', (event) => {
+  const action = event.detail && event.detail.action
+  if (action === 'ativar') window.sgdDebug.ativar()
+  else if (action === 'desativar') window.sgdDebug.desativar()
+  else if (action === 'status') window.sgdDebug.status()
+})
 
 const DEV_MODE_KEY = 'developerModeEnabled'
 const DATA_VERSION = 3

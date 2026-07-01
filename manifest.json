@@ -27,6 +27,16 @@
         "https://sgd.dominiosistemas.com.br/*"
       ],
       "js": [
+        "debug-bridge.js"
+      ],
+      "world": "MAIN",
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://sgd.dominiosistemas.com.br/*"
+      ],
+      "js": [
         "config.js",
         "utils.js",
         "storage.js",
