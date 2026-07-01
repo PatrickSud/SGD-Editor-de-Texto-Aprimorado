@@ -4843,15 +4843,19 @@ async function loadAccessControl(sectionElement) {
         return { active: true, reason: 'Master' }
       }
 
+      if (user.iagenteIA_Enabled === true) {
+        return { active: true, reason: 'Ativo individualmente' }
+      }
+
       if (user.iagenteDisabled === true) {
         return { active: false, reason: 'Bloqueado individualmente' }
       }
-      
+
       const unit = user.unidade ? user.unidade.trim() : ''
       if (!unit || unit === '' || unit === 'Unidade não capturada') {
         return { active: false, reason: 'Unidade não capturada' }
       }
-      
+
       const enabledUnidades = remoteConfig.iagente_enabled_unidades || []
       const isUnitEnabled = enabledUnidades.some(eu => eu.trim().toLowerCase() === unit.toLowerCase())
       if (!isUnitEnabled) {
@@ -5010,13 +5014,13 @@ async function loadAccessControl(sectionElement) {
             data-user-id="${escapeHTML(editor.id)}" 
             data-is-editor="true" 
             data-current-status="${isIAgenteDisabled}"
-            style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: 1px solid var(--border-color); background: ${accessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-red, #ef4444)'}; color: white; cursor: pointer; border-radius: 4px;"
+            style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: 1px solid var(--border-color); background: ${accessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-gray, #9ca3af)'}; color: white; cursor: pointer; border-radius: 4px;"
             title="${accessStatus.active ? 'Ativo' : 'Inativo: ' + accessStatus.reason}">
             ${accessStatus.active ? '🤖 IAgente: Ativo' : '🤖 IAgente: ' + accessStatus.reason}
           </button>
         `
         : `
-          <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: ${accessStatus.active ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)'}; border: 1px solid var(--border-color); color: ${accessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-red, #ef4444)'}; font-weight: 600;"
+          <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: ${accessStatus.active ? 'rgba(34, 197, 94, 0.1)' : 'rgba(156, 163, 175, 0.15)'}; border: 1px solid var(--border-color); color: ${accessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-gray, #9ca3af)'}; font-weight: 600;"
             title="${accessStatus.active ? 'Ativo' : 'Inativo: ' + accessStatus.reason}">
             ${accessStatus.active ? '🤖 Ativo' : '🤖 ' + accessStatus.reason}
           </span>
@@ -5025,19 +5029,19 @@ async function loadAccessControl(sectionElement) {
       const duplicateAccessStatus = checkUserDuplicateAccessStatus(editor)
       const duplicateBtnHtml = isMaster
         ? `
-          <button class="action-btn small-btn ac-toggle-duplicados-btn" 
-            data-user-id="${escapeHTML(editor.id)}" 
-            data-is-editor="true" 
+          <button class="action-btn small-btn ac-toggle-duplicados-btn"
+            data-user-id="${escapeHTML(editor.id)}"
+            data-is-editor="true"
             data-current-status="${duplicateAccessStatus.active}"
-            style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: 1px solid var(--border-color); background: ${duplicateAccessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-red, #ef4444)'}; color: white; cursor: pointer; border-radius: 4px; margin-left: 4px;"
+            style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: 1px solid var(--border-color); background: ${duplicateAccessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-gray, #9ca3af)'}; color: white; cursor: pointer; border-radius: 4px; margin-left: 4px;"
             title="${duplicateAccessStatus.active ? 'Ativo' : 'Inativo: ' + duplicateAccessStatus.reason}">
-            ${duplicateAccessStatus.active ? '🔍 Duplicados: Ativo' : '🔍 Duplicados: ' + duplicateAccessStatus.reason}
+            ${duplicateAccessStatus.active ? '🔍 Duplicados IA: Ativo' : '🔍 Duplicados IA: ' + duplicateAccessStatus.reason}
           </button>
         `
         : `
-          <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: ${duplicateAccessStatus.active ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)'}; border: 1px solid var(--border-color); color: ${duplicateAccessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-red, #ef4444)'}; font-weight: 600; margin-left: 4px;"
+          <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: ${duplicateAccessStatus.active ? 'rgba(34, 197, 94, 0.1)' : 'rgba(156, 163, 175, 0.15)'}; border: 1px solid var(--border-color); color: ${duplicateAccessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-gray, #9ca3af)'}; font-weight: 600; margin-left: 4px;"
             title="${duplicateAccessStatus.active ? 'Ativo' : 'Inativo: ' + duplicateAccessStatus.reason}">
-            ${duplicateAccessStatus.active ? '🔍 Duplicados: Ativo' : '🔍 Duplicados: ' + duplicateAccessStatus.reason}
+            ${duplicateAccessStatus.active ? '🔍 Duplicados IA: Ativo' : '🔍 Duplicados IA: ' + duplicateAccessStatus.reason}
           </span>
         `
 
@@ -5080,8 +5084,8 @@ async function loadAccessControl(sectionElement) {
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
               ${iagenteBtnHtml}
-              ${duplicateBtnHtml}
               ${regionSelectorHtml}
+              ${duplicateBtnHtml}
               ${teamBtnHtml}
               ${roleSelectorHtml}
               ${removeBtnHtml}
@@ -5156,13 +5160,13 @@ async function loadAccessControl(sectionElement) {
             data-user-id="${escapeHTML(viewer.id)}" 
             data-is-editor="false" 
             data-current-status="${isIAgenteDisabled}"
-            style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: 1px solid var(--border-color); background: ${accessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-red, #ef4444)'}; color: white; cursor: pointer; border-radius: 4px;"
+            style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: 1px solid var(--border-color); background: ${accessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-gray, #9ca3af)'}; color: white; cursor: pointer; border-radius: 4px;"
             title="${accessStatus.active ? 'Ativo' : 'Inativo: ' + accessStatus.reason}">
             ${accessStatus.active ? '🤖 IAgente: Ativo' : '🤖 IAgente: ' + accessStatus.reason}
           </button>
         `
         : `
-          <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: ${accessStatus.active ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)'}; border: 1px solid var(--border-color); color: ${accessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-red, #ef4444)'}; font-weight: 600;"
+          <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: ${accessStatus.active ? 'rgba(34, 197, 94, 0.1)' : 'rgba(156, 163, 175, 0.15)'}; border: 1px solid var(--border-color); color: ${accessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-gray, #9ca3af)'}; font-weight: 600;"
             title="${accessStatus.active ? 'Ativo' : 'Inativo: ' + accessStatus.reason}">
             ${accessStatus.active ? '🤖 Ativo' : '🤖 ' + accessStatus.reason}
           </span>
@@ -5171,19 +5175,19 @@ async function loadAccessControl(sectionElement) {
       const duplicateAccessStatus = checkUserDuplicateAccessStatus(viewer)
       const duplicateBtnHtml = isMaster
         ? `
-          <button class="action-btn small-btn ac-toggle-duplicados-btn" 
-            data-user-id="${escapeHTML(viewer.id)}" 
-            data-is-editor="false" 
+          <button class="action-btn small-btn ac-toggle-duplicados-btn"
+            data-user-id="${escapeHTML(viewer.id)}"
+            data-is-editor="false"
             data-current-status="${duplicateAccessStatus.active}"
-            style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: 1px solid var(--border-color); background: ${duplicateAccessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-red, #ef4444)'}; color: white; cursor: pointer; border-radius: 4px; margin-left: 4px;"
+            style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: 1px solid var(--border-color); background: ${duplicateAccessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-gray, #9ca3af)'}; color: white; cursor: pointer; border-radius: 4px; margin-left: 4px;"
             title="${duplicateAccessStatus.active ? 'Ativo' : 'Inativo: ' + duplicateAccessStatus.reason}">
-            ${duplicateAccessStatus.active ? '🔍 Duplicados: Ativo' : '🔍 Duplicados: ' + duplicateAccessStatus.reason}
+            ${duplicateAccessStatus.active ? '🔍 Duplicados IA: Ativo' : '🔍 Duplicados IA: ' + duplicateAccessStatus.reason}
           </button>
         `
         : `
-          <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: ${duplicateAccessStatus.active ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)'}; border: 1px solid var(--border-color); color: ${duplicateAccessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-red, #ef4444)'}; font-weight: 600; margin-left: 4px;"
+          <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: ${duplicateAccessStatus.active ? 'rgba(34, 197, 94, 0.1)' : 'rgba(156, 163, 175, 0.15)'}; border: 1px solid var(--border-color); color: ${duplicateAccessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-gray, #9ca3af)'}; font-weight: 600; margin-left: 4px;"
             title="${duplicateAccessStatus.active ? 'Ativo' : 'Inativo: ' + duplicateAccessStatus.reason}">
-            ${duplicateAccessStatus.active ? '🔍 Duplicados: Ativo' : '🔍 Duplicados: ' + duplicateAccessStatus.reason}
+            ${duplicateAccessStatus.active ? '🔍 Duplicados IA: Ativo' : '🔍 Duplicados IA: ' + duplicateAccessStatus.reason}
           </span>
         `
 
@@ -5218,8 +5222,8 @@ async function loadAccessControl(sectionElement) {
             </div>
             <div style="display: flex; gap: 8px; align-items: center;">
               ${iagenteBtnHtml}
-              ${duplicateBtnHtml}
               ${regionSelectorHtml}
+              ${duplicateBtnHtml}
             </div>
           </div>
 
@@ -6244,12 +6248,15 @@ async function loadAccessControl(sectionElement) {
         
         const success = await window.sgdPermissions.toggleUserDuplicateIA(userId, isEditor, currentStatus)
         if (success) {
-          showNotification(`Acesso de "${userName}" ao Duplicados IA ${!currentStatus ? 'desativado' : 'ativado'}!`, 'success')
+          // OBS: aqui "currentStatus" reflete duplicateAccessStatus.active (estado ANTES do
+          // clique), ao contrário do botão do IAgente cujo data-current-status reflete
+          // "está desativado". Por isso a condição é invertida em relação ao bloco acima.
+          showNotification(`Acesso de "${userName}" ao Duplicados IA ${currentStatus ? 'desativado' : 'ativado'}!`, 'success')
           loadAccessControl(sectionElement)
         } else {
           showNotification('Erro ao alterar acesso do Duplicados IA.', 'error')
           btn.disabled = false
-          btn.textContent = currentStatus ? '🔍 Duplicados: Bloqueado' : '🔍 Duplicados: Ativo'
+          btn.textContent = currentStatus ? '🔍 Duplicados IA: Ativo' : '🔍 Duplicados IA: Bloqueado'
         }
       })
     })

@@ -304,8 +304,18 @@ function lerResultadosTabelaSSC(doc, sscAtualId) {
 
     if (sscAtualId && link.href.includes(`ssc=${sscAtualId}`)) continue
 
+    const assunto = link.textContent.trim()
+
+    // Ignora solicitações ainda não finalizadas pelo técnico anterior (o SGD
+    // exibe esse texto como assunto/descrição enquanto o cadastro do
+    // atendimento não foi concluído) — não fazem sentido como candidatos.
+    if (normalizarTextoSSC(assunto) === 'aguardando preenchimento') {
+      logDebug(`[DEBUG] Candidato ignorado (ainda "Aguardando preenchimento"): ${link.href}`)
+      continue
+    }
+
     candidatos.push({
-      assunto: link.textContent.trim(),
+      assunto,
       href: link.href,
       dias
     })
@@ -497,6 +507,13 @@ async function iniciarVerificacaoDuplicidadeSSC() {
     const assuntoEl = document.querySelector('#td\\:assunto')
     const assuntoAtual = assuntoEl?.innerText?.trim()
     if (!assuntoAtual) return
+
+    // O próprio atendimento ainda não foi finalizado pelo técnico anterior
+    // (assunto placeholder) — não há conteúdo real para basear a busca.
+    if (normalizarTextoSSC(assuntoAtual) === 'aguardando preenchimento') {
+      logDebug('[DEBUG] Atendimento atual está "Aguardando preenchimento" — verificação de duplicidade ignorada.')
+      return
+    }
 
     const sscHiddenInput = document.querySelector('input[id*="ssc"]') || document.querySelector('input[name*="ssc"]')
     let sscAtualId = sscHiddenInput?.value?.trim() || null

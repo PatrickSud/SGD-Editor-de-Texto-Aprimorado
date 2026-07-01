@@ -403,7 +403,10 @@
       isEquipeAT: rec.isEquipeAT === true,
       unidade: rec.unidade || '',
       regiao: rec.regiao || '',
-      iagenteDisabled: rec.iagenteDisabled === true
+      iagenteDisabled: rec.iagenteDisabled === true,
+      iagenteIA_Enabled: rec.iagenteIA_Enabled === true,
+      duplicateIA_Enabled: rec.duplicateIA_Enabled === true,
+      duplicateIA_Disabled: rec.duplicateIA_Disabled === true
     }
   }
 
@@ -417,7 +420,10 @@
       isEquipeAT: rec.isEquipeAT === true,
       unidade: rec.unidade || '',
       regiao: rec.regiao || '',
-      iagenteDisabled: rec.iagenteDisabled === true
+      iagenteDisabled: rec.iagenteDisabled === true,
+      iagenteIA_Enabled: rec.iagenteIA_Enabled === true,
+      duplicateIA_Enabled: rec.duplicateIA_Enabled === true,
+      duplicateIA_Disabled: rec.duplicateIA_Disabled === true
     }
   }
 
@@ -1507,7 +1513,16 @@
     const url = isEditor ? `${RTDB_EDITORS_URL}/${userId}.json` : `${RTDB_VIEWERS_URL}/${userId}.json`
     const targetStatus = !currentStatus
     try {
-      const response = await callDatabaseWrite(url, 'PATCH', { iagenteDisabled: targetStatus })
+      // targetStatus aqui é o novo valor de "desativado". Quando o master reativa
+      // (targetStatus === false), gravamos iagenteIA_Enabled=true para que o
+      // usuário receba a liberação individual mesmo que a unidade dele esteja
+      // bloqueada na allowlist (iagente_enabled_unidades). Sem isso, o bloqueio
+      // por unidade continuava prevalecendo mesmo com iagenteDisabled=false.
+      const payload = {
+        iagenteDisabled: targetStatus,
+        iagenteIA_Enabled: !targetStatus
+      }
+      const response = await callDatabaseWrite(url, 'PATCH', payload)
       if (response.ok) {
         const listName = isEditor ? 'editores' : 'visualizadores'
         await writeAuditLog('TOGGLE_USER_IAGENTE', userId, `Ação: ${targetStatus ? 'Desativar' : 'Ativar'} IAgente (${listName})`)
@@ -1629,24 +1644,31 @@
     if (!userName) return false
     const normalizedUser = normalizeName(userName)
     
-    // 1. Verificar no Firebase se o usuário individual está desativado
+    // 1. Verificar no Firebase se o usuário individual está desativado ou
+    //    liberado manualmente (override que ignora o bloqueio por unidade)
     let isIndividualDisabled = false
+    let isIndividuallyEnabled = false
     let userUnidade = null
-    
+
     const matchedEditor = await matchEditorRecord(userId, userName, normalizedUser)
     if (matchedEditor) {
       isIndividualDisabled = matchedEditor.iagenteDisabled === true
+      isIndividuallyEnabled = matchedEditor.iagenteIA_Enabled === true
       userUnidade = matchedEditor.unidade
     } else {
       const matchedViewer = await matchViewerRecord(userId, userName, normalizedUser)
       if (matchedViewer) {
         isIndividualDisabled = matchedViewer.iagenteDisabled === true
+        isIndividuallyEnabled = matchedViewer.iagenteIA_Enabled === true
         userUnidade = matchedViewer.unidade
       }
     }
-    
+
     if (isIndividualDisabled) return false
-    
+
+    // Liberação manual individual: ignora a allowlist de unidades
+    if (isIndividuallyEnabled) return true
+
     // 2. Se não temos a unidade cadastrada no matched record, pega do cache local
     if (!userUnidade) {
       const cachedUserInfo = await chrome.storage.local.get(['userUnidade'])
