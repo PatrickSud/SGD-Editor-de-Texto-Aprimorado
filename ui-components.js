@@ -286,8 +286,15 @@ window.markWarningAsRead = markWarningAsRead;
  */
 function processWarningMessageHTML(text) {
   if (!text) return '';
+
+  // Remove comments (including Word/browser clipboard fragment comments)
+  let cleanText = text
+    .replace(/<!--\s*StartFragment\s*-->/gi, '')
+    .replace(/<!--\s*EndFragment\s*-->/gi, '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+
   // Escapa tudo para neutralizar scripts e tags não permitidas
-  let safe = typeof escapeHTML === 'function' ? escapeHTML(text) : text.replace(/[&<>"']/g, m => ({
+  let safe = typeof escapeHTML === 'function' ? escapeHTML(cleanText) : cleanText.replace(/[&<>"']/g, m => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
   }[m]));
 
@@ -304,16 +311,19 @@ function processWarningMessageHTML(text) {
   });
 
   // Trata tag <a href="..."> especificamente
-  safe = safe.replace(
-    /&lt;a\s+href=&quot;(.*?)&quot;.*?&gt;/gi,
-    (match, url) => {
-      let fixedUrl = url.trim();
-      if (fixedUrl && !/^(https?:\/\/|mailto:|tel:|\/|#)/i.test(fixedUrl)) {
-        fixedUrl = 'https://' + fixedUrl;
+  // Formato escapado: &lt;a\s+(.*?)&gt;
+  safe = safe.replace(/&lt;a\s+(.*?)&gt;/gi, (match, attrs) => {
+    // Busca o href de forma case-insensitive, que pode estar com &quot; ou &#39;
+    const hrefMatch = attrs.match(/href\s*=\s*(?:&quot;|&#39;)(.*?)(?:&quot;|&#39;)/i) || attrs.match(/href\s*=\s*([^\s&;]+)/i);
+    if (hrefMatch) {
+      let url = hrefMatch[1].replace(/&amp;/g, '&').trim();
+      if (url && !/^(https?:\/\/|mailto:|tel:|\/|#)/i.test(url)) {
+        url = 'https://' + url;
       }
-      return `<a href="${fixedUrl}" target="_blank">`;
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: rgb(255, 128, 0); font-weight: bold;" title="${url}">`;
     }
-  );
+    return '<a>';
+  });
   safe = safe.replace(/&lt;\/a&gt;/gi, '</a>');
 
   // Trata tag <img ...> especificamente

@@ -419,7 +419,6 @@ async function iniciarVerificacaoDuplicidadeSSC() {
         resultados = indicesParecidos.map(i => candidatos[i]).filter(Boolean)
       } catch (erroIA) {
         console.error('[Verificador de Duplicidade] Erro na comparação por IA. Usando fallback por palavras-chave:', erroIA)
-        showNotification('IA indisponível — usando comparação por palavras-chave.', 'info', 4000)
         resultados = candidatos.filter(c => calcularSimilaridadeSSC(assuntoAtual, c.assunto))
       }
 

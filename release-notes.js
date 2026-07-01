@@ -1,4 +1,11 @@
 const RELEASE_NOTES = {
+  '3.0.6.1': {
+    title: '🐛 Ajustes — Versão 3.0.6.1',
+    features: [
+      '<b>🤖 Verificação de Duplicidade:</b> Removido o alerta (toast) de "IA indisponível" ao usuário, mantendo a informação apenas no console.',
+      '<b>📢 Painel de Avisos:</b> Corrigido o bug ao colar/editar links com tags aninhadas ou comentários do clipboard, com suporte a Ctrl+Clique e tooltip explicativo.'
+    ]
+  },
   '3.0.6': {
     title: '🚀 Consolidação e Novidades da Versão 3.0.6',
     features: [

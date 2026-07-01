@@ -2813,8 +2813,14 @@ if (!backgroundMonitorInterval) {
 function processSafeHTML(text) {
   if (!text) return ''
 
+  // Remove comments (including Word/browser clipboard fragment comments)
+  let cleanText = text
+    .replace(/<!--\s*StartFragment\s*-->/gi, '')
+    .replace(/<!--\s*EndFragment\s*-->/gi, '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+
   // 1. Escapa tudo para neutralizar scripts e tags não permitidas
-  let safe = escapeHTML(text)
+  let safe = escapeHTML(cleanText)
 
   // Restaura entidades HTML originais (ex: &nbsp;, &amp;, &lt;, &gt;) para evitar exibição de caracteres indesejados
   safe = safe.replace(/&amp;([a-zA-Z0-9#]+);/g, '&$1;')
@@ -2834,18 +2840,19 @@ function processSafeHTML(text) {
   })
 
   // 3. Trata tag <a href="..."> especificamente
-  // Formato escapado: &lt;a\s+href=&quot;(.*?)&quot;&gt;
-  safe = safe.replace(
-    /&lt;a\s+href=&quot;(.*?)&quot;.*?&gt;/gi,
-    (match, url) => {
-      let fixedUrl = url.trim()
-      // Se não começa com protocolo ou barra (link relativo ao site), adiciona https://
-      if (fixedUrl && !/^(https?:\/\/|mailto:|tel:|\/|#)/i.test(fixedUrl)) {
-        fixedUrl = 'https://' + fixedUrl
+  // Formato escapado: &lt;a\s+(.*?)&gt;
+  safe = safe.replace(/&lt;a\s+(.*?)&gt;/gi, (match, attrs) => {
+    // Busca o href de forma case-insensitive, que pode estar com &quot; ou &#39;
+    const hrefMatch = attrs.match(/href\s*=\s*(?:&quot;|&#39;)(.*?)(?:&quot;|&#39;)/i) || attrs.match(/href\s*=\s*([^\s&;]+)/i)
+    if (hrefMatch) {
+      let url = hrefMatch[1].replace(/&amp;/g, '&').trim()
+      if (url && !/^(https?:\/\/|mailto:|tel:|\/|#)/i.test(url)) {
+        url = 'https://' + url
       }
-      return `<a href="${fixedUrl}" target="_blank">`
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: rgb(255, 128, 0); font-weight: bold;" title="${url}">`
     }
-  )
+    return '<a>'
+  })
   safe = safe.replace(/&lt;\/a&gt;/gi, '</a>')
 
   // 4. Trata tag <img ...> especificamente
@@ -3552,6 +3559,120 @@ function openCreateWarningModal(existingWarning = null) {
 
   const messageEditor = modal.querySelector('#warn-message')
 
+  // Evita que HTML indesejado (com classes externas, ids, etc.) seja colado no contenteditable
+  messageEditor.addEventListener('paste', e => {
+    e.preventDefault()
+    const html = e.clipboardData.getData('text/html')
+    const text = e.clipboardData.getData('text/plain')
+
+    if (html) {
+      const parser = new DOMParser()
+      const doc = parser.parseFromString(html, 'text/html')
+      
+      // Função auxiliar recursiva para sanitizar o DOM colado
+      const sanitizePastedDOM = (node) => {
+        const allowedTags = ['B', 'STRONG', 'I', 'EM', 'U', 'BR', 'P', 'UL', 'OL', 'LI', 'DIV', 'SPAN', 'FONT', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6']
+        let child = node.firstChild
+        while (child) {
+          const next = child.nextSibling
+          if (child.nodeType === Node.COMMENT_NODE) {
+            node.removeChild(child)
+          } else if (child.nodeType === Node.ELEMENT_NODE) {
+            const tagName = child.tagName
+            if (tagName === 'A') {
+              let href = child.getAttribute('href') || ''
+              if (href && !/^(https?:\/\/|mailto:|tel:|\/|#)/i.test(href)) {
+                href = 'https://' + href
+              }
+              const cleanA = document.createElement('a')
+              cleanA.setAttribute('href', href)
+              cleanA.setAttribute('target', '_blank')
+              cleanA.setAttribute('rel', 'noopener noreferrer')
+              cleanA.setAttribute('style', 'color: rgb(255, 128, 0); font-weight: bold;')
+              cleanA.setAttribute('title', `Ctrl+Clique para abrir: ${href}`)
+              
+              sanitizePastedDOM(child)
+              while (child.firstChild) {
+                cleanA.appendChild(child.firstChild)
+              }
+              node.replaceChild(cleanA, child)
+            } else if (allowedTags.includes(tagName)) {
+              const style = child.getAttribute('style')
+              const attribs = Array.from(child.attributes)
+              for (const attr of attribs) {
+                if (attr.name !== 'style') {
+                  child.removeAttribute(attr.name)
+                }
+              }
+              if (style) {
+                const safeStyles = []
+                const styles = style.split(';')
+                for (const s of styles) {
+                  const parts = s.split(':')
+                  if (parts.length >= 2) {
+                    const prop = parts[0].trim().toLowerCase()
+                    const val = parts.slice(1).join(':').trim()
+                    if (['color', 'background-color', 'text-decoration', 'font-weight', 'font-style', 'font-size'].includes(prop)) {
+                      safeStyles.push(`${prop}: ${val}`)
+                    }
+                  }
+                }
+                if (safeStyles.length > 0) {
+                  child.setAttribute('style', safeStyles.join('; '))
+                } else {
+                  child.removeAttribute('style')
+                }
+              }
+              sanitizePastedDOM(child)
+            } else {
+              sanitizePastedDOM(child)
+              const parent = child.parentNode
+              while (child.firstChild) {
+                parent.insertBefore(child.firstChild, child)
+              }
+              parent.removeChild(child)
+            }
+          }
+          child = next
+        }
+      }
+
+      sanitizePastedDOM(doc.body)
+      let cleanHtml = doc.body.innerHTML
+      // Remove tags de comentário StartFragment / EndFragment extras em formato de string
+      cleanHtml = cleanHtml.replace(/<!--\s*StartFragment\s*-->/gi, '')
+      cleanHtml = cleanHtml.replace(/<!--\s*EndFragment\s*-->/gi, '')
+      cleanHtml = cleanHtml.replace(/<!--[\s\S]*?-->/g, '')
+
+      document.execCommand('insertHTML', false, cleanHtml)
+    } else if (text) {
+      document.execCommand('insertText', false, text)
+    }
+  })
+
+  // Permite Ctrl+Clique para abrir links no editor
+  messageEditor.addEventListener('click', e => {
+    const link = e.target.closest('a')
+    if (link && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault()
+      const url = link.getAttribute('href')
+      if (url) {
+        window.open(url, '_blank')
+      }
+    }
+  })
+
+  // Adiciona tooltip explicativo no hover dos links no editor
+  messageEditor.addEventListener('mouseover', e => {
+    const link = e.target.closest('a')
+    if (link) {
+      const url = link.getAttribute('href')
+      if (url && !link.hasAttribute('title')) {
+        link.setAttribute('title', `Ctrl+Clique para abrir: ${url}`)
+      }
+    }
+  })
+
   // Handler para tamanho da fonte no dropdown
   modal.querySelectorAll('.warn-font-size-btn').forEach(btn => {
     btn.addEventListener('click', e => {
@@ -3647,21 +3768,37 @@ function openCreateWarningModal(existingWarning = null) {
         case 'link': {
           const sel = window.getSelection()
           let savedRange = null
+          let existingLink = null
+
           if (sel.rangeCount > 0) {
             savedRange = sel.getRangeAt(0).cloneRange()
-          }
-
-          const url = prompt('URL:', 'https://')
-          if (url) {
-            const text = prompt('Texto:', 'Clique aqui')
-            const linkHtml = `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: rgb(255, 128, 0); font-weight: bold;">${text}</a>`
-
-            if (savedRange) {
-              sel.removeAllRanges()
-              sel.addRange(savedRange)
+            let container = savedRange.commonAncestorContainer
+            if (container.nodeType === Node.TEXT_NODE) {
+              container = container.parentNode
             }
-            insertHtmlAtContenteditable(messageEditor, linkHtml)
+            if (container) {
+              existingLink = container.closest('a')
+            }
           }
+
+          const defaultUrl = existingLink ? existingLink.getAttribute('href') : 'https://'
+          const defaultText = existingLink ? existingLink.textContent : (sel.toString().trim() || 'Clique aqui')
+
+          openWarningLinkModal(defaultUrl, defaultText, (url, text) => {
+            const linkHtml = `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: rgb(255, 128, 0); font-weight: bold;" title="Ctrl+Clique para abrir: ${url}">${text}</a>`
+
+            if (existingLink) {
+              existingLink.outerHTML = linkHtml
+              messageEditor.dispatchEvent(new Event('input', { bubbles: true }))
+            } else {
+              if (savedRange) {
+                const s = window.getSelection()
+                s.removeAllRanges()
+                s.addRange(savedRange)
+              }
+              insertHtmlAtContenteditable(messageEditor, linkHtml)
+            }
+          })
           break
         }
         case 'numbered':
@@ -3927,6 +4064,92 @@ function openCreateWarningModal(existingWarning = null) {
   })
 }
 // #endregion
+
+/**
+ * Abre modal customizado para inserir ou editar um hiperlink no aviso.
+ */
+function openWarningLinkModal(defaultUrl, defaultText, onSave) {
+  // Remover modal anterior se existir
+  const existing = document.getElementById('warning-link-modal')
+  if (existing) existing.remove()
+
+  const fieldStyle =
+    'display: block; width: 100%; margin-bottom: 12px; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;'
+
+  const modalHtml = `
+    <div style="padding: 10px; width: 340px; box-sizing: border-box;">
+      <div style="margin-bottom: 12px;">
+        <label style="display:block; margin-bottom:4px; font-size:12px;">URL do Link</label>
+        <input type="text" id="link-url-input" style="${fieldStyle}" placeholder="https://exemplo.com" value="${escapeHTML(defaultUrl)}">
+      </div>
+      <div style="margin-bottom: 12px;">
+        <label style="display:block; margin-bottom:4px; font-size:12px;">Texto a ser exibido</label>
+        <input type="text" id="link-text-input" style="${fieldStyle}" placeholder="Texto do link" value="${escapeHTML(defaultText)}">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+        <button id="cancel-link-btn" style="padding: 6px 12px; background: transparent; border: 1px solid var(--border-color); color: var(--text-color-main); border-radius: 4px; cursor: pointer; font-size: 13px;">Cancelar</button>
+        <button id="save-link-btn" class="ip-add-closing-btn" style="width: auto; padding: 6px 12px; font-size: 13px;">Confirmar</button>
+      </div>
+    </div>
+  `
+
+  const modal = createModal(
+    'Inserir / Editar Link',
+    modalHtml,
+    null,
+    {
+      isManagementModal: false,
+      modalId: 'warning-link-modal',
+      showShareButton: false
+    }
+  )
+
+  // Remover o rodapé padrão do createModal para não duplicar botões
+  const defaultActions = modal.querySelector('.se-modal-actions')
+  if (defaultActions) defaultActions.remove()
+
+  modal.style.zIndex = '10008'
+
+  const saveBtn = modal.querySelector('#save-link-btn')
+  const cancelBtn = modal.querySelector('#cancel-link-btn')
+  const closeBtn = modal.querySelector('.se-close-modal-btn')
+
+  const cleanup = () => {
+    modal.remove()
+  }
+
+  cancelBtn.addEventListener('click', () => cleanup())
+  if (closeBtn) closeBtn.addEventListener('click', () => cleanup())
+
+  saveBtn.addEventListener('click', () => {
+    const urlInput = modal.querySelector('#link-url-input').value.trim()
+    const textInput = modal.querySelector('#link-text-input').value.trim()
+
+    if (!urlInput) {
+      alert('A URL é obrigatória.')
+      return
+    }
+
+    let finalUrl = urlInput
+    if (!/^(https?:\/\/|mailto:|tel:|\/|#)/i.test(finalUrl)) {
+      finalUrl = 'https://' + finalUrl
+    }
+
+    onSave(finalUrl, textInput || finalUrl)
+    cleanup()
+  })
+
+  document.body.appendChild(modal)
+
+  // Foca o input de URL após um pequeno delay para carregar
+  setTimeout(() => {
+    const urlInputEl = modal.querySelector('#link-url-input')
+    if (urlInputEl) {
+      urlInputEl.focus()
+      urlInputEl.select()
+    }
+  }, 100)
+}
 
 // #region agent log
 // Verify if window.openTagManager is set
