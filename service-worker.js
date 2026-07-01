@@ -4,6 +4,32 @@
  * Também contém a lógica de backend do Sugestor SS (autenticação e WebSocket com a Thomson Reuters).
  */
 
+// ─── DEBUG LOGS (console do Service Worker) ────────────────────────────────
+// Mesmo gate usado nas páginas de conteúdo (ver config.js), lido do mesmo
+// chrome.storage.local para que "sgdDebug.ativar()" rodado no console da
+// página do SGD também controle os logs "[AI WS]" daqui. Desativado por
+// padrão. O console do Service Worker é acessado por chrome://extensions →
+// "service worker" (não é o mesmo console da aba do SGD).
+const SGD_DEBUG_STORAGE_KEY = 'sgdDebugLogsEnabled'
+let sgdDebugLogsEnabled = false
+
+chrome.storage.local.get([SGD_DEBUG_STORAGE_KEY]).then(res => {
+  sgdDebugLogsEnabled = res[SGD_DEBUG_STORAGE_KEY] === true
+}).catch(() => {})
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && Object.prototype.hasOwnProperty.call(changes, SGD_DEBUG_STORAGE_KEY)) {
+    sgdDebugLogsEnabled = changes[SGD_DEBUG_STORAGE_KEY].newValue === true
+  }
+})
+
+function sgdLog(...args) {
+  if (sgdDebugLogsEnabled) console.log(...args)
+}
+function sgdWarn(...args) {
+  if (sgdDebugLogsEnabled) console.warn(...args)
+}
+
 // ─────────────────────────────────────────
 // SUGESTOR SS — Constantes e funções de autenticação/WebSocket
 // Absorvidas do background.js do Sugestor SS (agora unificado neste plugin)
@@ -193,14 +219,14 @@ async function handleGerarSugestao(prompt, tabId, workflowId, successAction = 's
     const essoToken = await ensureValidToken()
     const API_URL = `${WS_BASE_URL}/?Authorization=${essoToken}`
 
-    console.log(`[AI WS] Conectando via WebSocket. workflow_id: ${workflowId}`)
+    sgdLog(`[AI WS] Conectando via WebSocket. workflow_id: ${workflowId}`)
     const ws = new WebSocket(API_URL)
     let fullResponse = ''
     const startTime = Date.now()
 
     const isV3 = EXPERIENCE_IDS.includes(workflowId)
     ws.onopen = () => {
-      console.log('[AI WS] WebSocket aberto. Enviando consulta...')
+      sgdLog('[AI WS] WebSocket aberto. Enviando consulta...')
       ws.send(JSON.stringify({
         action: isV3 ? 'SendMessageV3' : 'SendMessage',
         workflow_id: workflowId,
@@ -221,7 +247,7 @@ async function handleGerarSugestao(prompt, tabId, workflowId, successAction = 's
           }
           if ('cost_track' in modelValue) {
             const tempo = Math.round((Date.now() - startTime) / 1000)
-            console.log(`[AI WS] ✅ Completo em ${tempo}s. Tamanho: ${fullResponse.length} chars`)
+            sgdLog(`[AI WS] ✅ Completo em ${tempo}s. Tamanho: ${fullResponse.length} chars`)
             chrome.tabs.sendMessage(tabId, { action: successAction, data: fullResponse })
             ws.close()
           }
@@ -1578,7 +1604,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       } else if (message.action === 'buscarSAMSimilares' && sender.tab?.id) {
         // ── Busca SAMs similares antes de cadastrar ───────────────────────
         const BUSCA_SAM_WORKFLOW_ID = AI_CHAINS['LISTAGEM DE SANES E SAILS - GERAL']
-        console.log('[AI WS][buscarSAMSimilares] Mensagem recebida. tabId:', sender.tab.id, '| workflowId:', BUSCA_SAM_WORKFLOW_ID, '| prompt length:', message.prompt?.length ?? 0)
+        sgdLog('[AI WS][buscarSAMSimilares] Mensagem recebida. tabId:', sender.tab.id, '| workflowId:', BUSCA_SAM_WORKFLOW_ID, '| prompt length:', message.prompt?.length ?? 0)
 
         if (!BUSCA_SAM_WORKFLOW_ID) {
           console.error('[AI WS][buscarSAMSimilares] BUSCA_SAM_WORKFLOW_ID não encontrado em AI_CHAINS["LISTAGEM DE SANES E SAILS - GERAL"]. Verifique o mapa AI_CHAINS.')
@@ -1592,7 +1618,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
       } else if (message.action === 'compararSSCsSimilares' && sender.tab?.id) {
         // ── Comparação de assuntos de SSCs via IA (Gemini Flash) ──────────
-        console.log('[AI WS][compararSSCsSimilares] Mensagem recebida. tabId:', sender.tab.id, '| workflowId:', COMPARACAO_SSC_WORKFLOW_ID)
+        sgdLog('[AI WS][compararSSCsSimilares] Mensagem recebida. tabId:', sender.tab.id, '| workflowId:', COMPARACAO_SSC_WORKFLOW_ID)
         handleGerarSugestao(message.prompt, sender.tab.id, COMPARACAO_SSC_WORKFLOW_ID, 'comparacaoSSCCompleta', 'comparacaoSSCErro')
 
       } else if (message.action === 'resumirChat' && sender.tab?.id) {

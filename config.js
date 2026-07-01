@@ -3,6 +3,63 @@
  * Configurações globais, constantes, estado inicial e definições de UI da extensão
  */
 
+// ─── DEBUG LOGS (console) ──────────────────────────────────────────────────
+// Controla a exibição dos logs de diagnóstico da extensão (ex.: "[AI WS]",
+// "[SugerirSAM]", "[IAgente Access]", "[DEBUG]" do Verificador de Duplicidade).
+// Por padrão fica DESATIVADO para não poluir o console de todos os usuários.
+// Cada técnico pode ativar/desativar no console da página do SGD (F12):
+//   sgdDebug.ativar()     → liga os logs (persiste entre recarregamentos)
+//   sgdDebug.desativar()  → desliga os logs
+//   sgdDebug.status()     → mostra o estado atual
+const SGD_DEBUG_STORAGE_KEY = 'sgdDebugLogsEnabled'
+
+// Valor em memória usado pelas funções sgdLog/sgdWarn/sgdError. Começa como
+// false e é atualizado assim que a leitura do storage (abaixo) resolver, e
+// também ao vivo caso outra aba altere o valor (chrome.storage.onChanged).
+let sgdDebugLogsEnabled = false
+
+chrome.storage.local.get([SGD_DEBUG_STORAGE_KEY]).then(res => {
+  sgdDebugLogsEnabled = res[SGD_DEBUG_STORAGE_KEY] === true
+}).catch(() => {})
+
+if (chrome.storage && chrome.storage.onChanged) {
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && Object.prototype.hasOwnProperty.call(changes, SGD_DEBUG_STORAGE_KEY)) {
+      sgdDebugLogsEnabled = changes[SGD_DEBUG_STORAGE_KEY].newValue === true
+    }
+  })
+}
+
+/** Log de debug da extensão — só aparece se sgdDebug.ativar() tiver sido chamado. */
+function sgdLog(...args) {
+  if (sgdDebugLogsEnabled) console.log(...args)
+}
+/** Warn de debug da extensão — só aparece se sgdDebug.ativar() tiver sido chamado. */
+function sgdWarn(...args) {
+  if (sgdDebugLogsEnabled) console.warn(...args)
+}
+/** Error de debug da extensão — só aparece se sgdDebug.ativar() tiver sido chamado. */
+function sgdError(...args) {
+  if (sgdDebugLogsEnabled) console.error(...args)
+}
+
+window.sgdDebug = {
+  ativar() {
+    sgdDebugLogsEnabled = true
+    chrome.storage.local.set({ [SGD_DEBUG_STORAGE_KEY]: true })
+    console.log('%c[SGD PowerTools] Logs de debug ATIVADOS nesta e nas próximas sessões. Recarregue a página se algo não aparecer.', 'color: #22c55e; font-weight: bold;')
+  },
+  desativar() {
+    sgdDebugLogsEnabled = false
+    chrome.storage.local.set({ [SGD_DEBUG_STORAGE_KEY]: false })
+    console.log('%c[SGD PowerTools] Logs de debug DESATIVADOS.', 'color: #ef4444; font-weight: bold;')
+  },
+  status() {
+    console.log(`[SGD PowerTools] Logs de debug estão ${sgdDebugLogsEnabled ? 'ATIVADOS ✅' : 'DESATIVADOS ⛔'}.`)
+    return sgdDebugLogsEnabled
+  }
+}
+
 const DEV_MODE_KEY = 'developerModeEnabled'
 const DATA_VERSION = 3
 const STORAGE_KEY = 'quickMessagesData'

@@ -4,7 +4,6 @@
  * dentro de um período de 60 dias.
  */
 
-const DEBUG_ENABLED = true
 const DUPLICATE_CHECKER_MAX_DAYS = 60
 
 const COMPARA_STOP_WORDS = new Set([
@@ -20,9 +19,9 @@ const CACHE_TTL_MS = 10 * 60 * 1000 // 10 minutos de cache
 const CACHE_KEY = 'sgd_ssc_duplicate_cache'
 
 function logDebug(...args) {
-  if (DEBUG_ENABLED) {
-    console.log(...args)
-  }
+  // Controlado pelo gate global sgdDebug (ver config.js). Desativado por
+  // padrão — o técnico ativa no console da página com sgdDebug.ativar().
+  sgdLog(...args)
 }
 
 async function obterCandidatosDoCache(clienteId) {
@@ -212,7 +211,7 @@ async function buscarDocumentoSSCsPendentes(clienteId) {
   }
 
   logDebug('[RESTORE-DEBUG] Payload do POST de restauração (desconsiderando ViewState):')
-  if (DEBUG_ENABLED) {
+  if (sgdDebugLogsEnabled) {
     for (const [k, v] of paramsRestauracao.entries()) {
       if (k === 'javax.faces.ViewState') continue
       console.log(`[RESTORE-DEBUG]   ${k} = ${JSON.stringify(v)}`)
@@ -233,9 +232,7 @@ async function buscarDocumentoSSCsPendentes(clienteId) {
     logDebug('[RESTORE-DEBUG]   relSscForm:unidadeNome no doc restaurado =',
       JSON.stringify(docRestauracao.getElementById('relSscForm:unidadeNome')?.value))
   } catch (e) {
-    if (DEBUG_ENABLED) {
-      console.warn('[RESTORE-DEBUG] Erro no POST de restauração:', e)
-    }
+    sgdWarn('[RESTORE-DEBUG] Erro no POST de restauração:', e)
   }
 
   return docVerificacao

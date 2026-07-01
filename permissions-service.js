@@ -1637,13 +1637,21 @@
     const userId = window.sgdPermissions?.currentUserId
     const devData = await chrome.storage.local.get(['developerModeEnabled'])
     const isDevMode = devData.developerModeEnabled === true
-    
+
+    sgdLog('[IAgente Access] Iniciando verificação. userName:', userName, '| userId (currentUserId):', userId, '| isDevMode:', isDevMode, '| isMaster:', window.sgdPermissions?.isMaster)
+
     // Se for Master/Dev, sempre tem acesso (bypass)
-    if (isDevMode || (window.sgdPermissions?.isMaster)) return true
-    
-    if (!userName) return false
+    if (isDevMode || (window.sgdPermissions?.isMaster)) {
+      sgdLog('[IAgente Access] Bypass concedido (Dev Mode ou Master).')
+      return true
+    }
+
+    if (!userName) {
+      sgdWarn('[IAgente Access] Negado: currentUser não capturado (userName vazio).')
+      return false
+    }
     const normalizedUser = normalizeName(userName)
-    
+
     // 1. Verificar no Firebase se o usuário individual está desativado ou
     //    liberado manualmente (override que ignora o bloqueio por unidade)
     let isIndividualDisabled = false
@@ -1655,45 +1663,62 @@
       isIndividualDisabled = matchedEditor.iagenteDisabled === true
       isIndividuallyEnabled = matchedEditor.iagenteIA_Enabled === true
       userUnidade = matchedEditor.unidade
+      sgdLog('[IAgente Access] Registro encontrado em EDITORES. id:', matchedEditor.id, '| iagenteDisabled:', matchedEditor.iagenteDisabled, '| iagenteIA_Enabled:', matchedEditor.iagenteIA_Enabled, '| unidade:', matchedEditor.unidade)
     } else {
       const matchedViewer = await matchViewerRecord(userId, userName, normalizedUser)
       if (matchedViewer) {
         isIndividualDisabled = matchedViewer.iagenteDisabled === true
         isIndividuallyEnabled = matchedViewer.iagenteIA_Enabled === true
         userUnidade = matchedViewer.unidade
+        sgdLog('[IAgente Access] Registro encontrado em VISUALIZADORES. id:', matchedViewer.id, '| iagenteDisabled:', matchedViewer.iagenteDisabled, '| iagenteIA_Enabled:', matchedViewer.iagenteIA_Enabled, '| unidade:', matchedViewer.unidade)
+      } else {
+        sgdWarn('[IAgente Access] Nenhum registro encontrado em editores nem visualizadores para userId:', userId, '/ nome:', userName, '— provavelmente caiu no fallback de lista cacheada (até 12h) e não achou o registro lá. Verifique se o ID usado ao ativar no painel bate com este userId.')
       }
     }
 
-    if (isIndividualDisabled) return false
+    if (isIndividualDisabled) {
+      sgdLog('[IAgente Access] Negado: bloqueado individualmente (iagenteDisabled=true).')
+      return false
+    }
 
     // Liberação manual individual: ignora a allowlist de unidades
-    if (isIndividuallyEnabled) return true
+    if (isIndividuallyEnabled) {
+      sgdLog('[IAgente Access] Concedido: liberação manual individual (iagenteIA_Enabled=true), ignorando unidade.')
+      return true
+    }
 
     // 2. Se não temos a unidade cadastrada no matched record, pega do cache local
     if (!userUnidade) {
       const cachedUserInfo = await chrome.storage.local.get(['userUnidade'])
       userUnidade = cachedUserInfo.userUnidade
+      sgdLog('[IAgente Access] Unidade não veio do registro, usando cache local (userUnidade):', userUnidade)
     }
-    
+
     // Se a unidade não foi capturada ou está vazia, não libera o IAgente
     if (!userUnidade || userUnidade.trim() === '' || userUnidade.trim() === 'Unidade não capturada') {
+      sgdWarn('[IAgente Access] Negado: unidade não capturada.')
       return false
     }
-    
+
     if (userUnidade) {
       const trimmedUnit = userUnidade.trim().toLowerCase()
-      
+
       // 3. Verificar se a unidade do usuário está na lista de unidades liberadas (Allowlist)
       const localConfig = await chrome.storage.local.get(['remoteConfig'])
       const remoteConfig = localConfig.remoteConfig || {}
       const enabledUnidades = remoteConfig.iagente_enabled_unidades || []
-      
-      const isUnitEnabled = enabledUnidades.some(enabledUnit => 
+
+      const isUnitEnabled = enabledUnidades.some(enabledUnit =>
         trimmedUnit === enabledUnit.trim().toLowerCase()
       )
-      if (!isUnitEnabled) return false
+      sgdLog('[IAgente Access] Checando unidade "' + userUnidade + '" contra allowlist:', enabledUnidades, '| liberada:', isUnitEnabled)
+      if (!isUnitEnabled) {
+        sgdWarn('[IAgente Access] Negado: unidade não está na allowlist (iagente_enabled_unidades).')
+        return false
+      }
     }
-    
+
+    sgdLog('[IAgente Access] Concedido: unidade liberada na allowlist.')
     return true
   }
 

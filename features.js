@@ -771,7 +771,7 @@ function handleAISuggestSAM() {
 function _buscarESugerirSAM(conteudo, veioDoAtendimento) {
   showNotification('Buscando SAMs similares... 🔍', 'info', 10000)
 
-  console.log('[SugerirSAM] Enviando buscarSAMSimilares ao service worker.', {
+  sgdLog('[SugerirSAM] Enviando buscarSAMSimilares ao service worker.', {
     veioDoAtendimento,
     conteudoLength: conteudo?.length ?? 0
   })
@@ -816,7 +816,7 @@ function _buscarESugerirSAM(conteudo, veioDoAtendimento) {
       clearTimeout(timeoutId)
       chrome.runtime.onMessage.removeListener(onBusca)
 
-      console.log('[SugerirSAM] buscaSAMCompleta recebido. Tamanho da resposta:', message.data?.length ?? 0)
+      sgdLog('[SugerirSAM] buscaSAMCompleta recebido. Tamanho da resposta:', message.data?.length ?? 0)
 
       // Desativa loading
       if (btnSAM) {
