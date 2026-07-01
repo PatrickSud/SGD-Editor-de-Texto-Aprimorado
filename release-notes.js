@@ -1,4 +1,11 @@
 const RELEASE_NOTES = {
+  '3.0.6.2': {
+    title: '🚀 Ajustes e Otimizações — Versão 3.0.6.2',
+    features: [
+      '<b>🤖 Verificação de Duplicidade:</b> Otimizado o período de busca para 60 dias, adicionado cache local de 10 minutos por cliente, desconsideração de termos genéricos (stop-words) na comparação e interrupção precoce na leitura da tabela.',
+      '<b>⚙️ Console de Debug:</b> Ocultado o hash do ViewState e mensagens verbosas do console, com a inclusão de um relatório estruturado de candidatos quando o modo de depuração estiver ativo.'
+    ]
+  },
   '3.0.6.1': {
     title: '🐛 Ajustes — Versão 3.0.6.1',
     features: [

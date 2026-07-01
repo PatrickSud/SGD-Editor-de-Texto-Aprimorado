@@ -1,14 +1,67 @@
 /**
  * @file duplicate-checker.js
  * Verificador automático de SSCs com assunto parecido, do mesmo cliente,
- * dentro de um período de 90 dias.
+ * dentro de um período de 60 dias.
  */
 
-const DEBUG_ENABLED = false
+const DEBUG_ENABLED = true
+const DUPLICATE_CHECKER_MAX_DAYS = 60
+
+const COMPARA_STOP_WORDS = new Set([
+  'erro', 'erros', 'sistema', 'sistemas', 'suporte', 'problema', 'problemas',
+  'ajuda', 'duvida', 'duvidas', 'cliente', 'clientes', 'favor', 'urgente',
+  'solicitacao', 'solicitacoes', 'atendimento', 'atendimentos', 'chamado',
+  'chamados', 'cadastro', 'cadastros', 'configuracao',
+  'configuracoes', 'verificacao', 'mensagem', 'mensagens',
+  'usuario', 'usuarios', 'modulo', 'modulos', 'dados'
+])
+
+const CACHE_TTL_MS = 10 * 60 * 1000 // 10 minutos de cache
+const CACHE_KEY = 'sgd_ssc_duplicate_cache'
 
 function logDebug(...args) {
   if (DEBUG_ENABLED) {
     console.log(...args)
+  }
+}
+
+async function obterCandidatosDoCache(clienteId) {
+  try {
+    const result = await chrome.storage.local.get(CACHE_KEY)
+    const cache = result[CACHE_KEY] || {}
+    const entry = cache[clienteId]
+    if (entry && (Date.now() - entry.timestamp) < CACHE_TTL_MS) {
+      logDebug(`[DEBUG] Cache HIT para o cliente ${clienteId}. Usando candidatos do cache.`)
+      return entry.candidatos
+    }
+  } catch (err) {
+    logDebug('[DEBUG] Erro ao ler do cache:', err)
+  }
+  return null
+}
+
+async function salvarCandidatosNoCache(clienteId, candidatos) {
+  try {
+    const result = await chrome.storage.local.get(CACHE_KEY)
+    const cache = result[CACHE_KEY] || {}
+
+    // Remove registros expirados para economizar espaço
+    const agora = Date.now()
+    for (const id in cache) {
+      if (agora - cache[id].timestamp >= CACHE_TTL_MS) {
+        delete cache[id]
+      }
+    }
+
+    cache[clienteId] = {
+      candidatos,
+      timestamp: agora
+    }
+
+    await chrome.storage.local.set({ [CACHE_KEY]: cache })
+    logDebug(`[DEBUG] Candidatos salvos no cache para o cliente ${clienteId}.`)
+  } catch (err) {
+    logDebug('[DEBUG] Erro ao salvar no cache:', err)
   }
 }
 
@@ -27,7 +80,7 @@ function normalizarTextoSSC(str) {
 function extrairPalavrasChaveSSC(texto) {
   return normalizarTextoSSC(texto)
     .split(/[\s\-\/]+/)
-    .filter(palavra => palavra.length > 4)
+    .filter(palavra => palavra.length > 4 && !COMPARA_STOP_WORDS.has(palavra))
 }
 
 function calcularSimilaridadeSSC(assuntoAtual, assuntoCandidato) {
@@ -146,7 +199,6 @@ async function buscarDocumentoSSCsPendentes(clienteId) {
   // 3. POST de restauração: devolve a sessão ao estado real do usuário.
   // Usa o ViewState retornado pela verificação (o anterior foi consumido pelo JSF).
   const viewStateAtualizado = docVerificacao.querySelector('[name="javax.faces.ViewState"]')?.value
-  logDebug('[RESTORE-DEBUG] ViewState após verificação:', JSON.stringify(viewStateAtualizado))
 
   const paramsRestauracao = new URLSearchParams(formEstado ? new FormData(formEstado) : {})
   paramsRestauracao.set('relSscForm:clientes', clientesOriginal)
@@ -159,9 +211,10 @@ async function buscarDocumentoSSCsPendentes(clienteId) {
     paramsRestauracao.set('javax.faces.ViewState', viewStateAtualizado)
   }
 
-  logDebug('[RESTORE-DEBUG] Payload do POST de restauração:')
+  logDebug('[RESTORE-DEBUG] Payload do POST de restauração (desconsiderando ViewState):')
   if (DEBUG_ENABLED) {
     for (const [k, v] of paramsRestauracao.entries()) {
+      if (k === 'javax.faces.ViewState') continue
       console.log(`[RESTORE-DEBUG]   ${k} = ${JSON.stringify(v)}`)
     }
   }
@@ -194,27 +247,53 @@ async function buscarDocumentoSSCsPendentes(clienteId) {
 
 function lerResultadosTabelaSSC(doc, sscAtualId) {
   const linhas = doc.querySelectorAll('table.tableSorter tbody tr')
+  logDebug(`[DEBUG] Encontradas ${linhas.length} linhas na tabela table.tableSorter`)
+
+  // Detecta se a tabela está ordenada de forma crescente pelo número de dias
+  let anteriorDias = -1
+  let ordenadoPorDiasCrescente = true
+  for (const tr of linhas) {
+    const diasTd = tr.querySelector('td[id^="td:dias_"]')
+    if (!diasTd) continue
+    const dias = parseInt(diasTd.textContent.trim(), 10)
+    if (isNaN(dias)) continue
+    if (anteriorDias !== -1 && dias < anteriorDias) {
+      ordenadoPorDiasCrescente = false
+      break
+    }
+    anteriorDias = dias
+  }
+  logDebug(`[DEBUG] Tabela ordenada por dias crescente: ${ordenadoPorDiasCrescente}`)
+
   const candidatos = []
 
-  linhas.forEach(tr => {
+  for (const tr of linhas) {
     const diasTd = tr.querySelector('td[id^="td:dias_"]')
     const assuntoTd = tr.querySelector('td[id^="td:assunto_"]')
-    if (!diasTd || !assuntoTd) return
+    if (!diasTd || !assuntoTd) continue
 
     const dias = parseInt(diasTd.textContent.trim(), 10)
-    if (isNaN(dias) || dias > 90) return
+    if (isNaN(dias)) continue
+
+    if (dias > DUPLICATE_CHECKER_MAX_DAYS) {
+      if (ordenadoPorDiasCrescente) {
+        logDebug(`[DEBUG] Interrupção precoce da varredura na linha com ${dias} dias (limite: ${DUPLICATE_CHECKER_MAX_DAYS})`)
+        break
+      }
+      continue
+    }
 
     const link = assuntoTd.querySelector('a')
-    if (!link) return
+    if (!link) continue
 
-    if (sscAtualId && link.href.includes(`ssc=${sscAtualId}`)) return
+    if (sscAtualId && link.href.includes(`ssc=${sscAtualId}`)) continue
 
     candidatos.push({
       assunto: link.textContent.trim(),
       href: link.href,
       dias
     })
-  })
+  }
 
   return candidatos
 }
@@ -408,19 +487,45 @@ async function iniciarVerificacaoDuplicidadeSSC() {
     logDebug('[DEBUG] clienteId:', clienteId, '| sscAtualId:', sscAtualId, '| assuntoAtual:', assuntoAtual)
 
     try {
-      const doc = await buscarDocumentoSSCsPendentes(clienteId)
-      const candidatos = lerResultadosTabelaSSC(doc, sscAtualId)
+      let candidatos = await obterCandidatosDoCache(clienteId)
 
-      if (candidatos.length === 0) return
+      if (!candidatos) {
+        const doc = await buscarDocumentoSSCsPendentes(clienteId)
+        // Passamos null para lerResultadosTabelaSSC para obter todos os candidatos do cliente
+        // e salvá-los no cache de forma genérica.
+        candidatos = lerResultadosTabelaSSC(doc, null)
+        await salvarCandidatosNoCache(clienteId, candidatos)
+      }
+
+      // Filtra o sscAtualId da busca para a comparação do caso atual
+      const candidatosElegiveis = candidatos.filter(c => !(sscAtualId && c.href.includes(`ssc=${sscAtualId}`)))
+      logDebug('[DEBUG] Candidatos elegíveis coletados para comparação:', candidatosElegiveis)
+
+      if (candidatosElegiveis.length === 0) {
+        logDebug('[DEBUG] Nenhum candidato elegível encontrado para comparação.')
+        return
+      }
 
       let resultados = []
       try {
-        const indicesParecidos = await compararSSCsComIA(assuntoAtual, candidatos)
-        resultados = indicesParecidos.map(i => candidatos[i]).filter(Boolean)
+        const indicesParecidos = await compararSSCsComIA(assuntoAtual, candidatosElegiveis)
+        resultados = indicesParecidos.map(i => candidatosElegiveis[i]).filter(Boolean)
+        logDebug('[DEBUG] Resultados parecidos identificados pela IA:', resultados)
       } catch (erroIA) {
         console.error('[Verificador de Duplicidade] Erro na comparação por IA. Usando fallback por palavras-chave:', erroIA)
-        resultados = candidatos.filter(c => calcularSimilaridadeSSC(assuntoAtual, c.assunto))
+        resultados = candidatosElegiveis.filter(c => calcularSimilaridadeSSC(assuntoAtual, c.assunto))
+        logDebug('[DEBUG] Resultados parecidos identificados pelo fallback:', resultados)
       }
+
+      const relatorio = candidatosElegiveis.map(c => {
+        const ehValido = resultados.some(r => r.href === c.href)
+        return {
+          assunto: c.assunto,
+          dias: c.dias,
+          statusParaOUsuario: ehValido ? '⚠️ VÁLIDO (Apresentado no Widget)' : '✅ IGNORADO (Diferente)'
+        }
+      })
+      logDebug('[DEBUG] Relatório de Comparação de Candidatos:', relatorio)
 
       if (resultados.length > 0) {
         exibirWidgetDuplicidadeSSC(resultados)
