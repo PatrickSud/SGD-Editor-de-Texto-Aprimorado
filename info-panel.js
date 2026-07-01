@@ -4861,6 +4861,33 @@ async function loadAccessControl(sectionElement) {
       return { active: true, reason: 'Ativo' }
     }
 
+    const checkUserDuplicateAccessStatus = (user) => {
+      // Editores Master genuínos sempre têm acesso bypass
+      if (user.role === 'master') {
+        return { active: true, reason: 'Master' }
+      }
+
+      if (user.duplicateIA_Enabled === true) {
+        return { active: true, reason: 'Ativo individualmente' }
+      }
+      if (user.duplicateIA_Disabled === true) {
+        return { active: false, reason: 'Bloqueado individualmente' }
+      }
+      
+      const unit = user.unidade ? user.unidade.trim() : ''
+      if (!unit || unit === '' || unit === 'Unidade não capturada') {
+        return { active: false, reason: 'Unidade não capturada' }
+      }
+      
+      const enabledUnidades = remoteConfig.duplicate_enabled_unidades || []
+      const isUnitEnabled = enabledUnidades.some(eu => eu.trim().toLowerCase() === unit.toLowerCase())
+      if (!isUnitEnabled) {
+        return { active: false, reason: 'Unidade não liberada' }
+      }
+      
+      return { active: true, reason: 'Ativo' }
+    }
+
     const resolveUserRegion = (user) => {
       if (user.regiao === 'sul' || user.regiao === 'sudeste') {
         return user.regiao
@@ -4995,6 +5022,25 @@ async function loadAccessControl(sectionElement) {
           </span>
         `
 
+      const duplicateAccessStatus = checkUserDuplicateAccessStatus(editor)
+      const duplicateBtnHtml = isMaster
+        ? `
+          <button class="action-btn small-btn ac-toggle-duplicados-btn" 
+            data-user-id="${escapeHTML(editor.id)}" 
+            data-is-editor="true" 
+            data-current-status="${duplicateAccessStatus.active}"
+            style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: 1px solid var(--border-color); background: ${duplicateAccessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-red, #ef4444)'}; color: white; cursor: pointer; border-radius: 4px; margin-left: 4px;"
+            title="${duplicateAccessStatus.active ? 'Ativo' : 'Inativo: ' + duplicateAccessStatus.reason}">
+            ${duplicateAccessStatus.active ? '🔍 Duplicados: Ativo' : '🔍 Duplicados: ' + duplicateAccessStatus.reason}
+          </button>
+        `
+        : `
+          <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: ${duplicateAccessStatus.active ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)'}; border: 1px solid var(--border-color); color: ${duplicateAccessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-red, #ef4444)'}; font-weight: 600; margin-left: 4px;"
+            title="${duplicateAccessStatus.active ? 'Ativo' : 'Inativo: ' + duplicateAccessStatus.reason}">
+            ${duplicateAccessStatus.active ? '🔍 Duplicados: Ativo' : '🔍 Duplicados: ' + duplicateAccessStatus.reason}
+          </span>
+        `
+
       const resolvedRegion = resolveUserRegion(editor)
       const regionSelectorHtml = (isMaster && accessStatus.active)
         ? `
@@ -5034,6 +5080,7 @@ async function loadAccessControl(sectionElement) {
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
               ${iagenteBtnHtml}
+              ${duplicateBtnHtml}
               ${regionSelectorHtml}
               ${teamBtnHtml}
               ${roleSelectorHtml}
@@ -5121,6 +5168,25 @@ async function loadAccessControl(sectionElement) {
           </span>
         `
 
+      const duplicateAccessStatus = checkUserDuplicateAccessStatus(viewer)
+      const duplicateBtnHtml = isMaster
+        ? `
+          <button class="action-btn small-btn ac-toggle-duplicados-btn" 
+            data-user-id="${escapeHTML(viewer.id)}" 
+            data-is-editor="false" 
+            data-current-status="${duplicateAccessStatus.active}"
+            style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: 1px solid var(--border-color); background: ${duplicateAccessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-red, #ef4444)'}; color: white; cursor: pointer; border-radius: 4px; margin-left: 4px;"
+            title="${duplicateAccessStatus.active ? 'Ativo' : 'Inativo: ' + duplicateAccessStatus.reason}">
+            ${duplicateAccessStatus.active ? '🔍 Duplicados: Ativo' : '🔍 Duplicados: ' + duplicateAccessStatus.reason}
+          </button>
+        `
+        : `
+          <span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: ${duplicateAccessStatus.active ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)'}; border: 1px solid var(--border-color); color: ${duplicateAccessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-red, #ef4444)'}; font-weight: 600; margin-left: 4px;"
+            title="${duplicateAccessStatus.active ? 'Ativo' : 'Inativo: ' + duplicateAccessStatus.reason}">
+            ${duplicateAccessStatus.active ? '🔍 Duplicados: Ativo' : '🔍 Duplicados: ' + duplicateAccessStatus.reason}
+          </span>
+        `
+
       const resolvedRegion = resolveUserRegion(viewer)
       const regionSelectorHtml = (isMaster && accessStatus.active)
         ? `
@@ -5152,6 +5218,7 @@ async function loadAccessControl(sectionElement) {
             </div>
             <div style="display: flex; gap: 8px; align-items: center;">
               ${iagenteBtnHtml}
+              ${duplicateBtnHtml}
               ${regionSelectorHtml}
             </div>
           </div>
@@ -5273,6 +5340,7 @@ async function loadAccessControl(sectionElement) {
             <button id="ac-edit-tabs-btn" class="action-btn secondary-btn compact" title="Editar conteúdo das guias" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">📝 Editar Guias</button>
             <button id="ac-config-channels-btn" class="action-btn secondary-btn compact" title="Configurar canais disponíveis" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">⚙️ Canais</button>
             <button id="ac-config-iagente-btn" class="action-btn secondary-btn compact" title="Configurar IAgente por Unidades" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">🤖 IAgente</button>
+            <button id="ac-config-duplicados-btn" class="action-btn secondary-btn compact" title="Configurar Verificador de Duplicidade IA por Unidades" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">🔍 Duplicados IA</button>
             <button id="ac-audit-logs-btn" class="action-btn secondary-btn compact" title="Ver logs de auditoria" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">📋 Auditoria</button>
           ` : ''}
           <button id="ac-refresh-btn" class="action-btn secondary-btn compact" title="Atualizar lista" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">🔄 Atualizar</button>
@@ -6159,6 +6227,33 @@ async function loadAccessControl(sectionElement) {
       })
     })
 
+    // Alterna o status do Duplicados IA individual
+    container.querySelectorAll('.ac-toggle-duplicados-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        
+        const userId = btn.dataset.userId
+        const isEditor = btn.dataset.isEditor === 'true'
+        const currentStatus = btn.dataset.currentStatus === 'true'
+        const row = btn.closest('.ip-access-editor-row') || btn.closest('.ip-access-viewer-row')
+        const userName = row ? row.querySelector('.ip-access-editor-name').textContent.trim().split('\n')[0] : 'Usuário'
+        
+        btn.disabled = true
+        btn.textContent = 'Aguarde...'
+        
+        const success = await window.sgdPermissions.toggleUserDuplicateIA(userId, isEditor, currentStatus)
+        if (success) {
+          showNotification(`Acesso de "${userName}" ao Duplicados IA ${!currentStatus ? 'desativado' : 'ativado'}!`, 'success')
+          loadAccessControl(sectionElement)
+        } else {
+          showNotification('Erro ao alterar acesso do Duplicados IA.', 'error')
+          btn.disabled = false
+          btn.textContent = currentStatus ? '🔍 Duplicados: Bloqueado' : '🔍 Duplicados: Ativo'
+        }
+      })
+    })
+
     // Botão de Configuração do IAgente
     const configIAgenteBtn = container.querySelector('#ac-config-iagente-btn')
     if (configIAgenteBtn) {
@@ -6175,6 +6270,26 @@ async function loadAccessControl(sectionElement) {
         } finally {
           configIAgenteBtn.disabled = false
           configIAgenteBtn.textContent = origText
+        }
+      })
+    }
+
+    // Botão de Configuração do Duplicados IA
+    const configDuplicadosBtn = container.querySelector('#ac-config-duplicados-btn')
+    if (configDuplicadosBtn) {
+      configDuplicadosBtn.addEventListener('click', async (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        configDuplicadosBtn.disabled = true
+        const origText = configDuplicadosBtn.textContent
+        configDuplicadosBtn.textContent = 'Carregando...'
+        try {
+          await openConfigDuplicateModal(sectionElement)
+        } catch (err) {
+          alert('Erro ao abrir configurações de Duplicados: ' + err.message)
+        } finally {
+          configDuplicadosBtn.disabled = false
+          configDuplicadosBtn.textContent = origText
         }
       })
     }
@@ -6724,6 +6839,234 @@ async function openConfigIAgenteModal(sectionElement) {
       const success = await window.sgdPermissions.saveRemoteConfig(updatedConfig)
       if (success) {
         showNotification('Configurações do IAgente atualizadas com sucesso!', 'success')
+        cleanup()
+        if (sectionElement) loadAccessControl(sectionElement)
+      } else {
+        alert('Erro ao salvar as configurações. Tente novamente.')
+        saveBtn.disabled = false
+        saveBtn.textContent = 'Salvar Alterações'
+      }
+    })
+  }
+}
+
+async function openConfigDuplicateModal(sectionElement) {
+  // 1. Carrega as configurações remotas
+  const localData = await chrome.storage.local.get(['remoteConfig'])
+  const remoteConfig = localData.remoteConfig || {}
+  
+  let enabledUnits = remoteConfig.duplicate_enabled_unidades ? [...remoteConfig.duplicate_enabled_unidades] : []
+  
+  // 2. Coleta todas as unidades mapeadas na base local (editors e viewers) e calcula a contagem de usuários por unidade
+  const uniqueUnits = new Set()
+  const editors = window.sgdPermissions.editorsList || []
+  const viewers = window.sgdPermissions.viewersList || []
+  const unitUserCount = {}
+  
+  editors.forEach(e => { 
+    if (e.unidade) {
+      const u = e.unidade.trim()
+      uniqueUnits.add(u)
+      unitUserCount[u] = (unitUserCount[u] || 0) + 1
+    }
+  })
+  viewers.forEach(v => { 
+    if (v.unidade) {
+      const u = v.unidade.trim()
+      uniqueUnits.add(u)
+      unitUserCount[u] = (unitUserCount[u] || 0) + 1
+    }
+  })
+  
+  // Adiciona também as unidades que já estão no array de ativas para garantir que apareçam
+  enabledUnits.forEach(u => { if (u) uniqueUnits.add(u.trim()) })
+  
+  const sortedUnits = Array.from(uniqueUnits).sort((a, b) => a.localeCompare(b))
+  
+  function renderUnitsList(modalBody, filterText = '') {
+    const listDiv = modalBody.querySelector('#cdu-units-list')
+    if (!listDiv) return
+    
+    const filtered = sortedUnits.filter(u => u.toLowerCase().includes(filterText.toLowerCase()))
+    
+    if (filtered.length === 0) {
+      listDiv.innerHTML = '<p style="color: var(--text-color-muted); font-size: 11px; margin: 8px 0;">Nenhuma unidade encontrada.</p>'
+      return
+    }
+    
+    listDiv.innerHTML = filtered.map((unit, idx) => {
+      const isAllowed = enabledUnits.some(eu => eu.trim().toLowerCase() === unit.trim().toLowerCase())
+      const cbId = `cdu-unit-cb-${idx}`
+      const count = unitUserCount[unit] || 0
+      const usersLabel = count === 1 ? '1 usuário' : `${count} usuários`
+      
+      return `
+        <div class="cdu-unit-row" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-bottom: 1px solid var(--border-color); font-size: 12px; color: var(--text-color-main);">
+          <span style="font-weight: 500;">
+            ${escapeHTML(unit)}
+            <span style="font-size: 10px; color: var(--text-color-muted); font-weight: normal; margin-left: 6px; background: var(--background-secondary); padding: 2px 6px; border-radius: 10px;">
+              ${usersLabel}
+            </span>
+          </span>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="display: flex; align-items: center; position: relative;">
+              <input type="checkbox" class="cdu-unit-checkbox" id="${cbId}" data-unit="${escapeHTML(unit)}" ${isAllowed ? 'checked' : ''}>
+              <label for="${cbId}" style="font-size: 11px; cursor: pointer; color: var(--text-color-main); padding-left: 26px; min-height: 18px; margin: 0; position: relative; display: inline-flex; align-items: center;">
+                Liberar
+              </label>
+            </div>
+          </div>
+        </div>
+      `
+    }).join('')
+    
+    // Bind click/change listener on checkboxes
+    listDiv.querySelectorAll('.cdu-unit-checkbox').forEach(cb => {
+      cb.addEventListener('click', e => e.stopPropagation())
+      cb.addEventListener('change', () => {
+        const unitName = cb.dataset.unit
+        const checked = cb.checked
+        if (checked) {
+          if (!enabledUnits.some(eu => eu.toLowerCase() === unitName.toLowerCase())) {
+            enabledUnits.push(unitName)
+          }
+        } else {
+          enabledUnits = enabledUnits.filter(eu => eu.toLowerCase() !== unitName.toLowerCase())
+        }
+      })
+    })
+  }
+  
+  const modalHtml = `
+    <div style="padding: 10px; max-height: 520px; display: flex; flex-direction: column; width: 440px; box-sizing: border-box;">
+      <p style="font-size: 12px; color: var(--text-color-muted); margin-bottom: 15px; margin-top: 0;">
+        Controle o acesso do Verificador de Duplicidade por IA liberando por unidade de atendimento do SGD. Por padrão, todas as unidades iniciam bloqueadas.
+      </p>
+      
+      <!-- Seção de Filtro e Busca -->
+      <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
+        <input type="text" id="cdu-search-units" placeholder="🔎 Pesquisar unidade mapeada..." style="flex: 1; padding: 6px 10px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
+      </div>
+
+      <!-- Formulário para adicionar unidade personalizada -->
+      <div style="display: flex; gap: 6px; margin-bottom: 10px; padding: 6px; background: var(--background-secondary, #f9fafb); border: 1px solid var(--border-color); border-radius: 4px; align-items: center;">
+        <input type="text" id="cdu-custom-unit" placeholder="Outra unidade (Ex: Filial Campinas)..." style="flex: 1; padding: 5px 8px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
+        <button id="cdu-add-custom-btn" class="action-btn small-btn" style="background: var(--primary-color, #6366f1); color: white; border: none; padding: 5px 10px; cursor: pointer; font-size: 11px; border-radius: 4px; font-weight: bold; white-space: nowrap;">Liberar Unidade</button>
+      </div>
+
+      <!-- Lista de Unidades -->
+      <div style="flex: 1; overflow-y: auto; max-height: 250px; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 6px;" id="cdu-units-list-container">
+        <div id="cdu-units-list"></div>
+      </div>
+      
+      <!-- Footer do Modal -->
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+        <button id="cdu-cancel-btn" class="action-btn secondary-btn compact" style="padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer; font-size: 12px;">Cancelar</button>
+        <button id="cdu-save-btn" class="action-btn small-btn" style="background: var(--action-green, #22c55e); color: white; border: none; padding: 6px 16px; cursor: pointer; font-size: 12px; border-radius: 4px; font-weight: bold;">Salvar Alterações</button>
+      </div>
+    </div>
+  `
+  
+  const modal = createModal(
+    'Configurar Duplicados por Unidades',
+    modalHtml,
+    null,
+    {
+      isManagementModal: false,
+      modalId: 'config-duplicate-units-modal',
+      showShareButton: false
+    }
+  )
+  
+  const defaultActions = modal.querySelector('.se-modal-actions')
+  if (defaultActions) defaultActions.remove()
+  
+  modal.style.zIndex = '10003'
+  document.body.appendChild(modal)
+  
+  const modalBody = modal.querySelector('.se-modal-body') || modal
+  renderUnitsList(modalBody)
+  
+  // Custom unit input and button logic
+  const customUnitInput = modal.querySelector('#cdu-custom-unit')
+  const addCustomBtn = modal.querySelector('#cdu-add-custom-btn')
+  
+  if (customUnitInput) {
+    customUnitInput.addEventListener('click', e => e.stopPropagation())
+    customUnitInput.addEventListener('keydown', e => {
+      e.stopPropagation()
+      if (e.key === 'Enter') {
+        addCustomBtn.click()
+      }
+    })
+  }
+  
+  if (addCustomBtn) {
+    addCustomBtn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const newUnit = customUnitInput ? customUnitInput.value.trim() : ''
+      if (!newUnit) {
+        alert('Por favor, digite o nome da unidade para liberar.')
+        return
+      }
+      
+      // Adiciona na lista geral se não existir
+      if (!sortedUnits.includes(newUnit)) {
+        sortedUnits.push(newUnit)
+        sortedUnits.sort((a, b) => a.localeCompare(b))
+      }
+      
+      // Adiciona na lista de liberados se não estiver lá
+      if (!enabledUnits.some(eu => eu.toLowerCase() === newUnit.toLowerCase())) {
+        enabledUnits.push(newUnit)
+      }
+      
+      if (customUnitInput) customUnitInput.value = ''
+      
+      const searchInput = modal.querySelector('#cdu-search-units')
+      const searchVal = searchInput ? searchInput.value.trim() : ''
+      renderUnitsList(modalBody, searchVal)
+      showNotification(`Unidade "${newUnit}" adicionada e liberada!`, 'success')
+    })
+  }
+  
+  // Search input filter logic
+  const searchUnitsInput = modal.querySelector('#cdu-search-units')
+  if (searchUnitsInput) {
+    searchUnitsInput.addEventListener('click', e => e.stopPropagation())
+    searchUnitsInput.addEventListener('keydown', e => e.stopPropagation())
+    searchUnitsInput.addEventListener('input', () => {
+      const text = searchUnitsInput.value.trim()
+      renderUnitsList(modalBody, text)
+    })
+  }
+  
+  // Cancel and Close listeners
+  const cleanup = () => modal.remove()
+  const cancelBtn = modal.querySelector('#cdu-cancel-btn')
+  const xBtn = modal.querySelector('.se-close-modal-btn')
+  
+  if (cancelBtn) cancelBtn.addEventListener('click', (e) => { e.stopPropagation(); cleanup(); })
+  if (xBtn) xBtn.addEventListener('click', (e) => { e.stopPropagation(); cleanup(); })
+  
+  // Save button logic
+  const saveBtn = modal.querySelector('#cdu-save-btn')
+  if (saveBtn) {
+    saveBtn.addEventListener('click', async (e) => {
+      e.stopPropagation()
+      
+      saveBtn.disabled = true
+      saveBtn.textContent = 'Salvando...'
+      
+      // Atualiza o objeto remoteConfig completo
+      const updatedConfig = {
+        ...remoteConfig,
+        duplicate_enabled_unidades: enabledUnits
+      }
+      
+      const success = await window.sgdPermissions.saveRemoteConfig(updatedConfig)
+      if (success) {
+        showNotification('Configurações de Duplicados atualizadas com sucesso!', 'success')
         cleanup()
         if (sectionElement) loadAccessControl(sectionElement)
       } else {

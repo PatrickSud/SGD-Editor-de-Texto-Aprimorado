@@ -249,25 +249,41 @@ function lerResultadosTabelaSSC(doc, sscAtualId) {
   const linhas = doc.querySelectorAll('table.tableSorter tbody tr')
   logDebug(`[DEBUG] Encontradas ${linhas.length} linhas na tabela table.tableSorter`)
 
-  // Detecta se a tabela está ordenada de forma crescente pelo número de dias
-  let anteriorDias = -1
-  let ordenadoPorDiasCrescente = true
+  // Coleta os valores de dias válidos para verificar a ordenação
+  const diasValores = []
   for (const tr of linhas) {
     const diasTd = tr.querySelector('td[id^="td:dias_"]')
     if (!diasTd) continue
     const dias = parseInt(diasTd.textContent.trim(), 10)
-    if (isNaN(dias)) continue
-    if (anteriorDias !== -1 && dias < anteriorDias) {
-      ordenadoPorDiasCrescente = false
-      break
+    if (!isNaN(dias)) {
+      diasValores.push(dias)
     }
-    anteriorDias = dias
   }
-  logDebug(`[DEBUG] Tabela ordenada por dias crescente: ${ordenadoPorDiasCrescente}`)
+
+  // Detecta se a tabela está ordenada de forma crescente ou decrescente
+  let ordenadoCrescente = diasValores.length > 1
+  let ordenadoDecrescente = diasValores.length > 1
+
+  for (let i = 1; i < diasValores.length; i++) {
+    if (diasValores[i] < diasValores[i - 1]) {
+      ordenadoCrescente = false
+    }
+    if (diasValores[i] > diasValores[i - 1]) {
+      ordenadoDecrescente = false
+    }
+  }
+
+  logDebug(`[DEBUG] Tabela ordenada por dias crescente: ${ordenadoCrescente}`)
+  logDebug(`[DEBUG] Tabela ordenada por dias decrescente: ${ordenadoDecrescente}`)
+
+  // Se estiver ordenado de forma decrescente, revertemos as linhas para processar as mais novas
+  // primeiro, permitindo o uso do early break (interrupção precoce)
+  const linhasParaProcessar = ordenadoDecrescente ? Array.from(linhas).reverse() : Array.from(linhas)
+  const usarEarlyBreak = ordenadoCrescente || ordenadoDecrescente
 
   const candidatos = []
 
-  for (const tr of linhas) {
+  for (const tr of linhasParaProcessar) {
     const diasTd = tr.querySelector('td[id^="td:dias_"]')
     const assuntoTd = tr.querySelector('td[id^="td:assunto_"]')
     if (!diasTd || !assuntoTd) continue
@@ -276,7 +292,7 @@ function lerResultadosTabelaSSC(doc, sscAtualId) {
     if (isNaN(dias)) continue
 
     if (dias > DUPLICATE_CHECKER_MAX_DAYS) {
-      if (ordenadoPorDiasCrescente) {
+      if (usarEarlyBreak) {
         logDebug(`[DEBUG] Interrupção precoce da varredura na linha com ${dias} dias (limite: ${DUPLICATE_CHECKER_MAX_DAYS})`)
         break
       }
@@ -293,6 +309,11 @@ function lerResultadosTabelaSSC(doc, sscAtualId) {
       href: link.href,
       dias
     })
+  }
+
+  // Se revertemos as linhas, revertemos o array de candidatos final para manter o alinhamento
+  if (ordenadoDecrescente) {
+    candidatos.reverse()
   }
 
   return candidatos
@@ -506,15 +527,29 @@ async function iniciarVerificacaoDuplicidadeSSC() {
         return
       }
 
-      let resultados = []
+      let usarIA = false
       try {
-        const indicesParecidos = await compararSSCsComIA(assuntoAtual, candidatosElegiveis)
-        resultados = indicesParecidos.map(i => candidatosElegiveis[i]).filter(Boolean)
-        logDebug('[DEBUG] Resultados parecidos identificados pela IA:', resultados)
-      } catch (erroIA) {
-        console.error('[Verificador de Duplicidade] Erro na comparação por IA. Usando fallback por palavras-chave:', erroIA)
+        if (window.sgdPermissions && typeof window.sgdPermissions.hasDuplicateCheckerIAAccess === 'function') {
+          usarIA = await window.sgdPermissions.hasDuplicateCheckerIAAccess()
+        }
+      } catch (errAccess) {
+        logDebug('[DEBUG] Erro ao verificar permissão do Verificador de Duplicidade IA:', errAccess)
+      }
+
+      let resultados = []
+      if (usarIA) {
+        try {
+          const indicesParecidos = await compararSSCsComIA(assuntoAtual, candidatosElegiveis)
+          resultados = indicesParecidos.map(i => candidatosElegiveis[i]).filter(Boolean)
+          logDebug('[DEBUG] Resultados parecidos identificados pela IA:', resultados)
+        } catch (erroIA) {
+          console.error('[Verificador de Duplicidade] Erro na comparação por IA. Usando fallback por palavras-chave:', erroIA)
+          resultados = candidatosElegiveis.filter(c => calcularSimilaridadeSSC(assuntoAtual, c.assunto))
+          logDebug('[DEBUG] Resultados parecidos identificados pelo fallback:', resultados)
+        }
+      } else {
+        logDebug('[DEBUG] Uso de IA desativado para este usuário. Executando fallback local de palavras-chave.')
         resultados = candidatosElegiveis.filter(c => calcularSimilaridadeSSC(assuntoAtual, c.assunto))
-        logDebug('[DEBUG] Resultados parecidos identificados pelo fallback:', resultados)
       }
 
       const relatorio = candidatosElegiveis.map(c => {

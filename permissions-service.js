@@ -1521,6 +1521,102 @@
     }
   }
 
+  async function toggleUserDuplicateIA(userId, isEditor, currentStatus) {
+    if (!window.sgdPermissions.isEditor) return false
+    const url = isEditor ? `${RTDB_EDITORS_URL}/${userId}.json` : `${RTDB_VIEWERS_URL}/${userId}.json`
+    const targetStatus = !currentStatus
+    try {
+      const payload = {
+        duplicateIA_Enabled: targetStatus,
+        duplicateIA_Disabled: !targetStatus
+      }
+      const response = await callDatabaseWrite(url, 'PATCH', payload)
+      if (response.ok) {
+        const listName = isEditor ? 'editores' : 'visualizadores'
+        await writeAuditLog('TOGGLE_USER_DUPLICATE_IA', userId, `Ação: ${targetStatus ? 'Ativar' : 'Desativar'} Duplicados IA (${listName})`)
+        await invalidatePermissionsCache()
+        return true
+      }
+      return false
+    } catch (e) {
+      console.error('[SGD Permissions] Erro ao alternar status do Duplicados IA do usuário:', e)
+      return false
+    }
+  }
+
+  async function hasDuplicateCheckerIAAccess() {
+    const userName = window.sgdPermissions?.currentUser
+    const userId = window.sgdPermissions?.currentUserId
+    const devData = await chrome.storage.local.get(['developerModeEnabled'])
+    const isDevMode = devData.developerModeEnabled === true
+    
+    // Se for Master/Dev, sempre tem acesso (bypass)
+    if (isDevMode || (window.sgdPermissions?.isMaster)) return true
+    
+    if (!userName) return false
+    const normalizedUser = normalizeName(userName)
+    
+    // 1. Verificar no Firebase se o usuário individual está explicitamente ativado ou desativado
+    let hasManualOverride = false
+    let isManualEnabled = false
+    let userUnidade = null
+    
+    const matchedEditor = await matchEditorRecord(userId, userName, normalizedUser)
+    if (matchedEditor) {
+      if (matchedEditor.duplicateIA_Enabled === true) {
+        hasManualOverride = true
+        isManualEnabled = true
+      } else if (matchedEditor.duplicateIA_Disabled === true) {
+        hasManualOverride = true
+        isManualEnabled = false
+      }
+      userUnidade = matchedEditor.unidade
+    } else {
+      const matchedViewer = await matchViewerRecord(userId, userName, normalizedUser)
+      if (matchedViewer) {
+        if (matchedViewer.duplicateIA_Enabled === true) {
+          hasManualOverride = true
+          isManualEnabled = true
+        } else if (matchedViewer.duplicateIA_Disabled === true) {
+          hasManualOverride = true
+          isManualEnabled = false
+        }
+        userUnidade = matchedViewer.unidade
+      }
+    }
+    
+    if (hasManualOverride) {
+      return isManualEnabled
+    }
+    
+    // 2. Se não temos a unidade cadastrada no matched record, pega do cache local
+    if (!userUnidade) {
+      const cachedUserInfo = await chrome.storage.local.get(['userUnidade'])
+      userUnidade = cachedUserInfo.userUnidade
+    }
+    
+    // Se a unidade não foi capturada ou está vazia, não libera
+    if (!userUnidade || userUnidade.trim() === '' || userUnidade.trim() === 'Unidade não capturada') {
+      return false
+    }
+    
+    if (userUnidade) {
+      const trimmedUnit = userUnidade.trim().toLowerCase()
+      
+      // 3. Verificar se a unidade do usuário está na lista de unidades liberadas (Allowlist)
+      const localConfig = await chrome.storage.local.get(['remoteConfig'])
+      const remoteConfig = localConfig.remoteConfig || {}
+      const enabledUnidades = remoteConfig.duplicate_enabled_unidades || []
+      
+      const isUnitEnabled = enabledUnidades.some(enabledUnit => 
+        trimmedUnit === enabledUnit.trim().toLowerCase()
+      )
+      if (!isUnitEnabled) return false
+    }
+    
+    return true
+  }
+
   async function hasIAgenteAccess() {
     const userName = window.sgdPermissions?.currentUser
     const userId = window.sgdPermissions?.currentUserId
@@ -1669,6 +1765,8 @@
   window.sgdPermissions.toggleUserIAgente = toggleUserIAgente
   window.sgdPermissions.hasIAgenteAccess = hasIAgenteAccess
   window.sgdPermissions.getIAgenteUrl = getIAgenteUrl
+  window.sgdPermissions.toggleUserDuplicateIA = toggleUserDuplicateIA
+  window.sgdPermissions.hasDuplicateCheckerIAAccess = hasDuplicateCheckerIAAccess
 
   window.sgdPermissions.refreshEditors = async () => {
     const list = await getEditorsList(true)
