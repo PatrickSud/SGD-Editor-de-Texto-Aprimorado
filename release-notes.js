@@ -1,4 +1,11 @@
 const RELEASE_NOTES = {
+  '3.0.6.4': {
+    title: '🚀 Ajustes — Versão 3.0.6.4',
+    features: [
+      '<b>⚡ Trâmites Padrões:</b> No modal "Adicionar Trâmite", novo botão <b>"Salvar e Continuar"</b> para cadastrar vários trâmites em sequência sem fechar o modal, e novo botão <b>"Importar"</b> para preencher automaticamente Título/Conteúdo a partir de um arquivo .json (ou mesclar vários, se o arquivo tiver mais de um trâmite).',
+      '<b>🤖 Verificação de Duplicidade:</b> Novo botão <b>"Verificar duplicidade"</b> na tela de cadastro de SSC, com checkbox de verificação automática (dispara 7s após parar de digitar o assunto, com contagem regressiva visual).'
+    ]
+  },
   '3.0.6.3': {
     title: '🐛 Ajustes — Versão 3.0.6.3',
     features: [

@@ -428,8 +428,32 @@ function posicionarWidgetAoLadoDoBotaoScroll(widget) {
   widget.style.right = `${window.innerWidth - rectGrupo.left + 10}px`
 }
 
+/**
+ * Exibe (ou atualiza) o widget de duplicidade com os resultados informados.
+ *
+ * Antes, um `if (existe) return` no início desta função impedia qualquer
+ * atualização: uma vez que o widget aparecia pela primeira verificação, novas
+ * verificações (manuais ou automáticas) nunca reconstruíam o conteúdo — o
+ * widget ficava travado nos resultados da primeira busca. Agora, a cada
+ * chamada, removemos o widget anterior (se houver) e recriamos do zero com os
+ * resultados atuais — inclusive removendo-o quando a nova busca não encontra
+ * mais nenhuma duplicata (o assunto mudou e deixou de ser parecido com os
+ * candidatos anteriores).
+ * @param {Array<object>} resultados - Lista de duplicatas encontradas na verificação atual.
+ */
 function exibirWidgetDuplicidadeSSC(resultados) {
-  if (document.getElementById('ssc-duplicate-widget')) return
+  const widgetExistente = document.getElementById('ssc-duplicate-widget')
+
+  if (!resultados || resultados.length === 0) {
+    // Nada parecido na verificação atual — remove um alerta de uma busca
+    // anterior que não faz mais sentido, se houver.
+    widgetExistente?.remove()
+    return
+  }
+
+  // Remove o widget de uma verificação anterior antes de reconstruir com os
+  // resultados atuais, garantindo que o conteúdo exibido nunca fique obsoleto.
+  widgetExistente?.remove()
 
   injetarEstiloWidgetSSC()
 
@@ -469,7 +493,110 @@ function exibirWidgetDuplicidadeSSC(resultados) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 6. FLUXO PRINCIPAL
+// 6. HELPERS COMPARTILHADOS (verificação automática + botão manual)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Extrai o ID do cliente a partir do atributo onclick do botão "SSCs Pendentes",
+ * presente no cabeçalho da SSC. Reaproveitado tanto pela verificação automática
+ * quanto pelo botão manual "Verificar duplicidade".
+ * @returns {string|null} O ID do cliente, ou null se o botão não for encontrado.
+ */
+function extrairClienteIdDoBotaoPendentes() {
+  const btnPendentes = document.querySelector('input[value="SSCs Pendentes"]')
+  if (!btnPendentes) return null
+
+  const onclickAttr = btnPendentes.getAttribute('onclick') || ''
+  const match = onclickAttr.match(/clienteID=(\d+)/)
+  return match ? match[1] : null
+}
+
+/**
+ * Obtém o ID da SSC atualmente aberta, via campo oculto do formulário ou
+ * parâmetro "ssc" da URL. Usado para excluir a própria SSC da comparação.
+ * @returns {string|null}
+ */
+function obterSscAtualId() {
+  const sscHiddenInput = document.querySelector('input[id*="ssc"]') || document.querySelector('input[name*="ssc"]')
+  let sscAtualId = sscHiddenInput?.value?.trim() || null
+  if (!sscAtualId) {
+    const params = new URLSearchParams(window.location.search)
+    sscAtualId = params.get('ssc')
+  }
+  return sscAtualId
+}
+
+/**
+ * Busca (com cache) os candidatos do cliente informado e os compara com o
+ * assunto atual, usando IA (se disponível) ou o fallback por palavras-chave.
+ * Função central reaproveitada pela verificação automática (iniciarVerificacaoDuplicidadeSSC)
+ * e pelo botão manual (verificarDuplicidadeManualSSC) — a lógica de busca e
+ * comparação não é duplicada em nenhum dos dois fluxos.
+ * @param {string} assuntoAtual - Texto do assunto a comparar.
+ * @param {string} clienteId - ID do cliente cujas SSCs serão buscadas.
+ * @param {string|null} sscAtualId - ID da SSC atual, excluída da comparação.
+ * @returns {Promise<Array<object>>} Lista de candidatos identificados como duplicados.
+ */
+async function buscarResultadosDuplicidade(assuntoAtual, clienteId, sscAtualId) {
+  let candidatos = await obterCandidatosDoCache(clienteId)
+
+  if (!candidatos) {
+    const doc = await buscarDocumentoSSCsPendentes(clienteId)
+    // Passamos null para lerResultadosTabelaSSC para obter todos os candidatos do cliente
+    // e salvá-los no cache de forma genérica.
+    candidatos = lerResultadosTabelaSSC(doc, null)
+    await salvarCandidatosNoCache(clienteId, candidatos)
+  }
+
+  // Filtra o sscAtualId da busca para a comparação do caso atual
+  const candidatosElegiveis = candidatos.filter(c => !(sscAtualId && c.href.includes(`ssc=${sscAtualId}`)))
+  logDebug('[DEBUG] Candidatos elegíveis coletados para comparação:', candidatosElegiveis)
+
+  if (candidatosElegiveis.length === 0) {
+    logDebug('[DEBUG] Nenhum candidato elegível encontrado para comparação.')
+    return []
+  }
+
+  let usarIA = false
+  try {
+    if (window.sgdPermissions && typeof window.sgdPermissions.hasDuplicateCheckerIAAccess === 'function') {
+      usarIA = await window.sgdPermissions.hasDuplicateCheckerIAAccess()
+    }
+  } catch (errAccess) {
+    logDebug('[DEBUG] Erro ao verificar permissão do Verificador de Duplicidade IA:', errAccess)
+  }
+
+  let resultados = []
+  if (usarIA) {
+    try {
+      const indicesParecidos = await compararSSCsComIA(assuntoAtual, candidatosElegiveis)
+      resultados = indicesParecidos.map(i => candidatosElegiveis[i]).filter(Boolean)
+      logDebug('[DEBUG] Resultados parecidos identificados pela IA:', resultados)
+    } catch (erroIA) {
+      console.error('[Verificador de Duplicidade] Erro na comparação por IA. Usando fallback por palavras-chave:', erroIA)
+      resultados = candidatosElegiveis.filter(c => calcularSimilaridadeSSC(assuntoAtual, c.assunto))
+      logDebug('[DEBUG] Resultados parecidos identificados pelo fallback:', resultados)
+    }
+  } else {
+    logDebug('[DEBUG] Uso de IA desativado para este usuário. Executando fallback local de palavras-chave.')
+    resultados = candidatosElegiveis.filter(c => calcularSimilaridadeSSC(assuntoAtual, c.assunto))
+  }
+
+  const relatorio = candidatosElegiveis.map(c => {
+    const ehValido = resultados.some(r => r.href === c.href)
+    return {
+      assunto: c.assunto,
+      dias: c.dias,
+      statusParaOUsuario: ehValido ? '⚠️ VÁLIDO (Apresentado no Widget)' : '✅ IGNORADO (Diferente)'
+    }
+  })
+  logDebug('[DEBUG] Relatório de Comparação de Candidatos:', relatorio)
+
+  return resultados
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 7. FLUXO PRINCIPAL (VERIFICAÇÃO AUTOMÁTICA)
 // ─────────────────────────────────────────────────────────────────────────────
 
 let verificacaoDuplicidadeEmAndamento = false
@@ -493,13 +620,8 @@ async function iniciarVerificacaoDuplicidadeSSC() {
   verificacaoDuplicidadeEmAndamento = true
 
   try {
-    const btnPendentes = document.querySelector('input[value="SSCs Pendentes"]')
-    if (!btnPendentes) return
-
-    const onclickAttr = btnPendentes.getAttribute('onclick') || ''
-    const match = onclickAttr.match(/clienteID=(\d+)/)
-    if (!match) return
-    const clienteId = match[1]
+    const clienteId = extrairClienteIdDoBotaoPendentes()
+    if (!clienteId) return
 
     const assuntoEl = document.querySelector('#td\\:assunto')
     const assuntoAtual = assuntoEl?.innerText?.trim()
@@ -512,69 +634,12 @@ async function iniciarVerificacaoDuplicidadeSSC() {
       return
     }
 
-    const sscHiddenInput = document.querySelector('input[id*="ssc"]') || document.querySelector('input[name*="ssc"]')
-    let sscAtualId = sscHiddenInput?.value?.trim() || null
-    if (!sscAtualId) {
-      const params = new URLSearchParams(window.location.search)
-      sscAtualId = params.get('ssc')
-    }
+    const sscAtualId = obterSscAtualId()
 
     logDebug('[DEBUG] clienteId:', clienteId, '| sscAtualId:', sscAtualId, '| assuntoAtual:', assuntoAtual)
 
     try {
-      let candidatos = await obterCandidatosDoCache(clienteId)
-
-      if (!candidatos) {
-        const doc = await buscarDocumentoSSCsPendentes(clienteId)
-        // Passamos null para lerResultadosTabelaSSC para obter todos os candidatos do cliente
-        // e salvá-los no cache de forma genérica.
-        candidatos = lerResultadosTabelaSSC(doc, null)
-        await salvarCandidatosNoCache(clienteId, candidatos)
-      }
-
-      // Filtra o sscAtualId da busca para a comparação do caso atual
-      const candidatosElegiveis = candidatos.filter(c => !(sscAtualId && c.href.includes(`ssc=${sscAtualId}`)))
-      logDebug('[DEBUG] Candidatos elegíveis coletados para comparação:', candidatosElegiveis)
-
-      if (candidatosElegiveis.length === 0) {
-        logDebug('[DEBUG] Nenhum candidato elegível encontrado para comparação.')
-        return
-      }
-
-      let usarIA = false
-      try {
-        if (window.sgdPermissions && typeof window.sgdPermissions.hasDuplicateCheckerIAAccess === 'function') {
-          usarIA = await window.sgdPermissions.hasDuplicateCheckerIAAccess()
-        }
-      } catch (errAccess) {
-        logDebug('[DEBUG] Erro ao verificar permissão do Verificador de Duplicidade IA:', errAccess)
-      }
-
-      let resultados = []
-      if (usarIA) {
-        try {
-          const indicesParecidos = await compararSSCsComIA(assuntoAtual, candidatosElegiveis)
-          resultados = indicesParecidos.map(i => candidatosElegiveis[i]).filter(Boolean)
-          logDebug('[DEBUG] Resultados parecidos identificados pela IA:', resultados)
-        } catch (erroIA) {
-          console.error('[Verificador de Duplicidade] Erro na comparação por IA. Usando fallback por palavras-chave:', erroIA)
-          resultados = candidatosElegiveis.filter(c => calcularSimilaridadeSSC(assuntoAtual, c.assunto))
-          logDebug('[DEBUG] Resultados parecidos identificados pelo fallback:', resultados)
-        }
-      } else {
-        logDebug('[DEBUG] Uso de IA desativado para este usuário. Executando fallback local de palavras-chave.')
-        resultados = candidatosElegiveis.filter(c => calcularSimilaridadeSSC(assuntoAtual, c.assunto))
-      }
-
-      const relatorio = candidatosElegiveis.map(c => {
-        const ehValido = resultados.some(r => r.href === c.href)
-        return {
-          assunto: c.assunto,
-          dias: c.dias,
-          statusParaOUsuario: ehValido ? '⚠️ VÁLIDO (Apresentado no Widget)' : '✅ IGNORADO (Diferente)'
-        }
-      })
-      logDebug('[DEBUG] Relatório de Comparação de Candidatos:', relatorio)
+      const resultados = await buscarResultadosDuplicidade(assuntoAtual, clienteId, sscAtualId)
 
       if (resultados.length > 0) {
         exibirWidgetDuplicidadeSSC(resultados)
@@ -587,3 +652,398 @@ async function iniciarVerificacaoDuplicidadeSSC() {
     verificacaoDuplicidadeEmAndamento = false
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 8. BOTÃO MANUAL "VERIFICAR DUPLICIDADE"
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Injeta o CSS do botão manual e do indicador de status/spinner (uma única vez).
+ */
+function injetarEstiloBotaoDuplicidadeSSC() {
+  if (document.getElementById('ssc-duplicidade-botao-style')) return
+  const style = document.createElement('style')
+  style.id = 'ssc-duplicidade-botao-style'
+  style.textContent = `
+    #btn-verificar-duplicidade-ssc {
+      cursor: pointer;
+    }
+    #btn-verificar-duplicidade-ssc:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    .ssc-duplicidade-status {
+      display: inline-block;
+      margin-left: 10px;
+      font-size: 12px;
+      vertical-align: middle;
+      background: transparent !important;
+      border: none !important;
+    }
+    .ssc-duplicidade-status--loading { color: #666; }
+    .ssc-duplicidade-status--success { color: #3c763d; }
+    .ssc-duplicidade-status--duplicidade { color: #d9534f; font-weight: bold; }
+    .ssc-duplicidade-status--idle { color: #999; }
+    .ssc-duplicidade-spinner {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      margin-right: 5px;
+      border: 2px solid #ccc;
+      border-top-color: #666;
+      border-radius: 50%;
+      animation: sscDuplicidadeSpin 0.7s linear infinite;
+      vertical-align: middle;
+    }
+    @keyframes sscDuplicidadeSpin {
+      to { transform: rotate(360deg); }
+    }
+    .ssc-duplicidade-auto-checkbox {
+      margin-left: 10px;
+      cursor: pointer;
+      vertical-align: middle;
+    }
+    .ssc-duplicidade-auto-contagem {
+      display: inline-block;
+      font-size: 12px;
+      color: #666;
+      vertical-align: middle;
+      background: transparent !important;
+      border: none !important;
+    }
+    /* Sem número em andamento: não ocupa espaço nenhum (nem a margem). */
+    .ssc-duplicidade-auto-contagem:not(:empty) {
+      margin-left: 3px;
+    }
+  `
+  document.head.appendChild(style)
+}
+
+/**
+ * Atualiza o texto e o estado visual do indicador ao lado do botão manual.
+ * @param {HTMLElement} statusEl - Elemento <span> de status.
+ * @param {'idle'|'loading'|'success'|'duplicidade'} estado
+ * @param {string} mensagem
+ */
+function atualizarStatusBotaoDuplicidade(statusEl, estado, mensagem) {
+  if (!statusEl) return
+  const spinnerHtml = estado === 'loading' ? '<span class="ssc-duplicidade-spinner"></span>' : ''
+  statusEl.className = `inputText ssc-duplicidade-status ssc-duplicidade-status--${estado}`
+  statusEl.innerHTML = `${spinnerHtml}${escapeHTML(mensagem)}`
+}
+
+/**
+ * Habilita o botão manual somente quando o campo de assunto tiver conteúdo.
+ * Não altera o estado enquanto uma verificação estiver em andamento.
+ * @param {HTMLInputElement} botao
+ * @param {HTMLInputElement} assuntoEl
+ */
+function atualizarEstadoBotaoDuplicidade(botao, assuntoEl) {
+  if (botao.dataset.loading === 'true') return
+  botao.disabled = !assuntoEl.value?.trim()
+}
+
+/**
+ * Handler de clique do botão "Verificar duplicidade". Captura o assunto
+ * diretamente do campo de cadastro (cadSscForm:assunto), executa a mesma
+ * pipeline de busca/comparação usada na verificação automática
+ * (buscarResultadosDuplicidade) e exibe o resultado ao usuário — seja no
+ * widget de duplicidade (#ssc-duplicate-widget), seja como mensagem de
+ * "nenhuma duplicata encontrada".
+ * @param {HTMLInputElement} botao
+ * @param {HTMLElement} statusEl
+ * @param {HTMLInputElement} assuntoEl
+ */
+async function verificarDuplicidadeManualSSC(botao, statusEl, assuntoEl) {
+  const assuntoAtual = assuntoEl.value?.trim()
+  if (!assuntoAtual) {
+    atualizarStatusBotaoDuplicidade(statusEl, 'idle', 'Preencha o assunto para verificar.')
+    return
+  }
+
+  const clienteId = extrairClienteIdDoBotaoPendentes()
+  if (!clienteId) {
+    atualizarStatusBotaoDuplicidade(statusEl, 'idle', '⚠️ Não foi possível identificar o cliente.')
+    return
+  }
+
+  const sscAtualId = obterSscAtualId()
+
+  // Registra o texto efetivamente pesquisado — usado pela auto-verificação
+  // para não repetir a mesma busca enquanto o assunto não mudar.
+  ultimoAssuntoAutoVerificado = assuntoAtual
+
+  botao.disabled = true
+  botao.dataset.loading = 'true'
+  atualizarStatusBotaoDuplicidade(statusEl, 'loading', 'Verificando duplicidade...')
+
+  try {
+    const resultados = await buscarResultadosDuplicidade(assuntoAtual, clienteId, sscAtualId)
+
+    // Chamado sempre (mesmo com 0 resultados): exibirWidgetDuplicidadeSSC() é
+    // quem decide se atualiza, cria ou remove o widget — assim um resultado
+    // de uma verificação anterior nunca fica desatualizado na tela.
+    exibirWidgetDuplicidadeSSC(resultados)
+
+    if (resultados.length > 0) {
+      const plural = resultados.length > 1 ? 's' : ''
+      atualizarStatusBotaoDuplicidade(
+        statusEl,
+        'duplicidade',
+        `⚠️ ${resultados.length} SSC${plural} parecida${plural} encontrada${plural}.`
+      )
+    } else {
+      atualizarStatusBotaoDuplicidade(statusEl, 'success', '✅ Nenhuma SSC parecida encontrada.')
+    }
+  } catch (erro) {
+    console.error('[Verificador de Duplicidade] Erro na verificação manual:', erro)
+    atualizarStatusBotaoDuplicidade(statusEl, 'idle', '⚠️ Erro ao verificar. Tente novamente.')
+  } finally {
+    delete botao.dataset.loading
+    atualizarEstadoBotaoDuplicidade(botao, assuntoEl)
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 8b. AUTO-VERIFICAÇÃO (contagem regressiva de 7s após parar de digitar)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Segundos de inatividade no campo de assunto antes de disparar a auto-verificação. */
+const AUTO_VERIFICACAO_DELAY_S = 7
+
+/** Preferência do usuário (ativado por padrão) persistida entre sessões. */
+const AUTO_VERIFICACAO_STORAGE_KEY = 'sgd_ssc_duplicidade_auto_verificacao'
+
+let autoVerificacaoIntervalId = null
+let ultimoAssuntoAutoVerificado = null
+
+/**
+ * Lê a preferência de auto-verificação salva. Ativado por padrão: só volta
+ * `false` se o usuário já tiver desmarcado o checkbox alguma vez.
+ * @returns {Promise<boolean>}
+ */
+async function obterPreferenciaAutoVerificacao() {
+  try {
+    const result = await chrome.storage.local.get(AUTO_VERIFICACAO_STORAGE_KEY)
+    return result[AUTO_VERIFICACAO_STORAGE_KEY] !== false
+  } catch (err) {
+    logDebug('[DEBUG] Erro ao ler preferência de auto-verificação:', err)
+    return true
+  }
+}
+
+/**
+ * Salva a preferência de auto-verificação (chamado ao alternar o checkbox).
+ * @param {boolean} ativado
+ */
+async function salvarPreferenciaAutoVerificacao(ativado) {
+  try {
+    await chrome.storage.local.set({ [AUTO_VERIFICACAO_STORAGE_KEY]: ativado })
+  } catch (err) {
+    logDebug('[DEBUG] Erro ao salvar preferência de auto-verificação:', err)
+  }
+}
+
+/**
+ * Cancela a contagem regressiva em andamento, se houver, e limpa o indicador
+ * visual. Chamado a cada nova digitação (debounce) e ao clicar manualmente
+ * no botão.
+ * @param {HTMLElement} [contagemEl] - Elemento onde a contagem é exibida (opcional).
+ */
+function cancelarAutoVerificacaoAgendada(contagemEl) {
+  if (autoVerificacaoIntervalId) {
+    clearInterval(autoVerificacaoIntervalId)
+    autoVerificacaoIntervalId = null
+  }
+  if (contagemEl) contagemEl.textContent = ''
+}
+
+/**
+ * (Re)inicia a contagem regressiva de AUTO_VERIFICACAO_DELAY_S segundos após
+ * inatividade no campo de assunto, atualizando o indicador visual a cada
+ * segundo (7, 6, 5, 4, 3, 2, 1). Cada chamada cancela a contagem anterior —
+ * por isso, enquanto o usuário continuar digitando, a contagem sempre
+ * reinicia e a pesquisa nunca dispara.
+ *
+ * Ao chegar a 0, o "0" nunca é exibido: o indicador é limpo no mesmo instante
+ * em que a verificação é disparada — rodando exatamente o mesmo fluxo do
+ * clique manual (verificarDuplicidadeManualSSC), e só repetindo a busca se o
+ * assunto tiver mudado desde a última verificação (manual ou automática).
+ * @param {HTMLInputElement} botao
+ * @param {HTMLElement} statusEl
+ * @param {HTMLInputElement} assuntoEl
+ * @param {HTMLInputElement} checkboxAuto
+ * @param {HTMLElement} contagemEl - Elemento onde a contagem regressiva é exibida.
+ */
+function agendarAutoVerificacaoDuplicidade(botao, statusEl, assuntoEl, checkboxAuto, contagemEl) {
+  cancelarAutoVerificacaoAgendada(contagemEl)
+
+  if (!checkboxAuto.checked) return
+  if (botao.dataset.loading === 'true') return
+
+  const assuntoAtual = assuntoEl.value?.trim()
+  if (!assuntoAtual) return
+
+  let segundosRestantes = AUTO_VERIFICACAO_DELAY_S
+  if (contagemEl) contagemEl.textContent = String(segundosRestantes)
+
+  autoVerificacaoIntervalId = setInterval(() => {
+    segundosRestantes -= 1
+
+    // Chegou a 0: dispara a verificação sem nunca mostrar "0" no indicador.
+    if (segundosRestantes <= 0) {
+      clearInterval(autoVerificacaoIntervalId)
+      autoVerificacaoIntervalId = null
+      if (contagemEl) contagemEl.textContent = ''
+
+      if (botao.dataset.loading === 'true') return
+
+      // Se o usuário informou um novo assunto e voltou a ficar os 7s sem
+      // digitar, o texto no disparo será diferente do último pesquisado —
+      // dispara de novo.
+      const assuntoNoDisparo = assuntoEl.value?.trim()
+      if (!assuntoNoDisparo || assuntoNoDisparo === ultimoAssuntoAutoVerificado) return
+
+      logDebug('[DEBUG] Auto-verificação de duplicidade disparada após 7s sem digitação.')
+      verificarDuplicidadeManualSSC(botao, statusEl, assuntoEl)
+      return
+    }
+
+    if (contagemEl) contagemEl.textContent = String(segundosRestantes)
+  }, 1000)
+}
+
+/**
+ * Localiza a célula <td class="tableCadastroField" colspan="2"> vazia,
+ * reservada para o botão de verificação manual. No HTML real do SGD essa
+ * célula é a irmã imediata do <td> que contém o campo de assunto do
+ * cadastro (cadSscForm:assunto), dentro da mesma <tr>:
+ *
+ *   <tr>
+ *     <td class="tableCadastroLabel">*Assunto:</td>
+ *     <td class="tableCadastroField" colspan="3"><input id="cadSscForm:assunto" ...></td>
+ *     <td class="tableCadastroField" colspan="2"></td>  <-- célula alvo
+ *     <td class="tableCadastroLabel">Base cliente:</td>
+ *     ...
+ *   </tr>
+ *
+ * @returns {HTMLElement|null}
+ */
+function encontrarCelulaParaBotaoDuplicidade() {
+  const assuntoEl = document.getElementById('cadSscForm:assunto')
+  if (!assuntoEl) {
+    logDebug('[DEBUG] #cadSscForm:assunto não existe no DOM ainda.')
+    return null
+  }
+
+  const tdAssunto = assuntoEl.closest('td')
+  if (!tdAssunto) {
+    logDebug('[DEBUG] #cadSscForm:assunto encontrado, mas sem um <td> ancestral.')
+    return null
+  }
+
+  // Caminho principal: célula vazia imediatamente após o <td> do assunto, na mesma <tr>
+  const proximaTd = tdAssunto.nextElementSibling
+  logDebug('[DEBUG] <td> do assunto encontrado. nextElementSibling:', proximaTd)
+
+  if (
+    proximaTd &&
+    proximaTd.tagName === 'TD' &&
+    proximaTd.classList.contains('tableCadastroField') &&
+    !proximaTd.textContent.trim()
+  ) {
+    return proximaTd
+  }
+
+  // Fallback defensivo: caso o layout mude, procura a primeira célula
+  // "tableCadastroField colspan=2" vazia dentro da mesma linha da tabela.
+  const linha = tdAssunto.closest('tr')
+  if (linha) {
+    const candidata = linha.querySelector('td.tableCadastroField[colspan="2"]')
+    logDebug('[DEBUG] Fallback pela <tr> — candidata encontrada:', candidata)
+    if (candidata && !candidata.textContent.trim()) return candidata
+  }
+
+  logDebug('[DEBUG] Nenhuma célula vazia "tableCadastroField" foi encontrada ao lado do assunto. Verifique se o HTML real mudou (ex: colspan diferente, texto/espaços dentro da célula).')
+  return null
+}
+
+/**
+ * Injeta o botão "Verificar duplicidade" e o indicador de status na célula
+ * reservada do formulário de cadastro, e liga os eventos de habilitação e
+ * clique. Idempotente: não injeta novamente se o botão já existir.
+ * @returns {boolean} true se o botão foi injetado (ou já existia), false caso contrário.
+ */
+function injetarBotaoVerificarDuplicidadeSSC() {
+  if (document.getElementById('btn-verificar-duplicidade-ssc')) return true
+
+  const assuntoEl = document.getElementById('cadSscForm:assunto')
+  const celula = encontrarCelulaParaBotaoDuplicidade()
+  if (!assuntoEl || !celula) {
+    logDebug('[DEBUG] Injeção do botão de duplicidade abortada — assuntoEl:', !!assuntoEl, '| célula encontrada:', !!celula)
+    return false
+  }
+
+  logDebug('[DEBUG] Célula alvo encontrada. Injetando botão de duplicidade...', celula)
+
+  injetarEstiloBotaoDuplicidadeSSC()
+
+  celula.innerHTML = `
+    <input
+      type="button"
+      id="btn-verificar-duplicidade-ssc"
+      class="commandButton"
+      value="Verificar duplicidade"
+      disabled
+    >
+    <input
+      type="checkbox"
+      id="chk-auto-verificar-duplicidade-ssc"
+      class="ssc-duplicidade-auto-checkbox"
+      title="Verificação automática: pesquisa duplicidade 7s após parar de digitar o assunto"
+      checked
+    >
+    <span id="ssc-duplicidade-auto-contagem" class="inputText ssc-duplicidade-auto-contagem"></span>
+    <span id="ssc-duplicidade-status" class="inputText ssc-duplicidade-status"></span>
+  `
+
+  const botao = celula.querySelector('#btn-verificar-duplicidade-ssc')
+  const statusEl = celula.querySelector('#ssc-duplicidade-status')
+  const checkboxAuto = celula.querySelector('#chk-auto-verificar-duplicidade-ssc')
+  const contagemEl = celula.querySelector('#ssc-duplicidade-auto-contagem')
+
+  atualizarEstadoBotaoDuplicidade(botao, assuntoEl)
+
+  assuntoEl.addEventListener('input', () => {
+    atualizarEstadoBotaoDuplicidade(botao, assuntoEl)
+    agendarAutoVerificacaoDuplicidade(botao, statusEl, assuntoEl, checkboxAuto, contagemEl)
+  })
+
+  botao.addEventListener('click', () => {
+    // Clique manual não deve concorrer com uma auto-verificação agendada.
+    cancelarAutoVerificacaoAgendada(contagemEl)
+    verificarDuplicidadeManualSSC(botao, statusEl, assuntoEl)
+  })
+
+  checkboxAuto.addEventListener('change', () => {
+    salvarPreferenciaAutoVerificacao(checkboxAuto.checked)
+    if (checkboxAuto.checked) {
+      agendarAutoVerificacaoDuplicidade(botao, statusEl, assuntoEl, checkboxAuto, contagemEl)
+    } else {
+      cancelarAutoVerificacaoAgendada(contagemEl)
+    }
+  })
+
+  // Carrega a preferência salva (ativado por padrão). Se o assunto já estiver
+  // preenchido (ex: sugestão de IA aplicada no campo) e a auto-verificação
+  // estiver ativa, agenda a contagem inicial também.
+  obterPreferenciaAutoVerificacao().then(ativo => {
+    checkboxAuto.checked = ativo
+    if (ativo) agendarAutoVerificacaoDuplicidade(botao, statusEl, assuntoEl, checkboxAuto, contagemEl)
+  })
+
+  logDebug('[DEBUG] ✅ Botão "Verificar duplicidade" injetado com sucesso.')
+  return true
+}
+
+// ──────────────────────────────────────────────────────────

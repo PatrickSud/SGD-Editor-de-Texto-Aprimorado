@@ -785,6 +785,11 @@ async function createEditorToolbarHtml(instanceId, options = {}) {
   if (isSscPage) {
   iniciarVerificacaoDuplicidadeSSC()
   }
+
+  // Independente do gate de pathname acima: observa o DOM continuamente e injeta
+  // o botão manual sempre que o campo cadSscForm:assunto aparecer na página.
+  // Ver comentário em duplicate-checker.js (seção 9) sobre o motivo.
+  observarCampoAssuntoParaBotaoDuplicidade()
   const devMode = await isDevModeEnabled()
   const pinnedAIButtons = settings.pinnedAIButtons || []
 
