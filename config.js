@@ -410,4 +410,4 @@ const SGD_TOAST_FADE_MS = 300             // Deve coincidir com a duração da a
 const SGD_TAB_NAV_INITIAL_DELAY_MS = 300  // Delay antes da primeira tentativa de navegar para uma aba
 const SGD_TAB_NAV_RETRY_MS = 200          // Intervalo entre tentativas de navegação de aba
 const SGD_CLICK_GUARD_DELAY_MS = 100      // Delay para registrar listener de clique-fora (evita capturar o clique de abertura)
-// ───────────────────────────────────�
+// ─────────────────────────────────────────────────────────────────────────────
