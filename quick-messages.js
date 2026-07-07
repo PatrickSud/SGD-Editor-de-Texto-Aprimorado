@@ -995,6 +995,12 @@ async function openManagementModal() {
                     <input type="checkbox" id="enable-duplicate-checker" ${preferences.enableDuplicateChecker ? 'checked' : ''}>
                     <label for="enable-duplicate-checker">Verificar atendimentos similares em aberto do cliente</label>
                 </div>
+                <hr style="margin: 15px 0;">
+              <h5>Auto-capitalização de Texto</h5>
+              <div class="form-checkbox-group">
+                  <input type="checkbox" id="enable-auto-capitalize" ${preferences.enableAutoCapitalize ? 'checked' : ''}>
+                  <label for="enable-auto-capitalize">Capitalizar automaticamente início de frases</label>
+              </div>
             </div>
         </div>
     `
@@ -2794,6 +2800,11 @@ async function savePreferencesSettings(modal) {
   const selectedBehavior = container.querySelector('input[name="dropdownBehavior"]:checked');
   if (selectedBehavior) {
     newPreferences.dropdownBehavior = selectedBehavior.value;
+  }
+
+  const enableAutoCapitalizeCheckbox = container.querySelector('#enable-auto-capitalize');
+  if (enableAutoCapitalizeCheckbox) {
+    newPreferences.enableAutoCapitalize = enableAutoCapitalizeCheckbox.checked;
   }
 
   // NOVO: Ler preferência para habilitar o duplicate checker

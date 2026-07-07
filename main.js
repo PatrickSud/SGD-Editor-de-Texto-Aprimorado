@@ -62,6 +62,7 @@ let draggedGcItem = null // Variável global para rastrear o item arrastado
 
 // Variável para armazenar a classificação atual (Solução ou Pedir mais informações)
 let currentGcClassification = 'solution' // 'solution' (default) ou 'info'
+let autoCapitalizeEnabled = false
 
 function getSelectedResponseClassification() {
   const radioGroups = [
@@ -554,7 +555,22 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
     textArea,
     editorContainer,
     instanceId,
-    includePreview
+    includePreview,
+    textArea.addEventListener('input', () => {
+      const start = textArea.selectionStart
+      const end = textArea.selectionEnd
+      const originalText = textArea.value
+
+      const newText = originalText.replace(
+        /(^\s*|[.!?]\s+|\n\s*)([a-zçáàãâéêíóôõú])/g,
+        (match, espacoOuPontuacao, letra) => espacoOuPontuacao + letra.toUpperCase()
+      )
+
+      if (originalText !== newText) {
+        textArea.value = newText
+        textArea.setSelectionRange(start, end)
+      }
+    })
   )
 
   loadQuickChangeOptions(editorContainer) // <-- ADICIONE ESTA LINHA
@@ -2274,6 +2290,18 @@ function setupBasicEditorKeyboardShortcuts(textArea) {
 }
 
 async function initializeExtension() {
+  // Carrega o estado inicial da preferência de auto-capitalização
+const initialSettings = await getSettings()
+autoCapitalizeEnabled = initialSettings.preferences?.enableAutoCapitalize === true
+
+// Escuta mudanças feitas no modal de configurações para atualizar em tempo real
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (changes[SETTINGS_STORAGE_KEY]) {
+    const newValue = changes[SETTINGS_STORAGE_KEY].newValue
+    autoCapitalizeEnabled = newValue?.preferences?.enableAutoCapitalize === true
+  }
+})
+
   const settings = await getSettings()
   applyUiSettings(settings)
 
