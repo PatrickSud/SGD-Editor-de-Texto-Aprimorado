@@ -73,7 +73,7 @@ function normalizarTextoSSC(str) {
   return str
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[̀-ͯ]/g, '')
 }
 
 function extrairPalavrasChaveSSC(texto) {
@@ -431,14 +431,11 @@ function posicionarWidgetAoLadoDoBotaoScroll(widget) {
 /**
  * Exibe (ou atualiza) o widget de duplicidade com os resultados informados.
  *
- * Antes, um `if (existe) return` no início desta função impedia qualquer
- * atualização: uma vez que o widget aparecia pela primeira verificação, novas
- * verificações (manuais ou automáticas) nunca reconstruíam o conteúdo — o
- * widget ficava travado nos resultados da primeira busca. Agora, a cada
- * chamada, removemos o widget anterior (se houver) e recriamos do zero com os
- * resultados atuais — inclusive removendo-o quando a nova busca não encontra
- * mais nenhuma duplicata (o assunto mudou e deixou de ser parecido com os
- * candidatos anteriores).
+ * A cada chamada, removemos o widget anterior (se houver) e recriamos do zero
+ * com os resultados atuais — inclusive removendo-o quando a nova busca não
+ * encontra mais nenhuma duplicata (o assunto mudou e deixou de ser parecido
+ * com os candidatos anteriores). Isso garante que o widget nunca fique
+ * travado nos resultados de uma verificação anterior.
  * @param {Array<object>} resultados - Lista de duplicatas encontradas na verificação atual.
  */
 function exibirWidgetDuplicidadeSSC(resultados) {
@@ -1036,7 +1033,7 @@ function injetarBotaoVerificarDuplicidadeSSC() {
 
   // Carrega a preferência salva (ativado por padrão). Se o assunto já estiver
   // preenchido (ex: sugestão de IA aplicada no campo) e a auto-verificação
-  // estiver ativa, agenda a contagem inicial também.
+  // estiver ativa, agenda a verificação inicial também.
   obterPreferenciaAutoVerificacao().then(ativo => {
     checkboxAuto.checked = ativo
     if (ativo) agendarAutoVerificacaoDuplicidade(botao, statusEl, assuntoEl, checkboxAuto, contagemEl)
@@ -1046,4 +1043,62 @@ function injetarBotaoVerificarDuplicidadeSSC() {
   return true
 }
 
-// ──────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// 9. OBSERVADOR DE DOM PARA O BOTÃO MANUAL
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Confirmado via debug: "cadSscForm:assunto" existe apenas na tela de cadastro
+// de nova SSC, em /sgsc/faces/cad-ssc.html (diferente de /sgsc/faces/ssc.html,
+// usado pela verificação automática). Por isso o observador abaixo é restrito
+// a essa URL — evita rodar um MutationObserver em document.body (com subtree)
+// em todas as outras páginas do SGD, o que seria desperdício de performance.
+//
+// Ainda usamos um observador (em vez de uma chamada única) porque não temos
+// garantia de que "cadSscForm:assunto" já existe no DOM no instante exato em
+// que os content scripts rodam (document_idle). O observador é desconectado
+// automaticamente assim que o botão é injetado com sucesso — não fica
+// observando mutações depois que o trabalho é concluído.
+
+let observadorBotaoDuplicidadeAtivo = false
+
+/**
+ * Inicia (uma única vez por carregamento de página) um observador restrito à
+ * tela de cadastro de SSC (/sgsc/faces/cad-ssc.html) que injeta o botão
+ * "Verificar duplicidade" assim que o campo cadSscForm:assunto aparecer no DOM,
+ * e se desconecta automaticamente depois de injetar.
+ */
+function observarCampoAssuntoParaBotaoDuplicidade() {
+  if (observadorBotaoDuplicidadeAtivo) return
+
+  // Restrito a esta página por performance: é a única tela onde
+  // "cadSscForm:assunto" existe como campo editável.
+  if (!window.location.pathname.includes('/sgsc/faces/cad-ssc.html')) return
+
+  observadorBotaoDuplicidadeAtivo = true
+  logDebug('[DEBUG] Observador do botão de duplicidade iniciado. pathname atual:', window.location.pathname)
+
+  let observer = null
+
+  const tentarInjetar = () => {
+    if (document.getElementById('btn-verificar-duplicidade-ssc')) {
+      observer?.disconnect()
+      return
+    }
+    if (document.getElementById('cadSscForm:assunto')) {
+      const injetou = injetarBotaoVerificarDuplicidadeSSC()
+      if (injetou) observer?.disconnect()
+    }
+  }
+
+  // Tenta imediatamente, caso o campo já exista quando este código rodar
+  tentarInjetar()
+  if (document.getElementById('btn-verificar-duplicidade-ssc')) return // já resolvido, nem precisa observar
+
+  observer = new MutationObserver(() => tentarInjetar())
+  if (document.body) {
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    })
+  }
+}

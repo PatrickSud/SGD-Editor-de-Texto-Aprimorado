@@ -1251,6 +1251,12 @@ async function openManagementModal() {
                     <label for="enable-duplicate-checker">Verificar atendimentos similares em aberto do cliente</label>
                 </div>
                 <hr style="margin: 15px 0;">
+                <h5>Auto-capitalização de Texto</h5>
+                <div class="form-checkbox-group">
+                    <input type="checkbox" id="enable-auto-capitalize" ${preferences.enableAutoCapitalize !== false ? 'checked' : ''}>
+                    <label for="enable-auto-capitalize">Capitalizar automaticamente a primeira letra de frases ao digitar</label>
+                </div>
+                <hr style="margin: 15px 0;">
                 <h5>Classificação Padrão</h5>
                 <div class="form-checkbox-group">
                     <input type="checkbox" id="remember-last-classification" ${rememberChecked ? 'checked' : ''} ${rememberDisabled ? 'disabled' : ''}>
@@ -3065,6 +3071,12 @@ async function savePreferencesSettings(modal) {
   const enableDuplicateCheckerCheckbox = container.querySelector('#enable-duplicate-checker');
   if (enableDuplicateCheckerCheckbox) {
     newPreferences.enableDuplicateChecker = enableDuplicateCheckerCheckbox.checked;
+  }
+
+  // NOVO: Ler preferência para habilitar a auto-capitalização de texto
+  const enableAutoCapitalizeCheckbox = container.querySelector('#enable-auto-capitalize');
+  if (enableAutoCapitalizeCheckbox) {
+    newPreferences.enableAutoCapitalize = enableAutoCapitalizeCheckbox.checked;
   }
 
   // NOVO: Ler preferência para lembrar a classificação automática padrão

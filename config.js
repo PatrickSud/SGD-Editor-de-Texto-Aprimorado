@@ -180,7 +180,8 @@ const DEFAULT_SETTINGS = {
     ocultarPreVisualizacaoSite: false, // Oculta o campo "Pré-visualizar:" nativo do site por padrão desativado
     enableDuplicateChecker: false, // Habilita a verificação de atendimentos duplicados por padrão desativado
     enableTeamManagement: false, // Habilita o gerenciamento de Equipe AT na guia Controle de Acesso por padrão desativado
-    rememberLastClassification: false // Lembrar e preencher automaticamente a última classificação selecionada (desativado por padrão)
+    rememberLastClassification: false, // Lembrar e preencher automaticamente a última classificação selecionada (desativado por padrão)
+    enableAutoCapitalize: true // Capitaliza automaticamente a primeira letra de frases ao digitar (habilitado por padrão)
   },
   pinnedAIButtons: []
 }
@@ -409,4 +410,4 @@ const SGD_TOAST_FADE_MS = 300             // Deve coincidir com a duração da a
 const SGD_TAB_NAV_INITIAL_DELAY_MS = 300  // Delay antes da primeira tentativa de navegar para uma aba
 const SGD_TAB_NAV_RETRY_MS = 200          // Intervalo entre tentativas de navegação de aba
 const SGD_CLICK_GUARD_DELAY_MS = 100      // Delay para registrar listener de clique-fora (evita capturar o clique de abertura)
-// ─────────────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────�

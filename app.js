@@ -4,6 +4,31 @@
  * Carregado por: manifest.json (content_scripts), depois de editor-ui.js e antes de main.js
  */
 
+// ─── AUTO-CAPITALIZAÇÃO DE TEXTO ───────────────────────────────────────────
+// Valor em memória lido de settings.preferences.enableAutoCapitalize.
+// Atualizado ao carregar a extensão e ao vivo caso outra aba altere a
+// preferência (chrome.storage.onChanged), seguindo o mesmo padrão usado
+// para sgdDebugLogsEnabled em config.js.
+let autoCapitalizeEnabled = false
+
+/**
+ * Capitaliza a primeira letra do texto e a primeira letra após pontuação
+ * de final de frase (. ! ?) ou quebra de linha, preservando a posição do
+ * cursor no textarea.
+ * @param {HTMLTextAreaElement} textArea
+ */
+function aplicarAutoCapitalizacao(textArea) {
+  const originalText = textArea.value
+  const { selectionStart, selectionEnd } = textArea
+  const capitalizedText = originalText.replace(
+    /(^\s*|[.!?]\s+|\n\s*)([a-zçáàãâéêíóôõú])/g,
+    (match, espacoOuPontuacao, letra) => espacoOuPontuacao + letra.toUpperCase()
+  )
+  if (capitalizedText === originalText) return
+  textArea.value = capitalizedText
+  textArea.setSelectionRange(selectionStart, selectionEnd)
+}
+
 /**
  * Observa mudanças no DOM para lidar com carregamento dinâmico (AJAX) do SGD.
  */
@@ -186,6 +211,25 @@ function removeClickDropdowns() {
 async function initializeExtension() {
   const settings = await getSettings()
   applyUiSettings(settings)
+
+  // Auto-capitalização: carrega o valor atual e mantém sincronizado ao vivo
+  // caso o usuário altere a preferência (mesma aba ou outra guia aberta).
+  autoCapitalizeEnabled = settings.preferences?.enableAutoCapitalize !== false
+  if (chrome.storage && chrome.storage.onChanged) {
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'sync' && changes[SETTINGS_STORAGE_KEY]) {
+        const novasPreferencias = changes[SETTINGS_STORAGE_KEY].newValue?.preferences
+        if (novasPreferencias && Object.prototype.hasOwnProperty.call(novasPreferencias, 'enableAutoCapitalize')) {
+          autoCapitalizeEnabled = novasPreferencias.enableAutoCapitalize !== false
+        }
+      }
+    })
+  }
+  document.addEventListener('input', e => {
+    if (!autoCapitalizeEnabled) return
+    if (e.target.tagName !== 'TEXTAREA') return
+    aplicarAutoCapitalizacao(e.target)
+  })
 
   await loadSavedTheme()
   // Aplica comportamento de dropdowns conforme preferência global
