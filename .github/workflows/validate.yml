@@ -1,0 +1,63 @@
+name: Validar arquivos da extensão
+
+# Roda em todo push e Pull Request para main e develop. O objetivo é pegar,
+# antes do merge, os dois tipos de bug que já quebraram a extensão em
+# produção: arquivos com erro de sintaxe/truncados e arquivos salvos com
+# codificação inválida (o Chrome recusa carregar um content script que não
+# esteja em UTF-8 válido).
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verificar sintaxe de todos os arquivos .js
+        run: |
+          echo "Verificando sintaxe JavaScript..."
+          fail=0
+          while IFS= read -r -d '' file; do
+            if ! node --check "$file" 2> /tmp/err.log; then
+              echo "::error file=$file::Erro de sintaxe (possível arquivo truncado/corrompido):"
+              cat /tmp/err.log
+              fail=1
+            fi
+          done < <(find . -name "*.js" -not -path "./node_modules/*" -not -path "./.git/*" -print0)
+          exit $fail
+
+      - name: Verificar codificação UTF-8
+        run: |
+          echo "Verificando se todos os arquivos de texto estão em UTF-8 válido..."
+          fail=0
+          while IFS= read -r -d '' file; do
+            if ! python3 -c "import sys; open(sys.argv[1], encoding='utf-8').read()" "$file" 2> /tmp/err.log; then
+              echo "::error file=$file::Arquivo não está em UTF-8 válido (provável truncamento no meio de um caractere multi-byte):"
+              cat /tmp/err.log
+              fail=1
+            fi
+          done < <(find . \( -name "*.js" -o -name "*.json" -o -name "*.css" -o -name "*.html" -o -name "*.md" \) -not -path "./node_modules/*" -not -path "./.git/*" -print0)
+          exit $fail
+
+      - name: Validar manifest.json e demais arquivos JSON
+        run: |
+          echo "Validando arquivos JSON..."
+          fail=0
+          while IFS= read -r -d '' file; do
+            if ! python3 -c "import json; json.load(open('$file', encoding='utf-8'))" 2> /tmp/err.log; then
+              echo "::error file=$file::JSON inválido:"
+              cat /tmp/err.log
+              fail=1
+            fi
+          done < <(find . -name "*.json" -not -path "./node_modules/*" -not -path "./.git/*" -print0)
+          exit $fail
