@@ -610,6 +610,12 @@ function showSgdToast(id, title, message, type = 'info', duration = 180000, requ
  * @param {boolean} [options.isManagementModal=false] - Se é o modal de gerenciamento (muda os botões).
  * @param {string|null} [options.modalId=null] - ID opcional para o modal.
  * @param {boolean} [options.showShareButton=true] - Se deve mostrar o botão de compartilhar (apenas em management modal).
+ * @param {function(HTMLElement, Function): void | null} [options.onSaveAndContinue=null] - Callback opcional para um
+ *   botão extra "Salvar e Continuar" (apenas em modais não-management). Não fecha o modal automaticamente.
+ * @param {string} [options.saveAndContinueLabel='Salvar e Continuar'] - Rótulo do botão de salvar e continuar.
+ * @param {string} [options.extraActionsHtml=''] - HTML extra (ex: botão de Importar) inserido na
+ *   extremidade oposta da barra de ações (esquerda), separado dos demais botões pela classe
+ *   `.modal-actions-left`.
  * @returns {HTMLDivElement} O elemento modal criado.
  */
 function createModal(
@@ -618,7 +624,14 @@ function createModal(
   onSave,
   options = {}
 ) {
-  const { isManagementModal = false, modalId = null, showShareButton = true } = options;
+  const {
+    isManagementModal = false,
+    modalId = null,
+    showShareButton = true,
+    onSaveAndContinue = null,
+    saveAndContinueLabel = 'Salvar e Continuar',
+    extraActionsHtml = ''
+  } = options;
 
   const modal = document.createElement('div')
   modal.className = 'editor-modal'
@@ -641,7 +654,17 @@ function createModal(
         : '') +
       `<button type="button" id="modal-cancel-btn" class="action-btn enhanced-btn">Fechar</button>`
   } else {
-    buttonsHtml = `<button type="button" id="modal-save-btn" class="action-btn">Salvar</button><button type="button" id="modal-cancel-btn" class="action-btn">Cancelar</button>`
+    // Botão extra opcional para salvar sem fechar o modal (ex: cadastro de vários itens em sequência).
+    const saveContinueBtnHtml = onSaveAndContinue
+      ? `<button type="button" id="modal-save-continue-btn" class="action-btn action-btn-themed">${escapeHTML(
+        saveAndContinueLabel
+      )}</button>`
+      : ''
+    buttonsHtml =
+      extraActionsHtml +
+      `<button type="button" id="modal-save-btn" class="action-btn">Salvar</button>` +
+      saveContinueBtnHtml +
+      `<button type="button" id="modal-cancel-btn" class="action-btn">Cancelar</button>`
   }
 
   modal.innerHTML = `
@@ -665,6 +688,14 @@ function createModal(
     saveBtn.addEventListener('click', e => {
       e.preventDefault()
       onSave(modal.querySelector('.se-modal-body'), closeModal)
+    })
+  }
+
+  const saveContinueBtn = modal.querySelector('#modal-save-continue-btn')
+  if (onSaveAndContinue && saveContinueBtn) {
+    saveContinueBtn.addEventListener('click', e => {
+      e.preventDefault()
+      onSaveAndContinue(modal.querySelector('.se-modal-body'), closeModal)
     })
   }
 

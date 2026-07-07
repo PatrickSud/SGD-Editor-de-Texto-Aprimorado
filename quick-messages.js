@@ -479,6 +479,111 @@ function handleCategoryDragEnd(e) {
 // --- MODAIS DE GERENCIAMENTO E CATEGORIAS ---
 
 /**
+ * Processa o arquivo .json selecionado no botão "Importar" do modal de Adicionar/Editar Trâmite.
+ * Se o arquivo contiver mais de um trâmite, delega para o fluxo padrão de seleção/mesclagem
+ * (modal "Selecionar Trâmites para Importar"). Se contiver exatamente um trâmite, preenche
+ * diretamente os campos de Título e Conteúdo do modal atual. A Categoria é deixada em branco,
+ * forçando o usuário a escolher, exceto se já existir localmente uma categoria com o mesmo nome
+ * da importada — nesse caso ela é pré-selecionada.
+ * @param {File} file - O arquivo .json selecionado pelo usuário.
+ * @param {HTMLElement} modal - O elemento do modal de Adicionar/Editar Trâmite.
+ */
+function handleTramiteImportFile(file, modal) {
+  const reader = new FileReader()
+  reader.onload = async e => {
+    try {
+      const parsedData = JSON.parse(e.target.result)
+
+      if (
+        !parsedData ||
+        !Array.isArray(parsedData.categories) ||
+        !Array.isArray(parsedData.messages)
+      ) {
+        throw new Error(
+          'O arquivo não parece ser um backup válido da extensão.'
+        )
+      }
+
+      const migratedData = await runDataMigration(parsedData)
+
+      if (migratedData.messages.length === 0) {
+        showNotification('O arquivo não contém trâmites para importar.', 'info')
+        return
+      }
+
+      if (migratedData.messages.length > 1) {
+        // Múltiplos trâmites: usa o fluxo padrão de seleção/mesclagem por categoria.
+        // A própria função já cuida de salvar, notificar e recarregar as instâncias.
+        await openImportSelectionModal(migratedData)
+        return
+      }
+
+      // Exatamente um trâmite: preenche diretamente os campos do modal atual.
+      const [importedMessage] = migratedData.messages
+      const importedCategory = migratedData.categories.find(
+        c => c.id === importedMessage.categoryId
+      )
+
+      const modalContent = modal.querySelector('.se-modal-body')
+      const titleInput = modalContent.querySelector('#modal-title-input')
+      const messageInput = modalContent.querySelector('#modal-message-input')
+      const categorySelect = modalContent.querySelector(
+        '#modal-category-select'
+      )
+
+      titleInput.value = importedMessage.title || ''
+
+      // Dispara 'input' para sincronizar o editor aprimorado (WYSIWYG/preview).
+      messageInput.value = importedMessage.message || ''
+      messageInput.dispatchEvent(new Event('input', { bubbles: true }))
+
+      // Verifica se já existe localmente uma categoria com o mesmo nome da importada.
+      const currentData = await getStoredData()
+      const existingCategoryMatch = importedCategory
+        ? currentData.categories.find(
+          c => c.name.toLowerCase() === importedCategory.name.toLowerCase()
+        )
+        : null
+
+      // Reconstrói o select: opção em branco (força o usuário a escolher) + categorias + "Nova Categoria...".
+      let refreshedOptions = `<option value="" ${existingCategoryMatch ? '' : 'selected'
+        }>Selecione uma categoria...</option>`
+      refreshedOptions += currentData.categories
+        .map(
+          c =>
+            `<option value="${c.id}" ${existingCategoryMatch && c.id === existingCategoryMatch.id
+              ? 'selected'
+              : ''
+            }>${escapeHTML(c.name)}</option>`
+        )
+        .join('')
+      refreshedOptions += `<option value="--new--">Nova Categoria...</option>`
+      categorySelect.innerHTML = refreshedOptions
+
+      // Garante que os campos de nova categoria fiquem ocultos, caso estivessem visíveis.
+      const newCategoryFields = modalContent.querySelector(
+        '#new-category-fields'
+      )
+      if (newCategoryFields) newCategoryFields.style.display = 'none'
+
+      showNotification(
+        existingCategoryMatch
+          ? 'Trâmite importado! Categoria correspondente selecionada automaticamente.'
+          : 'Trâmite importado! Selecione a categoria antes de salvar.',
+        'success'
+      )
+    } catch (error) {
+      console.error('Erro ao importar trâmite no modal:', error)
+      showNotification(`Erro ao importar: ${error.message}`, 'error')
+    }
+  }
+  reader.onerror = () => {
+    showNotification('Não foi possível ler o arquivo selecionado.', 'error')
+  }
+  reader.readAsText(file)
+}
+
+/**
  * Abre o modal para adicionar ou editar uma mensagem rápida.
  * @param {object | null} data - Os dados da mensagem para edição, ou um objeto com categoryId para pré-selecionar, ou null para adicionar nova.
  */
@@ -499,6 +604,171 @@ async function openMessageModal(data = null) {
 
   // Generate a unique ID for this modal editor instance
   const modalInstanceId = `modal-${Date.now()}`
+
+  /**
+   * Valida os campos do modal e salva o trâmite (nova mensagem ou edição existente).
+   * Reutilizada tanto pelo botão "Salvar" quanto por "Salvar e Continuar".
+   * @param {HTMLElement} modalContent - O corpo do modal (.se-modal-body).
+   * @returns {Promise<{success: boolean, categoryId: string|null}>}
+   */
+  async function salvarTramiteDoModal(modalContent) {
+    const newTitle = modalContent
+      .querySelector('#modal-title-input')
+      .value.trim()
+    // Captura o valor do textarea que agora está aprimorado (e sincronizado pelo editor-core).
+    const newMessage = modalContent
+      .querySelector('#modal-message-input')
+      .value.trim()
+
+    const categorySelect = modalContent.querySelector(
+      '#modal-category-select'
+    )
+    let categoryId = categorySelect.value
+
+    // Lógica para Nova Categoria
+    if (categoryId === '--new--') {
+      const newCategoryName = modalContent
+        .querySelector('#modal-new-category-input')
+        .value.trim()
+
+      const newCategoryShortcut = modalContent.querySelector(
+        '#modal-new-category-shortcut'
+      ).value
+
+      if (!newCategoryName) {
+        showNotification('O nome da nova categoria é obrigatório.', 'error')
+        return { success: false, categoryId: null }
+      }
+
+      // Validação do atalho antes de criar a categoria.
+      if (newCategoryShortcut) {
+        // ID é null pois a categoria ainda não existe.
+        const validation = await validateShortcut(newCategoryShortcut, null)
+        if (!validation.valid) {
+          showNotification(validation.message, 'error')
+          return { success: false, categoryId: null }
+        }
+      }
+
+      // Adiciona a categoria com o atalho definido (ou vazio).
+      const newCategory = await addCategory(
+        newCategoryName,
+        newCategoryShortcut
+      )
+      if (newCategory) {
+        categoryId = newCategory.id
+      } else {
+        // Se a criação falhou (ex: nome duplicado), interrompe o salvamento.
+        return { success: false, categoryId: null }
+      }
+    }
+
+    // Validação final e salvamento da mensagem
+    if (!newTitle || !newMessage || !categoryId || categoryId === '--new--') {
+      showNotification('Categoria, Título e Conteúdo são obrigatórios.', 'error')
+      return { success: false, categoryId: null }
+    }
+
+    const dataToSave = await getStoredData()
+    if (isEditing && data) {
+      // Edição: Atualiza a mensagem existente.
+      const msgIndex = dataToSave.messages.findIndex(m => m.id === data.id)
+      if (msgIndex > -1)
+        // Mantém o 'order' e 'id' existentes ao editar, mas atualiza categoria se necessário.
+        dataToSave.messages[msgIndex] = {
+          ...data,
+          title: newTitle,
+          message: newMessage,
+          categoryId
+        }
+    } else {
+      // Adição: Define a ordem para a nova mensagem (final da lista na categoria).
+      const messagesInCat = dataToSave.messages.filter(
+        m => m.categoryId === categoryId
+      )
+      const maxOrder =
+        messagesInCat.length > 0
+          ? Math.max(...messagesInCat.map(m => m.order || 0))
+          : -1
+
+      dataToSave.messages.push({
+        id: `msg-${Date.now()}`,
+        title: newTitle,
+        message: newMessage,
+        categoryId,
+        order: maxOrder + 1 // Define a nova ordem
+      })
+    }
+    await saveStoredData(dataToSave)
+    // Recarrega todas as instâncias visíveis.
+    reloadAllQuickMessagesInstances()
+
+    // Atualiza o painel de inserção rápida se estiver aberto
+    await refreshQuickInserterPanel()
+
+    return { success: true, categoryId }
+  }
+
+  /**
+   * Reseta os campos do modal (Categoria/Título/Conteúdo) para permitir o cadastro do
+   * próximo trâmite em sequência, mantendo a categoria recém-utilizada selecionada.
+   * @param {HTMLElement} modalContent - O corpo do modal (.se-modal-body).
+   * @param {string} selectedCategoryId - A categoria a manter selecionada após o reset.
+   */
+  async function resetModalParaProximoTramite(modalContent, selectedCategoryId) {
+    // Reconstrói as opções de categoria (necessário caso uma nova categoria tenha sido criada agora).
+    const latestData = await getStoredData()
+    let refreshedOptions = latestData.categories
+      .map(
+        c =>
+          `<option value="${c.id}" ${c.id === selectedCategoryId ? 'selected' : ''
+          }>${escapeHTML(c.name)}</option>`
+      )
+      .join('')
+    refreshedOptions += `<option value="--new--">Nova Categoria...</option>`
+
+    const categorySelect = modalContent.querySelector(
+      '#modal-category-select'
+    )
+    categorySelect.innerHTML = refreshedOptions
+
+    // Esconde e limpa os campos de nova categoria, caso tenham sido usados.
+    const newCategoryFields = modalContent.querySelector(
+      '#new-category-fields'
+    )
+    if (newCategoryFields) newCategoryFields.style.display = 'none'
+
+    const newCategoryInput = modalContent.querySelector(
+      '#modal-new-category-input'
+    )
+    if (newCategoryInput) newCategoryInput.value = ''
+
+    const newCategoryShortcutInput = modalContent.querySelector(
+      '#modal-new-category-shortcut'
+    )
+    if (newCategoryShortcutInput) newCategoryShortcutInput.value = ''
+
+    const shortcutPreviewDisplay = modalContent.querySelector(
+      '#shortcut-preview-display'
+    )
+    if (shortcutPreviewDisplay) shortcutPreviewDisplay.textContent = 'Nenhum'
+
+    // Limpa título e conteúdo. Dispara 'input' no conteúdo para sincronizar o editor aprimorado.
+    const titleInput = modalContent.querySelector('#modal-title-input')
+    titleInput.value = ''
+
+    const messageInput = modalContent.querySelector('#modal-message-input')
+    messageInput.value = ''
+    messageInput.dispatchEvent(new Event('input', { bubbles: true }))
+
+    titleInput.focus()
+  }
+
+  // Botão de Importar: fica na extremidade oposta da barra de ações (apenas ao adicionar, não ao editar).
+  const importActionHtml = !isEditing
+    ? `<input type="file" id="modal-import-file-input" accept=".json" style="display:none;">
+       <label for="modal-import-file-input" class="action-btn modal-actions-left" style="cursor:pointer; display:inline-block;" title="Importar trâmite(s) de um arquivo .json">📥 Importar</label>`
+    : ''
 
   // Estrutura HTML do modal
   const modal = createModal(
@@ -539,108 +809,34 @@ async function openMessageModal(data = null) {
         </div>
     `,
     async (modalContent, closeModal) => {
-      // Lógica de salvamento
-      const newTitle = modalContent
-        .querySelector('#modal-title-input')
-        .value.trim()
-      // Captura o valor do textarea que agora está aprimorado (e sincronizado pelo editor-core).
-      const newMessage = modalContent
-        .querySelector('#modal-message-input')
-        .value.trim()
+      const result = await salvarTramiteDoModal(modalContent)
 
-      const categorySelect = modalContent.querySelector(
-        '#modal-category-select'
-      )
-      let categoryId = categorySelect.value
+      // Seção inativada - funcionalidade duplicada com Painel de Trâmites
+      // Se o modal de configurações estiver aberto, atualiza a lista de trâmites
+      // const managementModal = document.getElementById('management-modal')
+      // if (managementModal) {
+      //   await renderQuickStepsList(managementModal)
+      // }
 
-      // Lógica para Nova Categoria
-      if (categoryId === '--new--') {
-        const newCategoryName = modalContent
-          .querySelector('#modal-new-category-input')
-          .value.trim()
+      if (result.success) closeModal()
+    },
+    {
+      // "Salvar e Continuar" só se aplica ao cadastrar novos trâmites (ex: Trâmites Padrões),
+      // permitindo salvar vários em sequência sem fechar o modal a cada um.
+      onSaveAndContinue: isEditing
+        ? null
+        : async modalContent => {
+          const result = await salvarTramiteDoModal(modalContent)
+          if (!result.success) return
 
-        const newCategoryShortcut = modalContent.querySelector(
-          '#modal-new-category-shortcut'
-        ).value
-
-        if (!newCategoryName) {
-          showNotification('O nome da nova categoria é obrigatório.', 'error')
-          return
-        }
-
-        // Validação do atalho antes de criar a categoria.
-        if (newCategoryShortcut) {
-          // ID é null pois a categoria ainda não existe.
-          const validation = await validateShortcut(newCategoryShortcut, null)
-          if (!validation.valid) {
-            showNotification(validation.message, 'error')
-            return
-          }
-        }
-
-        // Adiciona a categoria com o atalho definido (ou vazio).
-        const newCategory = await addCategory(
-          newCategoryName,
-          newCategoryShortcut
-        )
-        if (newCategory) {
-          categoryId = newCategory.id
-        } else {
-          // Se a criação falhou (ex: nome duplicado), interrompe o salvamento.
-          return
-        }
-      }
-
-      // Validação final e salvamento da mensagem
-      if (newTitle && newMessage && categoryId && categoryId !== '--new--') {
-        const dataToSave = await getStoredData()
-        if (isEditing && data) {
-          // Edição: Atualiza a mensagem existente.
-          const msgIndex = dataToSave.messages.findIndex(m => m.id === data.id)
-          if (msgIndex > -1)
-            // Mantém o 'order' e 'id' existentes ao editar, mas atualiza categoria se necessário.
-            dataToSave.messages[msgIndex] = {
-              ...data,
-              title: newTitle,
-              message: newMessage,
-              categoryId
-            }
-        } else {
-          // Adição: Define a ordem para a nova mensagem (final da lista na categoria).
-          const messagesInCat = dataToSave.messages.filter(
-            m => m.categoryId === categoryId
+          showNotification(
+            'Trâmite salvo! Continue adicionando o próximo.',
+            'success'
           )
-          const maxOrder =
-            messagesInCat.length > 0
-              ? Math.max(...messagesInCat.map(m => m.order || 0))
-              : -1
-
-          dataToSave.messages.push({
-            id: `msg-${Date.now()}`,
-            title: newTitle,
-            message: newMessage,
-            categoryId,
-            order: maxOrder + 1 // Define a nova ordem
-          })
-        }
-        await saveStoredData(dataToSave)
-        // Recarrega todas as instâncias visíveis.
-        reloadAllQuickMessagesInstances()
-
-        // Atualiza o painel de inserção rápida se estiver aberto
-        await refreshQuickInserterPanel()
-
-        // Seção inativada - funcionalidade duplicada com Painel de Trâmites
-        // Se o modal de configurações estiver aberto, atualiza a lista de trâmites
-        // const managementModal = document.getElementById('management-modal')
-        // if (managementModal) {
-        //   await renderQuickStepsList(managementModal)
-        // }
-
-        closeModal()
-      } else {
-        showNotification('Título e Conteúdo são obrigatórios.', 'error')
-      }
+          await resetModalParaProximoTramite(modalContent, result.categoryId)
+        },
+      // Botão de Importar na extremidade esquerda da barra de ações.
+      extraActionsHtml: importActionHtml
     }
   )
   // Adiciona o listener para o novo menu de variáveis
@@ -689,6 +885,19 @@ async function openMessageModal(data = null) {
     e.preventDefault()
     openShortcutModalForNewCategory(modal)
   })
+
+  // Listener para o botão de Importar (apenas presente ao adicionar, não ao editar).
+  const importFileInput = modal.querySelector('#modal-import-file-input')
+  if (importFileInput) {
+    importFileInput.addEventListener('change', e => {
+      const file = e.target.files[0]
+      if (file) {
+        handleTramiteImportFile(file, modal)
+      }
+      // Limpa o input para permitir selecionar o mesmo arquivo novamente, se necessário.
+      importFileInput.value = ''
+    })
+  }
 }
 
 /**

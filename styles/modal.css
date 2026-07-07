@@ -495,7 +495,8 @@ a.open-link-btn:hover {
   background-color: var(--background-main);
 }
 
-.se-modal-actions button {
+.se-modal-actions button,
+.se-modal-actions label.action-btn {
   padding: 8px 16px;
   border-radius: var(--border-radius-sm);
   border: 1px solid transparent;
@@ -512,6 +513,11 @@ a.open-link-btn:hover {
 .se-modal-actions button[data-action='share-extension']:hover,
 .se-modal-actions button[data-action='share-extension']:focus {
   color: #fff !important;
+}
+
+/* Move qualquer ação (ex: botão Importar) para a extremidade oposta da barra de ações. */
+.se-modal-actions .modal-actions-left {
+  margin-right: auto;
 }
 
 .link-as-button-container {
