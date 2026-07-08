@@ -1559,6 +1559,65 @@
     }
   }
 
+  // ─── Resolvers de Acesso (IAgente / Duplicados) ──────────────────────────────
+  // Funções puras e síncronas que concentram a regra de decisão de acesso.
+  // São usadas tanto pelas checagens reais (hasIAgenteAccess/hasDuplicateCheckerIAAccess,
+  // que buscam os dados no Firebase) quanto pelo badge do painel de Controle de Acesso
+  // (checkUserIAgenteAccessStatus/checkUserDuplicateAccessStatus em info-panel.js, que já
+  // tem os dados carregados). Mantendo a decisão em um único lugar, painel e acesso real
+  // nunca mais podem divergir por causa de uma ordem de checagem diferente entre os dois.
+  // Expostas em window.sgdPermissions para serem reaproveitadas pelo info-panel.js.
+
+  function resolveIAgenteAccess({ isMasterBypass, iagenteDisabled, iagenteIA_Enabled, unidade, enabledUnidades }) {
+    if (isMasterBypass) {
+      return { active: true, reason: 'Master' }
+    }
+    // Bloqueio individual tem prioridade sobre a liberação individual: se os dois
+    // campos estiverem true por engano (ex.: edição manual no Firebase), o usuário
+    // fica bloqueado, nunca liberado por acidente.
+    if (iagenteDisabled === true) {
+      return { active: false, reason: 'Bloqueado individualmente' }
+    }
+    if (iagenteIA_Enabled === true) {
+      return { active: true, reason: 'Ativo individualmente' }
+    }
+    const unit = unidade ? unidade.trim() : ''
+    if (!unit || unit === 'Unidade não capturada') {
+      return { active: false, reason: 'Unidade não capturada' }
+    }
+    const trimmedUnit = unit.toLowerCase()
+    const isUnitEnabled = (enabledUnidades || []).some(eu => trimmedUnit === eu.trim().toLowerCase())
+    if (!isUnitEnabled) {
+      return { active: false, reason: 'Unidade não liberada' }
+    }
+    return { active: true, reason: 'Ativo' }
+  }
+
+  function resolveDuplicateIAAccess({ isMasterBypass, duplicateIA_Enabled, duplicateIA_Disabled, unidade, enabledUnidades }) {
+    if (isMasterBypass) {
+      return { active: true, reason: 'Master' }
+    }
+    // Aqui a liberação individual é checada antes do bloqueio (comportamento já
+    // existente e mantido de propósito, para não alterar o resultado de nenhum
+    // registro em produção nesta refatoração).
+    if (duplicateIA_Enabled === true) {
+      return { active: true, reason: 'Ativo individualmente' }
+    }
+    if (duplicateIA_Disabled === true) {
+      return { active: false, reason: 'Bloqueado individualmente' }
+    }
+    const unit = unidade ? unidade.trim() : ''
+    if (!unit || unit === 'Unidade não capturada') {
+      return { active: false, reason: 'Unidade não capturada' }
+    }
+    const trimmedUnit = unit.toLowerCase()
+    const isUnitEnabled = (enabledUnidades || []).some(eu => trimmedUnit === eu.trim().toLowerCase())
+    if (!isUnitEnabled) {
+      return { active: false, reason: 'Unidade não liberada' }
+    }
+    return { active: true, reason: 'Ativo' }
+  }
+
   async function hasDuplicateCheckerIAAccess() {
     const userName = window.sgdPermissions?.currentUser
     const userId = window.sgdPermissions?.currentUserId
@@ -1572,64 +1631,43 @@
     const normalizedUser = normalizeName(userName)
     
     // 1. Verificar no Firebase se o usuário individual está explicitamente ativado ou desativado
-    let hasManualOverride = false
-    let isManualEnabled = false
+    let duplicateIA_Enabled = false
+    let duplicateIA_Disabled = false
     let userUnidade = null
-    
+
     const matchedEditor = await matchEditorRecord(userId, userName, normalizedUser)
     if (matchedEditor) {
-      if (matchedEditor.duplicateIA_Enabled === true) {
-        hasManualOverride = true
-        isManualEnabled = true
-      } else if (matchedEditor.duplicateIA_Disabled === true) {
-        hasManualOverride = true
-        isManualEnabled = false
-      }
+      duplicateIA_Enabled = matchedEditor.duplicateIA_Enabled === true
+      duplicateIA_Disabled = matchedEditor.duplicateIA_Disabled === true
       userUnidade = matchedEditor.unidade
     } else {
       const matchedViewer = await matchViewerRecord(userId, userName, normalizedUser)
       if (matchedViewer) {
-        if (matchedViewer.duplicateIA_Enabled === true) {
-          hasManualOverride = true
-          isManualEnabled = true
-        } else if (matchedViewer.duplicateIA_Disabled === true) {
-          hasManualOverride = true
-          isManualEnabled = false
-        }
+        duplicateIA_Enabled = matchedViewer.duplicateIA_Enabled === true
+        duplicateIA_Disabled = matchedViewer.duplicateIA_Disabled === true
         userUnidade = matchedViewer.unidade
       }
     }
-    
-    if (hasManualOverride) {
-      return isManualEnabled
-    }
-    
+
     // 2. Se não temos a unidade cadastrada no matched record, pega do cache local
     if (!userUnidade) {
       const cachedUserInfo = await chrome.storage.local.get(['userUnidade'])
       userUnidade = cachedUserInfo.userUnidade
     }
-    
-    // Se a unidade não foi capturada ou está vazia, não libera
-    if (!userUnidade || userUnidade.trim() === '' || userUnidade.trim() === 'Unidade não capturada') {
-      return false
-    }
-    
-    if (userUnidade) {
-      const trimmedUnit = userUnidade.trim().toLowerCase()
-      
-      // 3. Verificar se a unidade do usuário está na lista de unidades liberadas (Allowlist)
-      const localConfig = await chrome.storage.local.get(['remoteConfig'])
-      const remoteConfig = localConfig.remoteConfig || {}
-      const enabledUnidades = remoteConfig.duplicate_enabled_unidades || []
-      
-      const isUnitEnabled = enabledUnidades.some(enabledUnit => 
-        trimmedUnit === enabledUnit.trim().toLowerCase()
-      )
-      if (!isUnitEnabled) return false
-    }
-    
-    return true
+
+    // 3. Verificar a unidade contra a allowlist remota (duplicate_enabled_unidades)
+    const localConfig = await chrome.storage.local.get(['remoteConfig'])
+    const remoteConfig = localConfig.remoteConfig || {}
+    const enabledUnidades = remoteConfig.duplicate_enabled_unidades || []
+
+    const result = resolveDuplicateIAAccess({
+      isMasterBypass: false, // bypass de Master/Dev já tratado acima, com retorno antecipado
+      duplicateIA_Enabled,
+      duplicateIA_Disabled,
+      unidade: userUnidade,
+      enabledUnidades
+    })
+    return result.active
   }
 
   async function hasIAgenteAccess() {
@@ -1676,17 +1714,6 @@
       }
     }
 
-    if (isIndividualDisabled) {
-      sgdLog('[IAgente Access] Negado: bloqueado individualmente (iagenteDisabled=true).')
-      return false
-    }
-
-    // Liberação manual individual: ignora a allowlist de unidades
-    if (isIndividuallyEnabled) {
-      sgdLog('[IAgente Access] Concedido: liberação manual individual (iagenteIA_Enabled=true), ignorando unidade.')
-      return true
-    }
-
     // 2. Se não temos a unidade cadastrada no matched record, pega do cache local
     if (!userUnidade) {
       const cachedUserInfo = await chrome.storage.local.get(['userUnidade'])
@@ -1694,32 +1721,25 @@
       sgdLog('[IAgente Access] Unidade não veio do registro, usando cache local (userUnidade):', userUnidade)
     }
 
-    // Se a unidade não foi capturada ou está vazia, não libera o IAgente
-    if (!userUnidade || userUnidade.trim() === '' || userUnidade.trim() === 'Unidade não capturada') {
-      sgdWarn('[IAgente Access] Negado: unidade não capturada.')
-      return false
+    // 3. Verificar a unidade contra a allowlist remota (iagente_enabled_unidades)
+    const localConfig = await chrome.storage.local.get(['remoteConfig'])
+    const remoteConfig = localConfig.remoteConfig || {}
+    const enabledUnidades = remoteConfig.iagente_enabled_unidades || []
+
+    const result = resolveIAgenteAccess({
+      isMasterBypass: false, // bypass de Master/Dev já tratado acima, com retorno antecipado
+      iagenteDisabled: isIndividualDisabled,
+      iagenteIA_Enabled: isIndividuallyEnabled,
+      unidade: userUnidade,
+      enabledUnidades
+    })
+
+    if (result.active) {
+      sgdLog('[IAgente Access] Concedido:', result.reason)
+    } else {
+      sgdWarn('[IAgente Access] Negado:', result.reason)
     }
-
-    if (userUnidade) {
-      const trimmedUnit = userUnidade.trim().toLowerCase()
-
-      // 3. Verificar se a unidade do usuário está na lista de unidades liberadas (Allowlist)
-      const localConfig = await chrome.storage.local.get(['remoteConfig'])
-      const remoteConfig = localConfig.remoteConfig || {}
-      const enabledUnidades = remoteConfig.iagente_enabled_unidades || []
-
-      const isUnitEnabled = enabledUnidades.some(enabledUnit =>
-        trimmedUnit === enabledUnit.trim().toLowerCase()
-      )
-      sgdLog('[IAgente Access] Checando unidade "' + userUnidade + '" contra allowlist:', enabledUnidades, '| liberada:', isUnitEnabled)
-      if (!isUnitEnabled) {
-        sgdWarn('[IAgente Access] Negado: unidade não está na allowlist (iagente_enabled_unidades).')
-        return false
-      }
-    }
-
-    sgdLog('[IAgente Access] Concedido: unidade liberada na allowlist.')
-    return true
+    return result.active
   }
 
   async function getIAgenteUrl() {
@@ -1814,6 +1834,10 @@
   window.sgdPermissions.getIAgenteUrl = getIAgenteUrl
   window.sgdPermissions.toggleUserDuplicateIA = toggleUserDuplicateIA
   window.sgdPermissions.hasDuplicateCheckerIAAccess = hasDuplicateCheckerIAAccess
+  // Resolvers puros compartilhados com o painel (info-panel.js), para que o badge
+  // de status e a checagem real de acesso nunca divirjam.
+  window.sgdPermissions.resolveIAgenteAccess = resolveIAgenteAccess
+  window.sgdPermissions.resolveDuplicateIAAccess = resolveDuplicateIAAccess
 
   window.sgdPermissions.refreshEditors = async () => {
     const list = await getEditorsList(true)

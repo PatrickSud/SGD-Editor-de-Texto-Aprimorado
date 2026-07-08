@@ -4837,59 +4837,41 @@ async function loadAccessControl(sectionElement) {
     const localConfig = await chrome.storage.local.get(['remoteConfig'])
     const remoteConfig = localConfig.remoteConfig || {}
 
+    // As duas funções abaixo delegam a decisão para os resolvers puros expostos por
+    // permissions-service.js (window.sgdPermissions.resolveIAgenteAccess /
+    // resolveDuplicateIAAccess), os mesmos usados pela checagem real de acesso.
+    // Isso garante que o badge do painel nunca mais divirja do que o usuário
+    // realmente recebe em tempo de execução.
     const checkUserIAgenteAccessStatus = (user) => {
-      // Editores Master genuínos sempre têm acesso bypass
-      if (user.role === 'master') {
-        return { active: true, reason: 'Master' }
+      const result = window.sgdPermissions.resolveIAgenteAccess({
+        isMasterBypass: user.role === 'master',
+        iagenteDisabled: user.iagenteDisabled,
+        iagenteIA_Enabled: user.iagenteIA_Enabled,
+        unidade: user.unidade,
+        enabledUnidades: remoteConfig.iagente_enabled_unidades || []
+      })
+      // "Master (cadastro)" deixa claro que essa leitura vem do cargo cadastrado no
+      // Firebase, e não é garantia de que a sessão do próprio usuário vai reconhecer
+      // esse bypass automaticamente (depende do registro dele ser encontrado em tempo
+      // de execução — ver aviso "[IAgente Access] Nenhum registro encontrado...").
+      if (result.reason === 'Master') {
+        return { active: true, reason: 'Master (cadastro)' }
       }
-
-      if (user.iagenteIA_Enabled === true) {
-        return { active: true, reason: 'Ativo individualmente' }
-      }
-
-      if (user.iagenteDisabled === true) {
-        return { active: false, reason: 'Bloqueado individualmente' }
-      }
-
-      const unit = user.unidade ? user.unidade.trim() : ''
-      if (!unit || unit === '' || unit === 'Unidade não capturada') {
-        return { active: false, reason: 'Unidade não capturada' }
-      }
-
-      const enabledUnidades = remoteConfig.iagente_enabled_unidades || []
-      const isUnitEnabled = enabledUnidades.some(eu => eu.trim().toLowerCase() === unit.toLowerCase())
-      if (!isUnitEnabled) {
-        return { active: false, reason: 'Unidade não liberada' }
-      }
-      
-      return { active: true, reason: 'Ativo' }
+      return result
     }
 
     const checkUserDuplicateAccessStatus = (user) => {
-      // Editores Master genuínos sempre têm acesso bypass
-      if (user.role === 'master') {
-        return { active: true, reason: 'Master' }
+      const result = window.sgdPermissions.resolveDuplicateIAAccess({
+        isMasterBypass: user.role === 'master',
+        duplicateIA_Enabled: user.duplicateIA_Enabled,
+        duplicateIA_Disabled: user.duplicateIA_Disabled,
+        unidade: user.unidade,
+        enabledUnidades: remoteConfig.duplicate_enabled_unidades || []
+      })
+      if (result.reason === 'Master') {
+        return { active: true, reason: 'Master (cadastro)' }
       }
-
-      if (user.duplicateIA_Enabled === true) {
-        return { active: true, reason: 'Ativo individualmente' }
-      }
-      if (user.duplicateIA_Disabled === true) {
-        return { active: false, reason: 'Bloqueado individualmente' }
-      }
-      
-      const unit = user.unidade ? user.unidade.trim() : ''
-      if (!unit || unit === '' || unit === 'Unidade não capturada') {
-        return { active: false, reason: 'Unidade não capturada' }
-      }
-      
-      const enabledUnidades = remoteConfig.duplicate_enabled_unidades || []
-      const isUnitEnabled = enabledUnidades.some(eu => eu.trim().toLowerCase() === unit.toLowerCase())
-      if (!isUnitEnabled) {
-        return { active: false, reason: 'Unidade não liberada' }
-      }
-      
-      return { active: true, reason: 'Ativo' }
+      return result
     }
 
     const resolveUserRegion = (user) => {
