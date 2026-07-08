@@ -2,7 +2,7 @@ const RELEASE_NOTES = {
   '3.0.6.4': {
     title: '🚀 Ajustes — Versão 3.0.6.4',
     features: [
-      '<b>⚡ Trâmites Padrões:</b> No modal "Adicionar Trâmite", novo botão <b>"Salvar e Continuar"</b> para cadastrar vários trâmites em sequência sem fechar o modal, e novo botão <b>"Importar"</b> para preencher automaticamente Título/Conteúdo a partir de um arquivo .json (ou mesclar vários, se o arquivo tiver mais de um trâmite).',
+      '<b>⚡ Trâmites Padrões:</b> Novos botões <b>"Salvar e Continuar"</b> e <b>"Importar"</b> no modal de Adicionar Trâmite, além de suporte a <b>arrastar (drag-and-drop)</b> um arquivo .json de backup direto sobre o editor para importar.',
       '<b>🤖 Verificação de Duplicidade:</b> Novo botão <b>"Verificar duplicidade"</b> na tela de cadastro de SSC, com checkbox de verificação automática (dispara 7s após parar de digitar o assunto, com contagem regressiva visual).',
       '<b>🔠 Auto-capitalização de Texto:</b> Nova preferência (ativada por padrão) que capitaliza automaticamente a primeira letra de frases ao digitar nos campos de texto. Configurável em Configurações → Auto-capitalização de Texto.'
     ]

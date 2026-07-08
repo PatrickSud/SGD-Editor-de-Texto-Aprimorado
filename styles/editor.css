@@ -59,6 +59,30 @@
   margin-bottom: 0;
 }
 
+/* --- Indicador de "solte para importar" ao arrastar um .json sobre o editor --- */
+.editor-container.dragging-json-file {
+  outline: 2px dashed var(--primary-color);
+  outline-offset: -4px;
+}
+
+.editor-container.dragging-json-file::after {
+  content: '📥 Solte para importar trâmites';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  padding: 8px;
+  border-radius: var(--border-radius-md);
+  pointer-events: none;
+  z-index: 50;
+}
+
 textarea[data-enhanced] {
   background-color: var(--background-secondary);
   color: var(--text-color-main);

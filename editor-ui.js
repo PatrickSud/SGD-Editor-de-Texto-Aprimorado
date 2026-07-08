@@ -1496,6 +1496,33 @@ function setupEditorInstanceListeners(
   // --- Listener para colar imagens ---
   textArea.addEventListener('paste', e => handleImagePaste(e, textArea))
 
+  // --- Listeners para importar trâmites via arraste (drag-and-drop) de arquivo JSON ---
+  editorContainer.addEventListener('dragover', e => {
+    // Só intercepta arrastes de arquivo do sistema operacional; preserva o
+    // comportamento nativo de arrastar texto selecionado dentro do textarea.
+    if (!e.dataTransfer.types.includes('Files')) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'copy'
+    editorContainer.classList.add('dragging-json-file')
+  })
+
+  editorContainer.addEventListener('dragleave', e => {
+    // Só remove o destaque quando o cursor realmente sai do container
+    // (evita "piscar" ao passar por cima de elementos filhos, como a toolbar).
+    if (!editorContainer.contains(e.relatedTarget)) {
+      editorContainer.classList.remove('dragging-json-file')
+    }
+  })
+
+  editorContainer.addEventListener('drop', e => {
+    if (!e.dataTransfer.types.includes('Files')) return
+    e.preventDefault()
+    editorContainer.classList.remove('dragging-json-file')
+
+    const [file] = e.dataTransfer.files
+    if (file) handleTramiteDropImport(file)
+  })
+
   // --- Listeners da Toolbar (Delegação de Eventos) ---
   editorContainer.addEventListener('click', async e => {
     // PIN de recursos de IA

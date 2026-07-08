@@ -584,6 +584,62 @@ function handleTramiteImportFile(file, modal) {
 }
 
 /**
+ * Processa um arquivo .json solto (drag-and-drop) diretamente sobre qualquer editor de texto
+ * da extensão. Diferente de handleTramiteImportFile (usada no botão "Importar" do modal de
+ * Adicionar/Editar Trâmite), aqui não existe um formulário para preencher com um trâmite único —
+ * por isso todo arquivo reconhecido como backup de trâmites válido (com 1 ou N mensagens) é
+ * sempre encaminhado para o modal "Selecionar Trâmites para Importar".
+ * @param {File} file - O arquivo solto pelo usuário sobre o editor.
+ */
+function handleTramiteDropImport(file) {
+  if (!file.name.toLowerCase().endsWith('.json')) {
+    showNotification(
+      'Arraste um arquivo .json de backup de trâmites para importar.',
+      'warning'
+    )
+    return
+  }
+
+  const reader = new FileReader()
+  reader.onload = async e => {
+    try {
+      const parsedData = JSON.parse(e.target.result)
+
+      if (
+        !parsedData ||
+        !Array.isArray(parsedData.categories) ||
+        !Array.isArray(parsedData.messages)
+      ) {
+        throw new Error(
+          'O arquivo não parece ser um backup de trâmites válido.'
+        )
+      }
+
+      const migratedData = await runDataMigration(parsedData)
+
+      if (migratedData.messages.length === 0) {
+        showNotification(
+          'O arquivo não contém trâmites para importar.',
+          'info'
+        )
+        return
+      }
+
+      // Sempre abre o modal de seleção, mesmo com um único trâmite, pois não há
+      // um formulário de edição para preencher diretamente neste contexto.
+      await openImportSelectionModal(migratedData)
+    } catch (error) {
+      console.error('Erro ao importar trâmites via arraste de arquivo:', error)
+      showNotification(`Erro ao importar: ${error.message}`, 'error')
+    }
+  }
+  reader.onerror = () => {
+    showNotification('Não foi possível ler o arquivo arrastado.', 'error')
+  }
+  reader.readAsText(file)
+}
+
+/**
  * Abre o modal para adicionar ou editar uma mensagem rápida.
  * @param {object | null} data - Os dados da mensagem para edição, ou um objeto com categoryId para pré-selecionar, ou null para adicionar nova.
  */
