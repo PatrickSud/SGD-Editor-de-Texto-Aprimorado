@@ -2414,6 +2414,42 @@ async function openImportSelectionModal(importedData, onCompleteCallback) {
         .forEach(msgCheckbox => {
           msgCheckbox.checked = e.target.checked
         })
+      e.target.indeterminate = false
+      // O clique direto no checkbox da categoria já atualiza o visual
+      // nativamente (via :checked), então removemos qualquer reforço
+      // visual manual que possa ter ficado de uma seleção anterior.
+      e.target.classList.remove('force-checked')
+    })
+  })
+
+  // Ao marcar/desmarcar um trâmite individual, reflete o estado agregado no
+  // checkbox da categoria correspondente: marcado se houver pelo menos um
+  // trâmite selecionado nela, desmarcado se nenhum estiver selecionado.
+  modal.querySelectorAll('.import-item-checkbox').forEach(msgCheckbox => {
+    msgCheckbox.addEventListener('change', e => {
+      const parentCategoryDiv = e.target.closest('.import-category')
+      if (!parentCategoryDiv) return
+
+      const catCheckbox = parentCategoryDiv.querySelector(
+        '.import-category-checkbox'
+      )
+      if (!catCheckbox) return
+
+      const itemsInCategory = parentCategoryDiv.querySelectorAll(
+        '.import-item-checkbox'
+      )
+      const checkedCount = Array.from(itemsInCategory).filter(
+        cb => cb.checked
+      ).length
+
+      catCheckbox.checked = checkedCount > 0
+      catCheckbox.indeterminate =
+        checkedCount > 0 && checkedCount < itemsInCategory.length
+      // Reforço visual explícito via classe (ver styles/base.css), para
+      // garantir que o checkbox da categoria apareça marcado mesmo que a
+      // recomputação do pseudo-seletor :checked não seja suficiente quando
+      // o estado é alterado via JavaScript.
+      catCheckbox.classList.toggle('force-checked', checkedCount > 0)
     })
   })
 }

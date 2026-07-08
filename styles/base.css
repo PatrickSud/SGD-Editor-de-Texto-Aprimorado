@@ -488,16 +488,19 @@ textarea[data-enhanced],
   line-height: 1;
 }
 
-/* Reforço visual: quando o checkbox de categoria (Exportar Trâmites) é marcado
-   via JavaScript (ao selecionar trâmites individuais), garantimos o mesmo
-   visual do estado :checked através de uma classe explícita, evitando
-   depender apenas da recomputação do pseudo-seletor :checked. */
-.export-category-checkbox.force-checked + label::before {
+/* Reforço visual: quando um checkbox de categoria (Exportar ou Importar
+   Trâmites) é marcado via JavaScript (ao selecionar trâmites individuais),
+   garantimos o mesmo visual do estado :checked através de uma classe
+   explícita, evitando depender apenas da recomputação do pseudo-seletor
+   :checked. */
+.export-category-checkbox.force-checked + label::before,
+.import-category-checkbox.force-checked + label::before {
   background-color: var(--primary-color) !important;
   border-color: var(--primary-color) !important;
 }
 
-.export-category-checkbox.force-checked + label::after {
+.export-category-checkbox.force-checked + label::after,
+.import-category-checkbox.force-checked + label::after {
   content: '✔';
   position: absolute;
   left: 9px;
