@@ -2807,7 +2807,10 @@ function createSpeechCommandHint() {
  * @param {object} notes - O objeto com as notas da versão de RELEASE_NOTES.
  */
 function showWhatsNewModal(notes) {
-  const featuresHtml = notes.features
+  const visibleFeatures = typeof getVisibleFeatures !== 'undefined'
+    ? getVisibleFeatures(notes.features)
+    : (notes.features || [])
+  const featuresHtml = visibleFeatures
     .map(feature => feature.trimStart().startsWith('<p')
       ? feature
       : `<li style="margin-bottom: 8px;">${feature}</li>`
@@ -2830,12 +2833,15 @@ function showWhatsNewModal(notes) {
   const previousHtml = majorKeys
     .map(v => {
       const rn = RELEASE_NOTES[v]
-      const fHtml = (rn.features || [])
+      const fHtml = (typeof getVisibleFeatures !== 'undefined' ? getVisibleFeatures(rn.features) : (rn.features || []))
         .map(f => `<li style="margin-bottom: 8px;">${f}</li>`)
         .join('')
       let minorHtml = ''
       if (typeof MINOR_RELEASE_NOTES !== 'undefined' && MINOR_RELEASE_NOTES[v]) {
-        const mf = MINOR_RELEASE_NOTES[v].reduce((acc, item) => acc.concat(item.features || []), [])
+        const mf = MINOR_RELEASE_NOTES[v].reduce((acc, item) => {
+          const visible = typeof getVisibleFeatures !== 'undefined' ? getVisibleFeatures(item.features) : (item.features || [])
+          return acc.concat(visible)
+        }, [])
         if (mf.length > 0) {
           minorHtml = `<ul style="margin-top: 8px;">${mf
             .map(f => `<li style="margin-bottom: 8px;">${f}</li>`)

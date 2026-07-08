@@ -705,7 +705,8 @@ hr.fired-reminders-separator {
 
 /* --- QUICK STEPS E PAINÉIS --- */
 .quick-change-container .add-new-item-btn,
-.quick-steps-actions .add-message-btn {
+.quick-steps-actions .add-message-btn,
+.quick-steps-actions .export-message-btn {
   width: 100%;
   padding: 8px 12px;
   background-color: var(--background-secondary);
@@ -723,7 +724,8 @@ hr.fired-reminders-separator {
 }
 
 .quick-change-container .add-new-item-btn:hover,
-.quick-steps-actions .add-message-btn:hover {
+.quick-steps-actions .add-message-btn:hover,
+.quick-steps-actions .export-message-btn:hover {
   background-color: var(--background-hover);
   border-color: var(--primary-color);
   color: var(--primary-color);

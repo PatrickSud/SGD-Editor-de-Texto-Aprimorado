@@ -1,31 +1,130 @@
+// ============================================================================
+// NOTAS DE VERSÃO — GUIA DE ESTRUTURA (leia antes de editar este arquivo)
+// ============================================================================
+//
+// Este arquivo controla o popup "O que há de novo" (showWhatsNewModal, em
+// ui-components.js) e a lógica de disparo (checkVersionAndShowWhatsNew, em
+// app.js). Existem DOIS objetos com finalidades diferentes:
+//
+// 1) RELEASE_NOTES  → NOTAS "OFICIAIS" (SEMPRE visíveis ao usuário)
+//    - Chave = versão "notável", com APENAS 3 dígitos: 'X.Y.Z' (ex: '3.0.7').
+//      NUNCA use aqui uma chave com 4 dígitos (ex: '3.0.7.1') — o código só
+//      procura por versões de 3 dígitos (versionParts.slice(0, 3)), então uma
+//      chave de 4 dígitos aqui NUNCA aciona o popup sozinha, mas ainda assim
+//      aparece (incorretamente) na lista de "versões anteriores" do modal.
+//    - Cada entrada é: { title: 'texto do cabeçalho', features: [...] }.
+//    - O popup dispara quando os 3 primeiros dígitos da versão instalada
+//      (manifest.json → version) mudam em relação à última versão "vista"
+//      pelo usuário (lastSeenVersion, salva em storage).
+//    - Sempre que subir uma versão "cheia" (X.Y.Z), crie aqui uma nova
+//      entrada. Se essa versão só está consolidando hotfixes que já estavam
+//      em MINOR_RELEASE_NOTES (ver abaixo), deixe features: [] e adicione
+//      `consolidates: 'X.Y.Z_anterior'` — o merge automático do código
+//      preenche o popup com o conteúdo desses hotfixes. Se a versão também
+//      trouxer novidades próprias, escreva-as aqui em features.
+//    - Campo opcional `consolidates`: aponta explicitamente qual chave de
+//      MINOR_RELEASE_NOTES deve ser mesclada no popup desta versão. É o
+//      "porto seguro": o código tenta primeiro usar os hotfixes da versão
+//      que o usuário realmente viu (lastSeenVersion), mas se o usuário
+//      estiver com o storage limpo, instalação nova, ou tiver "pulado"
+//      versões, cai para este campo — assim o popup NUNCA fica vazio por
+//      causa do histórico pessoal de quem está atualizando.
+//
+// 2) MINOR_RELEASE_NOTES → NOTAS INTERNAS DE HOTFIX (NUNCA exibidas isoladamente)
+//    - Use para versões de 4 dígitos (X.Y.Z.W), ou seja, hotfixes/patches
+//      que saem entre uma versão "notável" e a próxima e que NÃO merecem
+//      (ou não devem, por serem pequenos demais) gerar um popup próprio.
+//    - Chave = a versão "notável" ANTERIOR (3 dígitos) à qual os hotfixes
+//      pertencem — ex: hotfixes 3.0.6.1, 3.0.6.2, 3.0.6.3 e 3.0.6.4 ficam
+//      todos sob a chave '3.0.6', não sob suas próprias versões.
+//    - Valor = array de { version: 'X.Y.Z.W', features: [...] }, um item por
+//      hotfix, na ordem em que forem lançados.
+//    - Esse conteúdo é mesclado automaticamente pelo código em DOIS lugares:
+//        a) no popup da PRÓXIMA versão notável (X.Y.(Z+1) ou X.(Y+1).0), que
+//           concatena essas features às da nova versão quando o usuário
+//           atualiza direto do hotfix mais recente;
+//        b) na seção "versões anteriores" do próprio modal, aninhado sob o
+//           bloco da versão notável correspondente (ex: sob '3.0.6').
+//
+// RESUMO PRÁTICO:
+//   - Lançou um hotfix pequeno (X.Y.Z.W)?      → MINOR_RELEASE_NOTES['X.Y.Z']
+//   - Lançou uma versão nova e "notável" (X.Y.Z)? → RELEASE_NOTES['X.Y.Z']
+//   - JAMAIS crie em RELEASE_NOTES uma chave com 4 dígitos.
+//
+// OCULTANDO UM ITEM ESPECÍFICO DO POPUP
+//   Qualquer item dentro de um array "features" (em RELEASE_NOTES ou em
+//   MINOR_RELEASE_NOTES) pode ser escrito de duas formas:
+//     - string simples            → sempre aparece no popup e no histórico.
+//     - { text: '...', hidden: true } → fica documentado aqui no código,
+//       mas NÃO é exibido nem no popup "O que há de novo" nem no histórico
+//       de versões anteriores. Útil para itens técnicos/internos que não
+//       precisam ser comunicados ao usuário final.
+//   Exemplo:
+//     features: [
+//       'Item normal, sempre visível',
+//       { text: 'Item interno, não deve aparecer ao usuário', hidden: true }
+//     ]
+// ============================================================================
+
+/**
+ * Filtra e normaliza uma lista de features, removendo os itens marcados
+ * como { hidden: true } e convertendo objetos { text, hidden } em texto puro.
+ * Usada por showWhatsNewModal (ui-components.js) ao montar o popup e o
+ * histórico de versões anteriores.
+ * @param {Array<string|{text: string, hidden?: boolean}>} features
+ * @returns {string[]}
+ */
+function getVisibleFeatures(features) {
+  return (features || [])
+    .filter(f => !(f && typeof f === 'object' && f.hidden))
+    .map(f => (f && typeof f === 'object' ? f.text : f))
+}
+
+/**
+ * Monta o objeto de notas pronto para showWhatsNewModal, para uma versão
+ * notável (X.Y.Z), já mesclando os hotfixes acumulados em
+ * MINOR_RELEASE_NOTES quando aplicável (ver `consolidates` no topo do arquivo).
+ *
+ * IMPORTANTE: esta é a ÚNICA função que deve montar as notas de uma versão.
+ * Qualquer lugar do código que precise exibir "o que há de novo" (popup
+ * automático em app.js, botão manual em quick-messages.js, etc.) deve
+ * chamar esta função em vez de ler RELEASE_NOTES[versão] diretamente —
+ * senão o merge com os hotfixes não acontece e o popup aparece vazio.
+ *
+ * @param {string} noteworthyVersion - Versão notável (3 dígitos) a exibir.
+ * @param {string|null} [lastSeenVersion] - Última versão vista pelo usuário (opcional).
+ * @returns {{title: string, features: Array}|null} Notas prontas, ou null se a versão não existir em RELEASE_NOTES.
+ */
+function buildNotesToShow(noteworthyVersion, lastSeenVersion) {
+  if (typeof RELEASE_NOTES === 'undefined' || !RELEASE_NOTES[noteworthyVersion]) {
+    return null
+  }
+
+  let notesToShow = RELEASE_NOTES[noteworthyVersion]
+  const minorKey =
+    typeof MINOR_RELEASE_NOTES !== 'undefined' && MINOR_RELEASE_NOTES[lastSeenVersion]
+      ? lastSeenVersion
+      : notesToShow.consolidates
+
+  if (typeof MINOR_RELEASE_NOTES !== 'undefined' && MINOR_RELEASE_NOTES[minorKey]) {
+    const minorFeatures = MINOR_RELEASE_NOTES[minorKey].reduce(
+      (acc, item) => acc.concat(item.features || []),
+      []
+    )
+    notesToShow = {
+      ...notesToShow,
+      features: [...notesToShow.features, ...minorFeatures]
+    }
+  }
+
+  return notesToShow
+}
+
 const RELEASE_NOTES = {
-  '3.0.6.4': {
-    title: '🚀 Ajustes — Versão 3.0.6.4',
-    features: [
-      '<b>⚡ Trâmites Padrões:</b> Novos botões <b>"Salvar e Continuar"</b> e <b>"Importar"</b> no modal de Adicionar Trâmite, além de suporte a <b>arrastar (drag-and-drop)</b> um arquivo .json de backup direto sobre o editor para importar.',
-      '<b>🤖 Verificação de Duplicidade:</b> Novo botão <b>"Verificar duplicidade"</b> na tela de cadastro de SSC, com checkbox de verificação automática (dispara 7s após parar de digitar o assunto, com contagem regressiva visual).',
-      '<b>🔠 Auto-capitalização de Texto:</b> Nova preferência (ativada por padrão) que capitaliza automaticamente a primeira letra de frases ao digitar nos campos de texto. Configurável em Configurações → Auto-capitalização de Texto.'
-    ]
-  },
-  '3.0.6.3': {
-    title: '🐛 Ajustes — Versão 3.0.6.3',
-    features: [
-      '<b>🤖 Sugerir SAM:</b> Corrigido bug que travava a busca de SAMs similares sem resposta, com aumento do tempo máximo de espera para 3 minutos.'
-    ]
-  },
-  '3.0.6.2': {
-    title: '🚀 Ajustes e Otimizações — Versão 3.0.6.2',
-    features: [
-      '<b>🤖 Verificação de Duplicidade:</b> Otimizado o período de busca para 60 dias, adicionado cache local de 10 minutos por cliente, desconsideração de termos genéricos (stop-words) na comparação e interrupção precoce na leitura da tabela.',
-      '<b>⚙️ Console de Debug:</b> Ocultado o hash do ViewState e mensagens verbosas do console, com a inclusão de um relatório estruturado de candidatos quando o modo de depuração estiver ativo.'
-    ]
-  },
-  '3.0.6.1': {
-    title: '🐛 Ajustes — Versão 3.0.6.1',
-    features: [
-      '<b>🤖 Verificação de Duplicidade:</b> Removido o alerta (toast) de "IA indisponível" ao usuário, mantendo a informação apenas no console.',
-      '<b>📢 Painel de Avisos:</b> Corrigido o bug ao colar/editar links com tags aninhadas ou comentários do clipboard, com suporte a Ctrl+Clique e tooltip explicativo.'
-    ]
+  '3.0.7': {
+    title: '🚀 Consolidação e Ajustes da Versão 3.0.7',
+    features: [],
+    consolidates: '3.0.6'
   },
   '3.0.6': {
     title: '🚀 Consolidação e Novidades da Versão 3.0.6',
@@ -253,7 +352,40 @@ const RELEASE_NOTES = {
   }
 }
 
+// Hotfixes/patches (4 dígitos) agrupados pela versão notável anterior (3 dígitos).
+// NÃO exibidos isoladamente — ver guia completo no topo do arquivo.
 const MINOR_RELEASE_NOTES = {
+  '3.0.6': [
+    {
+      version: '3.0.6.1',
+      features: [
+        { text: '<b>🤖 Verificação de Duplicidade:</b> Removido o alerta (toast) de "IA indisponível" ao usuário, mantendo a informação apenas no console.', hidden: true },
+        { text: '<b>📢 Painel de Avisos:</b> Corrigido o bug ao colar/editar links com tags aninhadas ou comentários do clipboard, com suporte a Ctrl+Clique e tooltip explicativo.', hidden: true }
+      ]
+    },
+    {
+      version: '3.0.6.2',
+      features: [
+        { text: '<b>🤖 Verificação de Duplicidade:</b> Otimizado o período de busca para 60 dias, adicionado cache local de 10 minutos por cliente, desconsideração de termos genéricos (stop-words) na comparação e interrupção precoce na leitura da tabela.', hidden: true },
+        { text: '<b>⚙️ Console de Debug:</b> Ocultado o hash do ViewState e mensagens verbosas do console, com a inclusão de um relatório estruturado de candidatos quando o modo de depuração estiver ativo.', hidden: true }
+      ]
+    },
+    {
+      version: '3.0.6.3',
+      features: [
+        '<b>🤖 Sugerir SAM:</b> Corrigido bug que travava a busca de SAMs similares sem resposta, com aumento do tempo máximo de espera para 3 minutos.'
+      ]
+    },
+    {
+      version: '3.0.6.4',
+      features: [
+        '<b>⚡ Trâmites Padrões:</b> Novos botões <b>"Salvar e Continuar"</b> e <b>"Importar"</b> no modal de Adicionar Trâmite, além de suporte a <b>arrastar (drag-and-drop)</b> um arquivo .json de backup direto sobre o editor para importar.',
+        '<b>📤 Trâmites Rápidos:</b> Novo botão <b>"Exportar"</b> ao lado de "+ Adicionar" na toolbar, com modal dedicado e correção do checkbox de categoria ao selecionar trâmites individuais.',
+        { text: '<b>🤖 Verificação de Duplicidade:</b> Novo botão <b>"Verificar duplicidade"</b> na tela de cadastro de SSC, com checkbox de verificação automática (dispara 7s após parar de digitar o assunto, com contagem regressiva visual).', hidden: true },
+        '<b>🔠 Auto-capitalização de Texto:</b> Nova preferência (ativada por padrão) que capitaliza automaticamente a primeira letra de frases ao digitar nos campos de texto. Configurável em Configurações → Auto-capitalização de Texto.'
+      ]
+    }
+  ],
   '2.9.9': [
     {
       version: '2.9.9.2',

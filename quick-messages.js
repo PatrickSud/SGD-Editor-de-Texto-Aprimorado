@@ -103,6 +103,7 @@ async function loadQuickMessages(editorContainer) {
   // Adicionado ícone "+" (botão flutuante será adicionado separadamente)
   actionsContainer.innerHTML = `
         <button type="button" class="action-btn add-message-btn enhanced-btn">+ Adicionar</button>
+        <button type="button" class="action-btn export-message-btn enhanced-btn" title="Exportar Trâmites">📤 Exportar</button>
     `
   dropdown.appendChild(actionsContainer)
 
@@ -112,6 +113,14 @@ async function loadQuickMessages(editorContainer) {
     .addEventListener('click', e => {
       e.preventDefault()
       openMessageModal()
+    })
+
+  // Adiciona listener ao botão de exportar.
+  actionsContainer
+    .querySelector('.export-message-btn')
+    .addEventListener('click', e => {
+      e.preventDefault()
+      openExportModal()
     })
 }
 
@@ -1632,9 +1641,13 @@ async function openManagementModal() {
   const _versionParts = currentVersion.split('.');
   const noteworthyVersion = _versionParts.slice(0, 3).join('.');
 
-  versionSpan.addEventListener('click', () => {
-    if (typeof RELEASE_NOTES !== 'undefined' && RELEASE_NOTES[noteworthyVersion]) {
-      showWhatsNewModal(RELEASE_NOTES[noteworthyVersion]);
+  versionSpan.addEventListener('click', async () => {
+    const lastSeenVersion = typeof getLastSeenVersion === 'function' ? await getLastSeenVersion() : null;
+    const notesToShow = typeof buildNotesToShow === 'function'
+      ? buildNotesToShow(noteworthyVersion, lastSeenVersion)
+      : (typeof RELEASE_NOTES !== 'undefined' ? RELEASE_NOTES[noteworthyVersion] : null);
+    if (notesToShow) {
+      showWhatsNewModal(notesToShow);
     } else {
       showNotification('Nenhuma nota de versão encontrada para a versão atual.', 'info');
     }
@@ -1775,20 +1788,63 @@ async function renderExportList(modal) {
       exportList.appendChild(categoryContainer)
     })
 
-    exportList
-      .querySelectorAll('.export-category-checkbox')
-      .forEach(catCheckbox => {
-        catCheckbox.addEventListener('change', e => {
-          const catId = e.target.dataset.categoryId
+    // Usamos delegação de eventos (um único listener no container) em vez de
+    // anexar um listener por checkbox. Isso evita duplicidade quando
+    // renderExportList() é chamado novamente (ex.: após uma importação) e
+    // garante que o comportamento funcione mesmo que a lista seja
+    // reconstruída dinamicamente.
+    if (!exportList.dataset.changeListenerAttached) {
+      exportList.dataset.changeListenerAttached = 'true'
+
+      exportList.addEventListener('change', e => {
+        const target = e.target
+
+        // Categoria marcada/desmarcada -> propaga o estado para os trâmites dela.
+        if (target.classList.contains('export-category-checkbox')) {
+          const catId = target.dataset.categoryId
           exportList
             .querySelectorAll(
               `.export-item-checkbox[data-msg-category-id="${catId}"]`
             )
             .forEach(msgCheckbox => {
-              msgCheckbox.checked = e.target.checked
+              msgCheckbox.checked = target.checked
             })
-        })
+          target.indeterminate = false
+          // O clique direto no checkbox da categoria já atualiza o visual
+          // nativamente (via :checked), então removemos qualquer reforço
+          // visual manual que possa ter ficado de uma seleção anterior.
+          target.classList.remove('force-checked')
+          return
+        }
+
+        // Trâmite marcado/desmarcado -> reflete o estado agregado no checkbox
+        // da categoria: marcado se houver pelo menos um trâmite selecionado
+        // nela, desmarcado se nenhum estiver selecionado.
+        if (target.classList.contains('export-item-checkbox')) {
+          const catId = target.dataset.msgCategoryId
+          const catCheckbox = exportList.querySelector(
+            `.export-category-checkbox[data-category-id="${catId}"]`
+          )
+          if (!catCheckbox) return
+
+          const itemsInCategory = exportList.querySelectorAll(
+            `.export-item-checkbox[data-msg-category-id="${catId}"]`
+          )
+          const checkedCount = Array.from(itemsInCategory).filter(
+            cb => cb.checked
+          ).length
+
+          catCheckbox.checked = checkedCount > 0
+          catCheckbox.indeterminate =
+            checkedCount > 0 && checkedCount < itemsInCategory.length
+          // Reforço visual explícito via classe (ver styles/base.css), para
+          // garantir que o checkbox da categoria apareça marcado mesmo que a
+          // recomputação do pseudo-seletor :checked não seja suficiente
+          // quando o estado é alterado via JavaScript.
+          catCheckbox.classList.toggle('force-checked', checkedCount > 0)
+        }
       })
+    }
     if (exportBtn) exportBtn.disabled = false
   } else {
     exportList.innerHTML =
@@ -2299,13 +2355,16 @@ async function openImportSelectionModal(importedData, onCompleteCallback) {
         <div class="import-messages-list">
           ${messagesInCategory
         .map(
-          msg => `
+          msg => {
+            const safeItemId = `import-item-${escapeHTML(importedCategory.id)}-${escapeHTML(msg.id)}`
+            return `
             <div class="import-item">
-              <input type="checkbox" class="import-item-checkbox" data-message-content='${escapeHTML(
-            JSON.stringify(msg)
-          )}'>
-              <label>${escapeHTML(msg.title)}</label>
+              <input type="checkbox" class="import-item-checkbox" id="${safeItemId}" data-message-content='${escapeHTML(
+              JSON.stringify(msg)
+            )}'>
+              <label for="${safeItemId}">${escapeHTML(msg.title)}</label>
             </div>`
+          }
         )
         .join('')}
         </div>
@@ -3732,6 +3791,41 @@ async function openImportExportModal() {
   })
 
   // --- LÓGICA DE EXPORTAÇÃO ---
+  await renderExportList(modal)
+  modal.querySelector('#export-btn').addEventListener('click', e => {
+    e.preventDefault()
+    exportQuickMessages(modal)
+  })
+}
+
+/**
+ * Abre o modal de Exportar Trâmites (somente exportação).
+ * Acionado pelo botão "📤 Exportar" ao lado do "+ Adicionar" no dropdown
+ * de Trâmites Rápidos da toolbar.
+ */
+async function openExportModal() {
+  const modalContentHtml = `
+        <div class="management-section">
+            <p style="text-align: center;">Selecione os trâmites que deseja exportar.</p>
+            <div id="export-list" class="export-list" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border-color); padding: 10px; border-radius: 4px;"></div>
+            <div class="import-export-actions" style="margin-top: 10px; display: flex; justify-content: center;">
+                <button type="button" id="export-btn" class="action-btn enhanced-btn" style="color: white;">Exportar Selecionados</button>
+            </div>
+        </div>
+    `
+
+  const modal = createModal(
+    '📤 Exportar Trâmites',
+    modalContentHtml,
+    null // Sem botão de salvar principal, ação é imediata
+  )
+
+  // Remove o botão "Salvar" padrão, pois a ação é imediata
+  const saveBtn = modal.querySelector('#modal-save-btn')
+  if (saveBtn) saveBtn.remove()
+
+  document.body.appendChild(modal)
+
   await renderExportList(modal)
   modal.querySelector('#export-btn').addEventListener('click', e => {
     e.preventDefault()

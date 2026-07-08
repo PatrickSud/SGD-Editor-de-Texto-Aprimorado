@@ -488,6 +488,27 @@ textarea[data-enhanced],
   line-height: 1;
 }
 
+/* Reforço visual: quando o checkbox de categoria (Exportar Trâmites) é marcado
+   via JavaScript (ao selecionar trâmites individuais), garantimos o mesmo
+   visual do estado :checked através de uma classe explícita, evitando
+   depender apenas da recomputação do pseudo-seletor :checked. */
+.export-category-checkbox.force-checked + label::before {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+.export-category-checkbox.force-checked + label::after {
+  content: '✔';
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 /* --- AJUSTES DE TEMA ESPECÍFICOS PARA A PALETA DE COMANDOS --- */
 /* ----------------------------------- */
 
@@ -725,6 +746,18 @@ button[id='modal-cancel-btn'].enhanced-btn:hover {
 #qi-add-new-btn.enhanced-btn:hover {
   background: linear-gradient(135deg, #138496, #17a2b8) !important;
   border-color: #138496 !important;
+  color: white !important;
+}
+
+/* Garantir que o texto do botão Exportar (Trâmites Rápidos) seja sempre branco, independente do tema */
+.export-message-btn.enhanced-btn,
+.export-message-btn.enhanced-btn:hover {
+  color: white !important;
+}
+
+/* Garantir que o texto/ícone do botão "Recursos de IA" seja sempre branco, independente do tema */
+.ai-master-button.enhanced-btn,
+.ai-master-button.enhanced-btn:hover {
   color: white !important;
 }
 

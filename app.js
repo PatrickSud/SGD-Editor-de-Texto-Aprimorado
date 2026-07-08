@@ -2573,22 +2573,9 @@ async function checkVersionAndShowWhatsNew() {
     // Compara a versão "notável" com a última versão "notável" vista
     if (noteworthyVersion !== lastSeenVersion) {
       // (Ex: vai procurar por '2.9.6' no RELEASE_NOTES, mesmo se a versão for '2.9.6.1')
-      if (RELEASE_NOTES && RELEASE_NOTES[noteworthyVersion]) {
-        let notesToShow = RELEASE_NOTES[noteworthyVersion]
-        if (
-          typeof MINOR_RELEASE_NOTES !== 'undefined' &&
-          MINOR_RELEASE_NOTES[lastSeenVersion]
-        ) {
-          const minorList = MINOR_RELEASE_NOTES[lastSeenVersion]
-          const minorFeatures = minorList.reduce(
-            (acc, item) => acc.concat(item.features || []),
-            []
-          )
-          notesToShow = {
-            ...notesToShow,
-            features: [...notesToShow.features, ...minorFeatures]
-          }
-        }
+      // buildNotesToShow (release-notes.js) já cuida do merge com MINOR_RELEASE_NOTES.
+      const notesToShow = buildNotesToShow(noteworthyVersion, lastSeenVersion)
+      if (notesToShow) {
         showWhatsNewModal(notesToShow)
         // Salva a versão "notável" como a última vista para evitar reexibir em subversões
         await setLastSeenVersion(noteworthyVersion)
