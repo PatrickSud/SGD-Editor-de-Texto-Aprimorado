@@ -129,12 +129,16 @@ function createWarningCardHtml(warning, isUnread, index = 0) {
   const safeTitle = sanitize(warning.title || 'Aviso')
   const safeMessage = sanitize(warning.message || '')
 
+  const ignoreBtnHtml = isUnread
+    ? `<button type="button" class="warning-ignore-btn" data-warning-id="${warning.id || ''}" title="Ignorar este aviso">✕</button>`
+    : ''
+
   return `
     <div class="reminder-card warning-card card-stagger-in ${priorityClass}" style="cursor: pointer; border-color: ${borderColor}; animation-delay: ${index * 40}ms;" data-warning-id="${warning.id || ''}">
-      <button type="button" class="warning-ignore-btn" data-warning-id="${warning.id || ''}" title="Ignorar este aviso">✕</button>
+      ${ignoreBtnHtml}
       <div class="card-header">
         <div class="card-header-main">
-          <h5 class="card-title" style="color: ${titleColor}; display:flex; align-items:center; gap:5px; flex-wrap:wrap; padding-right: 20px;">
+          <h5 class="card-title" style="color: ${titleColor}; display:flex; align-items:center; gap:5px; flex-wrap:wrap; ${isUnread ? 'padding-right: 20px;' : ''}">
             <span>${meta.icon}</span>
             <span>${safeTitle}</span>
             ${tagHtml}
