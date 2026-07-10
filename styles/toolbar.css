@@ -918,6 +918,13 @@ button[data-action='speech-to-text']:disabled:hover {
   ) !important; /* igual ao clear-form-btn:hover */
 }
 
+/* Quando reposicionado ao lado do botão "Gravar" (dentro do grupo de ações),
+   remove as margens usadas no posicionamento junto ao microfone/label, já que
+   o espaçamento passa a ser controlado pelo "gap" do .sgd-toolbar-action-group. */
+.sgd-toolbar-action-group .cloned-search-button {
+  margin: 0;
+}
+
 /* --- BARRA DE FERRAMENTAS FIXA (BÁSICA) --- */
 .fixed-toolbar {
   position: fixed;

@@ -339,46 +339,6 @@ function setupSituationListener(textArea) {
 async function initializeEditorInstance(textArea, instanceId, options = {}) {
   if (!textArea || textArea.dataset.enhanced) return
 
-  // --- INÍCIO: Injeção do Botão "Pesquisar Resposta" ---
-  if (instanceId === 'main') {
-    const originalSearchButton = document.querySelector(
-      'input[value="Pesquisar Resposta"]'
-    )
-    if (originalSearchButton) {
-      let labelSpan = document.querySelector(
-        `[id$="${textArea.id.split(':').pop()}Label"]`
-      )
-      // Fallback para páginas onde o ID do textarea não corresponde ao padrão do label
-      if (!labelSpan) {
-        labelSpan = document.querySelector('label[id$="descricaoTramiteLabel"]')
-      }
-      if (labelSpan) {
-        const labelCell = labelSpan.closest('td')
-        if (labelCell) {
-          // Evita duplicar se já existir um botão clonado na mesma célula
-          if (!labelCell.querySelector('.cloned-search-button')) {
-            const clonedSearchButton = document.createElement('button')
-            clonedSearchButton.type = 'button'
-            clonedSearchButton.textContent = '🔍'
-            clonedSearchButton.className = 'cloned-search-button'
-            clonedSearchButton.title = 'Pesquisar Resposta'
-            clonedSearchButton.addEventListener('click', e => {
-              e.preventDefault()
-              const btn = document.querySelector(
-                'input[value="Pesquisar Resposta"]'
-              )
-              if (btn && typeof btn.click === 'function') {
-                btn.click()
-              }
-            })
-            labelCell.appendChild(document.createElement('br'))
-            labelCell.appendChild(clonedSearchButton)
-          }
-        }
-      }
-    }
-  }
-  // --- FIM: Injeção do Botão ---
   textArea.dataset.enhanced = instanceId
 
   const {
@@ -408,6 +368,57 @@ async function initializeEditorInstance(textArea, instanceId, options = {}) {
     includeUsername,
     includeQuickStepsDropdown
   })
+
+  // --- INÍCIO: Injeção do Botão "Pesquisar Resposta" ---
+  // Reaproveita o botão nativo "Pesquisar Resposta" da página, clonando-o para
+  // dentro da nossa toolbar. Esta é apenas a posição inicial/fallback (ao lado
+  // do microfone 🎤, ou do label do campo de descrição caso o microfone não
+  // exista). Mais abaixo, em addSgdActionButtons(), o botão é reposicionado
+  // para ficar imediatamente à esquerda do botão "Gravar" (trâmite) sempre que
+  // ele existir na toolbar — o que é o posicionamento preferido.
+  if (instanceId === 'main') {
+    const originalSearchButton = document.querySelector(
+      'input[value="Pesquisar Resposta"]'
+    )
+    if (originalSearchButton) {
+      const clonedSearchButton = document.createElement('button')
+      clonedSearchButton.type = 'button'
+      clonedSearchButton.textContent = '🔍'
+      clonedSearchButton.className = 'cloned-search-button shine-effect'
+      clonedSearchButton.title = 'Pesquisar Resposta'
+      clonedSearchButton.addEventListener('click', e => {
+        e.preventDefault()
+        const btn = document.querySelector('input[value="Pesquisar Resposta"]')
+        if (btn && typeof btn.click === 'function') {
+          btn.click()
+        }
+      })
+
+      const micButton = editorContainer.querySelector(
+        '[data-action="speech-to-text"]'
+      )
+      if (micButton && micButton.parentElement) {
+        micButton.parentElement.insertBefore(clonedSearchButton, micButton)
+      } else {
+        let labelSpan = document.querySelector(
+          `[id$="${textArea.id.split(':').pop()}Label"]`
+        )
+        // Fallback para páginas onde o ID do textarea não corresponde ao padrão do label
+        if (!labelSpan) {
+          labelSpan = document.querySelector('label[id$="descricaoTramiteLabel"]')
+        }
+        if (labelSpan) {
+          const labelCell = labelSpan.closest('td')
+          // Evita duplicar se já existir um botão clonado na mesma célula
+          if (labelCell && !labelCell.querySelector('.cloned-search-button')) {
+            labelCell.appendChild(document.createElement('br'))
+            labelCell.appendChild(clonedSearchButton)
+          }
+        }
+      }
+    }
+  }
+  // --- FIM: Injeção do Botão ---
 
   if (textArea.parentNode) {
     textArea.parentNode.insertBefore(masterContainer, textArea)
@@ -2042,10 +2053,35 @@ function addSgdActionButtons(masterContainer) {
   const actionGroup = document.createElement('div')
   actionGroup.className = 'sgd-toolbar-action-group'
 
+  // Referências aos botões "Gravar" (trâmite) e "Visualizar" clonados, se
+  // existirem nesta toolbar, usadas abaixo para reposicionar o botão
+  // "🔍 Pesquisar Resposta" ao lado esquerdo de um deles (Gravar tem prioridade).
+  let gravarButtonEl = null
+  let visualizarButtonEl = null
+
+  // Pares {id do botão nativo, botão clonado} usados para manter a
+  // visibilidade dos clones sincronizada com o estado disabled/enabled do
+  // botão nativo (ver sincronizarVisibilidadeBotoesAcao mais abaixo).
+  const paresBotaoClonado = []
+
+  // Referência ao formulário nativo onde os botões foram encontrados — usada
+  // para restringir o MutationObserver a essa região, evitando observar
+  // document.body inteiro por performance.
+  let formularioNativo = null
+
   actionButtonIds.forEach(id => {
     const originalButton = document.getElementById(id)
 
-    if (originalButton && !originalButton.disabled) {
+    // Cria o clone mesmo se o botão nativo estiver desabilitado no momento:
+    // o estado disabled pode mudar dinamicamente (ex.: ao habilitar "Cadastro
+    // com IA"), e a visibilidade real do clone é decidida por
+    // sincronizarVisibilidadeBotoesAcao(), chamada logo abaixo e sempre que o
+    // DOM do formulário mudar.
+    if (originalButton) {
+      if (!formularioNativo) {
+        formularioNativo = originalButton.closest('form')
+      }
+
       const clonedButton = document.createElement('button')
       clonedButton.type = 'button'
       if (id === 'cadSscForm:gravarVisualizar') {
@@ -2078,12 +2114,67 @@ function addSgdActionButtons(masterContainer) {
         originalButton.click()
       })
       actionGroup.appendChild(clonedButton)
+      paresBotaoClonado.push({ id, clonedButton })
+
+      if (id === 'sscForm:gravarTramiteBtn' || id === 'ssForm:gravarTramiteBtn') {
+        gravarButtonEl = clonedButton
+      } else if (id === 'cadSscForm:gravarVisualizar') {
+        visualizarButtonEl = clonedButton
+      }
     }
   })
 
   if (actionGroup.children.length > 0) {
     toolbar.appendChild(actionGroup)
   }
+
+  // Reposiciona o botão "🔍 Pesquisar Resposta" (clonado) para ficar
+  // imediatamente à esquerda do botão "Gravar" do trâmite (prioridade) ou,
+  // na ausência dele, à esquerda do botão "Visualizar", quando um dos dois
+  // existir nesta toolbar. Caso nenhum exista, mantém a posição de fallback
+  // já definida na injeção original (ao lado do microfone/label).
+  const targetButtonEl = gravarButtonEl || visualizarButtonEl
+  if (targetButtonEl) {
+    const searchButton = document.querySelector('.cloned-search-button')
+    if (searchButton) {
+      actionGroup.insertBefore(searchButton, targetButtonEl)
+    }
+  }
+
+  // --- INÍCIO: Sincronização com o estado disabled dos botões nativos ---
+  // Alguns botões nativos ficam desabilitados dinamicamente (ex.: o SGD
+  // desabilita "Gravar e Continuar" — cadSscForm:inserir — quando o usuário
+  // habilita a caixa "Cadastro com IA"). Sem essa sincronização, o botão
+  // clonado "Continuar" continuaria visível na toolbar, porém sem efeito
+  // algum ao ser clicado. Para evitar isso, ocultamos o clone sempre que o
+  // botão nativo correspondente estiver ausente ou desabilitado, e o
+  // mostramos de volta quando ele voltar a ficar habilitado.
+  const sincronizarVisibilidadeBotoesAcao = () => {
+    paresBotaoClonado.forEach(({ id, clonedButton }) => {
+      const botaoNativoAtual = document.getElementById(id)
+      const indisponivel = !botaoNativoAtual || botaoNativoAtual.disabled
+      clonedButton.style.display = indisponivel ? 'none' : ''
+    })
+  }
+
+  // Aplica o estado inicial imediatamente (cobre o caso de já estar
+  // desabilitado quando a toolbar é montada).
+  sincronizarVisibilidadeBotoesAcao()
+
+  // Observa o formulário nativo (não document.body inteiro, por performance)
+  // para reagir tanto a mudanças no atributo "disabled" quanto a possíveis
+  // re-renderizações via ajax do JSF, que substituem o elemento por um novo
+  // nó com o mesmo id.
+  if (formularioNativo) {
+    const observer = new MutationObserver(() => sincronizarVisibilidadeBotoesAcao())
+    observer.observe(formularioNativo, {
+      attributes: true,
+      attributeFilter: ['disabled'],
+      subtree: true,
+      childList: true
+    })
+  }
+  // --- FIM: Sincronização com o estado disabled dos botões nativos ---
 }
 
 

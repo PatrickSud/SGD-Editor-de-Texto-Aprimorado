@@ -473,17 +473,26 @@ function exibirWidgetDuplicidadeSSC(resultados) {
     <div id="ssc-duplicate-widget-body">${itensHtml}</div>
   `
 
+  const alternarExpansaoWidget = () => {
+    const expandido = widget.classList.toggle('expanded')
+    widget.querySelector('[data-action="toggle"]').textContent = expandido ? '▾' : '▲'
+    posicionarWidgetAoLadoDoBotaoScroll(widget)
+  }
+
   widget.querySelector('[data-action="toggle"]').addEventListener('click', e => {
     e.stopPropagation()
-    const expandido = widget.classList.toggle('expanded')
-    e.currentTarget.textContent = expandido ? '▾' : '▲'
-    posicionarWidgetAoLadoDoBotaoScroll(widget)
+    alternarExpansaoWidget()
   })
 
   widget.querySelector('[data-action="close"]').addEventListener('click', e => {
     e.stopPropagation()
     widget.remove()
   })
+
+  // A barra vermelha (header) inteira também alterna a expansão, exceto pelos
+  // botões de ação (toggle/fechar), que já têm seus próprios handlers acima
+  // com stopPropagation — evitando duplo toggle e permitindo o fechamento normal.
+  widget.querySelector('#ssc-duplicate-widget-header').addEventListener('click', alternarExpansaoWidget)
 
   document.body.appendChild(widget)
   posicionarWidgetAoLadoDoBotaoScroll(widget)

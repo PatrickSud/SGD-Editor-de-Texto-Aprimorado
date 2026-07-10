@@ -355,6 +355,16 @@ const RELEASE_NOTES = {
 // Hotfixes/patches (4 dígitos) agrupados pela versão notável anterior (3 dígitos).
 // NÃO exibidos isoladamente — ver guia completo no topo do arquivo.
 const MINOR_RELEASE_NOTES = {
+  '3.0.7': [
+    {
+      version: '3.0.7.2',
+      features: [
+        '<b>⚠️ Widget de SSCs Parecidas:</b> Agora é possível expandir/recolher clicando em qualquer ponto da barra vermelha de aviso, não apenas no botão "▾".',
+        '<b>🔍 Pesquisar Resposta:</b> Botão reposicionado para ficar ao lado esquerdo do botão "Gravar" (ou "Visualizar", quando aplicável) na toolbar.',
+        '<b>⚡ Botão "Continuar":</b> Passa a ser ocultado automaticamente da toolbar quando o botão nativo "Gravar e Continuar" está desabilitado (ex: ao habilitar "Cadastro com IA").'
+      ]
+    }
+  ],
   '3.0.6': [
     {
       version: '3.0.6.1',
