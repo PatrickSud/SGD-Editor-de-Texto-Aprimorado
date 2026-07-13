@@ -700,11 +700,35 @@ Justificativa: Informar o motivo da necessidade da melhoria e qual será seu imp
 HISTÓRICO DO ATENDIMENTO:
 ${conteudoPagina}`
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RASTREAMENTO DE USO — mesmo padrão do registrarUso() em sugestor-ss.js,
+// guia própria no Sheets ("Sugerir SAM"), criada automaticamente pelo Apps Script.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function registrarUsoSugerirSAM(acao) {
+  const usuario = document.querySelector('p.navbar-text.navbar-right a b')?.innerText?.trim() || 'Desconhecido'
+  const params = new URLSearchParams(window.location.search)
+  const ssc = params.get('ssc') || 'SSC desconhecida'
+
+  fetch('https://script.google.com/macros/s/AKfycbx3vZrqeJMEFKLqJ6Cpd4khQ7bjUf3E7rg9BJDTbVezgOsnlENJqR4PYgjiT0yeyC5RAg/exec', {
+    method: 'POST',
+    body: JSON.stringify({
+      dataHora: new Date().toLocaleString('pt-BR'),
+      usuario,
+      ssc,
+      acao,
+      guia: 'Sugerir SAM'
+    })
+  }).catch(() => {}) // Falha silenciosa — mesmo padrão do resto do projeto
+}
+
 /**
  * Abre o modal para o técnico descrever o problema e gera sugestão de SAM via IA.
  * Oferece duas opções: escrever manualmente ou ler o atendimento completo.
  */
 function handleAISuggestSAM() {
+  registrarUsoSugerirSAM('Botão clicado')
   const modal = createModal(
     '📋 Sugerir SAM com IA',
     `<div class="form-group">
@@ -927,6 +951,7 @@ function _mostrarResultadosBusca(resultadoBusca, conteudoOriginal, veioDoAtendim
       const onGeracao = (message) => {
         if (message.action === 'samCompleta') {
           chrome.runtime.onMessage.removeListener(onGeracao)
+          registrarUsoSugerirSAM('Sugestão gerada')
           preencherDescricaoSAM(message.data)
         } else if (message.action === 'samErro') {
           chrome.runtime.onMessage.removeListener(onGeracao)
@@ -971,6 +996,8 @@ function preencherDescricaoSAM(textoGerado) {
   campoDescricao.dispatchEvent(new Event('input', { bubbles: true }))
   campoDescricao.dispatchEvent(new Event('change', { bubbles: true }))
   campoDescricao.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }))
+
+  registrarUsoSugerirSAM('Formulário preenchido')
 
   campoDescricao.scrollIntoView({ behavior: 'smooth', block: 'center' })
   campoDescricao.focus()
@@ -1301,6 +1328,24 @@ async function handleShortcutListener(e) {
  * @param {HTMLTextAreaElement} textArea - O textarea alvo para inserção.
  * @param {Array<object>} messages - As mensagens da categoria acionada.
  */
+
+function registrarUsoTramitesRapidos(acao) {
+  const usuario = document.querySelector('p.navbar-text.navbar-right a b')?.innerText?.trim() || 'Desconhecido'
+  const params = new URLSearchParams(window.location.search)
+  const ssc = params.get('ssc') || 'SSC desconhecida'
+
+  fetch('https://script.google.com/macros/s/AKfycbx3vZrqeJMEFKLqJ6Cpd4khQ7bjUf3E7rg9BJDTbVezgOsnlENJqR4PYgjiT0yeyC5RAg/exec', {
+    method: 'POST',
+    body: JSON.stringify({
+      dataHora: new Date().toLocaleString('pt-BR'),
+      usuario,
+      ssc,
+      acao,
+      guia: 'Trâmites Rápidos'
+    })
+  }).catch(() => {})
+}
+
 function showShortcutPopup(textArea, messages) {
   // Remove popup anterior se existir (garantia).
   document.getElementById('shortcut-popup')?.remove()
@@ -1391,6 +1436,7 @@ function showShortcutPopup(textArea, messages) {
     if (message) {
       const resolvedContent = await resolveVariablesInText(message.message)
       insertAtCursor(textArea, resolvedContent)
+      registrarUsoTramitesRapidos('Trâmite inserido (atalho de teclado)')
     }
 
     if (targetContainer.contains(popup) || isBasicEditor) {

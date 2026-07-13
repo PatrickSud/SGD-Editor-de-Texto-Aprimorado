@@ -3,6 +3,23 @@
  * Gerenciamento de trâmites rápidos, categorias, modais de gerenciamento e lógica de Drag & Drop
  */
 
+function registrarUsoTramitesRapidos(acao) {
+  const usuario = document.querySelector('p.navbar-text.navbar-right a b')?.innerText?.trim() || 'Desconhecido'
+  const params = new URLSearchParams(window.location.search)
+  const ssc = params.get('ssc') || 'SSC desconhecida'
+
+  fetch('https://script.google.com/macros/s/AKfycbx3vZrqeJMEFKLqJ6Cpd4khQ7bjUf3E7rg9BJDTbVezgOsnlENJqR4PYgjiT0yeyC5RAg/exec', {
+    method: 'POST',
+    body: JSON.stringify({
+      dataHora: new Date().toLocaleString('pt-BR'),
+      usuario,
+      ssc,
+      acao,
+      guia: 'Trâmites Rápidos'
+    })
+  }).catch(() => {})
+}
+
 /**
  * Carrega e renderiza os trâmites rápidos no dropdown especificado.
  * @param {HTMLElement} editorContainer - O container do editor onde o dropdown está localizado.
@@ -172,6 +189,7 @@ function createMessageElement(message, editorContainer) {
     if (targetTextArea) {
       const resolvedContent = await resolveVariablesInText(message.message)
       insertAtCursor(targetTextArea, resolvedContent)
+      registrarUsoTramitesRapidos('Trâmite inserido (dropdown)')
     } else {
       console.error(
         'SGD - PowerTools: Não foi possível encontrar o textarea associado ao inserir trâmite rápido.'
@@ -3089,6 +3107,7 @@ async function openQuickInserterPanel() {
     // Ação padrão: inserir o texto
     if (textArea) {
       insertAtCursor(textArea, message.message)
+      registrarUsoTramitesRapidos('Trâmite inserido (painel de busca)')
       closeModal()
     } else {
       showNotification(

@@ -452,6 +452,8 @@ function exibirWidgetDuplicidadeSSC(resultados) {
   // resultados atuais, garantindo que o conteúdo exibido nunca fique obsoleto.
   widgetExistente?.remove()
 
+  registrarUsoDuplicateChecker('Duplicidade encontrada')
+
   injetarEstiloWidgetSSC()
 
   const plural = resultados.length > 1 ? 's' : ''
@@ -494,7 +496,11 @@ function exibirWidgetDuplicidadeSSC(resultados) {
   // com stopPropagation — evitando duplo toggle e permitindo o fechamento normal.
   widget.querySelector('#ssc-duplicate-widget-header').addEventListener('click', alternarExpansaoWidget)
 
-  document.body.appendChild(widget)
+    widget.querySelectorAll('#ssc-duplicate-widget-body a').forEach(link => {
+      link.addEventListener('click', () => registrarUsoDuplicateChecker('Usuário clicou pra conferir'))
+    })
+
+    document.body.appendChild(widget)
   posicionarWidgetAoLadoDoBotaoScroll(widget)
 }
 
@@ -602,6 +608,28 @@ async function buscarResultadosDuplicidade(assuntoAtual, clienteId, sscAtualId) 
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// RASTREAMENTO DE USO — mesmo padrão do registrarUso() em sugestor-ss.js,
+// guia própria no Sheets ("Duplicate Checker"), criada automaticamente pelo
+// Apps Script na primeira vez que alguém usar.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function registrarUsoDuplicateChecker(acao) {
+  const usuario = document.querySelector('p.navbar-text.navbar-right a b')?.innerText?.trim() || 'Desconhecido'
+  const ssc = obterSscAtualId() || 'SSC desconhecida'
+
+  fetch('https://script.google.com/macros/s/AKfycbx3vZrqeJMEFKLqJ6Cpd4khQ7bjUf3E7rg9BJDTbVezgOsnlENJqR4PYgjiT0yeyC5RAg/exec', {
+    method: 'POST',
+    body: JSON.stringify({
+      dataHora: new Date().toLocaleString('pt-BR'),
+      usuario,
+      ssc,
+      acao,
+      guia: 'Duplicate Checker'
+    })
+  }).catch(() => {}) // Falha silenciosa — mesmo padrão usado em storage.js, não pode travar a UI
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 7. FLUXO PRINCIPAL (VERIFICAÇÃO AUTOMÁTICA)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -643,6 +671,8 @@ async function iniciarVerificacaoDuplicidadeSSC() {
     const sscAtualId = obterSscAtualId()
 
     logDebug('[DEBUG] clienteId:', clienteId, '| sscAtualId:', sscAtualId, '| assuntoAtual:', assuntoAtual)
+
+    registrarUsoDuplicateChecker('Verificação executada')
 
     try {
       const resultados = await buscarResultadosDuplicidade(assuntoAtual, clienteId, sscAtualId)
