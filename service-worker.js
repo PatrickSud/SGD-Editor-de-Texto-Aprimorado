@@ -1369,8 +1369,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           const settings = (await getStorageData('extensionSettingsData', 'sync')) || {}
           const preferences = settings.preferences || {}
 
-          // Padrão é false (desabilitado) se não estiver definido
-          const notificationsEnabled = preferences.enablePendingNotifications === true
+          // Padrão agora é true (habilitado): só desativa se o usuário
+          // explicitamente desligou o toggle (valor salvo como false).
+          // Isso força a mudança de padrão mesmo para quem nunca alterou essa
+          // preferência (antes o padrão implícito era desabilitado).
+          const notificationsEnabled = preferences.enablePendingNotifications !== false
 
           if (!notificationsEnabled) {
             console.log('Service Worker: Notificação de pendências silenciada pelo usuário.')

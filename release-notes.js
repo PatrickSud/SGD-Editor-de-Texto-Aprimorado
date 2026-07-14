@@ -370,6 +370,12 @@ const MINOR_RELEASE_NOTES = {
         '<b>🔔 Correção de Notificações:</b> Corrigido o bug que impedia a exibição das notificações Toast de novas pendências na tela.',
         '<b>⚡ Otimização de Consumo (Firestore):</b> Intervalo do monitor de equipe alterado para 15 minutos e implementação de cache inteligente de 5 minutos nas abas de Instabilidade e Equipe para evitar erros 429.'
       ]
+    },
+    {
+      version: '3.0.7.4',
+      features: [
+        '<b>🔔 Notificação de Pendências Redesenhada:</b> A pílula de pendências novas no FAB agora expande brevemente mostrando a descrição completa (ex: "4 pendências (1 nova)") e recolhe sozinha — passe o mouse sobre ela a qualquer momento para conferir. Habilitada por padrão, repete o lembrete a cada 1h enquanto não for vista, e não exibe mais o toast no canto superior direito.'
+      ]
     }
   ],
   '3.0.6': [

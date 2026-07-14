@@ -181,7 +181,8 @@ const DEFAULT_SETTINGS = {
     enableDuplicateChecker: false, // Habilita a verificação de atendimentos duplicados por padrão desativado
     enableTeamManagement: false, // Habilita o gerenciamento de Equipe AT na guia Controle de Acesso por padrão desativado
     rememberLastClassification: false, // Lembrar e preencher automaticamente a última classificação selecionada (desativado por padrão)
-    enableAutoCapitalize: true // Capitaliza automaticamente a primeira letra de frases ao digitar (habilitado por padrão)
+    enableAutoCapitalize: true, // Capitaliza automaticamente a primeira letra de frases ao digitar (habilitado por padrão)
+    enablePendingNotifications: true // Notificação minimalista de novas pendências (toast + pílula expandida no FAB). Habilitada por padrão.
   },
   pinnedAIButtons: []
 }

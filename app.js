@@ -2508,17 +2508,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Acionado pelo Service Worker (alarme de 15min)
   if (message.action === 'TRIGGER_PENDING_CHECK') {
     console.log('Main: Recebido pedido de verificação de pendências.')
-    checkNewPendings().then(async result => {
+    // O aviso de pendências novas agora é só a pílula do FAB se expandindo
+    // brevemente (ver updatePendingBadgeUI) — não exibimos mais o toast no
+    // canto superior direito para esse caso.
+    checkNewPendings().then(result => {
       updatePendingBadgeUI(result)
-
-      // Se houver novas pendências, solicita notificação ao SW
-      if (result.newCount > 0) {
-        chrome.runtime.sendMessage({
-          action: 'SHOW_GENERIC_NOTIFICATION',
-          title: 'Novas Pendências no SGD',
-          message: `Você tem ${result.newCount} nova(s) pendência(s). Total: ${result.total}`
-        })
-      }
     })
   }
 })
@@ -2613,11 +2607,279 @@ async function initializePendingBadge() {
   }
 }
 
+// Tempo (ms) que a pílula fica expandida mostrando a descrição completa
+// antes de recolher novamente para exibir só os números.
+const PENDING_BADGE_EXPAND_DURATION_MS = 60000
+
+// Intervalo mínimo (ms) entre lembretes automáticos para o MESMO lote de
+// pendências ainda não vistas: expande de novo no máximo 1x por hora,
+// para lembrar o usuário sem repetir a cada checagem (a cada 15min).
+const PENDING_BADGE_EXPAND_REPEAT_MS = 60 * 60 * 1000
+
+// Chave usada para lembrar (entre abas, via storage.local) qual foi o último
+// lote de pendências novas "anunciado" com a pílula expandida e quando —
+// evita reabrir a pílula a cada recarregamento de página, mas ainda repete
+// o alerta a cada 1h enquanto o lote continuar sem ser visto.
+const PENDING_BADGE_EXPAND_SIGNATURE_KEY = 'pendingBadgeExpandSignature'
+
+// Timer que agenda o recolhimento automático (fluxo de "pendências novas").
+let pendingBadgeExpandTimer = null
+// Timer que finaliza a limpeza dos estilos inline após a animação de recolhimento.
+let pendingBadgeCollapseCleanupTimer = null
+// Posição/tamanho capturados no momento em que a pílula foi ancorada para
+// expandir — usado para saber para onde encolher de volta.
+let pendingBadgeAnchorRect = null
+// Enquanto expandida, o badge é temporariamente movido para o <body> (ver
+// expandPendingBadgeNow) — aqui guardamos onde ele estava para devolvê-lo
+// ao lugar certo no DOM ao recolher.
+let pendingBadgeOriginalParent = null
+let pendingBadgeOriginalNextSibling = null
+
+/**
+ * Monta o texto compacto da pílula (ex: "4" ou "4 | 1").
+ */
+function buildCompactPendingBadgeText(result) {
+  return result.newCount > 0
+    ? `${result.total} | ${result.newCount}`
+    : `${result.total}`
+}
+
+/**
+ * Monta o texto expandido e por extenso da pílula (ex: "4 pendências (1 nova)").
+ */
+function buildExpandedPendingBadgeText(result) {
+  const pendenciaWord = result.total === 1 ? 'pendência' : 'pendências'
+  let text = `${result.total} ${pendenciaWord}`
+  if (result.newCount > 0) {
+    const novaWord = result.newCount === 1 ? 'nova' : 'novas'
+    text += ` (${result.newCount} ${novaWord})`
+  }
+  return text
+}
+
+/**
+ * Remove qualquer posicionamento/tamanho "temporário" aplicado durante a
+ * expansão e devolve a pílula ao layout normal (definido via CSS/classe),
+ * incluindo devolvê-la para o lugar original no DOM caso tenha sido movida
+ * para o <body> (ver expandPendingBadgeNow).
+ */
+function resetPendingBadgeInlineState(fabBadge) {
+  fabBadge.classList.remove('expanded')
+  fabBadge.style.position = ''
+  fabBadge.style.top = ''
+  fabBadge.style.bottom = ''
+  fabBadge.style.left = ''
+  fabBadge.style.right = ''
+  fabBadge.style.width = ''
+  fabBadge.style.height = ''
+  pendingBadgeAnchorRect = null
+
+  if (pendingBadgeOriginalParent && fabBadge.parentNode === document.body) {
+    pendingBadgeOriginalParent.insertBefore(
+      fabBadge,
+      pendingBadgeOriginalNextSibling
+    )
+  }
+  pendingBadgeOriginalParent = null
+  pendingBadgeOriginalNextSibling = null
+}
+
+/**
+ * Expande a pílula imediatamente a partir da posição em que ela já está na
+ * tela, crescendo sempre para o lado com mais espaço livre (nunca "para fora
+ * da janela"). Não agenda recolhimento — quem chama decide quando encolher
+ * (timer automático ou mouseleave do preview).
+ *
+ * Importante: o FAB usa `transform` em alguns ancestrais (`.fab-options`,
+ * animações de hover) que ficam ativos o tempo todo — e um ancestral com
+ * `transform` vira o "containing block" de qualquer descendente com
+ * `position: fixed`, fazendo o `fixed` se comportar como se fosse relativo a
+ * esse ancestral (não à janela). Isso fazia a pílula pular de lugar e
+ * piscar ao passar o mouse. Por isso movemos o badge para o <body> antes de
+ * travar `position: fixed` — assim ele fica realmente fixo em relação à
+ * janela, sem depender do que os ancestrais do FAB estão fazendo.
+ * @param {HTMLElement} fabBadge
+ * @param {string} expandedText - Texto completo a exibir enquanto expandida.
+ */
+function expandPendingBadgeNow(fabBadge, expandedText) {
+  // Cancela uma limpeza de recolhimento que porventura estivesse em
+  // andamento (ex: o usuário passou o mouse de novo bem rápido).
+  if (pendingBadgeCollapseCleanupTimer) {
+    clearTimeout(pendingBadgeCollapseCleanupTimer)
+    pendingBadgeCollapseCleanupTimer = null
+  }
+
+  const alreadyExpanded = fabBadge.classList.contains('expanded')
+  // Se já está expandida, reaproveita o retângulo original em vez de medir
+  // de novo (a pílula já está em position: fixed, então o rect atual não
+  // reflete mais a posição "de origem" na tela).
+  const compactRect =
+    alreadyExpanded && pendingBadgeAnchorRect
+      ? pendingBadgeAnchorRect
+      : fabBadge.getBoundingClientRect()
+
+  const margin = 12
+  const growRight = compactRect.left < window.innerWidth / 2
+
+  if (!alreadyExpanded) {
+    // Move para o <body> ANTES de travar o position: fixed, escapando de
+    // qualquer ancestral do FAB com transform ativo.
+    pendingBadgeOriginalParent = fabBadge.parentNode
+    pendingBadgeOriginalNextSibling = fabBadge.nextSibling
+    document.body.appendChild(fabBadge)
+  }
+
+  fabBadge.style.position = 'fixed'
+  fabBadge.style.top = `${compactRect.top}px`
+  fabBadge.style.bottom = 'auto'
+
+  if (!alreadyExpanded) {
+    fabBadge.style.width = `${compactRect.width}px`
+    fabBadge.style.height = `${compactRect.height}px`
+  }
+
+  if (growRight) {
+    fabBadge.style.left = `${compactRect.left}px`
+    fabBadge.style.right = 'auto'
+  } else {
+    fabBadge.style.right = `${window.innerWidth - compactRect.right}px`
+    fabBadge.style.left = 'auto'
+  }
+
+  fabBadge.classList.add('expanded')
+  fabBadge.textContent = expandedText
+  pendingBadgeAnchorRect = compactRect
+
+  // Não dá pra confiar no scrollWidth aqui: o próprio fabBadge está com
+  // display: flex + overflow: hidden + width travada no valor compacto, e
+  // nessa combinação o scrollWidth não reflete de forma confiável a largura
+  // real do texto (fica "curto", cortando o conteúdo). Por isso medimos com
+  // um elemento de prova, sem nenhuma restrição de largura.
+  const naturalWidth = measurePendingBadgeNaturalWidth(expandedText)
+  const maxAllowed = growRight
+    ? window.innerWidth - compactRect.left - margin
+    : compactRect.right - margin
+  const targetWidth = Math.min(naturalWidth, Math.max(maxAllowed, compactRect.width))
+
+  requestAnimationFrame(() => {
+    fabBadge.style.width = `${targetWidth}px`
+    fabBadge.style.height = 'auto'
+  })
+}
+
+/**
+ * Mede a largura "natural" (sem quebra de linha) que a pílula teria com o
+ * texto expandido, usando um elemento de prova invisível e sem restrição de
+ * largura — evita depender de scrollWidth em um elemento flex com overflow
+ * escondido, que não é confiável nesse cenário.
+ * @param {string} text
+ * @returns {number} Largura em pixels.
+ */
+function measurePendingBadgeNaturalWidth(text) {
+  const probe = document.createElement('span')
+  probe.className = 'fab-badge expanded'
+  probe.style.position = 'fixed'
+  probe.style.visibility = 'hidden'
+  probe.style.pointerEvents = 'none'
+  probe.style.left = '-9999px'
+  probe.style.top = '-9999px'
+  probe.style.display = 'inline-flex'
+  probe.style.width = 'auto'
+  probe.style.whiteSpace = 'nowrap'
+  probe.textContent = text
+  document.body.appendChild(probe)
+  const width = probe.getBoundingClientRect().width
+  document.body.removeChild(probe)
+  return width
+}
+
+/**
+ * Recolhe a pílula de volta para o texto compacto, animando o tamanho até o
+ * retângulo original antes de soltar o posicionamento fixo.
+ * @param {HTMLElement} fabBadge
+ * @param {string} compactText
+ */
+function collapsePendingBadgeNow(fabBadge, compactText) {
+  if (pendingBadgeExpandTimer) {
+    clearTimeout(pendingBadgeExpandTimer)
+    pendingBadgeExpandTimer = null
+  }
+  if (pendingBadgeCollapseCleanupTimer) {
+    clearTimeout(pendingBadgeCollapseCleanupTimer)
+    pendingBadgeCollapseCleanupTimer = null
+  }
+
+  const rect = pendingBadgeAnchorRect
+  if (rect) {
+    fabBadge.style.width = `${rect.width}px`
+    fabBadge.style.height = `${rect.height}px`
+  }
+
+  pendingBadgeCollapseCleanupTimer = setTimeout(() => {
+    fabBadge.textContent = compactText
+    resetPendingBadgeInlineState(fabBadge)
+    pendingBadgeCollapseCleanupTimer = null
+  }, 260) // Um pouco mais que a duração da transição CSS (0.25s)
+}
+
+/**
+ * Expande a pílula e agenda o recolhimento automático após
+ * PENDING_BADGE_EXPAND_DURATION_MS (fluxo de "pendências novas"). Se o mouse
+ * estiver em cima da pílula quando o tempo esgotar, deixa o mouseleave do
+ * preview cuidar do recolhimento em vez de brigar com o hover.
+ * @param {HTMLElement} fabBadge
+ * @param {string} compactText - Texto para o qual recolher no final (ex: "4 | 1").
+ * @param {string} expandedText - Texto completo a exibir enquanto expandida.
+ */
+function expandPendingBadgeTemporarily(fabBadge, compactText, expandedText) {
+  expandPendingBadgeNow(fabBadge, expandedText)
+
+  pendingBadgeExpandTimer = setTimeout(() => {
+    pendingBadgeExpandTimer = null
+    if (fabBadge.matches(':hover')) return
+    collapsePendingBadgeNow(fabBadge, compactText)
+  }, PENDING_BADGE_EXPAND_DURATION_MS)
+}
+
+/**
+ * Liga o preview manual por hover: passar o mouse sobre a pílula expande na
+ * hora (mesmo texto completo), tirar o mouse recolhe de volta. Serve para o
+ * usuário conferir o efeito a qualquer momento, sem depender de haver
+ * pendências novas. Idempotente — só liga os listeners uma vez por elemento.
+ * @param {HTMLElement} fabBadge
+ */
+function bindPendingBadgeHoverPreview(fabBadge) {
+  if (fabBadge.dataset.hoverPreviewBound === 'true') return
+  fabBadge.dataset.hoverPreviewBound = 'true'
+
+  fabBadge.addEventListener('mouseenter', () => {
+    if (fabBadge.style.display === 'none') return
+    const expandedText = fabBadge.dataset.expandedText
+    if (!expandedText) return
+    if (pendingBadgeExpandTimer) {
+      clearTimeout(pendingBadgeExpandTimer)
+      pendingBadgeExpandTimer = null
+    }
+    expandPendingBadgeNow(fabBadge, expandedText)
+  })
+
+  fabBadge.addEventListener('mouseleave', () => {
+    if (!fabBadge.classList.contains('expanded')) return
+    const compactText = fabBadge.dataset.compactText || ''
+    collapsePendingBadgeNow(fabBadge, compactText)
+  })
+}
+
 /**
  * Atualiza a interface do badge de pendências.
+ * Quando surgem pendências novas (e a notificação estiver habilitada nas
+ * preferências), a pílula se expande brevemente mostrando a descrição
+ * completa e, após 1 minuto, recolhe novamente para exibir só os números.
+ * A qualquer momento, passar o mouse sobre a pílula também expande/recolhe
+ * (preview manual, ver bindPendingBadgeHoverPreview).
  * @param {object} result - Resultado do checkNewPendings.
  */
-function updatePendingBadgeUI(result) {
+async function updatePendingBadgeUI(result) {
   const fabBadge = document.querySelector('.fab-option-wrapper .fab-badge')
   const infoBtn = document.querySelector(
     '.fab-button[data-action="fab-info-panel"]'
@@ -2625,21 +2887,103 @@ function updatePendingBadgeUI(result) {
 
   if (!fabBadge || !infoBtn) return
 
+  // Cancela qualquer expansão/temporizador em andamento e volta ao layout
+  // normal antes de decidir o que fazer a seguir (evita medir posições
+  // erradas por causa de um estado "preso" de uma atualização anterior).
+  if (pendingBadgeExpandTimer) {
+    clearTimeout(pendingBadgeExpandTimer)
+    pendingBadgeExpandTimer = null
+  }
+  if (pendingBadgeCollapseCleanupTimer) {
+    clearTimeout(pendingBadgeCollapseCleanupTimer)
+    pendingBadgeCollapseCleanupTimer = null
+  }
+  resetPendingBadgeInlineState(fabBadge)
+
   if (result.total > 0) {
-    let badgeText = `${result.total}`
+    const compactText = buildCompactPendingBadgeText(result)
+    const expandedText = buildExpandedPendingBadgeText(result)
+
     if (result.newCount > 0) {
-      badgeText += ` | ${result.newCount}`
       fabBadge.classList.add('has-new')
       infoBtn.classList.add('pulsing-alert')
     } else {
       fabBadge.classList.remove('has-new')
       infoBtn.classList.remove('pulsing-alert')
     }
-    fabBadge.textContent = badgeText
+    fabBadge.textContent = compactText
     fabBadge.style.display = 'flex'
+
+    // Guarda os textos atuais no elemento para o preview de hover usar,
+    // e liga os listeners de mouseenter/mouseleave (idempotente).
+    fabBadge.dataset.compactText = compactText
+    fabBadge.dataset.expandedText = expandedText
+    bindPendingBadgeHoverPreview(fabBadge)
+
+    let shouldExpand = false
+
+    if (result.newCount > 0) {
+      try {
+        const settings = await getSettings()
+        // Padrão agora é habilitado; só desativa se o usuário explicitamente desligou.
+        const notificationsEnabled =
+          settings.preferences.enablePendingNotifications !== false
+
+        if (notificationsEnabled) {
+          // Assinatura do lote atual de itens novos (para saber se é um
+          // lote diferente do último anunciado, ou o mesmo de sempre).
+          const signature = (result.newItems || [])
+            .map(item => item.id)
+            .sort()
+            .join(',')
+
+          const stored = await chrome.storage.local.get([
+            PENDING_BADGE_EXPAND_SIGNATURE_KEY
+          ])
+          const storedValue = stored[PENDING_BADGE_EXPAND_SIGNATURE_KEY]
+
+          // Compatibilidade com o formato antigo (só a string da assinatura,
+          // sem horário) — trata como se nunca tivesse expandido antes.
+          const storedSignature =
+            typeof storedValue === 'string' ? storedValue : storedValue?.signature
+          const storedLastExpandedAt =
+            storedValue && typeof storedValue === 'object'
+              ? storedValue.lastExpandedAt || 0
+              : 0
+
+          const isNewBatch = storedSignature !== signature
+          const repeatDue =
+            Date.now() - storedLastExpandedAt >= PENDING_BADGE_EXPAND_REPEAT_MS
+
+          // Expande se for um lote de pendências diferente do último
+          // anunciado, OU se for o mesmo lote mas já faz 1h desde o último
+          // lembrete (repete o alerta sem ficar repetitivo a cada 15min).
+          if (isNewBatch || repeatDue) {
+            shouldExpand = true
+            await chrome.storage.local.set({
+              [PENDING_BADGE_EXPAND_SIGNATURE_KEY]: {
+                signature,
+                lastExpandedAt: Date.now()
+              }
+            })
+          }
+        }
+      } catch (err) {
+        // Em caso de erro ao ler as configurações, mantém o comportamento
+        // mais simples (pílula compacta, sem expansão).
+        shouldExpand = false
+      }
+    }
+
+    if (shouldExpand) {
+      expandPendingBadgeTemporarily(fabBadge, compactText, expandedText)
+    }
   } else {
     fabBadge.style.display = 'none'
+    fabBadge.classList.remove('has-new')
     infoBtn.classList.remove('pulsing-alert')
+    delete fabBadge.dataset.expandedText
+    delete fabBadge.dataset.compactText
   }
 }
 

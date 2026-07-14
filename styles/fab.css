@@ -254,6 +254,29 @@
   border: 2px solid white;
   z-index: 10;
   white-space: nowrap;
+  overflow: hidden;
+  transition: padding 0.25s ease, border-radius 0.25s ease, font-size 0.25s ease,
+    box-shadow 0.25s ease, width 0.25s ease, height 0.25s ease;
+}
+
+/* Estado expandido: mostra a descrição completa (ex: "4 pendências (1 nova)")
+   por um curto período antes de recolher de volta para os números.
+   Observação: enquanto expandida, o JS (expandPendingBadgeNow em app.js)
+   move o badge para o <body> e assume o controle de
+   position/top/left/right/width/height via estilo inline — isso é
+   necessário porque `.fab-options` mantém um `transform` ativo o tempo
+   todo, o que faria um `position: fixed` comum se comportar como relativo
+   a esse ancestral (e não à janela), causando saltos/piscadas. Ancorando
+   no <body>, a pílula cresce sempre para o lado com mais espaço livre, sem
+   nunca ficar cortada fora da janela. Como o badge passa a ser irmão do
+   <body> (fora do .fab-container, que tem z-index: 1040), o z-index abaixo
+   garante que ele continue visível por cima do FAB nesse estado. */
+.fab-badge.expanded {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 10.5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  z-index: 2000;
 }
 
 /* Posicionamento dinâmico baseado no canto da tela */

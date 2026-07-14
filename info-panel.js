@@ -397,7 +397,8 @@ async function openInfoPanel(initialTabId = 'pending') {
       chrome.storage.sync.get(['extensionSettingsData'], result => {
         const settings = result.extensionSettingsData || {}
         const prefs = settings.preferences || {}
-        updateNotifyBtnState(prefs.enablePendingNotifications === true)
+        // Padrão é habilitado; só aparece desativado se o usuário explicitamente desligou.
+        updateNotifyBtnState(prefs.enablePendingNotifications !== false)
       })
 
       notifyBtn.addEventListener('click', async () => {
@@ -406,7 +407,7 @@ async function openInfoPanel(initialTabId = 'pending') {
         if (!settings.preferences) settings.preferences = {}
 
         const newState = !(
-          settings.preferences.enablePendingNotifications === true
+          settings.preferences.enablePendingNotifications !== false
         )
         settings.preferences.enablePendingNotifications = newState
 
