@@ -1125,10 +1125,11 @@ async function setupPendingPollAlarm() {
 
   // Alarme para monitoramento da equipe (Team Status)
   const teamAlarm = await chrome.alarms.get(TEAM_STATUS_POLL_ALARM)
-  if (!teamAlarm) {
+  const TEAM_STATUS_POLL_PERIOD_MIN = 15
+  if (!teamAlarm || teamAlarm.periodInMinutes !== TEAM_STATUS_POLL_PERIOD_MIN) {
     chrome.alarms.create(TEAM_STATUS_POLL_ALARM, {
       delayInMinutes: 2, // Começa em 2 min
-      periodInMinutes: 5  // Verifica a cada 5 min
+      periodInMinutes: TEAM_STATUS_POLL_PERIOD_MIN
     })
   }
 
@@ -1387,6 +1388,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           // Exibe uma notificação genérica do sistema
           broadcastToSgdTabs({
             action: 'SHOW_TOAST',
+            id: notificationId,
             title: message.title,
             message: message.message,
             type: message.type || 'warning'

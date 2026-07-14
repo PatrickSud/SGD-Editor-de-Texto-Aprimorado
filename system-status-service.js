@@ -64,10 +64,18 @@ function toFirestore(obj) {
 async function getSystemsStatus(forceRefresh = false) {
   try {
     // 1. Carrega dados locais
-    const storage = await chrome.storage.local.get(['cachedSystemsStatus', 'metadataLastSignature']);
+    const storage = await chrome.storage.local.get(['cachedSystemsStatus', 'metadataLastSignature', 'systemsStatusLastFetch']);
     let cachedData = storage.cachedSystemsStatus || [];
     const localSignature = storage.metadataLastSignature;
+    const lastFetch = storage.systemsStatusLastFetch;
     let serverSignature = null;
+
+    // Cache do metadados e status válido por 5 minutos (evita requisições ao abrir o painel consecutivamente)
+    const CACHE_TTL_MS = 5 * 60 * 1000;
+    if (!forceRefresh && cachedData.length > 0 && lastFetch && (Date.now() - lastFetch) < CACHE_TTL_MS) {
+      console.log('🔄 Sistemas: Usando cache local direto (dentro do TTL de 5 min)');
+      return cachedData;
+    }
 
     // 2. Verifica o "Vigia" (Custo: 1 Leitura)
     if (!forceRefresh) {
@@ -82,6 +90,7 @@ async function getSystemsStatus(forceRefresh = false) {
       // Se assinaturas batem, usa cache
       if (cachedData.length > 0 && serverSignature && serverSignature === localSignature) {
         console.log('✅ Sistemas: Sem alterações (Cache).');
+        await chrome.storage.local.set({ systemsStatusLastFetch: Date.now() });
         return cachedData;
       }
     }
@@ -100,7 +109,8 @@ async function getSystemsStatus(forceRefresh = false) {
     // 4. Salva cache
     await chrome.storage.local.set({
       cachedSystemsStatus: systems,
-      metadataLastSignature: serverSignature || new Date().toISOString()
+      metadataLastSignature: serverSignature || new Date().toISOString(),
+      systemsStatusLastFetch: Date.now()
     });
 
     return systems;
@@ -222,9 +232,21 @@ async function reportUserInstability(systemId) {
 
 /**
  * Busca a contagem de reportes da última hora
+ * @param {boolean} forceRefresh - Se true, ignora o cache e busca da API do Firestore
  */
-async function getRecentReportsStats() {
+async function getRecentReportsStats(forceRefresh = false) {
   try {
+    const storage = await chrome.storage.local.get(['cachedReportsStats', 'reportsStatsLastFetch']);
+    const cached = storage.cachedReportsStats;
+    const lastFetch = storage.reportsStatsLastFetch;
+
+    // Cache de 5 minutos para estatísticas de relatos (evita requisições ao abrir o painel consecutivamente)
+    const CACHE_TTL_MS = 5 * 60 * 1000;
+    if (!forceRefresh && cached && lastFetch && (Date.now() - lastFetch) < CACHE_TTL_MS) {
+      console.log('[System Status] Usando cache local para estatísticas de relatos.');
+      return cached;
+    }
+
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     const query = {
       structuredQuery: {
@@ -240,7 +262,7 @@ async function getRecentReportsStats() {
       }
     };
 
-    const response = await fetch(`${BASE_URL.replace('systemStatus', '')}:runQuery?key=${FIREBASE_API_KEY}`, {
+    const response = await fetch(`${BASE_URL.replace('/systemStatus', '')}:runQuery?key=${FIREBASE_API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(query)
@@ -259,10 +281,19 @@ async function getRecentReportsStats() {
         }
       });
     }
+
+    // Salva no cache local
+    await chrome.storage.local.set({
+      cachedReportsStats: stats,
+      reportsStatsLastFetch: Date.now()
+    });
+
     return stats;
   } catch (error) {
     console.error('Erro ao buscar estatísticas de reportes:', error);
-    return {};
+    // Em caso de erro, retorna o cache se disponível
+    const fallback = await chrome.storage.local.get('cachedReportsStats');
+    return fallback.cachedReportsStats || {};
   }
 }
 

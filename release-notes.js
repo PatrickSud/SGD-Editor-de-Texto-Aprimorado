@@ -363,6 +363,13 @@ const MINOR_RELEASE_NOTES = {
         '<b>🔍 Pesquisar Resposta:</b> Botão reposicionado para ficar ao lado esquerdo do botão "Gravar" (ou "Visualizar", quando aplicável) na toolbar.',
         '<b>⚡ Botão "Continuar":</b> Passa a ser ocultado automaticamente da toolbar quando o botão nativo "Gravar e Continuar" está desabilitado (ex: ao habilitar "Cadastro com IA").'
       ]
+    },
+    {
+      version: '3.0.7.3',
+      features: [
+        '<b>🔔 Correção de Notificações:</b> Corrigido o bug que impedia a exibição das notificações Toast de novas pendências na tela.',
+        '<b>⚡ Otimização de Consumo (Firestore):</b> Intervalo do monitor de equipe alterado para 15 minutos e implementação de cache inteligente de 5 minutos nas abas de Instabilidade e Equipe para evitar erros 429.'
+      ]
     }
   ],
   '3.0.6': [

@@ -124,8 +124,8 @@ async function getTeamStatus() {
             return cached || { members: [], timestamp: null, source: null };
         }
 
-        // Cache válido por 30 segundos
-        const CACHE_TTL_MS = 30 * 1000;
+        // Cache válido por 5 minutos
+        const CACHE_TTL_MS = 5 * 60 * 1000;
         if (cached && lastFetch && (Date.now() - lastFetch) < CACHE_TTL_MS) {
             console.log('[Team Service] Usando dados do cache local.');
             return cached;

@@ -7976,7 +7976,7 @@ async function loadSystemsStatus(sectionElement, forceRefresh = false) {
     // Passa forceRefresh para o serviço
     const [systems, userReports] = await Promise.all([
       getSystemsStatus(forceRefresh),
-      window.systemStatusService.getRecentReportsStats()
+      window.systemStatusService.getRecentReportsStats(forceRefresh)
     ])
 
     // 2. Renderiza combinando os dados (Incluindo Relatos)
