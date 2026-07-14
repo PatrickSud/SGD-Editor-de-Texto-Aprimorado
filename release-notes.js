@@ -151,8 +151,8 @@ const RELEASE_NOTES = {
 
       '<b>🪟 Interface & Usabilidade:</b>' +
       '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-      '<li><b>IAgente em Janela Dedicada:</b> O assistente Tria agora abre em janela popup estilo App (lembra tamanho e posição).</li>' +
-      '<li><b>Responsividade dos Botões:</b> Ocultação automática de botões flutuantes (FAB, IAgente) em telas muito pequenas (menores que 680×450px).</li>' +
+      '<li><b>PLUG em Janela Dedicada:</b> O assistente Tria agora abre em janela popup estilo App (lembra tamanho e posição).</li>' +
+      '<li><b>Responsividade dos Botões:</b> Ocultação automática de botões flutuantes (FAB, PLUG) em telas muito pequenas (menores que 680×450px).</li>' +
       '<li><b>Drag & Drop no FAB:</b> Reordenação visual por clique e arraste dos atalhos do menu flutuante.</li>' +
       '<li><b>Verificador Otimizado:</b> Checagem de SSCs duplicadas feita em segundo plano com restauração automática de filtros.</li>' +
       '</ul>'
@@ -183,8 +183,8 @@ const RELEASE_NOTES = {
 
       '<b>🪟 Interface & Usabilidade:</b>' +
       '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-      '<li><b>IAgente em Janela Dedicada:</b> O assistente Tria agora abre em janela popup estilo App (lembra tamanho e posição).</li>' +
-      '<li><b>Responsividade dos Botões:</b> Ocultação automática de botões flutuantes (FAB, IAgente) em telas muito pequenas (menores que 680×450px).</li>' +
+      '<li><b>PLUG em Janela Dedicada:</b> O assistente Tria agora abre em janela popup estilo App (lembra tamanho e posição).</li>' +
+      '<li><b>Responsividade dos Botões:</b> Ocultação automática de botões flutuantes (FAB, PLUG) em telas muito pequenas (menores que 680×450px).</li>' +
       '<li><b>Drag & Drop no FAB:</b> Reordenação visual por clique e arraste dos atalhos do menu flutuante.</li>' +
       '<li><b>Verificador Otimizado:</b> Checagem de SSCs duplicadas feita em segundo plano com restauração automática de filtros.</li>' +
       '</ul>'

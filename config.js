@@ -5,7 +5,7 @@
 
 // ─── DEBUG LOGS (console) ──────────────────────────────────────────────────
 // Controla a exibição dos logs de diagnóstico da extensão (ex.: "[AI WS]",
-// "[SugerirSAM]", "[IAgente Access]", "[DEBUG]" do Verificador de Duplicidade).
+// "[SugerirSAM]", "[PLUG Access]", "[DEBUG]" do Verificador de Duplicidade).
 // Por padrão fica DESATIVADO para não poluir o console de todos os usuários.
 // Cada técnico pode ativar/desativar no console da página do SGD (F12):
 //   sgdDebug.ativar()     → liga os logs (persiste entre recarregamentos)
@@ -398,7 +398,7 @@ const FEATURE_SUGERIR_SAM = true
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ─── LIMIARES DE JANELA PARA BOTÕES FLUTUANTES ───────────────────────────────
-// FAB e botões Ir ao Topo/IAgente ficam ocultos quando a janela do navegador
+// FAB e botões Ir ao Topo/PLUG ficam ocultos quando a janela do navegador
 // for menor que estas dimensões (comum em janelas SGD abertas em tamanho reduzido).
 const FAB_MIN_WINDOW_WIDTH = 680   // px — largura mínima para exibir os botões
 const FAB_MIN_WINDOW_HEIGHT = 450  // px — altura mínima para exibir os botões

@@ -4838,12 +4838,12 @@ async function loadAccessControl(sectionElement) {
     const remoteConfig = localConfig.remoteConfig || {}
 
     // As duas funções abaixo delegam a decisão para os resolvers puros expostos por
-    // permissions-service.js (window.sgdPermissions.resolveIAgenteAccess /
+    // permissions-service.js (window.sgdPermissions.resolvePLUGAccess /
     // resolveDuplicateIAAccess), os mesmos usados pela checagem real de acesso.
     // Isso garante que o badge do painel nunca mais divirja do que o usuário
     // realmente recebe em tempo de execução.
-    const checkUserIAgenteAccessStatus = (user) => {
-      const result = window.sgdPermissions.resolveIAgenteAccess({
+    const checkUserPLUGAccessStatus = (user) => {
+      const result = window.sgdPermissions.resolvePLUGAccess({
         isMasterBypass: user.role === 'master',
         iagenteDisabled: user.iagenteDisabled,
         iagenteIA_Enabled: user.iagenteIA_Enabled,
@@ -4853,7 +4853,7 @@ async function loadAccessControl(sectionElement) {
       // "Master (cadastro)" deixa claro que essa leitura vem do cargo cadastrado no
       // Firebase, e não é garantia de que a sessão do próprio usuário vai reconhecer
       // esse bypass automaticamente (depende do registro dele ser encontrado em tempo
-      // de execução — ver aviso "[IAgente Access] Nenhum registro encontrado...").
+      // de execução — ver aviso "[PLUG Access] Nenhum registro encontrado...").
       if (result.reason === 'Master') {
         return { active: true, reason: 'Master (cadastro)' }
       }
@@ -4987,18 +4987,18 @@ async function loadAccessControl(sectionElement) {
         `
         : ''
 
-      // Controles do IAgente (Apenas Master pode editar, Comum vê apenas leitura)
-      const isIAgenteDisabled = editor.iagenteDisabled === true
-      const accessStatus = checkUserIAgenteAccessStatus(editor)
-      const iagenteBtnHtml = isMaster
+      // Controles do PLUG (Apenas Master pode editar, Comum vê apenas leitura)
+      const isPLUGDisabled = editor.iagenteDisabled === true
+      const accessStatus = checkUserPLUGAccessStatus(editor)
+      const plugBtnHtml = isMaster
         ? `
-          <button class="action-btn small-btn ac-toggle-iagente-btn" 
+          <button class="action-btn small-btn ac-toggle-plug-btn" 
             data-user-id="${escapeHTML(editor.id)}" 
             data-is-editor="true" 
-            data-current-status="${isIAgenteDisabled}"
+            data-current-status="${isPLUGDisabled}"
             style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: 1px solid var(--border-color); background: ${accessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-gray, #9ca3af)'}; color: white; cursor: pointer; border-radius: 4px;"
             title="${accessStatus.active ? 'Ativo' : 'Inativo: ' + accessStatus.reason}">
-            ${accessStatus.active ? '🤖 IAgente: Ativo' : '🤖 IAgente: ' + accessStatus.reason}
+            ${accessStatus.active ? '🤖 PLUG: Ativo' : '🤖 PLUG: ' + accessStatus.reason}
           </button>
         `
         : `
@@ -5065,7 +5065,7 @@ async function loadAccessControl(sectionElement) {
               </span>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
-              ${iagenteBtnHtml}
+              ${plugBtnHtml}
               ${regionSelectorHtml}
               ${duplicateBtnHtml}
               ${teamBtnHtml}
@@ -5133,18 +5133,18 @@ async function loadAccessControl(sectionElement) {
         `
         : ''
 
-      // Controles do IAgente (Apenas Master pode editar, Comum vê apenas leitura)
-      const isIAgenteDisabled = viewer.iagenteDisabled === true
-      const accessStatus = checkUserIAgenteAccessStatus(viewer)
-      const iagenteBtnHtml = isMaster
+      // Controles do PLUG (Apenas Master pode editar, Comum vê apenas leitura)
+      const isPLUGDisabled = viewer.iagenteDisabled === true
+      const accessStatus = checkUserPLUGAccessStatus(viewer)
+      const plugBtnHtml = isMaster
         ? `
-          <button class="action-btn small-btn ac-toggle-iagente-btn" 
+          <button class="action-btn small-btn ac-toggle-plug-btn" 
             data-user-id="${escapeHTML(viewer.id)}" 
             data-is-editor="false" 
-            data-current-status="${isIAgenteDisabled}"
+            data-current-status="${isPLUGDisabled}"
             style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: 1px solid var(--border-color); background: ${accessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-gray, #9ca3af)'}; color: white; cursor: pointer; border-radius: 4px;"
             title="${accessStatus.active ? 'Ativo' : 'Inativo: ' + accessStatus.reason}">
-            ${accessStatus.active ? '🤖 IAgente: Ativo' : '🤖 IAgente: ' + accessStatus.reason}
+            ${accessStatus.active ? '🤖 PLUG: Ativo' : '🤖 PLUG: ' + accessStatus.reason}
           </button>
         `
         : `
@@ -5203,7 +5203,7 @@ async function loadAccessControl(sectionElement) {
               </label>
             </div>
             <div style="display: flex; gap: 8px; align-items: center;">
-              ${iagenteBtnHtml}
+              ${plugBtnHtml}
               ${regionSelectorHtml}
               ${duplicateBtnHtml}
             </div>
@@ -5325,7 +5325,7 @@ async function loadAccessControl(sectionElement) {
           ${isMaster ? `
             <button id="ac-edit-tabs-btn" class="action-btn secondary-btn compact" title="Editar conteúdo das guias" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">📝 Editar Guias</button>
             <button id="ac-config-channels-btn" class="action-btn secondary-btn compact" title="Configurar canais disponíveis" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">⚙️ Canais</button>
-            <button id="ac-config-iagente-btn" class="action-btn secondary-btn compact" title="Configurar IAgente por Unidades" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">🤖 IAgente</button>
+            <button id="ac-config-plug-btn" class="action-btn secondary-btn compact" title="Configurar PLUG por Unidades" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">🤖 PLUG</button>
             <button id="ac-config-duplicados-btn" class="action-btn secondary-btn compact" title="Configurar Verificador de Duplicidade IA por Unidades" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">🔍 Duplicados IA</button>
             <button id="ac-audit-logs-btn" class="action-btn secondary-btn compact" title="Ver logs de auditoria" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">📋 Auditoria</button>
           ` : ''}
@@ -6186,8 +6186,8 @@ async function loadAccessControl(sectionElement) {
       })
     })
 
-    // Alterna o status do IAgente individual
-    container.querySelectorAll('.ac-toggle-iagente-btn').forEach(btn => {
+    // Alterna o status do PLUG individual
+    container.querySelectorAll('.ac-toggle-plug-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.preventDefault()
         e.stopPropagation()
@@ -6201,14 +6201,14 @@ async function loadAccessControl(sectionElement) {
         btn.disabled = true
         btn.textContent = 'Aguarde...'
         
-        const success = await window.sgdPermissions.toggleUserIAgente(userId, isEditor, currentStatus)
+        const success = await window.sgdPermissions.toggleUserPLUG(userId, isEditor, currentStatus)
         if (success) {
-          showNotification(`Acesso de "${userName}" ao IAgente ${!currentStatus ? 'desativado' : 'ativado'}!`, 'success')
+          showNotification(`Acesso de "${userName}" ao PLUG ${!currentStatus ? 'desativado' : 'ativado'}!`, 'success')
           loadAccessControl(sectionElement)
         } else {
-          showNotification('Erro ao alterar acesso do IAgente.', 'error')
+          showNotification('Erro ao alterar acesso do PLUG.', 'error')
           btn.disabled = false
-          btn.textContent = currentStatus ? '🤖 IAgente: Bloqueado' : '🤖 IAgente: Ativo'
+          btn.textContent = currentStatus ? '🤖 PLUG: Bloqueado' : '🤖 PLUG: Ativo'
         }
       })
     })
@@ -6231,7 +6231,7 @@ async function loadAccessControl(sectionElement) {
         const success = await window.sgdPermissions.toggleUserDuplicateIA(userId, isEditor, currentStatus)
         if (success) {
           // OBS: aqui "currentStatus" reflete duplicateAccessStatus.active (estado ANTES do
-          // clique), ao contrário do botão do IAgente cujo data-current-status reflete
+          // clique), ao contrário do botão do PLUG cujo data-current-status reflete
           // "está desativado". Por isso a condição é invertida em relação ao bloco acima.
           showNotification(`Acesso de "${userName}" ao Duplicados IA ${currentStatus ? 'desativado' : 'ativado'}!`, 'success')
           loadAccessControl(sectionElement)
@@ -6243,22 +6243,22 @@ async function loadAccessControl(sectionElement) {
       })
     })
 
-    // Botão de Configuração do IAgente
-    const configIAgenteBtn = container.querySelector('#ac-config-iagente-btn')
-    if (configIAgenteBtn) {
-      configIAgenteBtn.addEventListener('click', async (e) => {
+    // Botão de Configuração do PLUG
+    const configPLUGBtn = container.querySelector('#ac-config-plug-btn')
+    if (configPLUGBtn) {
+      configPLUGBtn.addEventListener('click', async (e) => {
         e.preventDefault()
         e.stopPropagation()
-        configIAgenteBtn.disabled = true
-        const origText = configIAgenteBtn.textContent
-        configIAgenteBtn.textContent = 'Carregando...'
+        configPLUGBtn.disabled = true
+        const origText = configPLUGBtn.textContent
+        configPLUGBtn.textContent = 'Carregando...'
         try {
-          await openConfigIAgenteModal(sectionElement)
+          await openConfigPLUGModal(sectionElement)
         } catch (err) {
-          alert('Erro ao abrir configurações do IAgente: ' + err.message)
+          alert('Erro ao abrir configurações do PLUG: ' + err.message)
         } finally {
-          configIAgenteBtn.disabled = false
-          configIAgenteBtn.textContent = origText
+          configPLUGBtn.disabled = false
+          configPLUGBtn.textContent = origText
         }
       })
     }
@@ -6546,7 +6546,7 @@ function openConfigChannelsModal(initialChannels, sectionElement) {
   }
 }
 
-async function openConfigIAgenteModal(sectionElement) {
+async function openConfigPLUGModal(sectionElement) {
   // 1. Carrega as configurações remotas
   const localData = await chrome.storage.local.get(['remoteConfig'])
   const remoteConfig = localData.remoteConfig || {}
@@ -6663,17 +6663,17 @@ async function openConfigIAgenteModal(sectionElement) {
   const modalHtml = `
     <div style="padding: 10px; max-height: 620px; display: flex; flex-direction: column; width: 480px; box-sizing: border-box;">
       <p style="font-size: 12px; color: var(--text-color-muted); margin-bottom: 15px; margin-top: 0;">
-        Gerencie as URLs de atendimento regional e controle o acesso do assistente IAgente (Tria) liberando por unidade de atendimento do SGD. Por padrão, todas as unidades iniciam bloqueadas.
+        Gerencie as URLs de atendimento regional e controle o acesso do assistente PLUG (Tria) liberando por unidade de atendimento do SGD. Por padrão, todas as unidades iniciam bloqueadas.
       </p>
       
       <!-- Seção de URLs -->
       <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
         <div style="display: flex; flex-direction: column; gap: 4px;">
-          <label style="font-size: 11px; font-weight: bold; color: var(--text-color-muted);">URL do IAgente - SUL:</label>
+          <label style="font-size: 11px; font-weight: bold; color: var(--text-color-muted);">URL do PLUG - SUL:</label>
           <input type="text" id="cia-url-sul" value="${escapeHTML(urlSul)}" placeholder="URL do time do Sul" style="width: 100%; padding: 6px 10px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
         </div>
         <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 4px;">
-          <label style="font-size: 11px; font-weight: bold; color: var(--text-color-muted);">URL do IAgente - SUDESTE:</label>
+          <label style="font-size: 11px; font-weight: bold; color: var(--text-color-muted);">URL do PLUG - SUDESTE:</label>
           <input type="text" id="cia-url-sudeste" value="${escapeHTML(urlSudeste)}" placeholder="URL do time do Sudeste" style="width: 100%; padding: 6px 10px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
         </div>
       </div>
@@ -6703,12 +6703,12 @@ async function openConfigIAgenteModal(sectionElement) {
   `
   
   const modal = createModal(
-    'Configurar IAgente por Unidades',
+    'Configurar PLUG por Unidades',
     modalHtml,
     null,
     {
       isManagementModal: false,
-      modalId: 'config-iagente-units-modal',
+      modalId: 'config-plug-units-modal',
       showShareButton: false
     }
   )
@@ -6806,7 +6806,7 @@ async function openConfigIAgenteModal(sectionElement) {
       const valSudeste = urlSudesteInput ? urlSudesteInput.value.trim() : ''
       
       if (!valSul) {
-        alert('O link do IAgente SUL é obrigatório.')
+        alert('O link do PLUG SUL é obrigatório.')
         return
       }
       
@@ -6827,7 +6827,7 @@ async function openConfigIAgenteModal(sectionElement) {
       
       const success = await window.sgdPermissions.saveRemoteConfig(updatedConfig)
       if (success) {
-        showNotification('Configurações do IAgente atualizadas com sucesso!', 'success')
+        showNotification('Configurações do PLUG atualizadas com sucesso!', 'success')
         cleanup()
         if (sectionElement) loadAccessControl(sectionElement)
       } else {

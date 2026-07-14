@@ -1508,7 +1508,7 @@
     }
   }
 
-  async function toggleUserIAgente(userId, isEditor, currentStatus) {
+  async function toggleUserPLUG(userId, isEditor, currentStatus) {
     if (!window.sgdPermissions.isEditor) return false
     const url = isEditor ? `${RTDB_EDITORS_URL}/${userId}.json` : `${RTDB_VIEWERS_URL}/${userId}.json`
     const targetStatus = !currentStatus
@@ -1525,13 +1525,13 @@
       const response = await callDatabaseWrite(url, 'PATCH', payload)
       if (response.ok) {
         const listName = isEditor ? 'editores' : 'visualizadores'
-        await writeAuditLog('TOGGLE_USER_IAGENTE', userId, `Ação: ${targetStatus ? 'Desativar' : 'Ativar'} IAgente (${listName})`)
+        await writeAuditLog('TOGGLE_USER_PLUG', userId, `Ação: ${targetStatus ? 'Desativar' : 'Ativar'} PLUG (${listName})`)
         await invalidatePermissionsCache()
         return true
       }
       return false
     } catch (e) {
-      console.error('[SGD Permissions] Erro ao alternar status do IAgente do usuário:', e)
+      console.error('[SGD Permissions] Erro ao alternar status do PLUG do usuário:', e)
       return false
     }
   }
@@ -1559,16 +1559,16 @@
     }
   }
 
-  // ─── Resolvers de Acesso (IAgente / Duplicados) ──────────────────────────────
+  // ─── Resolvers de Acesso (PLUG / Duplicados) ──────────────────────────────
   // Funções puras e síncronas que concentram a regra de decisão de acesso.
-  // São usadas tanto pelas checagens reais (hasIAgenteAccess/hasDuplicateCheckerIAAccess,
+  // São usadas tanto pelas checagens reais (hasPLUGAccess/hasDuplicateCheckerIAAccess,
   // que buscam os dados no Firebase) quanto pelo badge do painel de Controle de Acesso
-  // (checkUserIAgenteAccessStatus/checkUserDuplicateAccessStatus em info-panel.js, que já
+  // (checkUserPLUGAccessStatus/checkUserDuplicateAccessStatus em info-panel.js, que já
   // tem os dados carregados). Mantendo a decisão em um único lugar, painel e acesso real
   // nunca mais podem divergir por causa de uma ordem de checagem diferente entre os dois.
   // Expostas em window.sgdPermissions para serem reaproveitadas pelo info-panel.js.
 
-  function resolveIAgenteAccess({ isMasterBypass, iagenteDisabled, iagenteIA_Enabled, unidade, enabledUnidades }) {
+  function resolvePLUGAccess({ isMasterBypass, iagenteDisabled, iagenteIA_Enabled, unidade, enabledUnidades }) {
     if (isMasterBypass) {
       return { active: true, reason: 'Master' }
     }
@@ -1670,22 +1670,22 @@
     return result.active
   }
 
-  async function hasIAgenteAccess() {
+  async function hasPLUGAccess() {
     const userName = window.sgdPermissions?.currentUser
     const userId = window.sgdPermissions?.currentUserId
     const devData = await chrome.storage.local.get(['developerModeEnabled'])
     const isDevMode = devData.developerModeEnabled === true
 
-    sgdLog('[IAgente Access] Iniciando verificação. userName:', userName, '| userId (currentUserId):', userId, '| isDevMode:', isDevMode, '| isMaster:', window.sgdPermissions?.isMaster)
+    sgdLog('[PLUG Access] Iniciando verificação. userName:', userName, '| userId (currentUserId):', userId, '| isDevMode:', isDevMode, '| isMaster:', window.sgdPermissions?.isMaster)
 
     // Se for Master/Dev, sempre tem acesso (bypass)
     if (isDevMode || (window.sgdPermissions?.isMaster)) {
-      sgdLog('[IAgente Access] Bypass concedido (Dev Mode ou Master).')
+      sgdLog('[PLUG Access] Bypass concedido (Dev Mode ou Master).')
       return true
     }
 
     if (!userName) {
-      sgdWarn('[IAgente Access] Negado: currentUser não capturado (userName vazio).')
+      sgdWarn('[PLUG Access] Negado: currentUser não capturado (userName vazio).')
       return false
     }
     const normalizedUser = normalizeName(userName)
@@ -1701,16 +1701,16 @@
       isIndividualDisabled = matchedEditor.iagenteDisabled === true
       isIndividuallyEnabled = matchedEditor.iagenteIA_Enabled === true
       userUnidade = matchedEditor.unidade
-      sgdLog('[IAgente Access] Registro encontrado em EDITORES. id:', matchedEditor.id, '| iagenteDisabled:', matchedEditor.iagenteDisabled, '| iagenteIA_Enabled:', matchedEditor.iagenteIA_Enabled, '| unidade:', matchedEditor.unidade)
+      sgdLog('[PLUG Access] Registro encontrado em EDITORES. id:', matchedEditor.id, '| iagenteDisabled:', matchedEditor.iagenteDisabled, '| iagenteIA_Enabled:', matchedEditor.iagenteIA_Enabled, '| unidade:', matchedEditor.unidade)
     } else {
       const matchedViewer = await matchViewerRecord(userId, userName, normalizedUser)
       if (matchedViewer) {
         isIndividualDisabled = matchedViewer.iagenteDisabled === true
         isIndividuallyEnabled = matchedViewer.iagenteIA_Enabled === true
         userUnidade = matchedViewer.unidade
-        sgdLog('[IAgente Access] Registro encontrado em VISUALIZADORES. id:', matchedViewer.id, '| iagenteDisabled:', matchedViewer.iagenteDisabled, '| iagenteIA_Enabled:', matchedViewer.iagenteIA_Enabled, '| unidade:', matchedViewer.unidade)
+        sgdLog('[PLUG Access] Registro encontrado em VISUALIZADORES. id:', matchedViewer.id, '| iagenteDisabled:', matchedViewer.iagenteDisabled, '| iagenteIA_Enabled:', matchedViewer.iagenteIA_Enabled, '| unidade:', matchedViewer.unidade)
       } else {
-        sgdWarn('[IAgente Access] Nenhum registro encontrado em editores nem visualizadores para userId:', userId, '/ nome:', userName, '— provavelmente caiu no fallback de lista cacheada (até 12h) e não achou o registro lá. Verifique se o ID usado ao ativar no painel bate com este userId.')
+        sgdWarn('[PLUG Access] Nenhum registro encontrado em editores nem visualizadores para userId:', userId, '/ nome:', userName, '— provavelmente caiu no fallback de lista cacheada (até 12h) e não achou o registro lá. Verifique se o ID usado ao ativar no painel bate com este userId.')
       }
     }
 
@@ -1718,7 +1718,7 @@
     if (!userUnidade) {
       const cachedUserInfo = await chrome.storage.local.get(['userUnidade'])
       userUnidade = cachedUserInfo.userUnidade
-      sgdLog('[IAgente Access] Unidade não veio do registro, usando cache local (userUnidade):', userUnidade)
+      sgdLog('[PLUG Access] Unidade não veio do registro, usando cache local (userUnidade):', userUnidade)
     }
 
     // 3. Verificar a unidade contra a allowlist remota (iagente_enabled_unidades)
@@ -1726,7 +1726,7 @@
     const remoteConfig = localConfig.remoteConfig || {}
     const enabledUnidades = remoteConfig.iagente_enabled_unidades || []
 
-    const result = resolveIAgenteAccess({
+    const result = resolvePLUGAccess({
       isMasterBypass: false, // bypass de Master/Dev já tratado acima, com retorno antecipado
       iagenteDisabled: isIndividualDisabled,
       iagenteIA_Enabled: isIndividuallyEnabled,
@@ -1735,14 +1735,14 @@
     })
 
     if (result.active) {
-      sgdLog('[IAgente Access] Concedido:', result.reason)
+      sgdLog('[PLUG Access] Concedido:', result.reason)
     } else {
-      sgdWarn('[IAgente Access] Negado:', result.reason)
+      sgdWarn('[PLUG Access] Negado:', result.reason)
     }
     return result.active
   }
 
-  async function getIAgenteUrl() {
+  async function getPLUGUrl() {
     const userName = window.sgdPermissions?.currentUser
     const userId = window.sgdPermissions?.currentUserId
     const normalizedUser = normalizeName(userName)
@@ -1829,14 +1829,14 @@
   window.sgdPermissions.invalidateFormsCache = invalidateFormsCache
   window.sgdPermissions.saveRemoteConfig = saveRemoteConfig
   window.sgdPermissions.updateUserRegion = updateUserRegion
-  window.sgdPermissions.toggleUserIAgente = toggleUserIAgente
-  window.sgdPermissions.hasIAgenteAccess = hasIAgenteAccess
-  window.sgdPermissions.getIAgenteUrl = getIAgenteUrl
+  window.sgdPermissions.toggleUserPLUG = toggleUserPLUG
+  window.sgdPermissions.hasPLUGAccess = hasPLUGAccess
+  window.sgdPermissions.getPLUGUrl = getPLUGUrl
   window.sgdPermissions.toggleUserDuplicateIA = toggleUserDuplicateIA
   window.sgdPermissions.hasDuplicateCheckerIAAccess = hasDuplicateCheckerIAAccess
   // Resolvers puros compartilhados com o painel (info-panel.js), para que o badge
   // de status e a checagem real de acesso nunca divirjam.
-  window.sgdPermissions.resolveIAgenteAccess = resolveIAgenteAccess
+  window.sgdPermissions.resolvePLUGAccess = resolvePLUGAccess
   window.sgdPermissions.resolveDuplicateIAAccess = resolveDuplicateIAAccess
 
   window.sgdPermissions.refreshEditors = async () => {

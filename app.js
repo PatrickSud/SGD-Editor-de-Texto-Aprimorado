@@ -1814,12 +1814,12 @@ Sigo a disposição.`
     })
 }
 
-// URL do assistente de suporte IAgente
-const IAGENTE_URL =
+// URL do assistente de suporte PLUG
+const PLUG_URL =
   'https://tria.plugsocial.online/?assunto=sped&codigoCliente=96797&identificacaoRevenda=3'
 
 /**
- * Abre o IAgente em uma janela dedicada do navegador (estilo "app", sem barra
+ * Abre o PLUG em uma janela dedicada do navegador (estilo "app", sem barra
  * de endereço), ou traz para frente a janela já existente.
  *
  * A janela é criada e gerenciada pelo service worker, pois a API chrome.windows
@@ -1830,15 +1830,15 @@ const IAGENTE_URL =
  * (detecção de frame no lado da Tria). Em janela própria, a Tria volta a ser a
  * página principal e funciona normalmente, com maximizar/redimensionar nativos.
  */
-async function toggleIAgenteWindow() {
+async function togglePLUGWindow() {
   try {
-    const url = window.sgdPermissions?.getIAgenteUrl ? await window.sgdPermissions.getIAgenteUrl() : IAGENTE_URL
+    const url = window.sgdPermissions?.getPLUGUrl ? await window.sgdPermissions.getPLUGUrl() : PLUG_URL
     chrome.runtime.sendMessage(
-      { action: 'IAGENTE_OPEN_WINDOW', url: url },
+      { action: 'PLUG_OPEN_WINDOW', url: url },
       resp => {
         if (chrome.runtime.lastError) return
         if (resp && typeof resp.open === 'boolean') {
-          updateIAgenteFabState(resp.open)
+          updatePLUGFabState(resp.open)
         }
       }
     )
@@ -1848,15 +1848,15 @@ async function toggleIAgenteWindow() {
 }
 
 /**
- * Consulta o service worker sobre o estado atual da janela do IAgente e
+ * Consulta o service worker sobre o estado atual da janela do PLUG e
  * sincroniza o botão flutuante (útil ao carregar/recarregar a página).
  */
-function refreshIAgenteFabState() {
+function refreshPLUGFabState() {
   try {
-    chrome.runtime.sendMessage({ action: 'IAGENTE_GET_STATE' }, resp => {
+    chrome.runtime.sendMessage({ action: 'PLUG_GET_STATE' }, resp => {
       if (chrome.runtime.lastError) return
       if (resp && typeof resp.open === 'boolean') {
-        updateIAgenteFabState(resp.open)
+        updatePLUGFabState(resp.open)
       }
     })
   } catch (e) {
@@ -1865,25 +1865,25 @@ function refreshIAgenteFabState() {
 }
 
 /**
- * Sincroniza o estado visual do botão IAgente com a janela dedicada.
- * @param {boolean} isOpen - Se a janela do IAgente está aberta.
+ * Sincroniza o estado visual do botão PLUG com a janela dedicada.
+ * @param {boolean} isOpen - Se a janela do PLUG está aberta.
  */
-function updateIAgenteFabState(isOpen) {
-  const btn = document.getElementById('iagente-scroll-btn')
+function updatePLUGFabState(isOpen) {
+  const btn = document.getElementById('plug-scroll-btn')
   if (!btn) return
   btn.classList.toggle('active', isOpen)
   btn.title = isOpen
-    ? 'IAgente - Trazer janela para frente'
-    : 'IAgente - Solicitar Suporte'
+    ? 'PLUG - Trazer janela para frente'
+    : 'PLUG - Solicitar Suporte'
 }
 
-// Mantém o botão sincronizado quando a janela do IAgente é aberta ou fechada a
+// Mantém o botão sincronizado quando a janela do PLUG é aberta ou fechada a
 // partir de qualquer guia: o service worker transmite o estado para todas as
 // abas do SGD sempre que a janela é criada ou encerrada.
 try {
   chrome.runtime.onMessage.addListener(message => {
-    if (message && message.action === 'IAGENTE_WINDOW_STATE') {
-      updateIAgenteFabState(!!message.open)
+    if (message && message.action === 'PLUG_WINDOW_STATE') {
+      updatePLUGFabState(!!message.open)
     }
   })
 } catch (e) {
@@ -1971,29 +1971,29 @@ function adjustGoToTopButtonPosition(fabPosition) {
  * visível apenas se a página tiver uma barra de rolagem.
  */
 async function initializeScrollToTopButton() {
-  // Grupo que contém o botão IAgente e o botão Ir ao Topo lado a lado
+  // Grupo que contém o botão PLUG e o botão Ir ao Topo lado a lado
   const btnGroup = document.createElement('div')
   btnGroup.id = 'scroll-btn-group'
 
-  // TODO: Liberar o botão IAgente para todos os usuários quando aprovado.
+  // TODO: Liberar o botão PLUG para todos os usuários quando aprovado.
   // Por enquanto restrito a usuários com Modo Dev ativo na Central de Informações
   // (isInfoDevModeEnabled) ou que já sejam editores (sgdPermissions.isEditor) ou que possuam acesso ativo.
   try {
-    const hasAccess = window.sgdPermissions?.hasIAgenteAccess ? await window.sgdPermissions.hasIAgenteAccess() : false
+    const hasAccess = window.sgdPermissions?.hasPLUGAccess ? await window.sgdPermissions.hasPLUGAccess() : false
     if (hasAccess) {
-      const iagenteBtn = document.createElement('button')
-      iagenteBtn.id = 'iagente-scroll-btn'
-      iagenteBtn.className = 'shine-effect'
-      iagenteBtn.title = 'IAgente - Solicitar Suporte'
-      iagenteBtn.innerHTML = '<img src="https://suporte.dominioatendimento.com/central/imagens/tria10.png" alt="IAgente" class="iagente-scroll-icon">'
-      iagenteBtn.addEventListener('click', toggleIAgenteWindow)
-      btnGroup.appendChild(iagenteBtn)
-      // Sincroniza o estado do botão com a janela do IAgente (caso já esteja aberta).
-      refreshIAgenteFabState()
+      const plugBtn = document.createElement('button')
+      plugBtn.id = 'plug-scroll-btn'
+      plugBtn.className = 'shine-effect'
+      plugBtn.title = 'PLUG - Solicitar Suporte'
+      plugBtn.innerHTML = '<img src="https://suporte.dominioatendimento.com/central/imagens/tria10.png" alt="PLUG" class="plug-scroll-icon">'
+      plugBtn.addEventListener('click', togglePLUGWindow)
+      btnGroup.appendChild(plugBtn)
+      // Sincroniza o estado do botão com a janela do PLUG (caso já esteja aberta).
+      refreshPLUGFabState()
     }
   } catch (e) {
-    // Falha no setup do IAgente nunca deve impedir a criação do botão de scroll.
-    console.error('Erro ao inicializar o botão IAgente:', e)
+    // Falha no setup do PLUG nunca deve impedir a criação do botão de scroll.
+    console.error('Erro ao inicializar o botão PLUG:', e)
   }
 
   // Botão Ir ao Topo / Ir para o Final (à direita)
@@ -2165,9 +2165,9 @@ async function applyGlobalVisibilitySettings() {
   if (goToTopButton) {
     goToTopButton.style.display = visibility.goToTop === false ? 'none' : ''
   }
-  const iagenteScrollBtn = document.getElementById('iagente-scroll-btn')
-  if (iagenteScrollBtn) {
-    iagenteScrollBtn.style.display = visibility.iagente === false ? 'none' : ''
+  const plugScrollBtn = document.getElementById('plug-scroll-btn')
+  if (plugScrollBtn) {
+    plugScrollBtn.style.display = visibility.plug === false ? 'none' : ''
   }
 
   // Novo: visibilidade do botão "Pesquisar Resposta" clonado

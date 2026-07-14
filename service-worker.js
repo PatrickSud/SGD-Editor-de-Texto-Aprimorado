@@ -450,35 +450,35 @@ async function broadcastToSgdTabs(message) {
 }
 
 // ─────────────────────────────────────────
-// IAGENTE — Janela dedicada do assistente Tria
+// PLUG — Janela dedicada do assistente Tria
 // O assistente não funciona dentro de um iframe (detecção de frame no lado da
 // Tria), então é aberto em uma janela própria do navegador (tipo "popup"/app),
 // onde a Tria volta a ser a página principal e funciona normalmente.
 // ─────────────────────────────────────────
-const IAGENTE_BOUNDS_KEY = 'iagenteWindowBounds'
-const IAGENTE_DEFAULT_BOUNDS = { width: 460, height: 780 }
-let iagenteWindowId = null
-let iagenteTabId = null
-let iagenteRegion = 'SUL'
+const PLUG_BOUNDS_KEY = 'plugWindowBounds'
+const PLUG_DEFAULT_BOUNDS = { width: 460, height: 780 }
+let plugWindowId = null
+let plugTabId = null
+let plugRegion = 'SUL'
 
 /**
  * Injeta via chrome.scripting um MutationObserver para manter o título da janela personalizado.
  */
-function injectIAgenteTitle(tabId, regionName) {
+function injectPLUGTitle(tabId, regionName) {
   if (!tabId) return
   chrome.scripting.executeScript({
     target: { tabId: tabId },
     func: (region) => {
-      const expectedTitle = `TRIA - IAgente - [${region}]`
+      const expectedTitle = `TRIA - PLUG - [${region}]`
       document.title = expectedTitle
       
       // Remove observer antigo se houver
-      if (window.iagenteTitleObserver) {
-        window.iagenteTitleObserver.disconnect()
+      if (window.plugTitleObserver) {
+        window.plugTitleObserver.disconnect()
       }
       
       // Monitora mudanças no título
-      window.iagenteTitleObserver = new MutationObserver(() => {
+      window.plugTitleObserver = new MutationObserver(() => {
         if (document.title !== expectedTitle) {
           document.title = expectedTitle
         }
@@ -486,45 +486,45 @@ function injectIAgenteTitle(tabId, regionName) {
       
       const titleEl = document.querySelector('title')
       if (titleEl) {
-        window.iagenteTitleObserver.observe(titleEl, { childList: true })
+        window.plugTitleObserver.observe(titleEl, { childList: true })
       } else {
-        window.iagenteTitleObserver.observe(document.documentElement, {
+        window.plugTitleObserver.observe(document.documentElement, {
           subtree: true,
           childList: true
         })
       }
     },
     args: [regionName]
-  }).catch(err => console.warn('[IAgente] Falha ao injetar script de título:', err))
+  }).catch(err => console.warn('[PLUG] Falha ao injetar script de título:', err))
 }
 
 /**
- * Verifica se a janela do IAgente ainda existe.
+ * Verifica se a janela do PLUG ainda existe.
  * @returns {Promise<boolean>}
  */
-async function isIAgenteWindowOpen() {
-  if (iagenteWindowId === null) return false
+async function isPLUGWindowOpen() {
+  if (plugWindowId === null) return false
   try {
-    await chrome.windows.get(iagenteWindowId)
+    await chrome.windows.get(plugWindowId)
     return true
   } catch (e) {
     // A janela foi fechada sem disparar o onRemoved capturado; normaliza o estado.
-    iagenteWindowId = null
+    plugWindowId = null
     return false
   }
 }
 
 /**
- * Abre a janela dedicada do IAgente ou, se já estiver aberta, traz para frente
+ * Abre a janela dedicada do PLUG ou, se já estiver aberta, traz para frente
  * (restaurando-a caso esteja minimizada). Lembra o tamanho/posição/estado entre
  * aberturas.
  * @param {string} url - URL do assistente.
  * @returns {Promise<boolean>} true se a janela está aberta ao final.
  */
-async function openOrFocusIAgenteWindow(url) {
-  if (await isIAgenteWindowOpen()) {
+async function openOrFocusPLUGWindow(url) {
+  if (await isPLUGWindowOpen()) {
     try {
-      await chrome.windows.update(iagenteWindowId, {
+      await chrome.windows.update(plugWindowId, {
         focused: true,
         drawAttention: true,
         state: 'normal'
@@ -536,10 +536,10 @@ async function openOrFocusIAgenteWindow(url) {
   }
 
   // Recupera tamanho/posição/estado salvos (ou usa o padrão).
-  let bounds = { ...IAGENTE_DEFAULT_BOUNDS }
+  let bounds = { ...PLUG_DEFAULT_BOUNDS }
   try {
-    const data = await chrome.storage.local.get([IAGENTE_BOUNDS_KEY])
-    const saved = data[IAGENTE_BOUNDS_KEY]
+    const data = await chrome.storage.local.get([PLUG_BOUNDS_KEY])
+    const saved = data[PLUG_BOUNDS_KEY]
     if (saved && typeof saved === 'object') bounds = saved
   } catch (e) {
     /* Usa o padrão. */
@@ -555,8 +555,8 @@ async function openOrFocusIAgenteWindow(url) {
   if (bounds.state === 'maximized') {
     createData.state = 'maximized'
   } else {
-    createData.width = typeof bounds.width === 'number' ? bounds.width : IAGENTE_DEFAULT_BOUNDS.width
-    createData.height = typeof bounds.height === 'number' ? bounds.height : IAGENTE_DEFAULT_BOUNDS.height
+    createData.width = typeof bounds.width === 'number' ? bounds.width : PLUG_DEFAULT_BOUNDS.width
+    createData.height = typeof bounds.height === 'number' ? bounds.height : PLUG_DEFAULT_BOUNDS.height
     if (typeof bounds.left === 'number' && typeof bounds.top === 'number') {
       createData.left = bounds.left
       createData.top = bounds.top
@@ -565,9 +565,9 @@ async function openOrFocusIAgenteWindow(url) {
 
   try {
     const win = await chrome.windows.create(createData)
-    iagenteWindowId = win.id
+    plugWindowId = win.id
     if (win.tabs && win.tabs[0]) {
-      iagenteTabId = win.tabs[0].id
+      plugTabId = win.tabs[0].id
       
       // Determina a região a partir do link aberto
       const localData = await chrome.storage.local.get(['remoteConfig'])
@@ -576,19 +576,19 @@ async function openOrFocusIAgenteWindow(url) {
       const urlSudeste = remoteConfig.iagente_url_sudeste
       
       if (url === urlSudeste) {
-        iagenteRegion = 'SUDESTE'
+        plugRegion = 'SUDESTE'
       } else if (url === urlSul) {
-        iagenteRegion = 'SUL'
+        plugRegion = 'SUL'
       } else {
-        iagenteRegion = url.includes('identificacaoRevenda=3') ? 'SUL' : 'SUDESTE'
+        plugRegion = url.includes('identificacaoRevenda=3') ? 'SUL' : 'SUDESTE'
       }
       
-      injectIAgenteTitle(iagenteTabId, iagenteRegion)
+      injectPLUGTitle(plugTabId, plugRegion)
     }
-    broadcastToSgdTabs({ action: 'IAGENTE_WINDOW_STATE', open: true })
+    broadcastToSgdTabs({ action: 'PLUG_WINDOW_STATE', open: true })
     return true
   } catch (e) {
-    console.error('[IAgente] Erro ao abrir a janela dedicada:', e)
+    console.error('[PLUG] Erro ao abrir a janela dedicada:', e)
     return false
   }
 }
@@ -597,11 +597,11 @@ async function openOrFocusIAgenteWindow(url) {
 // maximiza a janela — para reabrir exatamente como o usuário deixou.
 if (chrome.windows.onBoundsChanged) {
   chrome.windows.onBoundsChanged.addListener(win => {
-    if (win.id !== iagenteWindowId) return
+    if (win.id !== plugWindowId) return
     // Não persiste o estado minimizado (não queremos reabrir minimizado).
     if (win.state === 'minimized') return
     chrome.storage.local.set({
-      [IAGENTE_BOUNDS_KEY]: {
+      [PLUG_BOUNDS_KEY]: {
         left: win.left,
         top: win.top,
         width: win.width,
@@ -614,23 +614,23 @@ if (chrome.windows.onBoundsChanged) {
 
 // Detecta o fechamento da janela para sincronizar o botão em todas as abas do SGD.
 chrome.windows.onRemoved.addListener(windowId => {
-  if (windowId !== iagenteWindowId) return
-  iagenteWindowId = null
-  iagenteTabId = null
-  broadcastToSgdTabs({ action: 'IAGENTE_WINDOW_STATE', open: false })
+  if (windowId !== plugWindowId) return
+  plugWindowId = null
+  plugTabId = null
+  broadcastToSgdTabs({ action: 'PLUG_WINDOW_STATE', open: false })
 })
 
 // Escuta atualizações de abas para manter o título injetado durante carregamentos/reloads
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (tabId === iagenteTabId && (changeInfo.status === 'loading' || changeInfo.status === 'complete')) {
-    injectIAgenteTitle(tabId, iagenteRegion)
+  if (tabId === plugTabId && (changeInfo.status === 'loading' || changeInfo.status === 'complete')) {
+    injectPLUGTitle(tabId, plugRegion)
   }
 })
 
-// Escuta remoção da aba do IAgente
+// Escuta remoção da aba do PLUG
 chrome.tabs.onRemoved.addListener((tabId) => {
-  if (tabId === iagenteTabId) {
-    iagenteTabId = null
+  if (tabId === plugTabId) {
+    plugTabId = null
   }
 })
 
@@ -1982,14 +1982,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         })();
         return true; // Resposta assíncrona
 
-      } else if (message.action === 'IAGENTE_OPEN_WINDOW') {
-        // Abre (ou foca) a janela dedicada do assistente IAgente.
-        const open = await openOrFocusIAgenteWindow(message.url)
+      } else if (message.action === 'PLUG_OPEN_WINDOW') {
+        // Abre (ou foca) a janela dedicada do assistente PLUG.
+        const open = await openOrFocusPLUGWindow(message.url)
         sendResponse({ open })
 
-      } else if (message.action === 'IAGENTE_GET_STATE') {
-        // Informa ao content script se a janela do IAgente está aberta.
-        sendResponse({ open: await isIAgenteWindowOpen() })
+      } else if (message.action === 'PLUG_GET_STATE') {
+        // Informa ao content script se a janela do PLUG está aberta.
+        sendResponse({ open: await isPLUGWindowOpen() })
 
       }
     } catch (error) {
