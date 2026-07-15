@@ -1110,6 +1110,11 @@ async function openManagementModal() {
   const storedMasterPC = await chrome.storage.local.get(['isMasterPC'])
   const isMasterPC = storedMasterPC.isMasterPC === true
 
+  // NOVO: Configuração de IA/Fallback da Verificação de Duplicidade (compartilhada
+  // com o modal de atalho aberto pelo ⚙️ no widget — ver duplicate-checker.js)
+  const configDuplicidade = await obterConfigDuplicidade()
+  const duplicidadeConfigHtml = renderizarConfigDuplicidadeHtml(configDuplicidade)
+
   // NOVO: Rastreia a config remota do Firebase para aplicar a renderização condicional do checkbox
   const localData = await chrome.storage.local.get(['remoteConfig'])
   const remoteConfig = localData.remoteConfig || {}
@@ -1328,10 +1333,9 @@ async function openManagementModal() {
                     </div>
                 </div>
                 <hr style="margin: 15px 0;">
-                <h5>Detector de Duplicatas (Em Desenvolvimento)</h5>
-                <div class="form-checkbox-group">
-                    <input type="checkbox" id="enable-duplicate-checker" ${preferences.enableDuplicateChecker ? 'checked' : ''}>
-                    <label for="enable-duplicate-checker">Verificar atendimentos similares em aberto do cliente</label>
+                <h5>Verificação de Duplicidade</h5>
+                <div id="duplicidade-config-container">
+                    ${duplicidadeConfigHtml}
                 </div>
                 <hr style="margin: 15px 0;">
                 <h5>Auto-capitalização de Texto</h5>
@@ -3237,10 +3241,10 @@ async function savePreferencesSettings(modal) {
     newPreferences.dropdownBehavior = selectedBehavior.value;
   }
 
-  // NOVO: Ler preferência para habilitar o duplicate checker
-  const enableDuplicateCheckerCheckbox = container.querySelector('#enable-duplicate-checker');
-  if (enableDuplicateCheckerCheckbox) {
-    newPreferences.enableDuplicateChecker = enableDuplicateCheckerCheckbox.checked;
+  // NOVO: Ler configuração de IA/Fallback da Verificação de Duplicidade
+  const duplicidadeConfigContainer = container.querySelector('#duplicidade-config-container');
+  if (duplicidadeConfigContainer) {
+    Object.assign(newPreferences, lerConfigDuplicidadeDoContainer(duplicidadeConfigContainer));
   }
 
   // NOVO: Ler preferência para habilitar a auto-capitalização de texto

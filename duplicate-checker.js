@@ -378,8 +378,16 @@ function injetarEstiloWidgetSSC() {
       border-radius: 4px;
       width: 22px;
       height: 22px;
+      padding: 0;
       font-size: 12px;
       line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    #ssc-duplicate-widget-header button[data-action="config"] {
+      font-size: 11px;
     }
     #ssc-duplicate-widget-body {
       display: none;
@@ -470,6 +478,7 @@ function exibirWidgetDuplicidadeSSC(resultados) {
     <div id="ssc-duplicate-widget-header">
       <span class="ssc-widget-title">⚠️ ${resultados.length} SSC${plural} parecida${plural}!</span>
       <button type="button" data-action="toggle" title="Expandir/Recolher">▲</button>
+      <button type="button" data-action="config" title="Configurar Verificação de Duplicidade">⚙️</button>
       <button type="button" data-action="close" title="Fechar">×</button>
     </div>
     <div id="ssc-duplicate-widget-body">${itensHtml}</div>
@@ -484,6 +493,11 @@ function exibirWidgetDuplicidadeSSC(resultados) {
   widget.querySelector('[data-action="toggle"]').addEventListener('click', e => {
     e.stopPropagation()
     alternarExpansaoWidget()
+  })
+
+  widget.querySelector('[data-action="config"]').addEventListener('click', e => {
+    e.stopPropagation()
+    abrirModalConfiguracaoDuplicidade()
   })
 
   widget.querySelector('[data-action="close"]').addEventListener('click', e => {
@@ -502,6 +516,154 @@ function exibirWidgetDuplicidadeSSC(resultados) {
 
     document.body.appendChild(widget)
   posicionarWidgetAoLadoDoBotaoScroll(widget)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 5b. CONFIGURAÇÃO DE IA / FALLBACK (Preferências + atalho do widget)
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Duas preferências independentes controlam como a Verificação de Duplicidade
+// funciona (tanto o botão manual "Verificar duplicidade" quanto a verificação
+// automática):
+//   - duplicateCheckerUseIA: o usuário quer usar IA. Só tem efeito de verdade
+//     se a permissão remota também estiver liberada (hasDuplicateCheckerIAAccess).
+//   - duplicateCheckerUseFallback: o usuário quer usar a busca por
+//     palavras-chave (sem IA) quando a IA estiver desativada ou indisponível.
+// Se as duas opções resultarem em "desligado", o recurso inteiro fica
+// desativado — nem a verificação automática nem o botão manual funcionam.
+//
+// Essas funções são compartilhadas pela seção "Verificação de Duplicidade" em
+// Configurações > Preferências (quick-messages.js) e pelo modal de atalho
+// aberto pelo ⚙️ no widget de duplicidade (abrirModalConfiguracaoDuplicidade,
+// mais abaixo) — o mesmo HTML e a mesma lógica de leitura/gravação são usados
+// nos dois lugares, para não duplicar a informação.
+
+/**
+ * Resolve o estado efetivo da Verificação de Duplicidade para o usuário atual,
+ * cruzando a preferência local (duplicateCheckerUseIA/duplicateCheckerUseFallback)
+ * com a permissão remota de IA (hasDuplicateCheckerIAAccess).
+ * @returns {Promise<{permissaoIA: boolean, preferenciaUsarIA: boolean, preferenciaUsarFallback: boolean, usarIA: boolean, usarFallback: boolean, recursoAtivo: boolean}>}
+ */
+async function obterConfigDuplicidade() {
+  const settings = await getSettings()
+  const preferences = settings.preferences || DEFAULT_SETTINGS.preferences
+
+  let permissaoIA = false
+  try {
+    if (window.sgdPermissions && typeof window.sgdPermissions.hasDuplicateCheckerIAAccess === 'function') {
+      permissaoIA = await window.sgdPermissions.hasDuplicateCheckerIAAccess()
+    }
+  } catch (errAccess) {
+    logDebug('[DEBUG] Erro ao verificar permissão de IA do Verificador de Duplicidade:', errAccess)
+  }
+
+  const preferenciaUsarIA = preferences.duplicateCheckerUseIA !== false
+  const preferenciaUsarFallback = preferences.duplicateCheckerUseFallback !== false
+
+  const usarIA = permissaoIA && preferenciaUsarIA
+  const usarFallback = preferenciaUsarFallback
+
+  return {
+    permissaoIA,
+    preferenciaUsarIA,
+    preferenciaUsarFallback,
+    usarIA,
+    usarFallback,
+    recursoAtivo: usarIA || usarFallback
+  }
+}
+
+/**
+ * Gera o HTML (explicação + os 2 checkboxes) usado tanto na seção "Verificação
+ * de Duplicidade" de Configurações > Preferências quanto no modal de atalho
+ * aberto pelo ⚙️ do widget. O checkbox de IA aparece desabilitado (e com uma
+ * nota) quando o usuário não tem a permissão remota liberada — nesse caso só
+ * resta a opção de Fallback.
+ * @param {Awaited<ReturnType<typeof obterConfigDuplicidade>>} config
+ * @returns {string}
+ */
+function renderizarConfigDuplicidadeHtml(config) {
+  const iaDisabledAttr = config.permissaoIA ? '' : 'disabled'
+  const iaChecked = config.permissaoIA && config.preferenciaUsarIA
+  const iaNotaHtml = config.permissaoIA
+    ? ''
+    : ' <span style="color: var(--text-color-muted); font-size: 11px;">(IA não liberada para o seu usuário — apenas o Fallback pode ser usado)</span>'
+
+  return `
+    <div class="se-info-note">
+      Compara o assunto digitado com os atendimentos em aberto do mesmo cliente. Com IA marcada e liberada, usa <strong>somente IA</strong> — caso contrário, usa o <strong>Fallback</strong> (busca por palavras-chave). Desmarcando as duas opções, a verificação fica <strong>completamente desativada</strong>.
+    </div>
+    <div class="form-checkbox-group">
+      <input type="checkbox" id="dup-config-usar-ia" ${iaChecked ? 'checked' : ''} ${iaDisabledAttr}>
+      <label for="dup-config-usar-ia">Usar Inteligência Artificial na verificação${iaNotaHtml}</label>
+    </div>
+    <div class="form-checkbox-group">
+      <input type="checkbox" id="dup-config-usar-fallback" ${config.preferenciaUsarFallback ? 'checked' : ''}>
+      <label for="dup-config-usar-fallback">Usar verificação por palavras-chave (Fallback, sem IA)</label>
+    </div>
+  `
+}
+
+/**
+ * Lê os 2 checkboxes de dentro do container informado e devolve só as chaves
+ * de preferences que devem ser atualizadas (o checkbox de IA é ignorado
+ * quando estiver desabilitado, para não sobrescrever a preferência com um
+ * valor que o usuário não pôde de fato escolher).
+ * @param {HTMLElement} container
+ * @returns {{duplicateCheckerUseIA?: boolean, duplicateCheckerUseFallback?: boolean}}
+ */
+function lerConfigDuplicidadeDoContainer(container) {
+  const patch = {}
+  const iaCheckbox = container.querySelector('#dup-config-usar-ia')
+  const fallbackCheckbox = container.querySelector('#dup-config-usar-fallback')
+
+  if (iaCheckbox && !iaCheckbox.disabled) {
+    patch.duplicateCheckerUseIA = iaCheckbox.checked
+  }
+  if (fallbackCheckbox) {
+    patch.duplicateCheckerUseFallback = fallbackCheckbox.checked
+  }
+  return patch
+}
+
+/**
+ * Abre um modal enxuto e dedicado para configurar a Verificação de Duplicidade
+ * — atalho rápido acessado pelo ⚙️ no widget, com o mesmo conteúdo da seção
+ * "Verificação de Duplicidade" em Configurações > Preferências. Reaproveita
+ * createModal (ui-components.js) e getSettings/saveSettings (storage.js).
+ */
+async function abrirModalConfiguracaoDuplicidade() {
+  if (document.getElementById('dup-config-modal')) return
+
+  const config = await obterConfigDuplicidade()
+  const contentHtml = renderizarConfigDuplicidadeHtml(config) + `
+    <p style="font-size: 12px; color: var(--text-color-muted); margin: 14px 0 0;">
+      Esta é apenas um atalho rápido — a mesma configuração também pode ser feita acessando <strong>⚙️ Configurações &gt; Preferências</strong>.
+    </p>
+  `
+
+  const onSave = async (modalBody, closeModal) => {
+    const patch = lerConfigDuplicidadeDoContainer(modalBody)
+    const settings = await getSettings()
+    const newPreferences = { ...(settings.preferences || DEFAULT_SETTINGS.preferences), ...patch }
+
+    try {
+      await saveSettings({ preferences: newPreferences })
+      showNotification('Configurações da Verificação de Duplicidade salvas.', 'success')
+      closeModal()
+    } catch (err) {
+      showNotification('Erro ao salvar as configurações da Verificação de Duplicidade.', 'error')
+    }
+  }
+
+  const modal = createModal(
+    '⚠️ Verificação de Duplicidade',
+    contentHtml,
+    onSave,
+    { modalId: 'dup-config-modal', showShareButton: false }
+  )
+
+  document.body.appendChild(modal)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -569,28 +731,34 @@ async function buscarResultadosDuplicidade(assuntoAtual, clienteId, sscAtualId) 
     return []
   }
 
-  let usarIA = false
-  try {
-    if (window.sgdPermissions && typeof window.sgdPermissions.hasDuplicateCheckerIAAccess === 'function') {
-      usarIA = await window.sgdPermissions.hasDuplicateCheckerIAAccess()
-    }
-  } catch (errAccess) {
-    logDebug('[DEBUG] Erro ao verificar permissão do Verificador de Duplicidade IA:', errAccess)
+  const config = await obterConfigDuplicidade()
+
+  if (!config.recursoAtivo) {
+    logDebug('[DEBUG] Verificação de Duplicidade desativada nas Preferências do usuário (IA e Fallback desligados).')
+    return []
   }
 
   let resultados = []
-  if (usarIA) {
+  if (config.usarIA) {
     try {
       const indicesParecidos = await compararSSCsComIA(assuntoAtual, candidatosElegiveis)
       resultados = indicesParecidos.map(i => candidatosElegiveis[i]).filter(Boolean)
       logDebug('[DEBUG] Resultados parecidos identificados pela IA:', resultados)
     } catch (erroIA) {
+      if (!config.usarFallback) {
+        // O usuário desativou explicitamente o Fallback nas Preferências — respeitamos
+        // essa escolha mesmo quando a IA falha tecnicamente, em vez de usá-lo como
+        // rede de segurança silenciosa. O erro sobe para o chamador tratar (ex.: exibir
+        // mensagem de erro no botão manual).
+        console.error('[Verificador de Duplicidade] Erro na comparação por IA. Fallback desativado nas Preferências do usuário — nenhum resultado será exibido:', erroIA)
+        throw erroIA
+      }
       console.error('[Verificador de Duplicidade] Erro na comparação por IA. Usando fallback por palavras-chave:', erroIA)
       resultados = candidatosElegiveis.filter(c => calcularSimilaridadeSSC(assuntoAtual, c.assunto))
       logDebug('[DEBUG] Resultados parecidos identificados pelo fallback:', resultados)
     }
   } else {
-    logDebug('[DEBUG] Uso de IA desativado para este usuário. Executando fallback local de palavras-chave.')
+    logDebug('[DEBUG] Uso de IA desativado (preferência ou permissão). Executando fallback local de palavras-chave.')
     resultados = candidatosElegiveis.filter(c => calcularSimilaridadeSSC(assuntoAtual, c.assunto))
   }
 
@@ -654,6 +822,12 @@ async function iniciarVerificacaoDuplicidadeSSC() {
   verificacaoDuplicidadeEmAndamento = true
 
   try {
+    const config = await obterConfigDuplicidade()
+    if (!config.recursoAtivo) {
+      logDebug('[DEBUG] Verificação automática de duplicidade desativada nas Preferências do usuário.')
+      return
+    }
+
     const clienteId = extrairClienteIdDoBotaoPendentes()
     if (!clienteId) return
 
@@ -776,6 +950,12 @@ function atualizarStatusBotaoDuplicidade(statusEl, estado, mensagem) {
  */
 function atualizarEstadoBotaoDuplicidade(botao, assuntoEl) {
   if (botao.dataset.loading === 'true') return
+  // Recurso desativado nas Preferências (IA e Fallback desligados) — mantém
+  // o botão sempre desabilitado, independente do que for digitado no assunto.
+  if (botao.dataset.recursoDesativado === 'true') {
+    botao.disabled = true
+    return
+  }
   botao.disabled = !assuntoEl.value?.trim()
 }
 
@@ -1076,6 +1256,24 @@ function injetarBotaoVerificarDuplicidadeSSC() {
   obterPreferenciaAutoVerificacao().then(ativo => {
     checkboxAuto.checked = ativo
     if (ativo) agendarAutoVerificacaoDuplicidade(botao, statusEl, assuntoEl, checkboxAuto, contagemEl)
+  })
+
+  // Verifica (de forma assíncrona, sem travar a injeção) se o recurso está
+  // completamente desativado nas Preferências (IA e Fallback desligados) —
+  // nesse caso, trava o botão e o checkbox de auto-verificação, com um status
+  // explicando o motivo em vez de deixá-los agir silenciosamente sem resultado.
+  obterConfigDuplicidade().then(config => {
+    if (config.recursoAtivo) return
+
+    botao.dataset.recursoDesativado = 'true'
+    botao.disabled = true
+    botao.title = 'Verificação de duplicidade desativada nas Preferências (IA e Fallback desligados).'
+
+    checkboxAuto.checked = false
+    checkboxAuto.disabled = true
+    cancelarAutoVerificacaoAgendada(contagemEl)
+
+    atualizarStatusBotaoDuplicidade(statusEl, 'idle', 'Recurso desativado nas Preferências.')
   })
 
   logDebug('[DEBUG] ✅ Botão "Verificar duplicidade" injetado com sucesso.')

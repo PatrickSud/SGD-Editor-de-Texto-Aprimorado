@@ -178,7 +178,8 @@ const DEFAULT_SETTINGS = {
     enableWindowsNotifications: true,
     dropdownBehavior: 'hover', // 'hover' ou 'click'
     ocultarPreVisualizacaoSite: false, // Oculta o campo "Pré-visualizar:" nativo do site por padrão desativado
-    enableDuplicateChecker: false, // Habilita a verificação de atendimentos duplicados por padrão desativado
+    duplicateCheckerUseIA: true, // Usar IA na Verificação de Duplicidade — só tem efeito se a permissão de IA estiver liberada para o usuário (ver hasDuplicateCheckerIAAccess em permissions-service.js)
+    duplicateCheckerUseFallback: true, // Usar o Fallback por palavras-chave quando a IA estiver desativada/indisponível — desativar as duas opções desliga o recurso de Verificação de Duplicidade por completo
     enableTeamManagement: false, // Habilita o gerenciamento de Equipe AT na guia Controle de Acesso por padrão desativado
     rememberLastClassification: false, // Lembrar e preencher automaticamente a última classificação selecionada (desativado por padrão)
     enableAutoCapitalize: true, // Capitaliza automaticamente a primeira letra de frases ao digitar (habilitado por padrão)

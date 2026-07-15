@@ -192,6 +192,28 @@
   border-color: var(--primary-color);
 }
 
+/*
+ * Caixa de anotação/observação — usada para separar visualmente um texto
+ * explicativo do restante do formulário (ex.: seção "Verificação de
+ * Duplicidade" em Configurações > Preferências e no modal de atalho do
+ * widget). Fundo e borda seguem as variáveis de tema, então acompanham
+ * automaticamente o tema ativo (claro, escuro, etc.).
+ */
+.se-info-note {
+  background-color: var(--background-secondary);
+  border-left: 3px solid var(--action-blue);
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-color-muted);
+}
+
+.se-info-note strong {
+  color: var(--text-color-main);
+}
+
 /* Usa o estilo base global de checkboxes (styles/base.css) */
 
 .form-checkbox-group label {
