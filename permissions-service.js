@@ -1742,22 +1742,54 @@
     return result.active
   }
 
+  const DEFAULT_PLUG_URL_SUL = 'https://tria.plugsocial.online/?assunto=sped&codigoCliente=96797&identificacaoRevenda=3'
+
+  // Resolve o mapa de links do PLUG (sul/sudeste/at + eventuais links customizados
+  // criados pelo Master no modal "Gerenciar Links do PLUG"), a partir do remoteConfig.
+  // Mantém compatibilidade com configs antigas que só tinham os campos soltos
+  // iagente_url_sul / iagente_url_sudeste / iagente_url_at (sem iagente_links ainda).
+  function resolvePLUGLinksConfig(remoteConfig) {
+    const config = remoteConfig || {}
+    const urlSul = config.iagente_url_sul || DEFAULT_PLUG_URL_SUL
+    const urlSudeste = config.iagente_url_sudeste || urlSul
+    const urlAt = config.iagente_url_at || urlSul
+
+    const saved = (config.iagente_links && typeof config.iagente_links === 'object') ? config.iagente_links : {}
+
+    // Garante que os 3 links fixos sempre existam, mesmo que ainda não tenham
+    // sido salvos em iagente_links (primeira leitura após esta feature) ou que
+    // tenham sido removidos do objeto por engano.
+    const merged = { ...saved }
+    if (!merged.sul) merged.sul = { label: 'Sul', url: urlSul, active: true }
+    if (!merged.sudeste) merged.sudeste = { label: 'Sudeste', url: urlSudeste, active: true }
+    if (!merged.at) merged.at = { label: 'AT', url: urlAt, active: true }
+
+    return merged
+  }
+
   async function getPLUGUrl() {
     const userName = window.sgdPermissions?.currentUser
     const userId = window.sgdPermissions?.currentUserId
     const normalizedUser = normalizeName(userName)
-    
+
     const localConfig = await chrome.storage.local.get(['remoteConfig'])
     const remoteConfig = localConfig.remoteConfig || {}
-    
-    const defaultSul = 'https://tria.plugsocial.online/?assunto=sped&codigoCliente=96797&identificacaoRevenda=3'
-    const urlSul = remoteConfig.iagente_url_sul || defaultSul
-    const urlSudeste = remoteConfig.iagente_url_sudeste || urlSul
-    
+    const plugLinks = resolvePLUGLinksConfig(remoteConfig)
+
+    // Só retorna a URL de um link se ele existir, tiver URL preenchida e não
+    // estiver inativo — um link inativado no "Gerenciar Links" nunca deve mais
+    // ser entregue a usuários, mesmo que ainda esteja referenciado em algum
+    // mapeamento antigo de unidade/região.
+    const resolveLinkUrl = (key) => {
+      const link = key ? plugLinks[key] : null
+      if (link && link.active !== false && link.url) return link.url
+      return null
+    }
+
     // 1. Verificar se o usuário tem região explicitamente atribuída no Firebase
     let userRegion = null
     let userUnidade = null
-    
+
     const matchedEditor = await matchEditorRecord(userId, userName, normalizedUser)
     if (matchedEditor) {
       userRegion = matchedEditor.regiao
@@ -1769,30 +1801,40 @@
         userUnidade = matchedViewer.unidade
       }
     }
-    
-    if (userRegion === 'sudeste') return urlSudeste
-    if (userRegion === 'sul') return urlSul
-    
+
+    if (userRegion) {
+      const url = resolveLinkUrl(userRegion)
+      if (url) return url
+      // Região atribuída aponta para um link inativo/inexistente: cai no fallback abaixo.
+    }
+
     // 2. Se não temos no Firebase, tentar ler do cache local
     if (!userUnidade) {
       const cachedUserInfo = await chrome.storage.local.get(['userUnidade'])
       userUnidade = cachedUserInfo.userUnidade
     }
-    
+
     // 3. Mapeamento da unidade ou fallback por palavra-chave na unidade
+    let fallbackRegion = 'sul'
     if (userUnidade) {
       const unitRegionMap = remoteConfig.iagente_unidade_regiao || {}
       const mappedRegion = unitRegionMap[userUnidade.trim()]
-      if (mappedRegion === 'sudeste') return urlSudeste
-      if (mappedRegion === 'sul') return urlSul
-      
+      if (mappedRegion) {
+        const url = resolveLinkUrl(mappedRegion)
+        if (url) return url
+        // Mapeamento explícito aponta para link inativo/inexistente: segue para o
+        // fallback por palavra-chave abaixo em vez de travar o usuário sem link.
+      }
+
       const lowerUnit = userUnidade.toLowerCase()
       const sudesteKeywords = ['campinas', 'sao paulo', 'são paulo', 'sp', 'rio de janeiro', 'rj', 'belo horizonte', 'mg', 'espirito santo', 'espírito santo', 'es', 'sudeste']
       const isSudeste = sudesteKeywords.some(keyword => lowerUnit.includes(keyword))
-      if (isSudeste) return urlSudeste
+      fallbackRegion = isSudeste ? 'sudeste' : 'sul'
     }
-    
-    return urlSul
+
+    // 4. Fallback final: região calculada, com respaldo garantido no link "sul"
+    //    (o único que não pode ser inativado, ver openManagePLUGLinksModal).
+    return resolveLinkUrl(fallbackRegion) || resolveLinkUrl('sul') || DEFAULT_PLUG_URL_SUL
   }
 
   async function invalidateFormsCache() {
@@ -1838,6 +1880,7 @@
   // de status e a checagem real de acesso nunca divirjam.
   window.sgdPermissions.resolvePLUGAccess = resolvePLUGAccess
   window.sgdPermissions.resolveDuplicateIAAccess = resolveDuplicateIAAccess
+  window.sgdPermissions.resolvePLUGLinksConfig = resolvePLUGLinksConfig
 
   window.sgdPermissions.refreshEditors = async () => {
     const list = await getEditorsList(true)

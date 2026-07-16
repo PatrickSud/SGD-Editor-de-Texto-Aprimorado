@@ -4787,6 +4787,40 @@ function getSectionContent(sectionId) {
 }
 
 /**
+ * Monta as <option> de um <select> de região/link do PLUG a partir do mapa de
+ * links (sul/sudeste/at + customizados), pulando os links inativados. Usado
+ * tanto nas linhas de editor/visualizador quanto no seletor por unidade dentro
+ * do modal "Configurar PLUG por Unidades".
+ * @param {Object} plugLinks - mapa { chave: { label, url, active } } resolvido por resolvePLUGLinksConfig
+ * @param {string} selectedKey - chave atualmente selecionada (pode ser um link já inativado)
+ * @param {string} labelPrefix - prefixo opcional exibido antes do label (ex: "Região: ")
+ */
+function buildPLUGLinkOptionsHtml(plugLinks, selectedKey, labelPrefix = '') {
+  const links = plugLinks || {}
+  const entries = Object.entries(links)
+
+  const activeOptionsHtml = entries
+    .filter(([, link]) => link && link.active !== false)
+    .map(([key, link]) => {
+      const label = labelPrefix + (link.label || key.toUpperCase())
+      return `<option value="${escapeHTML(key)}" ${selectedKey === key ? 'selected' : ''}>${escapeHTML(label)}</option>`
+    })
+    .join('')
+
+  // Se a seleção atual aponta para um link que foi inativado (ou removido) depois
+  // de atribuído, mantém a opção visível (marcada como inativa) para não trocar
+  // silenciosamente a seleção do usuário sem que o Master perceba.
+  const selectedIsActive = entries.some(([key, link]) => key === selectedKey && link && link.active !== false)
+  if (selectedKey && !selectedIsActive) {
+    const existing = links[selectedKey]
+    const label = labelPrefix + (existing ? (existing.label || selectedKey.toUpperCase()) : selectedKey.toUpperCase()) + ' (inativo)'
+    return activeOptionsHtml + `<option value="${escapeHTML(selectedKey)}" selected>${escapeHTML(label)}</option>`
+  }
+
+  return activeOptionsHtml
+}
+
+/**
  * Carrega e renderiza o painel de Controle de Acesso.
  * Permite a editores gerenciar a lista de outros editores.
  * @param {HTMLElement} sectionElement - Elemento da seção de controle de acesso
@@ -4875,18 +4909,22 @@ async function loadAccessControl(sectionElement) {
       return result
     }
 
+    // Mapa de links do PLUG (sul/sudeste/at + customizados), calculado uma vez por
+    // carregamento do painel e reaproveitado pelos seletores de região abaixo.
+    const plugLinks = window.sgdPermissions.resolvePLUGLinksConfig(remoteConfig)
+
     const resolveUserRegion = (user) => {
-      if (user.regiao === 'sul' || user.regiao === 'sudeste') {
+      if (user.regiao && plugLinks[user.regiao]) {
         return user.regiao
       }
       const unit = user.unidade ? user.unidade.trim() : ''
       if (unit) {
         const unitRegionMap = remoteConfig.iagente_unidade_regiao || {}
         const mappedRegion = unitRegionMap[unit]
-        if (mappedRegion === 'sul' || mappedRegion === 'sudeste') {
+        if (mappedRegion && plugLinks[mappedRegion]) {
           return mappedRegion
         }
-        
+
         const lowerUnit = unit.toLowerCase()
         const sudesteKeywords = ['campinas', 'sao paulo', 'são paulo', 'sp', 'rio de janeiro', 'rj', 'belo horizonte', 'mg', 'espirito santo', 'espírito santo', 'es', 'sudeste']
         const isSudeste = sudesteKeywords.some(keyword => lowerUnit.includes(keyword))
@@ -5032,8 +5070,7 @@ async function loadAccessControl(sectionElement) {
       const regionSelectorHtml = (isMaster && accessStatus.active)
         ? `
           <select class="ac-user-region-select" data-user-id="${escapeHTML(editor.id)}" data-is-editor="true" style="font-size: 11px; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); outline: none;">
-            <option value="sul" ${resolvedRegion === 'sul' ? 'selected' : ''}>Região: Sul</option>
-            <option value="sudeste" ${resolvedRegion === 'sudeste' ? 'selected' : ''}>Região: Sudeste</option>
+            ${buildPLUGLinkOptionsHtml(plugLinks, resolvedRegion, 'Região: ')}
           </select>
         `
         : (accessStatus.active ? `
@@ -5178,8 +5215,7 @@ async function loadAccessControl(sectionElement) {
       const regionSelectorHtml = (isMaster && accessStatus.active)
         ? `
           <select class="ac-user-region-select" data-user-id="${escapeHTML(viewer.id)}" data-is-editor="false" style="font-size: 11px; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); outline: none;">
-            <option value="sul" ${resolvedRegion === 'sul' ? 'selected' : ''}>Região: Sul</option>
-            <option value="sudeste" ${resolvedRegion === 'sudeste' ? 'selected' : ''}>Região: Sudeste</option>
+            ${buildPLUGLinkOptionsHtml(plugLinks, resolvedRegion, 'Região: ')}
           </select>
         `
         : (accessStatus.active ? `
@@ -6551,10 +6587,12 @@ async function openConfigPLUGModal(sectionElement) {
   // 1. Carrega as configurações remotas
   const localData = await chrome.storage.local.get(['remoteConfig'])
   const remoteConfig = localData.remoteConfig || {}
-  
-  const defaultSul = 'https://tria.plugsocial.online/?assunto=sped&codigoCliente=96797&identificacaoRevenda=3'
-  let urlSul = remoteConfig.iagente_url_sul || defaultSul
-  let urlSudeste = remoteConfig.iagente_url_sudeste || urlSul
+
+  // plugLinks é a fonte canônica (sul/sudeste/at + eventuais links customizados);
+  // usada aqui só para montar as opções do seletor de região por unidade. A
+  // edição das URLs em si (criar/migrar/inativar/renomear) fica só no modal
+  // "Gerenciar Links do PLUG", aberto pelo botão abaixo.
+  let plugLinks = window.sgdPermissions.resolvePLUGLinksConfig(remoteConfig)
   let enabledUnits = remoteConfig.iagente_enabled_unidades ? [...remoteConfig.iagente_enabled_unidades] : []
   
   const unitRegionChanges = remoteConfig.iagente_unidade_regiao ? { ...remoteConfig.iagente_unidade_regiao } : {}
@@ -6618,10 +6656,9 @@ async function openConfigPLUGModal(sectionElement) {
             </span>
           </span>
           <div style="display: flex; align-items: center; gap: 12px;">
-            <!-- Seletor de Região da Unidade -->
+            <!-- Seletor de Região/Link da Unidade -->
             <select class="cia-unit-region-select" data-unit="${escapeHTML(unit)}" style="font-size: 11px; padding: 2px 4px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); outline: none;">
-              <option value="sul" ${currentRegion === 'sul' ? 'selected' : ''}>Sul</option>
-              <option value="sudeste" ${currentRegion === 'sudeste' ? 'selected' : ''}>Sudeste</option>
+              ${buildPLUGLinkOptionsHtml(plugLinks, currentRegion)}
             </select>
             
             <div style="display: flex; align-items: center; position: relative;">
@@ -6664,21 +6701,15 @@ async function openConfigPLUGModal(sectionElement) {
   const modalHtml = `
     <div style="padding: 10px; max-height: 620px; display: flex; flex-direction: column; width: 480px; box-sizing: border-box;">
       <p style="font-size: 12px; color: var(--text-color-muted); margin-bottom: 15px; margin-top: 0;">
-        Gerencie as URLs de atendimento regional e controle o acesso do assistente PLUG (Tria) liberando por unidade de atendimento do SGD. Por padrão, todas as unidades iniciam bloqueadas.
+        Controle o acesso do assistente PLUG (Tria) liberando por unidade de atendimento do SGD e escolhendo o link de cada uma. Por padrão, todas as unidades iniciam bloqueadas.
       </p>
-      
-      <!-- Seção de URLs -->
-      <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
-        <div style="display: flex; flex-direction: column; gap: 4px;">
-          <label style="font-size: 11px; font-weight: bold; color: var(--text-color-muted);">URL do PLUG - SUL:</label>
-          <input type="text" id="cia-url-sul" value="${escapeHTML(urlSul)}" placeholder="URL do time do Sul" style="width: 100%; padding: 6px 10px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
-        </div>
-        <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 4px;">
-          <label style="font-size: 11px; font-weight: bold; color: var(--text-color-muted);">URL do PLUG - SUDESTE:</label>
-          <input type="text" id="cia-url-sudeste" value="${escapeHTML(urlSudeste)}" placeholder="URL do time do Sudeste" style="width: 100%; padding: 6px 10px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
-        </div>
+
+      <!-- Acesso ao gerenciamento dos links -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+        <span style="font-size: 11px; font-weight: bold; color: var(--text-color-muted); text-transform: uppercase;">Links do PLUG</span>
+        <button type="button" id="cia-manage-links-btn" class="action-btn small-btn" title="Editar, migrar, inativar ou criar novos links do PLUG" style="font-size: 11px; padding: 4px 10px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer; border-radius: 4px;">🔗 Gerenciar Links</button>
       </div>
-      
+
       <!-- Seção de Filtro e Busca -->
       <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
         <input type="text" id="cia-search-units" placeholder="🔎 Pesquisar unidade mapeada..." style="flex: 1; padding: 6px 10px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
@@ -6777,16 +6808,16 @@ async function openConfigPLUGModal(sectionElement) {
     })
   }
   
-  // URL Input event listeners (stop propagation)
-  const urlSulInput = modal.querySelector('#cia-url-sul')
-  const urlSudesteInput = modal.querySelector('#cia-url-sudeste')
-  if (urlSulInput) {
-    urlSulInput.addEventListener('click', e => e.stopPropagation())
-    urlSulInput.addEventListener('keydown', e => e.stopPropagation())
-  }
-  if (urlSudesteInput) {
-    urlSudesteInput.addEventListener('click', e => e.stopPropagation())
-    urlSudesteInput.addEventListener('keydown', e => e.stopPropagation())
+  // Botão "Gerenciar Links": abre o modal de gerenciamento avançado (editar,
+  // migrar unidades entre links, inativar/ativar, criar novos links). Ao
+  // fechar, recarrega este modal do zero para refletir qualquer alteração.
+  const manageLinksBtn = modal.querySelector('#cia-manage-links-btn')
+  if (manageLinksBtn) {
+    manageLinksBtn.addEventListener('click', async (e) => {
+      e.stopPropagation()
+      cleanup()
+      await openManagePLUGLinksModal(sectionElement)
+    })
   }
 
   // Cancel and Close listeners
@@ -6802,27 +6833,20 @@ async function openConfigPLUGModal(sectionElement) {
   if (saveBtn) {
     saveBtn.addEventListener('click', async (e) => {
       e.stopPropagation()
-      
-      const valSul = urlSulInput ? urlSulInput.value.trim() : ''
-      const valSudeste = urlSudesteInput ? urlSudesteInput.value.trim() : ''
-      
-      if (!valSul) {
-        alert('O link do PLUG SUL é obrigatório.')
-        return
-      }
-      
+
       saveBtn.disabled = true
       saveBtn.textContent = 'Salvando...'
-      
-      // Atualiza o objeto remoteConfig completo
+
+      // Este modal só salva liberação/bloqueio por unidade e o link atribuído a
+      // cada uma (iagente_unidade_regiao); as URLs dos links em si (iagente_links
+      // e os campos legados iagente_url_*) são geridas exclusivamente pelo modal
+      // "Gerenciar Links do PLUG", então não são tocadas aqui.
       const updatedConfig = {
         ...remoteConfig,
-        iagente_url_sul: valSul,
-        iagente_url_sudeste: valSudeste || valSul,
         iagente_enabled_unidades: enabledUnits,
         iagente_unidade_regiao: unitRegionChanges
       }
-      
+
       // Remove a propriedade obsoleta iagente_disabled_unidades se houver
       delete updatedConfig.iagente_disabled_unidades
       
@@ -6838,6 +6862,306 @@ async function openConfigPLUGModal(sectionElement) {
       }
     })
   }
+}
+
+/**
+ * Gera uma chave estável (sem acentos/espaços) para um novo link customizado do
+ * PLUG a partir do label digitado pelo Master, evitando colisão com chaves já
+ * existentes (fixas ou customizadas).
+ * @param {string} label
+ * @param {string[]} existingKeys
+ */
+function slugifyPLUGLinkKey(label, existingKeys) {
+  let base = (label || '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+  if (!base) base = 'link'
+
+  let key = base
+  let i = 2
+  while (existingKeys.includes(key)) {
+    key = `${base}_${i}`
+    i++
+  }
+  return key
+}
+
+/**
+ * Modal de gerenciamento avançado dos links do PLUG: permite editar o
+ * label/URL de cada link (fixo ou customizado), migrar as unidades de um link
+ * para outro antes/depois de inativá-lo, inativar/reativar links, e criar
+ * novos links além dos 3 fixos (Sul, Sudeste, AT). Aberto a partir do botão
+ * "🔗 Gerenciar Links" dentro do modal "Configurar PLUG por Unidades".
+ *
+ * Cada ação (salvar link, inativar/ativar, migrar, criar) persiste
+ * imediatamente no Firebase via saveRemoteConfig — diferente do modal pai, que
+ * usa um único botão "Salvar Alterações" em lote — porque são ações
+ * individualmente reversíveis e o Master normalmente quer confirmação
+ * imediata ao inativar/migrar um link em produção.
+ *
+ * @param {HTMLElement} sectionElement - Seção de controle de acesso, para recarregar a lista ao fechar.
+ */
+async function openManagePLUGLinksModal(sectionElement) {
+  const localData = await chrome.storage.local.get(['remoteConfig'])
+  let remoteConfig = localData.remoteConfig || {}
+  let plugLinks = window.sgdPermissions.resolvePLUGLinksConfig(remoteConfig)
+  let unidadeRegiao = remoteConfig.iagente_unidade_regiao ? { ...remoteConfig.iagente_unidade_regiao } : {}
+
+  function countUnitsForKey(key) {
+    return Object.keys(unidadeRegiao).filter(u => unidadeRegiao[u] === key).length
+  }
+
+  // Persiste imediatamente no Firebase (PUT completo do config.json, como o resto
+  // do remoteConfig) e só atualiza o estado local em memória se a gravação deu certo.
+  async function persist(newLinks, newUnidadeRegiao) {
+    const updatedConfig = {
+      ...remoteConfig,
+      iagente_links: newLinks,
+      iagente_unidade_regiao: newUnidadeRegiao,
+      iagente_url_sul: newLinks.sul ? newLinks.sul.url : remoteConfig.iagente_url_sul,
+      iagente_url_sudeste: newLinks.sudeste ? newLinks.sudeste.url : remoteConfig.iagente_url_sudeste,
+      iagente_url_at: newLinks.at ? newLinks.at.url : remoteConfig.iagente_url_at
+    }
+    const success = await window.sgdPermissions.saveRemoteConfig(updatedConfig)
+    if (success) {
+      remoteConfig = updatedConfig
+      plugLinks = newLinks
+      unidadeRegiao = newUnidadeRegiao
+    }
+    return success
+  }
+
+  const modalHtml = `
+    <div style="padding: 10px; max-height: 620px; display: flex; flex-direction: column; width: 500px; box-sizing: border-box;">
+      <p style="font-size: 12px; color: var(--text-color-muted); margin-bottom: 12px; margin-top: 0;">
+        Edite o link de cada equipe, migre as unidades de um link para outro antes de inativá-lo, ou crie novos links do PLUG além dos 3 fixos (Sul, Sudeste, AT).
+      </p>
+      <div id="cia-links-rows"></div>
+
+      <div style="margin-top: 4px; padding: 10px; background: var(--background-secondary, #f9fafb); border: 1px solid var(--border-color); border-radius: 4px;">
+        <label style="font-size: 11px; font-weight: bold; color: var(--text-color-muted); display: block; margin-bottom: 6px;">+ Criar novo link</label>
+        <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+          <input type="text" id="cia-new-link-label" placeholder="Nome (ex: Nordeste)" style="flex: 1; padding: 5px 8px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <input type="text" id="cia-new-link-url" placeholder="URL do link" style="flex: 1; padding: 5px 8px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
+          <button id="cia-new-link-btn" class="action-btn small-btn" style="background: var(--primary-color, #6366f1); color: white; border: none; padding: 5px 12px; cursor: pointer; font-size: 11px; border-radius: 4px; font-weight: bold; white-space: nowrap;">Criar</button>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+        <button id="cia-links-close-btn" class="action-btn secondary-btn compact" style="padding: 6px 14px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer; font-size: 12px;">Fechar</button>
+      </div>
+    </div>
+  `
+
+  const modal = createModal(
+    'Gerenciar Links do PLUG',
+    modalHtml,
+    null,
+    {
+      isManagementModal: false,
+      modalId: 'manage-plug-links-modal',
+      showShareButton: false
+    }
+  )
+
+  const defaultActions = modal.querySelector('.se-modal-actions')
+  if (defaultActions) defaultActions.remove()
+
+  modal.style.zIndex = '10010'
+  document.body.appendChild(modal)
+
+  const modalBody = modal.querySelector('.se-modal-body') || modal
+
+  // Ao fechar, volta para o modal "Configurar PLUG por Unidades" já atualizado
+  // e recarrega a lista de Controle de Acesso (o status "🤖 PLUG" de cada
+  // usuário pode ter mudado se o link ao qual sua unidade estava atrelada foi
+  // inativado nesta sessão).
+  const closeAndReturn = async () => {
+    modal.remove()
+    if (sectionElement) {
+      await openConfigPLUGModal(sectionElement)
+      loadAccessControl(sectionElement)
+    }
+  }
+
+  function renderRows() {
+    const rowsDiv = modalBody.querySelector('#cia-links-rows')
+    if (!rowsDiv) return
+    const keys = Object.keys(plugLinks)
+
+    rowsDiv.innerHTML = keys.map(key => {
+      const link = plugLinks[key] || {}
+      const isActive = link.active !== false
+      const unitCount = countUnitsForKey(key)
+      const otherActiveKeys = keys.filter(k => k !== key && plugLinks[k].active !== false)
+      const isSulLink = key === 'sul'
+      const migrateOptionsHtml = otherActiveKeys
+        .map(k => `<option value="${escapeHTML(k)}">${escapeHTML(plugLinks[k].label || k.toUpperCase())}</option>`)
+        .join('')
+
+      return `
+        <div class="cia-plug-link-row" data-link-key="${escapeHTML(key)}" style="border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; margin-bottom: 10px; ${isActive ? '' : 'opacity: 0.65;'}">
+          <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+            <input type="text" class="cia-link-label-input" value="${escapeHTML(link.label || key.toUpperCase())}" style="flex: 1; font-size: 12px; font-weight: bold; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
+            <span style="font-size: 10px; padding: 2px 8px; border-radius: 10px; white-space: nowrap; font-weight: 600; background: ${isActive ? 'rgba(34, 197, 94, 0.15)' : 'rgba(156, 163, 175, 0.2)'}; color: ${isActive ? 'var(--action-green, #22c55e)' : 'var(--action-gray, #9ca3af)'};">${isActive ? 'Ativo' : 'Inativo'}</span>
+            <span style="font-size: 10px; color: var(--text-color-muted); white-space: nowrap;">${unitCount} unidade${unitCount === 1 ? '' : 's'}</span>
+          </div>
+          <input type="text" class="cia-link-url-input" value="${escapeHTML(link.url || '')}" placeholder="URL do link" style="width: 100%; box-sizing: border-box; font-size: 12px; padding: 5px 8px; border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 8px; background: var(--background-main); color: var(--text-color-main);">
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+            <button class="action-btn small-btn cia-link-save-btn" style="font-size: 11px; padding: 4px 10px;">💾 Salvar</button>
+            <button class="action-btn small-btn cia-link-toggle-btn" ${(isSulLink && isActive) ? 'disabled title="O link Sul é o padrão de segurança e não pode ser inativado"' : ''} style="font-size: 11px; padding: 4px 10px;">
+              ${isActive ? '⛔ Inativar' : '✅ Ativar'}
+            </button>
+            ${(otherActiveKeys.length > 0 && unitCount > 0) ? `
+              <select class="cia-link-migrate-select" style="font-size: 11px; padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main);">
+                <option value="">Migrar unidades para...</option>
+                ${migrateOptionsHtml}
+              </select>
+              <button class="action-btn small-btn cia-link-migrate-btn" style="font-size: 11px; padding: 4px 10px;">➡️ Migrar</button>
+            ` : ''}
+          </div>
+        </div>
+      `
+    }).join('')
+
+    // Impede que cliques/teclas nos controles internos se propaguem para
+    // qualquer listener de fechamento do modal.
+    rowsDiv.querySelectorAll('input, select, button').forEach(el => {
+      el.addEventListener('click', e => e.stopPropagation())
+      el.addEventListener('keydown', e => e.stopPropagation())
+    })
+
+    rowsDiv.querySelectorAll('.cia-plug-link-row').forEach(rowEl => {
+      const key = rowEl.dataset.linkKey
+
+      const saveBtn = rowEl.querySelector('.cia-link-save-btn')
+      if (saveBtn) {
+        saveBtn.addEventListener('click', async () => {
+          const labelInput = rowEl.querySelector('.cia-link-label-input')
+          const urlInput = rowEl.querySelector('.cia-link-url-input')
+          const newLabel = labelInput ? labelInput.value.trim() : ''
+          const newUrl = urlInput ? urlInput.value.trim() : ''
+          if (!newUrl) {
+            alert('A URL do link não pode ficar vazia.')
+            return
+          }
+          saveBtn.disabled = true
+          saveBtn.textContent = 'Salvando...'
+          const newLinks = { ...plugLinks, [key]: { ...plugLinks[key], label: newLabel || key.toUpperCase(), url: newUrl } }
+          const success = await persist(newLinks, unidadeRegiao)
+          if (success) {
+            showNotification(`Link "${newLabel || key.toUpperCase()}" atualizado!`, 'success')
+            renderRows()
+          } else {
+            alert('Erro ao salvar o link. Tente novamente.')
+            saveBtn.disabled = false
+            saveBtn.textContent = '💾 Salvar'
+          }
+        })
+      }
+
+      const toggleBtn = rowEl.querySelector('.cia-link-toggle-btn')
+      if (toggleBtn && !toggleBtn.disabled) {
+        toggleBtn.addEventListener('click', async () => {
+          const link = plugLinks[key]
+          const willActivate = link.active === false
+          if (!willActivate) {
+            const unitCount = countUnitsForKey(key)
+            if (unitCount > 0) {
+              const confirmMsg = `${unitCount} unidade(s) ainda estão apontando para o link "${link.label || key.toUpperCase()}". Ao inativar, essas unidades cairão automaticamente no link SUL até serem migradas manualmente. Deseja continuar?`
+              if (!confirm(confirmMsg)) return
+            }
+          }
+          toggleBtn.disabled = true
+          const newLinks = { ...plugLinks, [key]: { ...link, active: willActivate } }
+          const success = await persist(newLinks, unidadeRegiao)
+          if (success) {
+            showNotification(`Link "${link.label || key.toUpperCase()}" ${willActivate ? 'ativado' : 'inativado'}!`, 'success')
+            renderRows()
+          } else {
+            alert('Erro ao alterar o status do link. Tente novamente.')
+            toggleBtn.disabled = false
+          }
+        })
+      }
+
+      const migrateBtn = rowEl.querySelector('.cia-link-migrate-btn')
+      if (migrateBtn) {
+        migrateBtn.addEventListener('click', async () => {
+          const select = rowEl.querySelector('.cia-link-migrate-select')
+          const targetKey = select ? select.value : ''
+          if (!targetKey) {
+            alert('Selecione o link de destino da migração.')
+            return
+          }
+          const unitCount = countUnitsForKey(key)
+          const targetLabel = plugLinks[targetKey] ? (plugLinks[targetKey].label || targetKey.toUpperCase()) : targetKey.toUpperCase()
+          if (!confirm(`Mover ${unitCount} unidade(s) do link "${plugLinks[key].label || key.toUpperCase()}" para "${targetLabel}"?`)) return
+
+          migrateBtn.disabled = true
+          const newUnidadeRegiao = { ...unidadeRegiao }
+          Object.keys(newUnidadeRegiao).forEach(unit => {
+            if (newUnidadeRegiao[unit] === key) newUnidadeRegiao[unit] = targetKey
+          })
+          const success = await persist(plugLinks, newUnidadeRegiao)
+          if (success) {
+            showNotification(`${unitCount} unidade(s) migrada(s) para "${targetLabel}"!`, 'success')
+            renderRows()
+          } else {
+            alert('Erro ao migrar as unidades. Tente novamente.')
+            migrateBtn.disabled = false
+          }
+        })
+      }
+    })
+  }
+
+  renderRows()
+
+  // Formulário de criação de novo link
+  const newLinkBtn = modal.querySelector('#cia-new-link-btn')
+  const newLinkLabelInput = modal.querySelector('#cia-new-link-label')
+  const newLinkUrlInput = modal.querySelector('#cia-new-link-url')
+  ;[newLinkLabelInput, newLinkUrlInput, newLinkBtn].forEach(el => {
+    if (!el) return
+    el.addEventListener('click', e => e.stopPropagation())
+    el.addEventListener('keydown', e => e.stopPropagation())
+  })
+  if (newLinkBtn) {
+    newLinkBtn.addEventListener('click', async () => {
+      const label = newLinkLabelInput ? newLinkLabelInput.value.trim() : ''
+      const url = newLinkUrlInput ? newLinkUrlInput.value.trim() : ''
+      if (!label || !url) {
+        alert('Preencha o nome e a URL do novo link.')
+        return
+      }
+      const key = slugifyPLUGLinkKey(label, Object.keys(plugLinks))
+      newLinkBtn.disabled = true
+      newLinkBtn.textContent = 'Criando...'
+      const newLinks = { ...plugLinks, [key]: { label, url, active: true } }
+      const success = await persist(newLinks, unidadeRegiao)
+      if (success) {
+        showNotification(`Link "${label}" criado!`, 'success')
+        if (newLinkLabelInput) newLinkLabelInput.value = ''
+        if (newLinkUrlInput) newLinkUrlInput.value = ''
+        renderRows()
+      } else {
+        alert('Erro ao criar o link. Tente novamente.')
+      }
+      newLinkBtn.disabled = false
+      newLinkBtn.textContent = 'Criar'
+    })
+  }
+
+  const closeBtn = modal.querySelector('#cia-links-close-btn')
+  const xBtn = modal.querySelector('.se-close-modal-btn')
+  if (closeBtn) closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closeAndReturn() })
+  if (xBtn) xBtn.addEventListener('click', (e) => { e.stopPropagation(); closeAndReturn() })
 }
 
 async function openConfigDuplicateModal(sectionElement) {

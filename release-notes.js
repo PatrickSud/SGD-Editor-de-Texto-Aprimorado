@@ -378,6 +378,13 @@ const MINOR_RELEASE_NOTES = {
         '<b>🔍 Verificação de Duplicidade Configurável:</b> Novas opções em Configurações > Preferências para usar (ou não) Inteligência Artificial e/ou o Fallback por palavras-chave na Verificação de Duplicidade, com um atalho rápido (⚙️) direto no widget de aviso.',
         '<b>🌐 Central de Links:</b> Novo painel no FAB (🌐) com um repositório colaborativo de links de suporte por canal — guias Comunidade, Pessoal e Pendências, com curtidas, salvamento, busca e agrupamento por tipo (SS/SSC/SA/NE).'
       ]
+    },
+    {
+      version: '3.0.7.5',
+      features: [
+        { text: '<b>🤖 PLUG - Novo link AT:</b> Adicionado um terceiro link regional (AT) em Central de Informações > Controle de Acesso > 🤖 PLUG, ao lado dos já existentes Sul e Sudeste.', hidden: true },
+        { text: '<b>🔗 Gerenciar Links do PLUG:</b> Novo modal (botão "🔗 Gerenciar Links" dentro de "Configurar PLUG por Unidades") para editar o link de cada equipe, migrar as unidades de um link para outro, inativar/reativar links e criar novos links além dos 3 fixos.', hidden: true }
+      ]
     }
   ],
   '3.0.6': [
