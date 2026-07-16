@@ -1358,11 +1358,20 @@ async function createFloatingActionButtons() {
     'fab-wrapper-notes',
     'fab-wrapper-reminders',
     'fab-wrapper-quicksteps',
+    'fab-wrapper-links',
     'fab-wrapper-manage'
   ]
   const defaultWidgetsOrder = ['fab-copy-ssc-wrapper', 'fab-stopwatch-wrapper']
 
-  const optionsOrder = data.fabOptionsOrder || defaultOptionsOrder
+  // Usa a ordem salva pelo usuário, mas anexa quaisquer botões padrão novos
+  // que ainda não estejam na ordem persistida (ex.: 'fab-wrapper-links'
+  // adicionado em uma atualização). Assim novos recursos aparecem sem resetar
+  // a personalização do FAB.
+  const savedOptionsOrder = data.fabOptionsOrder || defaultOptionsOrder
+  const optionsOrder = [
+    ...savedOptionsOrder,
+    ...defaultOptionsOrder.filter(id => !savedOptionsOrder.includes(id))
+  ]
   const widgetsOrder = data.fabWidgetsOrder || defaultWidgetsOrder
 
   // Mapa de conteúdo dos botões de opções
@@ -1391,6 +1400,12 @@ async function createFloatingActionButtons() {
           <svg viewBox="0 0 24 24"><path d="M12,2A3,3 0 0,1 15,5V11L17,13V15H13V21L12,22L11,21V15H7V13L9,11V5A3,3 0 0,1 12,2Z" /></svg>
         </button>
         <button type="button" class="fab-button fab-option shine-effect" data-action="fab-quick-steps" data-tooltip="Trâmites">⚡</button>
+    `,
+    'fab-wrapper-links': `
+        <button type="button" class="fab-pin-btn" title="Fixar" data-target="fab-wrapper-links">
+          <svg viewBox="0 0 24 24"><path d="M12,2A3,3 0 0,1 15,5V11L17,13V15H13V21L12,22L11,21V15H7V13L9,11V5A3,3 0 0,1 12,2Z" /></svg>
+        </button>
+        <button type="button" class="fab-button fab-option shine-effect" data-action="fab-links-panel" data-tooltip="Central de Links">🌐</button>
     `,
     'fab-wrapper-manage': `
         <button type="button" class="fab-pin-btn" title="Fixar" data-target="fab-wrapper-manage">
@@ -1484,6 +1499,9 @@ function setupFabListeners() {
 
       case 'fab-quick-steps':
         openQuickInserterPanel()
+        break
+      case 'fab-links-panel':
+        if (typeof openLinksPanel === 'function') openLinksPanel()
         break
       case 'fab-reminders':
         openRemindersManagementModal()

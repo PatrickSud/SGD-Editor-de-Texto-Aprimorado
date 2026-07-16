@@ -56,6 +56,8 @@
         "info-panel.js",
         "release-notes.js",
         "editor-ui.js",
+        "links-service.js",
+        "links-panel.js",
         "app.js"
       ],
       "css": [
@@ -66,7 +68,8 @@
         "styles/panel.css",
         "styles/fab.css",
         "styles/info-panel.css",
-        "styles/tags.css"
+        "styles/tags.css",
+        "styles/links-panel.css"
       ],
       "run_at": "document_idle"
     },
