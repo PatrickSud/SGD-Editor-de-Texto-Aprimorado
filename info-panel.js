@@ -372,8 +372,24 @@ async function openInfoPanel(initialTabId = 'pending') {
     const refreshBtn = pendingSection.querySelector('#refresh-pending-btn')
     if (refreshBtn) {
       refreshBtn.addEventListener('click', () =>
-        loadPendingItems(pendingSection)
+        loadPendingItems(pendingSection, { force: true })
       )
+    }
+
+    // Seletor "Responsável monitorado": salva a escolha e recarrega (force).
+    const monitoredSelect = pendingSection.querySelector(
+      '#pending-monitored-responsible'
+    )
+    if (monitoredSelect) {
+      monitoredSelect.addEventListener('change', async e => {
+        const id = e.target.value
+        const name = e.target.options[e.target.selectedIndex]?.text || ''
+        await chrome.storage.local.set({
+          sscMonitoredResponsavelId: id,
+          sscMonitoredResponsavelName: name
+        })
+        loadPendingItems(pendingSection, { force: true })
+      })
     }
 
     const notifyBtn = pendingSection.querySelector('#toggle-notification-btn')
@@ -1156,7 +1172,27 @@ function applyPendingFilters(sectionElement) {
  * Carrega e renderiza os itens pendentes na seção fornecida.
  * @param {HTMLElement} sectionElement - O elemento da seção de pendências.
  */
-async function loadPendingItems(sectionElement) {
+/**
+ * Popula o seletor "Responsável monitorado" com as opções retornadas do SGD
+ * (nunca "Todos") e seleciona o responsável em uso.
+ */
+function populateMonitoredResponsible(sectionElement, result) {
+  const sel = sectionElement.querySelector('#pending-monitored-responsible')
+  if (!sel) return
+  const responsaveis = (result && result.responsaveis) || []
+  const used = (result && result.responsavelUsado) || ''
+  const opts = responsaveis
+    .filter(r => r && r.id && r.id !== '0')
+    .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+  sel.innerHTML =
+    `<option value="">👤 Responsável...</option>` +
+    opts
+      .map(r => `<option value="${escapeHTML(r.id)}">${escapeHTML(r.name)}</option>`)
+      .join('')
+  sel.value = used || ''
+}
+
+async function loadPendingItems(sectionElement, options = {}) {
   const container = sectionElement.querySelector('#pending-list-container')
   const refreshBtn = sectionElement.querySelector('#refresh-pending-btn')
   const statsContainer = sectionElement.querySelector('#pending-stats')
@@ -1198,8 +1234,32 @@ async function loadPendingItems(sectionElement) {
 
   try {
     // fetchPendingItems deve estar disponível globalmente via pending-service.js
-    const result = await fetchPendingItems()
-    
+    // (agora delega para a fonte sscs.html, serializada pelo coordenador).
+    const result = await fetchPendingItems(options)
+
+    // Popular o seletor "Responsável monitorado" com as opções do SGD.
+    populateMonitoredResponsible(sectionElement, result)
+
+    // Gestor/ambíguo sem escolha: não buscamos com "Todos" (limite de 1000).
+    if (result && result.needsSelection) {
+      allPendingItems = []
+      filteredPendingItems = []
+      container.innerHTML = `
+                <div class="ip-empty-state">
+                    <span style="font-size: 24px;">👤</span>
+                    <h4>Selecione um responsável</h4>
+                    <p>Escolha um responsável no seletor "Responsável monitorado" (acima) para carregar as pendências.</p>
+                </div>
+            `
+      if (statsContainer) {
+        statsContainer.innerHTML = `
+            <span class="ip-stat-item">Total: <strong>0</strong></span>
+            <span class="ip-stat-item">Filtrado: <strong>0</strong></span>
+        `
+      }
+      return
+    }
+
     let activeItems = []
     let activeFilter = null
 
@@ -4731,6 +4791,9 @@ function getSectionContent(sectionId) {
                         </select>
                     </div>
                     <div class="ip-actions-group">
+                        <select id="pending-monitored-responsible" class="ip-filter-select compact" title="Responsável monitorado — de quem buscar as pendências no SGD" style="max-width: 190px; height: 28px;">
+                            <option value="">👤 Responsável...</option>
+                        </select>
                         <button id="toggle-notification-btn" class="action-btn small-btn enhanced-btn" title="Carregando estado..." style="width: auto; height: 28px; padding: 0 10px; display: flex; align-items: center; justify-content: center; white-space: nowrap; font-size: 11px; line-height: 1;">🔔 <span style="margin-left: 4px;">Notificações</span></button>
                         <button id="refresh-pending-btn" class="action-btn small-btn enhanced-btn compact" title="Atualizar lista">🔄</button>
                         <button id="open-all-pending-btn" class="action-btn small-btn enhanced-btn compact" title="Filtre por um único responsável para habilitar" disabled style="opacity: 0.5;">Abrir Todas</button>

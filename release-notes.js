@@ -385,6 +385,15 @@ const MINOR_RELEASE_NOTES = {
         { text: '<b>🤖 PLUG - Novo link AT:</b> Adicionado um terceiro link regional (AT) em Central de Informações > Controle de Acesso > 🤖 PLUG, ao lado dos já existentes Sul e Sudeste.', hidden: true },
         { text: '<b>🔗 Gerenciar Links do PLUG:</b> Novo modal (botão "🔗 Gerenciar Links" dentro de "Configurar PLUG por Unidades") para editar o link de cada equipe, migrar as unidades de um link para outro, inativar/reativar links e criar novos links além dos 3 fixos.', hidden: true }
       ]
+    },
+    {
+      version: '3.0.7.6',
+      features: [
+        '<b>📋 Pendências reformuladas:</b> A guia Pendências agora mostra as suas SSCs pendentes (aquelas em que você é o responsável), capturadas diretamente da lista de Solicitações do SGD. O tempo desde o último trâmite passou a ser calculado em horas úteis, desconsiderando fins de semana e feriados.',
+        '<b>👤 Responsável monitorado:</b> Novo seletor no topo da guia Pendências para escolher de qual responsável ver as pendências — útil para líderes e gestores que enxergam vários usuários. A escolha fica salva e evita a limitação de 1.000 registros da primeira página.',
+        '<b>🛡️ Mais estável:</b> As buscas de pendências passaram a ser coordenadas entre as abas do SGD, evitando requisições simultâneas na mesma sessão (que faziam a página vir em branco).',
+        { text: '<b>🐞 Debug de pendências:</b> Logs [PENDING] (via sgdDebug.ativar() no console) para diagnosticar filtros, responsável usado, contagem de linhas e coalescing.', hidden: true }
+      ]
     }
   ],
   '3.0.6': [

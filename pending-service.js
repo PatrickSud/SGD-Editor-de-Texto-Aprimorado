@@ -402,7 +402,22 @@ function parsePendingPage(doc, arrivalTimes, now, arrivalTimesState) {
  * Busca e processa a lista de pendências.
  * @returns {Promise<object>} Uma promessa que resolve com um objeto contendo os itens e informações de abas.
  */
-async function fetchPendingItems() {
+/**
+ * Busca as pendências do usuário. Delegador para a nova fonte (sscs.html),
+ * que serializa TODAS as buscas pelo SgdRequestCoordinator. Mantém a assinatura
+ * antiga para que os consumidores (info-panel, badge do FAB, alarme de 15 min)
+ * sigam funcionando sem alteração.
+ * @param {object} [opts] - { force, maxAgeMs } repassados ao coordenador.
+ */
+async function fetchPendingItems(opts = {}) {
+  return fetchSscPendingItems(opts)
+}
+
+/**
+ * @deprecated Fonte ANTIGA (filtro-listas.html), descontinuada em favor da
+ * sscs.html. Mantida apenas para referência/rollback; não é mais chamada.
+ */
+async function fetchPendingItemsLegacy() {
   try {
     // 1. Carrega os tempos precisos salvos
     const arrivalTimes = await getPendingArrivalTimes()
@@ -655,11 +670,13 @@ async function checkNewPendings() {
     // REGISTRO DE TIMESTAMP COM ADOÇÃO INTELIGENTE (Preciso/Estimado)
     const now = Date.now()
     const parseDMY = str => {
-      const m = (str || '').match(/(\d{2})\/(\d{2})\/(\d{4})/)
+      // sscs.html usa ano com 2 dígitos (ex.: 16/07/26); aceitamos 2 ou 4.
+      const m = (str || '').match(/(\d{2})\/(\d{2})\/(\d{2,4})/)
       if (!m) return null
       const d = parseInt(m[1], 10)
       const mo = parseInt(m[2], 10) - 1
-      const y = parseInt(m[3], 10)
+      let y = parseInt(m[3], 10)
+      if (y < 100) y += 2000
       const dt = new Date(y, mo, d)
       return dt.getTime()
     }
