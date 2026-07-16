@@ -1,0 +1,403 @@
+/**
+ * links-panel.css
+ * Estilos do Repositório Colaborativo de Links por Canal.
+ * Reutiliza a estrutura de .editor-modal / .se-modal-content (modal.css) e as
+ * variáveis de tema já existentes (--primary-color, --border-color, etc.).
+ */
+
+/* O conteúdo herda o "glass" e o tema de .se-modal-content. Só ajustamos tamanho. */
+.lp-modal .se-modal-content.lp-content {
+  max-width: 860px;
+  width: 94%;
+}
+
+.lp-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ─── ABAS ─────────────────────────────────────────────────────────────── */
+.lp-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 10px 16px 0 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.lp-tab {
+  border: none;
+  background: transparent;
+  color: var(--text-color-muted);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0;
+  transition: var(--transition-fast, all 0.15s ease);
+}
+
+.lp-tab:hover {
+  color: var(--text-color-main);
+  background: var(--background-hover);
+}
+
+.lp-tab.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+}
+
+/* ─── BARRA DE FERRAMENTAS ─────────────────────────────────────────────── */
+.lp-toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 16px 8px 16px;
+}
+
+.lp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lp-field-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-color-muted);
+}
+
+.lp-toolbar select,
+.lp-search-input {
+  background: var(--background-secondary);
+  color: var(--text-color-main);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  padding: 6px 8px;
+  font-size: 13px;
+  outline: none;
+}
+
+.lp-toolbar select:focus,
+.lp-search-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 250, 100, 0), 0.2);
+}
+
+.lp-search-wrap {
+  flex: 1 1 160px;
+  min-width: 140px;
+}
+
+.lp-search-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.lp-add-btn {
+  white-space: nowrap;
+}
+
+/* ─── CHIPS DE TIPO ────────────────────────────────────────────────────── */
+/* Chips agora vivem dentro da barra, à direita do campo de busca (mesma linha). */
+.lp-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 0;
+}
+
+.lp-chip {
+  border: 1px solid var(--border-color);
+  background: var(--background-secondary);
+  color: var(--text-color-muted);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-fast, all 0.15s ease);
+}
+
+.lp-chip:hover {
+  color: var(--text-color-main);
+  border-color: var(--primary-color);
+}
+
+.lp-chip.active {
+  background: var(--primary-color);
+  color: #fff;
+  border-color: var(--primary-color);
+}
+
+/* ─── CORPO / LISTA ────────────────────────────────────────────────────── */
+.lp-body {
+  padding: 4px 16px 16px 16px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 340px;   /* visão mais ampla mesmo com poucos itens */
+  max-height: 62vh;
+}
+
+.lp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Cabeçalho de seção por tipo: rótulo + linha preenchendo o restante. */
+.lp-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-color-muted);
+}
+
+.lp-group-header:first-child {
+  margin-top: 0;
+}
+
+.lp-group-header::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border-color);
+}
+
+.lp-loading,
+.lp-empty {
+  text-align: center;
+  color: var(--text-color-muted);
+  font-size: 13px;
+  padding: 28px 12px;
+  line-height: 1.5;
+}
+
+.lp-empty-hint {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.lp-pending-hint {
+  font-size: 12px;
+  color: var(--text-color-muted);
+  padding: 4px 2px 10px 2px;
+}
+
+/* ─── ITEM ─────────────────────────────────────────────────────────────── */
+.lp-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--background-secondary);
+  transition: var(--transition-fast, all 0.15s ease);
+}
+
+.lp-item:hover {
+  border-color: var(--primary-color);
+  background: var(--background-hover);
+}
+
+.lp-item-pending {
+  border-left: 3px solid var(--action-yellow, #f0ad4e);
+}
+
+.lp-item-main {
+  flex: 1;
+  min-width: 0; /* permite ellipsis */
+}
+
+.lp-item-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-color-main);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lp-item-title:hover {
+  color: var(--primary-color);
+  text-decoration: underline;
+}
+
+.lp-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--text-color-muted);
+}
+
+.lp-meta-author {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lp-meta-date {
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+/* ─── BADGES DE TIPO ───────────────────────────────────────────────────── */
+.lp-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.lp-badge-ss { background: var(--action-blue, #3b82f6); }
+.lp-badge-ssc { background: #8b5cf6; }
+.lp-badge-sam { background: var(--action-green, #22c55e); }
+.lp-badge-ne { background: var(--action-orange, #fa6400); }
+.lp-badge-geral { background: var(--text-color-muted, #6b7280); }
+
+/* Chip de canal (modo "Todos"): neutro/contornado para não competir com o tipo. */
+.lp-badge-channel {
+  background: transparent;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+}
+
+/* ─── AÇÕES DO ITEM ────────────────────────────────────────────────────── */
+.lp-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.lp-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-color-muted);
+  border-radius: var(--border-radius-sm);
+  padding: 4px 7px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: var(--transition-fast, all 0.15s ease);
+}
+
+.lp-icon-btn:hover {
+  background: var(--background-main);
+  border-color: var(--border-color);
+  color: var(--text-color-main);
+}
+
+.lp-icon-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.lp-icon-btn .lp-count {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.lp-like.active {
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+.lp-save.active {
+  color: var(--action-red, #ef4444);
+}
+
+.lp-approve:hover { color: var(--action-green, #22c55e); }
+.lp-reject:hover,
+.lp-remove:hover,
+.lp-remove-personal:hover { color: var(--action-red, #ef4444); }
+
+/* ─── FORMULÁRIO DE ADIÇÃO ─────────────────────────────────────────────── */
+.lp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lp-form-hint {
+  font-size: 12px;
+  color: var(--text-color-muted);
+  margin: 0;
+}
+
+/* Linha de contexto (Sistema/Módulo) abaixo do Tipo/Canal. */
+.lp-form-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  padding: 8px 10px;
+  border: 1px dashed var(--border-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--background-secondary);
+  font-size: 12px;
+  color: var(--text-color-main);
+}
+
+.lp-form-info b {
+  color: var(--text-color-muted);
+  font-weight: 600;
+}
+
+.lp-autofill-btn {
+  align-self: flex-start;
+}
+
+.lp-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-color-muted);
+  flex: 1;
+}
+
+.lp-form-field input,
+.lp-form-field select {
+  background: var(--background-secondary);
+  color: var(--text-color-main);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  padding: 8px;
+  font-size: 13px;
+  outline: none;
+}
+
+.lp-form-field input:focus,
+.lp-form-field select:focus {
+  border-color: var(--primary-color);
+}
+
+.lp-form-row {
+  display: flex;
+  gap: 10px;
+}
+
+/* ─── RESPONSIVO ───────────────────────────────────────────────────────── */
+@media (max-width: 520px) {
+  .lp-toolbar { flex-direction: column; align-items: stretch; }
+  .lp-form-row { flex-direction: column; }
+}
