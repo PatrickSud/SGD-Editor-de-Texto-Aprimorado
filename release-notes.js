@@ -375,7 +375,8 @@ const MINOR_RELEASE_NOTES = {
       version: '3.0.7.4',
       features: [
         '<b>🔔 Notificação de Pendências Redesenhada:</b> A pílula de pendências novas no FAB agora expande brevemente mostrando a descrição completa (ex: "4 pendências (1 nova)") e recolhe sozinha — passe o mouse sobre ela a qualquer momento para conferir. Habilitada por padrão, repete o lembrete a cada 1h enquanto não for vista, e não exibe mais o toast no canto superior direito.',
-        '<b>🔍 Verificação de Duplicidade Configurável:</b> Novas opções em Configurações > Preferências para usar (ou não) Inteligência Artificial e/ou o Fallback por palavras-chave na Verificação de Duplicidade, com um atalho rápido (⚙️) direto no widget de aviso.'
+        '<b>🔍 Verificação de Duplicidade Configurável:</b> Novas opções em Configurações > Preferências para usar (ou não) Inteligência Artificial e/ou o Fallback por palavras-chave na Verificação de Duplicidade, com um atalho rápido (⚙️) direto no widget de aviso.',
+        '<b>🌐 Central de Links:</b> Novo painel no FAB (🌐) com um repositório colaborativo de links de suporte por canal — guias Comunidade, Pessoal e Pendências, com curtidas, salvamento, busca e agrupamento por tipo (SS/SSC/SA/NE).'
       ]
     }
   ],
