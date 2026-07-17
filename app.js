@@ -1832,12 +1832,12 @@ Sigo a disposição.`
     })
 }
 
-// URL do assistente de suporte PLUG
-const PLUG_URL =
+// URL do assistente de suporte IAplug
+const IAPLUG_URL =
   'https://tria.plugsocial.online/?assunto=sped&codigoCliente=96797&identificacaoRevenda=3'
 
 /**
- * Abre o PLUG em uma janela dedicada do navegador (estilo "app", sem barra
+ * Abre o IAplug em uma janela dedicada do navegador (estilo "app", sem barra
  * de endereço), ou traz para frente a janela já existente.
  *
  * A janela é criada e gerenciada pelo service worker, pois a API chrome.windows
@@ -1848,31 +1848,31 @@ const PLUG_URL =
  * (detecção de frame no lado da Tria). Em janela própria, a Tria volta a ser a
  * página principal e funciona normalmente, com maximizar/redimensionar nativos.
  */
-async function togglePLUGWindow() {
+async function toggleIAplugWindow() {
   try {
-    // Usa getPLUGLinkInfo (em vez de getPLUGUrl) para também saber a CHAVE/label
+    // Usa getIAplugLinkInfo (em vez de getIAplugUrl) para também saber a CHAVE/label
     // do link resolvido (sul/sudeste/at/custom). Isso importa porque dois links
     // podem compartilhar a mesma URL (ex.: "AT" hoje reaproveita a URL do "Sul")
     // — nesse caso o service worker não teria como descobrir sozinho, só
     // comparando URLs, que o usuário é do "AT".
-    let url = PLUG_URL
+    let url = IAPLUG_URL
     let regionKey = null
     let regionLabel = null
-    if (window.sgdPermissions?.getPLUGLinkInfo) {
-      const info = await window.sgdPermissions.getPLUGLinkInfo()
+    if (window.sgdPermissions?.getIAplugLinkInfo) {
+      const info = await window.sgdPermissions.getIAplugLinkInfo()
       url = info.url
       regionKey = info.key
       regionLabel = info.label
-    } else if (window.sgdPermissions?.getPLUGUrl) {
-      url = await window.sgdPermissions.getPLUGUrl()
+    } else if (window.sgdPermissions?.getIAplugUrl) {
+      url = await window.sgdPermissions.getIAplugUrl()
     }
 
     chrome.runtime.sendMessage(
-      { action: 'PLUG_OPEN_WINDOW', url, regionKey, regionLabel },
+      { action: 'IAPLUG_OPEN_WINDOW', url, regionKey, regionLabel },
       resp => {
         if (chrome.runtime.lastError) return
         if (resp && typeof resp.open === 'boolean') {
-          updatePLUGFabState(resp.open)
+          updateIAplugFabState(resp.open)
         }
       }
     )
@@ -1882,15 +1882,15 @@ async function togglePLUGWindow() {
 }
 
 /**
- * Consulta o service worker sobre o estado atual da janela do PLUG e
+ * Consulta o service worker sobre o estado atual da janela do IAplug e
  * sincroniza o botão flutuante (útil ao carregar/recarregar a página).
  */
-function refreshPLUGFabState() {
+function refreshIAplugFabState() {
   try {
-    chrome.runtime.sendMessage({ action: 'PLUG_GET_STATE' }, resp => {
+    chrome.runtime.sendMessage({ action: 'IAPLUG_GET_STATE' }, resp => {
       if (chrome.runtime.lastError) return
       if (resp && typeof resp.open === 'boolean') {
-        updatePLUGFabState(resp.open)
+        updateIAplugFabState(resp.open)
       }
     })
   } catch (e) {
@@ -1899,25 +1899,25 @@ function refreshPLUGFabState() {
 }
 
 /**
- * Sincroniza o estado visual do botão PLUG com a janela dedicada.
- * @param {boolean} isOpen - Se a janela do PLUG está aberta.
+ * Sincroniza o estado visual do botão IAplug com a janela dedicada.
+ * @param {boolean} isOpen - Se a janela do IAplug está aberta.
  */
-function updatePLUGFabState(isOpen) {
-  const btn = document.getElementById('plug-scroll-btn')
+function updateIAplugFabState(isOpen) {
+  const btn = document.getElementById('iaplug-scroll-btn')
   if (!btn) return
   btn.classList.toggle('active', isOpen)
   btn.title = isOpen
-    ? 'PLUG - Trazer janela para frente'
-    : 'PLUG - Solicitar Suporte'
+    ? 'IAplug - Trazer janela para frente'
+    : 'IAplug - Solicitar Suporte'
 }
 
-// Mantém o botão sincronizado quando a janela do PLUG é aberta ou fechada a
+// Mantém o botão sincronizado quando a janela do IAplug é aberta ou fechada a
 // partir de qualquer guia: o service worker transmite o estado para todas as
 // abas do SGD sempre que a janela é criada ou encerrada.
 try {
   chrome.runtime.onMessage.addListener(message => {
-    if (message && message.action === 'PLUG_WINDOW_STATE') {
-      updatePLUGFabState(!!message.open)
+    if (message && message.action === 'IAPLUG_WINDOW_STATE') {
+      updateIAplugFabState(!!message.open)
     }
   })
 } catch (e) {
@@ -2005,29 +2005,29 @@ function adjustGoToTopButtonPosition(fabPosition) {
  * visível apenas se a página tiver uma barra de rolagem.
  */
 async function initializeScrollToTopButton() {
-  // Grupo que contém o botão PLUG e o botão Ir ao Topo lado a lado
+  // Grupo que contém o botão IAplug e o botão Ir ao Topo lado a lado
   const btnGroup = document.createElement('div')
   btnGroup.id = 'scroll-btn-group'
 
-  // TODO: Liberar o botão PLUG para todos os usuários quando aprovado.
+  // TODO: Liberar o botão IAplug para todos os usuários quando aprovado.
   // Por enquanto restrito a usuários com Modo Dev ativo na Central de Informações
   // (isInfoDevModeEnabled) ou que já sejam editores (sgdPermissions.isEditor) ou que possuam acesso ativo.
   try {
-    const hasAccess = window.sgdPermissions?.hasPLUGAccess ? await window.sgdPermissions.hasPLUGAccess() : false
+    const hasAccess = window.sgdPermissions?.hasIAplugAccess ? await window.sgdPermissions.hasIAplugAccess() : false
     if (hasAccess) {
-      const plugBtn = document.createElement('button')
-      plugBtn.id = 'plug-scroll-btn'
-      plugBtn.className = 'shine-effect'
-      plugBtn.title = 'PLUG - Solicitar Suporte'
-      plugBtn.innerHTML = '<img src="https://suporte.dominioatendimento.com/central/imagens/tria10.png" alt="PLUG" class="plug-scroll-icon">'
-      plugBtn.addEventListener('click', togglePLUGWindow)
-      btnGroup.appendChild(plugBtn)
-      // Sincroniza o estado do botão com a janela do PLUG (caso já esteja aberta).
-      refreshPLUGFabState()
+      const iaplugBtn = document.createElement('button')
+      iaplugBtn.id = 'iaplug-scroll-btn'
+      iaplugBtn.className = 'shine-effect'
+      iaplugBtn.title = 'IAplug - Solicitar Suporte'
+      iaplugBtn.innerHTML = '<img src="https://suporte.dominioatendimento.com/central/imagens/tria10.png" alt="IAplug" class="iaplug-scroll-icon">'
+      iaplugBtn.addEventListener('click', toggleIAplugWindow)
+      btnGroup.appendChild(iaplugBtn)
+      // Sincroniza o estado do botão com a janela do IAplug (caso já esteja aberta).
+      refreshIAplugFabState()
     }
   } catch (e) {
-    // Falha no setup do PLUG nunca deve impedir a criação do botão de scroll.
-    console.error('Erro ao inicializar o botão PLUG:', e)
+    // Falha no setup do IAplug nunca deve impedir a criação do botão de scroll.
+    console.error('Erro ao inicializar o botão IAplug:', e)
   }
 
   // Botão Ir ao Topo / Ir para o Final (à direita)
@@ -2199,9 +2199,9 @@ async function applyGlobalVisibilitySettings() {
   if (goToTopButton) {
     goToTopButton.style.display = visibility.goToTop === false ? 'none' : ''
   }
-  const plugScrollBtn = document.getElementById('plug-scroll-btn')
-  if (plugScrollBtn) {
-    plugScrollBtn.style.display = visibility.plug === false ? 'none' : ''
+  const iaplugScrollBtn = document.getElementById('iaplug-scroll-btn')
+  if (iaplugScrollBtn) {
+    iaplugScrollBtn.style.display = visibility.iaplug === false ? 'none' : ''
   }
 
   // Novo: visibilidade do botão "Pesquisar Resposta" clonado

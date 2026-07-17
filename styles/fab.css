@@ -389,7 +389,7 @@
   border: 2px solid var(--background-main);
 }
 
-/* --- GRUPO DE BOTÕES FLUTUANTES (PLUG + Ir ao Topo/Baixo) --- */
+/* --- GRUPO DE BOTÕES FLUTUANTES (IAplug + Ir ao Topo/Baixo) --- */
 #scroll-btn-group {
   position: fixed;
   bottom: 25px;
@@ -401,7 +401,7 @@
 }
 
 /* Estilo base compartilhado pelos dois botões do grupo */
-#plug-scroll-btn,
+#iaplug-scroll-btn,
 #floating-scroll-top-btn {
   width: 40px;
   height: 40px;
@@ -419,7 +419,7 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
-#plug-scroll-btn {
+#iaplug-scroll-btn {
   font-size: 18px;
   line-height: 1;
   padding: 6px;
@@ -427,7 +427,7 @@
   border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-.plug-scroll-icon {
+.iaplug-scroll-icon {
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -435,12 +435,12 @@
   border-radius: 50%;
 }
 
-#plug-scroll-btn.active {
+#iaplug-scroll-btn.active {
   background: #102518;
   box-shadow: 0 0 0 3px rgba(16, 37, 24, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-#plug-scroll-btn:hover,
+#iaplug-scroll-btn:hover,
 #floating-scroll-top-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
@@ -936,7 +936,7 @@
 
 /* --- OCULTAÇÃO EM JANELAS PEQUENAS ---
    Em janelas SGD abertas em tamanho reduzido (< 680px de largura OU < 450px de
-   altura), os botões flutuantes (FAB, PLUG, Ir ao Topo) são ocultados para
+   altura), os botões flutuantes (FAB, IAplug, Ir ao Topo) são ocultados para
    não atrapalhar a visualização e o clique. Os limiares espelham as constantes
    FAB_MIN_WINDOW_WIDTH e FAB_MIN_WINDOW_HEIGHT definidas em config.js. */
 @media (max-width: 679px), (max-height: 449px) {

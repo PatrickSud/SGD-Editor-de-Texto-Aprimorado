@@ -450,31 +450,31 @@ async function broadcastToSgdTabs(message) {
 }
 
 // ─────────────────────────────────────────
-// PLUG — Janela dedicada do assistente Tria
+// IAplug — Janela dedicada do assistente Tria
 // O assistente não funciona dentro de um iframe (detecção de frame no lado da
 // Tria), então é aberto em uma janela própria do navegador (tipo "popup"/app),
 // onde a Tria volta a ser a página principal e funciona normalmente.
 // ─────────────────────────────────────────
-const PLUG_BOUNDS_KEY = 'plugWindowBounds'
-const PLUG_DEFAULT_BOUNDS = { width: 460, height: 780 }
+const IAPLUG_BOUNDS_KEY = 'iaplugWindowBounds'
+const IAPLUG_DEFAULT_BOUNDS = { width: 460, height: 780 }
 // Guarda windowId/tabId/region também em chrome.storage.session porque o
 // service worker do MV3 é encerrado após ~30s de inatividade, zerando estas
-// variáveis em memória mesmo com a janela do PLUG ainda aberta. Sem isso, ao
-// clicar no ícone depois de um tempo parado, isPLUGWindowOpen() concluía
+// variáveis em memória mesmo com a janela do IAplug ainda aberta. Sem isso, ao
+// clicar no ícone depois de um tempo parado, isIAplugWindowOpen() concluía
 // (errado) que não havia janela e abria uma segunda janela duplicada.
-const PLUG_SESSION_KEY = 'plugWindowSession'
-let plugWindowId = null
-let plugTabId = null
-let plugRegion = 'SUL'
+const IAPLUG_SESSION_KEY = 'iaplugWindowSession'
+let iaplugWindowId = null
+let iaplugTabId = null
+let iaplugRegion = 'SUL'
 
 /**
- * Persiste o estado atual da janela do PLUG em chrome.storage.session, para
+ * Persiste o estado atual da janela do IAplug em chrome.storage.session, para
  * sobreviver a um reinício do service worker.
  */
-async function savePLUGSessionState() {
+async function saveIAplugSessionState() {
   try {
     await chrome.storage.session.set({
-      [PLUG_SESSION_KEY]: { windowId: plugWindowId, tabId: plugTabId, region: plugRegion }
+      [IAPLUG_SESSION_KEY]: { windowId: iaplugWindowId, tabId: iaplugTabId, region: iaplugRegion }
     })
   } catch (e) {
     /* Ignora falha ao persistir; pior caso volta ao bug antigo. */
@@ -482,11 +482,11 @@ async function savePLUGSessionState() {
 }
 
 /**
- * Limpa o estado persistido da janela do PLUG.
+ * Limpa o estado persistido da janela do IAplug.
  */
-async function clearPLUGSessionState() {
+async function clearIAplugSessionState() {
   try {
-    await chrome.storage.session.remove(PLUG_SESSION_KEY)
+    await chrome.storage.session.remove(IAPLUG_SESSION_KEY)
   } catch (e) {
     /* Ignora. */
   }
@@ -495,21 +495,21 @@ async function clearPLUGSessionState() {
 /**
  * Injeta via chrome.scripting um MutationObserver para manter o título da janela personalizado.
  */
-function injectPLUGTitle(tabId, regionName) {
+function injectIAplugTitle(tabId, regionName) {
   if (!tabId) return
   chrome.scripting.executeScript({
     target: { tabId: tabId },
     func: (region) => {
-      const expectedTitle = `TRIA - PLUG - [${region}]`
+      const expectedTitle = `TRIA - IAplug - [${region}]`
       document.title = expectedTitle
       
       // Remove observer antigo se houver
-      if (window.plugTitleObserver) {
-        window.plugTitleObserver.disconnect()
+      if (window.iaplugTitleObserver) {
+        window.iaplugTitleObserver.disconnect()
       }
       
       // Monitora mudanças no título
-      window.plugTitleObserver = new MutationObserver(() => {
+      window.iaplugTitleObserver = new MutationObserver(() => {
         if (document.title !== expectedTitle) {
           document.title = expectedTitle
         }
@@ -517,56 +517,56 @@ function injectPLUGTitle(tabId, regionName) {
       
       const titleEl = document.querySelector('title')
       if (titleEl) {
-        window.plugTitleObserver.observe(titleEl, { childList: true })
+        window.iaplugTitleObserver.observe(titleEl, { childList: true })
       } else {
-        window.plugTitleObserver.observe(document.documentElement, {
+        window.iaplugTitleObserver.observe(document.documentElement, {
           subtree: true,
           childList: true
         })
       }
     },
     args: [regionName]
-  }).catch(err => console.warn('[PLUG] Falha ao injetar script de título:', err))
+  }).catch(err => console.warn('[IAplug] Falha ao injetar script de título:', err))
 }
 
 /**
- * Verifica se a janela do PLUG ainda existe.
+ * Verifica se a janela do IAplug ainda existe.
  * @returns {Promise<boolean>}
  */
-async function isPLUGWindowOpen() {
+async function isIAplugWindowOpen() {
   // O service worker pode ter sido reiniciado (idle) desde a última abertura,
-  // zerando plugWindowId mesmo com a janela real ainda aberta. Antes de
+  // zerando iaplugWindowId mesmo com a janela real ainda aberta. Antes de
   // concluir "não há janela", tenta recuperar o último estado salvo.
-  if (plugWindowId === null) {
+  if (iaplugWindowId === null) {
     try {
-      const data = await chrome.storage.session.get([PLUG_SESSION_KEY])
-      const saved = data[PLUG_SESSION_KEY]
+      const data = await chrome.storage.session.get([IAPLUG_SESSION_KEY])
+      const saved = data[IAPLUG_SESSION_KEY]
       if (saved && typeof saved.windowId === 'number') {
-        plugWindowId = saved.windowId
-        plugTabId = typeof saved.tabId === 'number' ? saved.tabId : null
-        plugRegion = saved.region || plugRegion
+        iaplugWindowId = saved.windowId
+        iaplugTabId = typeof saved.tabId === 'number' ? saved.tabId : null
+        iaplugRegion = saved.region || iaplugRegion
       }
     } catch (e) {
       /* Sem estado salvo; segue como "não há janela". */
     }
   }
 
-  if (plugWindowId === null) return false
+  if (iaplugWindowId === null) return false
 
   try {
-    await chrome.windows.get(plugWindowId)
+    await chrome.windows.get(iaplugWindowId)
     return true
   } catch (e) {
     // A janela foi fechada sem disparar o onRemoved capturado; normaliza o estado.
-    plugWindowId = null
-    plugTabId = null
-    clearPLUGSessionState()
+    iaplugWindowId = null
+    iaplugTabId = null
+    clearIAplugSessionState()
     return false
   }
 }
 
 /**
- * Abre a janela dedicada do PLUG ou, se já estiver aberta, traz para frente
+ * Abre a janela dedicada do IAplug ou, se já estiver aberta, traz para frente
  * (restaurando-a caso esteja minimizada). Lembra o tamanho/posição/estado entre
  * aberturas.
  * @param {string} url - URL do assistente.
@@ -577,10 +577,10 @@ async function isPLUGWindowOpen() {
  * @param {string|null} [regionLabel] - Label configurado do link (ex.: "AT").
  * @returns {Promise<boolean>} true se a janela está aberta ao final.
  */
-async function openOrFocusPLUGWindow(url, regionKey, regionLabel) {
-  if (await isPLUGWindowOpen()) {
+async function openOrFocusIAplugWindow(url, regionKey, regionLabel) {
+  if (await isIAplugWindowOpen()) {
     try {
-      await chrome.windows.update(plugWindowId, {
+      await chrome.windows.update(iaplugWindowId, {
         focused: true,
         drawAttention: true,
         state: 'normal'
@@ -592,10 +592,10 @@ async function openOrFocusPLUGWindow(url, regionKey, regionLabel) {
   }
 
   // Recupera tamanho/posição/estado salvos (ou usa o padrão).
-  let bounds = { ...PLUG_DEFAULT_BOUNDS }
+  let bounds = { ...IAPLUG_DEFAULT_BOUNDS }
   try {
-    const data = await chrome.storage.local.get([PLUG_BOUNDS_KEY])
-    const saved = data[PLUG_BOUNDS_KEY]
+    const data = await chrome.storage.local.get([IAPLUG_BOUNDS_KEY])
+    const saved = data[IAPLUG_BOUNDS_KEY]
     if (saved && typeof saved === 'object') bounds = saved
   } catch (e) {
     /* Usa o padrão. */
@@ -611,8 +611,8 @@ async function openOrFocusPLUGWindow(url, regionKey, regionLabel) {
   if (bounds.state === 'maximized') {
     createData.state = 'maximized'
   } else {
-    createData.width = typeof bounds.width === 'number' ? bounds.width : PLUG_DEFAULT_BOUNDS.width
-    createData.height = typeof bounds.height === 'number' ? bounds.height : PLUG_DEFAULT_BOUNDS.height
+    createData.width = typeof bounds.width === 'number' ? bounds.width : IAPLUG_DEFAULT_BOUNDS.width
+    createData.height = typeof bounds.height === 'number' ? bounds.height : IAPLUG_DEFAULT_BOUNDS.height
     if (typeof bounds.left === 'number' && typeof bounds.top === 'number') {
       createData.left = bounds.left
       createData.top = bounds.top
@@ -621,17 +621,17 @@ async function openOrFocusPLUGWindow(url, regionKey, regionLabel) {
 
   try {
     const win = await chrome.windows.create(createData)
-    plugWindowId = win.id
+    iaplugWindowId = win.id
     if (win.tabs && win.tabs[0]) {
-      plugTabId = win.tabs[0].id
+      iaplugTabId = win.tabs[0].id
 
       if (regionLabel) {
         // Caminho preferido: o content script já resolveu a chave/label do
-        // link (via getPLUGLinkInfo) e nos diz exatamente qual região exibir.
+        // link (via getIAplugLinkInfo) e nos diz exatamente qual região exibir.
         // Necessário porque links diferentes podem apontar para a mesma URL
         // (ex.: "AT" reaproveitando a URL do "Sul") — nesse caso comparar por
         // URL não distingue a região certa.
-        plugRegion = String(regionLabel).toUpperCase()
+        iaplugRegion = String(regionLabel).toUpperCase()
       } else {
         // Fallback (mensagens antigas/sem regionLabel): tenta adivinhar pela URL.
         const localData = await chrome.storage.local.get(['remoteConfig'])
@@ -640,21 +640,21 @@ async function openOrFocusPLUGWindow(url, regionKey, regionLabel) {
         const urlSudeste = remoteConfig.iagente_url_sudeste
 
         if (url === urlSudeste) {
-          plugRegion = 'SUDESTE'
+          iaplugRegion = 'SUDESTE'
         } else if (url === urlSul) {
-          plugRegion = 'SUL'
+          iaplugRegion = 'SUL'
         } else {
-          plugRegion = url.includes('identificacaoRevenda=3') ? 'SUL' : 'SUDESTE'
+          iaplugRegion = url.includes('identificacaoRevenda=3') ? 'SUL' : 'SUDESTE'
         }
       }
 
-      injectPLUGTitle(plugTabId, plugRegion)
+      injectIAplugTitle(iaplugTabId, iaplugRegion)
     }
-    await savePLUGSessionState()
-    broadcastToSgdTabs({ action: 'PLUG_WINDOW_STATE', open: true })
+    await saveIAplugSessionState()
+    broadcastToSgdTabs({ action: 'IAPLUG_WINDOW_STATE', open: true })
     return true
   } catch (e) {
-    console.error('[PLUG] Erro ao abrir a janela dedicada:', e)
+    console.error('[IAplug] Erro ao abrir a janela dedicada:', e)
     return false
   }
 }
@@ -663,11 +663,11 @@ async function openOrFocusPLUGWindow(url, regionKey, regionLabel) {
 // maximiza a janela — para reabrir exatamente como o usuário deixou.
 if (chrome.windows.onBoundsChanged) {
   chrome.windows.onBoundsChanged.addListener(win => {
-    if (win.id !== plugWindowId) return
+    if (win.id !== iaplugWindowId) return
     // Não persiste o estado minimizado (não queremos reabrir minimizado).
     if (win.state === 'minimized') return
     chrome.storage.local.set({
-      [PLUG_BOUNDS_KEY]: {
+      [IAPLUG_BOUNDS_KEY]: {
         left: win.left,
         top: win.top,
         width: win.width,
@@ -680,25 +680,25 @@ if (chrome.windows.onBoundsChanged) {
 
 // Detecta o fechamento da janela para sincronizar o botão em todas as abas do SGD.
 chrome.windows.onRemoved.addListener(windowId => {
-  if (windowId !== plugWindowId) return
-  plugWindowId = null
-  plugTabId = null
-  clearPLUGSessionState()
-  broadcastToSgdTabs({ action: 'PLUG_WINDOW_STATE', open: false })
+  if (windowId !== iaplugWindowId) return
+  iaplugWindowId = null
+  iaplugTabId = null
+  clearIAplugSessionState()
+  broadcastToSgdTabs({ action: 'IAPLUG_WINDOW_STATE', open: false })
 })
 
 // Escuta atualizações de abas para manter o título injetado durante carregamentos/reloads
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (tabId === plugTabId && (changeInfo.status === 'loading' || changeInfo.status === 'complete')) {
-    injectPLUGTitle(tabId, plugRegion)
+  if (tabId === iaplugTabId && (changeInfo.status === 'loading' || changeInfo.status === 'complete')) {
+    injectIAplugTitle(tabId, iaplugRegion)
   }
 })
 
-// Escuta remoção da aba do PLUG
+// Escuta remoção da aba do IAplug
 chrome.tabs.onRemoved.addListener((tabId) => {
-  if (tabId === plugTabId) {
-    plugTabId = null
-    savePLUGSessionState()
+  if (tabId === iaplugTabId) {
+    iaplugTabId = null
+    saveIAplugSessionState()
   }
 })
 
@@ -2053,14 +2053,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         })();
         return true; // Resposta assíncrona
 
-      } else if (message.action === 'PLUG_OPEN_WINDOW') {
-        // Abre (ou foca) a janela dedicada do assistente PLUG.
-        const open = await openOrFocusPLUGWindow(message.url, message.regionKey, message.regionLabel)
+      } else if (message.action === 'IAPLUG_OPEN_WINDOW') {
+        // Abre (ou foca) a janela dedicada do assistente IAplug.
+        const open = await openOrFocusIAplugWindow(message.url, message.regionKey, message.regionLabel)
         sendResponse({ open })
 
-      } else if (message.action === 'PLUG_GET_STATE') {
-        // Informa ao content script se a janela do PLUG está aberta.
-        sendResponse({ open: await isPLUGWindowOpen() })
+      } else if (message.action === 'IAPLUG_GET_STATE') {
+        // Informa ao content script se a janela do IAplug está aberta.
+        sendResponse({ open: await isIAplugWindowOpen() })
 
       }
     } catch (error) {

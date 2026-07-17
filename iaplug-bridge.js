@@ -1,9 +1,9 @@
 /**
- * PLUG Bridge
+ * IAplug Bridge
  * --------------
  * Roda DENTRO do iframe da Tria (https://tria.plugsocial.online/*), em todos os frames.
  *
- * Objetivo: fazer a conversa do PLUG persistir mesmo quando a página do SGD é
+ * Objetivo: fazer a conversa do IAplug persistir mesmo quando a página do SGD é
  * recarregada e compartilhá-la entre guias.
  *
  * Como a Tria provavelmente guarda a sessão da conversa em `sessionStorage`
@@ -18,7 +18,7 @@
 (function () {
   'use strict'
 
-  const PREFIX = '__plug_persist__:'
+  const PREFIX = '__iaplug_persist__:'
 
   /**
    * Restaura as chaves persistidas (localStorage) de volta para o sessionStorage.

@@ -151,8 +151,8 @@ const RELEASE_NOTES = {
 
       '<b>🪟 Interface & Usabilidade:</b>' +
       '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-      '<li><b>PLUG em Janela Dedicada:</b> O assistente Tria agora abre em janela popup estilo App (lembra tamanho e posição).</li>' +
-      '<li><b>Responsividade dos Botões:</b> Ocultação automática de botões flutuantes (FAB, PLUG) em telas muito pequenas (menores que 680×450px).</li>' +
+      '<li><b>IAplug em Janela Dedicada:</b> O assistente Tria agora abre em janela popup estilo App (lembra tamanho e posição).</li>' +
+      '<li><b>Responsividade dos Botões:</b> Ocultação automática de botões flutuantes (FAB, IAplug) em telas muito pequenas (menores que 680×450px).</li>' +
       '<li><b>Drag & Drop no FAB:</b> Reordenação visual por clique e arraste dos atalhos do menu flutuante.</li>' +
       '<li><b>Verificador Otimizado:</b> Checagem de SSCs duplicadas feita em segundo plano com restauração automática de filtros.</li>' +
       '</ul>'
@@ -183,8 +183,8 @@ const RELEASE_NOTES = {
 
       '<b>🪟 Interface & Usabilidade:</b>' +
       '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-      '<li><b>PLUG em Janela Dedicada:</b> O assistente Tria agora abre em janela popup estilo App (lembra tamanho e posição).</li>' +
-      '<li><b>Responsividade dos Botões:</b> Ocultação automática de botões flutuantes (FAB, PLUG) em telas muito pequenas (menores que 680×450px).</li>' +
+      '<li><b>IAplug em Janela Dedicada:</b> O assistente Tria agora abre em janela popup estilo App (lembra tamanho e posição).</li>' +
+      '<li><b>Responsividade dos Botões:</b> Ocultação automática de botões flutuantes (FAB, IAplug) em telas muito pequenas (menores que 680×450px).</li>' +
       '<li><b>Drag & Drop no FAB:</b> Reordenação visual por clique e arraste dos atalhos do menu flutuante.</li>' +
       '<li><b>Verificador Otimizado:</b> Checagem de SSCs duplicadas feita em segundo plano com restauração automática de filtros.</li>' +
       '</ul>'
@@ -382,8 +382,8 @@ const MINOR_RELEASE_NOTES = {
     {
       version: '3.0.7.5',
       features: [
-        { text: '<b>🤖 PLUG - Novo link AT:</b> Adicionado um terceiro link regional (AT) em Central de Informações > Controle de Acesso > 🤖 PLUG, ao lado dos já existentes Sul e Sudeste.', hidden: true },
-        { text: '<b>🔗 Gerenciar Links do PLUG:</b> Novo modal (botão "🔗 Gerenciar Links" dentro de "Configurar PLUG por Unidades") para editar o link de cada equipe, migrar as unidades de um link para outro, inativar/reativar links e criar novos links além dos 3 fixos.', hidden: true }
+        { text: '<b>🤖 IAplug - Novo link AT:</b> Adicionado um terceiro link regional (AT) em Central de Informações > Controle de Acesso > 🤖 IAplug, ao lado dos já existentes Sul e Sudeste.', hidden: true },
+        { text: '<b>🔗 Gerenciar Links do IAplug:</b> Novo modal (botão "🔗 Gerenciar Links" dentro de "Configurar IAplug por Unidades") para editar o link de cada equipe, migrar as unidades de um link para outro, inativar/reativar links e criar novos links além dos 3 fixos.', hidden: true }
       ]
     },
     {

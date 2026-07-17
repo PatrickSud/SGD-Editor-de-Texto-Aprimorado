@@ -3156,7 +3156,7 @@ async function renderButtonVisibilitySettings(modal) {
     notes: '✍️ Anotações',
     fab: '🔘 Acesso Rápido (FAB)',
     goToTop: '🔼 Ir ao Topo',
-    plug: '<img src="https://suporte.dominioatendimento.com/central/imagens/tria10.png" alt="PLUG" style="width:16px;height:16px;object-fit:contain;border-radius:50%;vertical-align:middle;margin-right:4px;"> PLUG',
+    iaplug: '<img src="https://suporte.dominioatendimento.com/central/imagens/tria10.png" alt="IAplug" style="width:16px;height:16px;object-fit:contain;border-radius:50%;vertical-align:middle;margin-right:4px;"> IAplug',
     searchAnswerButton: '🔍 Pesquisar Resposta',
     separator2: 'Divisor 1',
     separator3: 'Divisor 2',

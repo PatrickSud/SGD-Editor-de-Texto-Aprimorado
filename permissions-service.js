@@ -1508,7 +1508,7 @@
     }
   }
 
-  async function toggleUserPLUG(userId, isEditor, currentStatus) {
+  async function toggleUserIAplug(userId, isEditor, currentStatus) {
     if (!window.sgdPermissions.isEditor) return false
     const url = isEditor ? `${RTDB_EDITORS_URL}/${userId}.json` : `${RTDB_VIEWERS_URL}/${userId}.json`
     const targetStatus = !currentStatus
@@ -1525,13 +1525,13 @@
       const response = await callDatabaseWrite(url, 'PATCH', payload)
       if (response.ok) {
         const listName = isEditor ? 'editores' : 'visualizadores'
-        await writeAuditLog('TOGGLE_USER_PLUG', userId, `Ação: ${targetStatus ? 'Desativar' : 'Ativar'} PLUG (${listName})`)
+        await writeAuditLog('TOGGLE_USER_IAPLUG', userId, `Ação: ${targetStatus ? 'Desativar' : 'Ativar'} IAplug (${listName})`)
         await invalidatePermissionsCache()
         return true
       }
       return false
     } catch (e) {
-      console.error('[SGD Permissions] Erro ao alternar status do PLUG do usuário:', e)
+      console.error('[SGD Permissions] Erro ao alternar status do IAplug do usuário:', e)
       return false
     }
   }
@@ -1559,16 +1559,16 @@
     }
   }
 
-  // ─── Resolvers de Acesso (PLUG / Duplicados) ──────────────────────────────
+  // ─── Resolvers de Acesso (IAplug / Duplicados) ──────────────────────────────
   // Funções puras e síncronas que concentram a regra de decisão de acesso.
-  // São usadas tanto pelas checagens reais (hasPLUGAccess/hasDuplicateCheckerIAAccess,
+  // São usadas tanto pelas checagens reais (hasIAplugAccess/hasDuplicateCheckerIAAccess,
   // que buscam os dados no Firebase) quanto pelo badge do painel de Controle de Acesso
-  // (checkUserPLUGAccessStatus/checkUserDuplicateAccessStatus em info-panel.js, que já
+  // (checkUserIAplugAccessStatus/checkUserDuplicateAccessStatus em info-panel.js, que já
   // tem os dados carregados). Mantendo a decisão em um único lugar, painel e acesso real
   // nunca mais podem divergir por causa de uma ordem de checagem diferente entre os dois.
   // Expostas em window.sgdPermissions para serem reaproveitadas pelo info-panel.js.
 
-  function resolvePLUGAccess({ isMasterBypass, iagenteDisabled, iagenteIA_Enabled, unidade, enabledUnidades }) {
+  function resolveIAplugAccess({ isMasterBypass, iagenteDisabled, iagenteIA_Enabled, unidade, enabledUnidades }) {
     if (isMasterBypass) {
       return { active: true, reason: 'Master' }
     }
@@ -1670,22 +1670,22 @@
     return result.active
   }
 
-  async function hasPLUGAccess() {
+  async function hasIAplugAccess() {
     const userName = window.sgdPermissions?.currentUser
     const userId = window.sgdPermissions?.currentUserId
     const devData = await chrome.storage.local.get(['developerModeEnabled'])
     const isDevMode = devData.developerModeEnabled === true
 
-    sgdLog('[PLUG Access] Iniciando verificação. userName:', userName, '| userId (currentUserId):', userId, '| isDevMode:', isDevMode, '| isMaster:', window.sgdPermissions?.isMaster)
+    sgdLog('[IAplug Access] Iniciando verificação. userName:', userName, '| userId (currentUserId):', userId, '| isDevMode:', isDevMode, '| isMaster:', window.sgdPermissions?.isMaster)
 
     // Se for Master/Dev, sempre tem acesso (bypass)
     if (isDevMode || (window.sgdPermissions?.isMaster)) {
-      sgdLog('[PLUG Access] Bypass concedido (Dev Mode ou Master).')
+      sgdLog('[IAplug Access] Bypass concedido (Dev Mode ou Master).')
       return true
     }
 
     if (!userName) {
-      sgdWarn('[PLUG Access] Negado: currentUser não capturado (userName vazio).')
+      sgdWarn('[IAplug Access] Negado: currentUser não capturado (userName vazio).')
       return false
     }
     const normalizedUser = normalizeName(userName)
@@ -1701,16 +1701,16 @@
       isIndividualDisabled = matchedEditor.iagenteDisabled === true
       isIndividuallyEnabled = matchedEditor.iagenteIA_Enabled === true
       userUnidade = matchedEditor.unidade
-      sgdLog('[PLUG Access] Registro encontrado em EDITORES. id:', matchedEditor.id, '| iagenteDisabled:', matchedEditor.iagenteDisabled, '| iagenteIA_Enabled:', matchedEditor.iagenteIA_Enabled, '| unidade:', matchedEditor.unidade)
+      sgdLog('[IAplug Access] Registro encontrado em EDITORES. id:', matchedEditor.id, '| iagenteDisabled:', matchedEditor.iagenteDisabled, '| iagenteIA_Enabled:', matchedEditor.iagenteIA_Enabled, '| unidade:', matchedEditor.unidade)
     } else {
       const matchedViewer = await matchViewerRecord(userId, userName, normalizedUser)
       if (matchedViewer) {
         isIndividualDisabled = matchedViewer.iagenteDisabled === true
         isIndividuallyEnabled = matchedViewer.iagenteIA_Enabled === true
         userUnidade = matchedViewer.unidade
-        sgdLog('[PLUG Access] Registro encontrado em VISUALIZADORES. id:', matchedViewer.id, '| iagenteDisabled:', matchedViewer.iagenteDisabled, '| iagenteIA_Enabled:', matchedViewer.iagenteIA_Enabled, '| unidade:', matchedViewer.unidade)
+        sgdLog('[IAplug Access] Registro encontrado em VISUALIZADORES. id:', matchedViewer.id, '| iagenteDisabled:', matchedViewer.iagenteDisabled, '| iagenteIA_Enabled:', matchedViewer.iagenteIA_Enabled, '| unidade:', matchedViewer.unidade)
       } else {
-        sgdWarn('[PLUG Access] Nenhum registro encontrado em editores nem visualizadores para userId:', userId, '/ nome:', userName, '— provavelmente caiu no fallback de lista cacheada (até 12h) e não achou o registro lá. Verifique se o ID usado ao ativar no painel bate com este userId.')
+        sgdWarn('[IAplug Access] Nenhum registro encontrado em editores nem visualizadores para userId:', userId, '/ nome:', userName, '— provavelmente caiu no fallback de lista cacheada (até 12h) e não achou o registro lá. Verifique se o ID usado ao ativar no painel bate com este userId.')
       }
     }
 
@@ -1718,7 +1718,7 @@
     if (!userUnidade) {
       const cachedUserInfo = await chrome.storage.local.get(['userUnidade'])
       userUnidade = cachedUserInfo.userUnidade
-      sgdLog('[PLUG Access] Unidade não veio do registro, usando cache local (userUnidade):', userUnidade)
+      sgdLog('[IAplug Access] Unidade não veio do registro, usando cache local (userUnidade):', userUnidade)
     }
 
     // 3. Verificar a unidade contra a allowlist remota (iagente_enabled_unidades)
@@ -1726,7 +1726,7 @@
     const remoteConfig = localConfig.remoteConfig || {}
     const enabledUnidades = remoteConfig.iagente_enabled_unidades || []
 
-    const result = resolvePLUGAccess({
+    const result = resolveIAplugAccess({
       isMasterBypass: false, // bypass de Master/Dev já tratado acima, com retorno antecipado
       iagenteDisabled: isIndividualDisabled,
       iagenteIA_Enabled: isIndividuallyEnabled,
@@ -1735,22 +1735,22 @@
     })
 
     if (result.active) {
-      sgdLog('[PLUG Access] Concedido:', result.reason)
+      sgdLog('[IAplug Access] Concedido:', result.reason)
     } else {
-      sgdWarn('[PLUG Access] Negado:', result.reason)
+      sgdWarn('[IAplug Access] Negado:', result.reason)
     }
     return result.active
   }
 
-  const DEFAULT_PLUG_URL_SUL = 'https://tria.plugsocial.online/?assunto=sped&codigoCliente=96797&identificacaoRevenda=3'
+  const DEFAULT_IAPLUG_URL_SUL = 'https://tria.plugsocial.online/?assunto=sped&codigoCliente=96797&identificacaoRevenda=3'
 
-  // Resolve o mapa de links do PLUG (sul/sudeste/at + eventuais links customizados
-  // criados pelo Master no modal "Gerenciar Links do PLUG"), a partir do remoteConfig.
+  // Resolve o mapa de links do IAplug (sul/sudeste/at + eventuais links customizados
+  // criados pelo Master no modal "Gerenciar Links do IAplug"), a partir do remoteConfig.
   // Mantém compatibilidade com configs antigas que só tinham os campos soltos
   // iagente_url_sul / iagente_url_sudeste / iagente_url_at (sem iagente_links ainda).
-  function resolvePLUGLinksConfig(remoteConfig) {
+  function resolveIAplugLinksConfig(remoteConfig) {
     const config = remoteConfig || {}
-    const urlSul = config.iagente_url_sul || DEFAULT_PLUG_URL_SUL
+    const urlSul = config.iagente_url_sul || DEFAULT_IAPLUG_URL_SUL
     const urlSudeste = config.iagente_url_sudeste || urlSul
     const urlAt = config.iagente_url_at || urlSul
 
@@ -1767,27 +1767,27 @@
     return merged
   }
 
-  // Resolve não só a URL do PLUG do usuário, mas também a CHAVE do link (sul/
+  // Resolve não só a URL do IAplug do usuário, mas também a CHAVE do link (sul/
   // sudeste/at/custom) e o LABEL configurado (ex.: "AT"). Isso importa porque
   // dois links podem apontar para a mesma URL (ex.: "AT" hoje reaproveita a
   // mesma URL do "Sul") — nesse caso, comparar por URL não distingue a região
-  // certa para exibir no título da janela do PLUG; só a chave resolvida aqui
+  // certa para exibir no título da janela do IAplug; só a chave resolvida aqui
   // sabe a resposta.
-  async function resolvePLUGLinkInfo() {
+  async function resolveIAplugLinkInfo() {
     const userName = window.sgdPermissions?.currentUser
     const userId = window.sgdPermissions?.currentUserId
     const normalizedUser = normalizeName(userName)
 
     const localConfig = await chrome.storage.local.get(['remoteConfig'])
     const remoteConfig = localConfig.remoteConfig || {}
-    const plugLinks = resolvePLUGLinksConfig(remoteConfig)
+    const iaplugLinks = resolveIAplugLinksConfig(remoteConfig)
 
     // Só retorna o link se ele existir, tiver URL preenchida e não estiver
     // inativo — um link inativado no "Gerenciar Links" nunca deve mais ser
     // entregue a usuários, mesmo que ainda esteja referenciado em algum
     // mapeamento antigo de unidade/região.
     const resolveLink = (key) => {
-      const link = key ? plugLinks[key] : null
+      const link = key ? iaplugLinks[key] : null
       if (link && link.active !== false && link.url) {
         return { key, label: link.label || key.toUpperCase(), url: link.url }
       }
@@ -1841,16 +1841,16 @@
     }
 
     // 4. Fallback final: região calculada, com respaldo garantido no link "sul"
-    //    (o único que não pode ser inativado, ver openManagePLUGLinksModal).
+    //    (o único que não pode ser inativado, ver openManageIAplugLinksModal).
     return resolveLink(fallbackRegion) || resolveLink('sul') ||
-      { key: 'sul', label: 'Sul', url: DEFAULT_PLUG_URL_SUL }
+      { key: 'sul', label: 'Sul', url: DEFAULT_IAPLUG_URL_SUL }
   }
 
   // Mantido por compatibilidade (único consumidor direto era o próprio
-  // togglePLUGWindow, que agora usa resolvePLUGLinkInfo para também saber a
+  // toggleIAplugWindow, que agora usa resolveIAplugLinkInfo para também saber a
   // chave/label do link resolvido).
-  async function getPLUGUrl() {
-    const info = await resolvePLUGLinkInfo()
+  async function getIAplugUrl() {
+    const info = await resolveIAplugLinkInfo()
     return info.url
   }
 
@@ -1888,17 +1888,17 @@
   window.sgdPermissions.invalidateFormsCache = invalidateFormsCache
   window.sgdPermissions.saveRemoteConfig = saveRemoteConfig
   window.sgdPermissions.updateUserRegion = updateUserRegion
-  window.sgdPermissions.toggleUserPLUG = toggleUserPLUG
-  window.sgdPermissions.hasPLUGAccess = hasPLUGAccess
-  window.sgdPermissions.getPLUGUrl = getPLUGUrl
-  window.sgdPermissions.getPLUGLinkInfo = resolvePLUGLinkInfo
+  window.sgdPermissions.toggleUserIAplug = toggleUserIAplug
+  window.sgdPermissions.hasIAplugAccess = hasIAplugAccess
+  window.sgdPermissions.getIAplugUrl = getIAplugUrl
+  window.sgdPermissions.getIAplugLinkInfo = resolveIAplugLinkInfo
   window.sgdPermissions.toggleUserDuplicateIA = toggleUserDuplicateIA
   window.sgdPermissions.hasDuplicateCheckerIAAccess = hasDuplicateCheckerIAAccess
   // Resolvers puros compartilhados com o painel (info-panel.js), para que o badge
   // de status e a checagem real de acesso nunca divirjam.
-  window.sgdPermissions.resolvePLUGAccess = resolvePLUGAccess
+  window.sgdPermissions.resolveIAplugAccess = resolveIAplugAccess
   window.sgdPermissions.resolveDuplicateIAAccess = resolveDuplicateIAAccess
-  window.sgdPermissions.resolvePLUGLinksConfig = resolvePLUGLinksConfig
+  window.sgdPermissions.resolveIAplugLinksConfig = resolveIAplugLinksConfig
 
   window.sgdPermissions.refreshEditors = async () => {
     const list = await getEditorsList(true)
