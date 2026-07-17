@@ -1850,9 +1850,25 @@ const PLUG_URL =
  */
 async function togglePLUGWindow() {
   try {
-    const url = window.sgdPermissions?.getPLUGUrl ? await window.sgdPermissions.getPLUGUrl() : PLUG_URL
+    // Usa getPLUGLinkInfo (em vez de getPLUGUrl) para também saber a CHAVE/label
+    // do link resolvido (sul/sudeste/at/custom). Isso importa porque dois links
+    // podem compartilhar a mesma URL (ex.: "AT" hoje reaproveita a URL do "Sul")
+    // — nesse caso o service worker não teria como descobrir sozinho, só
+    // comparando URLs, que o usuário é do "AT".
+    let url = PLUG_URL
+    let regionKey = null
+    let regionLabel = null
+    if (window.sgdPermissions?.getPLUGLinkInfo) {
+      const info = await window.sgdPermissions.getPLUGLinkInfo()
+      url = info.url
+      regionKey = info.key
+      regionLabel = info.label
+    } else if (window.sgdPermissions?.getPLUGUrl) {
+      url = await window.sgdPermissions.getPLUGUrl()
+    }
+
     chrome.runtime.sendMessage(
-      { action: 'PLUG_OPEN_WINDOW', url: url },
+      { action: 'PLUG_OPEN_WINDOW', url, regionKey, regionLabel },
       resp => {
         if (chrome.runtime.lastError) return
         if (resp && typeof resp.open === 'boolean') {

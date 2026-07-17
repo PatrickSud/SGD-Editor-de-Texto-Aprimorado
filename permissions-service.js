@@ -1767,7 +1767,13 @@
     return merged
   }
 
-  async function getPLUGUrl() {
+  // Resolve não só a URL do PLUG do usuário, mas também a CHAVE do link (sul/
+  // sudeste/at/custom) e o LABEL configurado (ex.: "AT"). Isso importa porque
+  // dois links podem apontar para a mesma URL (ex.: "AT" hoje reaproveita a
+  // mesma URL do "Sul") — nesse caso, comparar por URL não distingue a região
+  // certa para exibir no título da janela do PLUG; só a chave resolvida aqui
+  // sabe a resposta.
+  async function resolvePLUGLinkInfo() {
     const userName = window.sgdPermissions?.currentUser
     const userId = window.sgdPermissions?.currentUserId
     const normalizedUser = normalizeName(userName)
@@ -1776,13 +1782,15 @@
     const remoteConfig = localConfig.remoteConfig || {}
     const plugLinks = resolvePLUGLinksConfig(remoteConfig)
 
-    // Só retorna a URL de um link se ele existir, tiver URL preenchida e não
-    // estiver inativo — um link inativado no "Gerenciar Links" nunca deve mais
-    // ser entregue a usuários, mesmo que ainda esteja referenciado em algum
+    // Só retorna o link se ele existir, tiver URL preenchida e não estiver
+    // inativo — um link inativado no "Gerenciar Links" nunca deve mais ser
+    // entregue a usuários, mesmo que ainda esteja referenciado em algum
     // mapeamento antigo de unidade/região.
-    const resolveLinkUrl = (key) => {
+    const resolveLink = (key) => {
       const link = key ? plugLinks[key] : null
-      if (link && link.active !== false && link.url) return link.url
+      if (link && link.active !== false && link.url) {
+        return { key, label: link.label || key.toUpperCase(), url: link.url }
+      }
       return null
     }
 
@@ -1803,8 +1811,8 @@
     }
 
     if (userRegion) {
-      const url = resolveLinkUrl(userRegion)
-      if (url) return url
+      const info = resolveLink(userRegion)
+      if (info) return info
       // Região atribuída aponta para um link inativo/inexistente: cai no fallback abaixo.
     }
 
@@ -1820,8 +1828,8 @@
       const unitRegionMap = remoteConfig.iagente_unidade_regiao || {}
       const mappedRegion = unitRegionMap[userUnidade.trim()]
       if (mappedRegion) {
-        const url = resolveLinkUrl(mappedRegion)
-        if (url) return url
+        const info = resolveLink(mappedRegion)
+        if (info) return info
         // Mapeamento explícito aponta para link inativo/inexistente: segue para o
         // fallback por palavra-chave abaixo em vez de travar o usuário sem link.
       }
@@ -1834,7 +1842,16 @@
 
     // 4. Fallback final: região calculada, com respaldo garantido no link "sul"
     //    (o único que não pode ser inativado, ver openManagePLUGLinksModal).
-    return resolveLinkUrl(fallbackRegion) || resolveLinkUrl('sul') || DEFAULT_PLUG_URL_SUL
+    return resolveLink(fallbackRegion) || resolveLink('sul') ||
+      { key: 'sul', label: 'Sul', url: DEFAULT_PLUG_URL_SUL }
+  }
+
+  // Mantido por compatibilidade (único consumidor direto era o próprio
+  // togglePLUGWindow, que agora usa resolvePLUGLinkInfo para também saber a
+  // chave/label do link resolvido).
+  async function getPLUGUrl() {
+    const info = await resolvePLUGLinkInfo()
+    return info.url
   }
 
   async function invalidateFormsCache() {
@@ -1874,6 +1891,7 @@
   window.sgdPermissions.toggleUserPLUG = toggleUserPLUG
   window.sgdPermissions.hasPLUGAccess = hasPLUGAccess
   window.sgdPermissions.getPLUGUrl = getPLUGUrl
+  window.sgdPermissions.getPLUGLinkInfo = resolvePLUGLinkInfo
   window.sgdPermissions.toggleUserDuplicateIA = toggleUserDuplicateIA
   window.sgdPermissions.hasDuplicateCheckerIAAccess = hasDuplicateCheckerIAAccess
   // Resolvers puros compartilhados com o painel (info-panel.js), para que o badge

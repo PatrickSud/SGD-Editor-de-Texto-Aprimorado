@@ -457,9 +457,40 @@ async function broadcastToSgdTabs(message) {
 // ─────────────────────────────────────────
 const PLUG_BOUNDS_KEY = 'plugWindowBounds'
 const PLUG_DEFAULT_BOUNDS = { width: 460, height: 780 }
+// Guarda windowId/tabId/region também em chrome.storage.session porque o
+// service worker do MV3 é encerrado após ~30s de inatividade, zerando estas
+// variáveis em memória mesmo com a janela do PLUG ainda aberta. Sem isso, ao
+// clicar no ícone depois de um tempo parado, isPLUGWindowOpen() concluía
+// (errado) que não havia janela e abria uma segunda janela duplicada.
+const PLUG_SESSION_KEY = 'plugWindowSession'
 let plugWindowId = null
 let plugTabId = null
 let plugRegion = 'SUL'
+
+/**
+ * Persiste o estado atual da janela do PLUG em chrome.storage.session, para
+ * sobreviver a um reinício do service worker.
+ */
+async function savePLUGSessionState() {
+  try {
+    await chrome.storage.session.set({
+      [PLUG_SESSION_KEY]: { windowId: plugWindowId, tabId: plugTabId, region: plugRegion }
+    })
+  } catch (e) {
+    /* Ignora falha ao persistir; pior caso volta ao bug antigo. */
+  }
+}
+
+/**
+ * Limpa o estado persistido da janela do PLUG.
+ */
+async function clearPLUGSessionState() {
+  try {
+    await chrome.storage.session.remove(PLUG_SESSION_KEY)
+  } catch (e) {
+    /* Ignora. */
+  }
+}
 
 /**
  * Injeta via chrome.scripting um MutationObserver para manter o título da janela personalizado.
@@ -503,13 +534,33 @@ function injectPLUGTitle(tabId, regionName) {
  * @returns {Promise<boolean>}
  */
 async function isPLUGWindowOpen() {
+  // O service worker pode ter sido reiniciado (idle) desde a última abertura,
+  // zerando plugWindowId mesmo com a janela real ainda aberta. Antes de
+  // concluir "não há janela", tenta recuperar o último estado salvo.
+  if (plugWindowId === null) {
+    try {
+      const data = await chrome.storage.session.get([PLUG_SESSION_KEY])
+      const saved = data[PLUG_SESSION_KEY]
+      if (saved && typeof saved.windowId === 'number') {
+        plugWindowId = saved.windowId
+        plugTabId = typeof saved.tabId === 'number' ? saved.tabId : null
+        plugRegion = saved.region || plugRegion
+      }
+    } catch (e) {
+      /* Sem estado salvo; segue como "não há janela". */
+    }
+  }
+
   if (plugWindowId === null) return false
+
   try {
     await chrome.windows.get(plugWindowId)
     return true
   } catch (e) {
     // A janela foi fechada sem disparar o onRemoved capturado; normaliza o estado.
     plugWindowId = null
+    plugTabId = null
+    clearPLUGSessionState()
     return false
   }
 }
@@ -519,9 +570,14 @@ async function isPLUGWindowOpen() {
  * (restaurando-a caso esteja minimizada). Lembra o tamanho/posição/estado entre
  * aberturas.
  * @param {string} url - URL do assistente.
+ * @param {string|null} [regionKey] - Chave do link resolvido (sul/sudeste/at/custom),
+ *   quando disponível. Usada para o título da janela em vez de tentar adivinhar
+ *   a região comparando URLs, o que falha quando dois links compartilham a
+ *   mesma URL (ex.: "AT" hoje reaproveita a URL do "Sul").
+ * @param {string|null} [regionLabel] - Label configurado do link (ex.: "AT").
  * @returns {Promise<boolean>} true se a janela está aberta ao final.
  */
-async function openOrFocusPLUGWindow(url) {
+async function openOrFocusPLUGWindow(url, regionKey, regionLabel) {
   if (await isPLUGWindowOpen()) {
     try {
       await chrome.windows.update(plugWindowId, {
@@ -568,23 +624,33 @@ async function openOrFocusPLUGWindow(url) {
     plugWindowId = win.id
     if (win.tabs && win.tabs[0]) {
       plugTabId = win.tabs[0].id
-      
-      // Determina a região a partir do link aberto
-      const localData = await chrome.storage.local.get(['remoteConfig'])
-      const remoteConfig = localData.remoteConfig || {}
-      const urlSul = remoteConfig.iagente_url_sul || 'https://tria.plugsocial.online/?assunto=sped&codigoCliente=96797&identificacaoRevenda=3'
-      const urlSudeste = remoteConfig.iagente_url_sudeste
-      
-      if (url === urlSudeste) {
-        plugRegion = 'SUDESTE'
-      } else if (url === urlSul) {
-        plugRegion = 'SUL'
+
+      if (regionLabel) {
+        // Caminho preferido: o content script já resolveu a chave/label do
+        // link (via getPLUGLinkInfo) e nos diz exatamente qual região exibir.
+        // Necessário porque links diferentes podem apontar para a mesma URL
+        // (ex.: "AT" reaproveitando a URL do "Sul") — nesse caso comparar por
+        // URL não distingue a região certa.
+        plugRegion = String(regionLabel).toUpperCase()
       } else {
-        plugRegion = url.includes('identificacaoRevenda=3') ? 'SUL' : 'SUDESTE'
+        // Fallback (mensagens antigas/sem regionLabel): tenta adivinhar pela URL.
+        const localData = await chrome.storage.local.get(['remoteConfig'])
+        const remoteConfig = localData.remoteConfig || {}
+        const urlSul = remoteConfig.iagente_url_sul || 'https://tria.plugsocial.online/?assunto=sped&codigoCliente=96797&identificacaoRevenda=3'
+        const urlSudeste = remoteConfig.iagente_url_sudeste
+
+        if (url === urlSudeste) {
+          plugRegion = 'SUDESTE'
+        } else if (url === urlSul) {
+          plugRegion = 'SUL'
+        } else {
+          plugRegion = url.includes('identificacaoRevenda=3') ? 'SUL' : 'SUDESTE'
+        }
       }
-      
+
       injectPLUGTitle(plugTabId, plugRegion)
     }
+    await savePLUGSessionState()
     broadcastToSgdTabs({ action: 'PLUG_WINDOW_STATE', open: true })
     return true
   } catch (e) {
@@ -617,6 +683,7 @@ chrome.windows.onRemoved.addListener(windowId => {
   if (windowId !== plugWindowId) return
   plugWindowId = null
   plugTabId = null
+  clearPLUGSessionState()
   broadcastToSgdTabs({ action: 'PLUG_WINDOW_STATE', open: false })
 })
 
@@ -631,6 +698,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 chrome.tabs.onRemoved.addListener((tabId) => {
   if (tabId === plugTabId) {
     plugTabId = null
+    savePLUGSessionState()
   }
 })
 
@@ -1987,7 +2055,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
       } else if (message.action === 'PLUG_OPEN_WINDOW') {
         // Abre (ou foca) a janela dedicada do assistente PLUG.
-        const open = await openOrFocusPLUGWindow(message.url)
+        const open = await openOrFocusPLUGWindow(message.url, message.regionKey, message.regionLabel)
         sendResponse({ open })
 
       } else if (message.action === 'PLUG_GET_STATE') {
