@@ -432,6 +432,52 @@ async function openInfoPanel(initialTabId = 'pending') {
       })
     }
 
+    // Toggle do widget lateral de pendências (padrão DESLIGADO).
+    const widgetBtn = pendingSection.querySelector('#toggle-widget-btn')
+    if (widgetBtn) {
+      const updateWidgetBtnState = enabled => {
+        if (enabled) {
+          widgetBtn.innerHTML =
+            '🚨 <span style="margin-left: 4px;">Alerta Ativo</span>'
+          widgetBtn.classList.add('active-notification')
+          widgetBtn.title = 'Alerta de Pendências ativado'
+          widgetBtn.style.opacity = '1'
+        } else {
+          widgetBtn.innerHTML =
+            '🚫 <span style="margin-left: 4px;">Alerta Inativo</span>'
+          widgetBtn.classList.remove('active-notification')
+          widgetBtn.title = 'Alerta de Pendências desativado'
+          widgetBtn.style.opacity = '0.7'
+        }
+      }
+
+      chrome.storage.sync.get(['extensionSettingsData'], result => {
+        const settings = result.extensionSettingsData || {}
+        const prefs = settings.preferences || {}
+        // Padrão desligado: só aparece ativo se o usuário explicitamente ligou.
+        updateWidgetBtnState(prefs.enablePendingWidget === true)
+      })
+
+      widgetBtn.addEventListener('click', async () => {
+        const result = await chrome.storage.sync.get(['extensionSettingsData'])
+        let settings = result.extensionSettingsData || { preferences: {} }
+        if (!settings.preferences) settings.preferences = {}
+
+        const newState = !(settings.preferences.enablePendingWidget === true)
+        settings.preferences.enablePendingWidget = newState
+
+        await chrome.storage.sync.set({ extensionSettingsData: settings })
+        updateWidgetBtnState(newState)
+
+        // Reflete imediatamente: liga/atualiza ou remove o widget.
+        if (newState) {
+          if (typeof initPendingWidget === 'function') initPendingWidget()
+        } else {
+          if (typeof destroyPendingWidget === 'function') destroyPendingWidget()
+        }
+      })
+    }
+
     // Configurar listeners para os filtros
     const searchInput = pendingSection.querySelector('#pending-search')
     const statusFilter = pendingSection.querySelector('#pending-status-filter')
@@ -4736,6 +4782,7 @@ function getSectionContent(sectionId) {
                             <option value="">👤 Selecionar responsável…</option>
                         </select>
                         <button id="toggle-notification-btn" class="action-btn small-btn enhanced-btn" title="Carregando estado..." style="width: auto; height: 28px; padding: 0 10px; display: flex; align-items: center; justify-content: center; white-space: nowrap; font-size: 11px; line-height: 1;">🔔 <span style="margin-left: 4px;">Notificações</span></button>
+                        <button id="toggle-widget-btn" class="action-btn small-btn enhanced-btn" title="Alerta de Pendências" style="width: auto; height: 28px; padding: 0 10px; display: flex; align-items: center; justify-content: center; white-space: nowrap; font-size: 11px; line-height: 1;">🚨 <span style="margin-left: 4px;">Alerta</span></button>
                         <button id="refresh-pending-btn" class="action-btn small-btn enhanced-btn compact" title="Atualizar lista">🔄</button>
                         <button id="open-all-pending-btn" class="action-btn small-btn enhanced-btn compact" title="Filtre por um único responsável para habilitar" disabled style="opacity: 0.5;">Abrir Todas</button>
                     </div>

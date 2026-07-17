@@ -1,0 +1,299 @@
+/*
+ * pending-widget.css
+ * Widget lateral de pendências: marcador colado na borda direita que expande
+ * lateralmente ao clicar, listando as pendências N1 do usuário agrupadas por
+ * faixa de SLA. Ver pending-widget.js.
+ */
+
+#sgd-pending-widget {
+  position: fixed;
+  right: 0;
+  top: 200px;
+  /* Acima do FAB/botões flutuantes (1050), porém ABAIXO dos modais da
+     extensão (2000+) e dos toasts de alerta (999999), para não sobrepô-los. */
+  z-index: 1950;
+  display: flex;
+  align-items: flex-start;
+  font-family: 'Inter', system-ui, sans-serif;
+  transform: translateX(0);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Recolhido: o painel some para a direita, sobra só o marcador (handle). */
+#sgd-pending-widget.collapsed {
+  transform: translateX(var(--sgd-pw-panel-w, 320px));
+}
+
+/* Durante o arraste, desliga a transição para acompanhar o cursor. */
+#sgd-pending-widget.dragging {
+  transition: none;
+}
+
+.sgd-pw-handle {
+  width: 46px;
+  height: 52px;
+  border-radius: 14px 0 0 14px;
+  /* Mesmo visual dos botões flutuantes (Ir ao Topo / FAB): vidro escuro. */
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  flex: 0 0 auto;
+  user-select: none;
+  touch-action: none;
+  transition: filter 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Brilho ao passar o mouse (igual à sensação dos botões flutuantes). */
+.sgd-pw-handle:hover {
+  filter: brightness(1.25);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+}
+
+.sgd-pw-handle .sgd-pw-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.sgd-pw-handle .sgd-pw-count {
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.28);
+  border-radius: 9px;
+  padding: 0 6px;
+  min-width: 16px;
+  text-align: center;
+}
+
+/* Estado neutro (sem pendências em faixa de atenção): mesmo fundo do FAB,
+   apenas com o ícone trocado (📋 em vez de 🚨) e um pouco mais discreto. */
+#sgd-pending-widget.neutral .sgd-pw-handle {
+  opacity: 0.85;
+}
+
+/* Nova pendência cruzou 30h: só o ÍCONE 🚨 treme e pisca (a caixa fica parada). */
+#sgd-pending-widget.has-new .sgd-pw-handle .sgd-pw-icon {
+  animation: sgdPwShake 1.1s ease-in-out infinite,
+    sgdPwBlink 1s steps(1) infinite;
+}
+
+@keyframes sgdPwShake {
+  0%, 80%, 100% { transform: translate(0, 0) rotate(0); }
+  84% { transform: translate(-2px, -1px) rotate(-12deg); }
+  88% { transform: translate(2px, 1px) rotate(12deg); }
+  92% { transform: translate(-2px, 0) rotate(-8deg); }
+  96% { transform: translate(1px, 0) rotate(5deg); }
+}
+@keyframes sgdPwBlink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.25; }
+}
+
+.sgd-pw-panel {
+  width: 320px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-right: none;
+  border-radius: 14px 0 0 14px;
+  box-shadow: -10px 10px 40px -12px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+
+.sgd-pw-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 12px;
+  border-bottom: 1px solid #eee;
+}
+.sgd-pw-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: #1f2937;
+}
+.sgd-pw-openall {
+  margin-left: auto;
+  cursor: pointer;
+  border: 1px solid rgba(244, 67, 54, 0.4);
+  background: #fff5f5;
+  color: #d32f2f;
+  border-radius: 7px;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.sgd-pw-openall:hover {
+  background: #ffe9e9;
+}
+.sgd-pw-openall[disabled] {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
+
+.sgd-pw-gear {
+  cursor: pointer;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: #f8fafc;
+  color: #475569;
+  border-radius: 7px;
+  padding: 4px 8px;
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+}
+.sgd-pw-gear:hover {
+  background: #eef2f7;
+}
+.sgd-pw-gear.active {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+}
+
+.sgd-pw-settings {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fbfcfe;
+}
+.sgd-pw-settings-label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 4px;
+}
+.sgd-pw-alert-tier,
+.sgd-pw-openall-tier {
+  width: 100%;
+  height: 30px;
+  font-size: 12.5px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  padding: 0 8px;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+}
+.sgd-pw-check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 8px;
+  font-size: 11.5px;
+  color: #475569;
+  cursor: pointer;
+  line-height: 1.35;
+}
+.sgd-pw-check input {
+  margin: 0;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.sgd-pw-n2 {
+  display: inline-flex;
+  align-items: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #b45309;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  padding: 0 5px;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+.sgd-pw-simulate {
+  width: 100%;
+  margin-top: 12px;
+  cursor: pointer;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+  border-radius: 7px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.sgd-pw-simulate:hover {
+  background: #eef2f7;
+}
+
+.sgd-pw-disable {
+  width: 100%;
+  margin-top: 8px;
+  cursor: pointer;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #b91c1c;
+  border-radius: 7px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.sgd-pw-disable:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+.sgd-pw-disable-hint {
+  margin: 8px 2px 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #64748b;
+}
+.sgd-pw-disable-hint b {
+  color: #334155;
+}
+
+.sgd-pw-list {
+  max-height: 340px;
+  overflow: auto;
+  padding-bottom: 10px;
+}
+
+.sgd-pw-grp {
+  font-size: 12px;
+  font-weight: 700;
+  margin: 12px 12px 2px;
+}
+
+.sgd-pw-row {
+  display: block;
+  text-decoration: none;
+  padding: 7px 12px;
+  border-left: 3px solid #ccc;
+  margin: 4px 10px;
+  font-size: 12.5px;
+  color: #374151;
+  border-radius: 0 6px 6px 0;
+  transition: background 0.15s;
+}
+.sgd-pw-row:hover {
+  background: #f3f4f6;
+}
+.sgd-pw-row b {
+  color: #111827;
+}
+
+.sgd-pw-sep {
+  margin: 14px 10px 4px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.sgd-pw-empty {
+  padding: 18px 14px;
+  font-size: 12.5px;
+  color: #64748b;
+  text-align: center;
+}

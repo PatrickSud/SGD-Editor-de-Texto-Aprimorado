@@ -361,6 +361,11 @@ async function initializeExtension() {
   // Inicializa a verificação de pendências
   await initializePendingBadge()
 
+  // Widget lateral de pendências (controlado pela preferência enablePendingWidget).
+  if (typeof initPendingWidget === 'function') {
+    initPendingWidget()
+  }
+
   // Verifica se deve abrir o painel de pendências automaticamente (via URL param)
   const urlParams = new URLSearchParams(window.location.search)
   if (
@@ -2548,6 +2553,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     checkNewPendings().then(result => {
       updatePendingBadgeUI(result)
     })
+    // Atualiza também o widget lateral de pendências (se habilitado).
+    if (typeof refreshPendingWidget === 'function') {
+      refreshPendingWidget()
+    }
   }
 })
 
@@ -3033,6 +3042,11 @@ async function handleInfoPanelOpen() {
     result.newItems = []
     await savePendingResult(result)
     updatePendingBadgeUI(result)
+  }
+  // Abrir a guia de pendências também conta como "visto" para o widget lateral.
+  if (typeof clearPendingWidgetHasNew === 'function') {
+    await clearPendingWidgetHasNew()
+    if (typeof refreshPendingWidget === 'function') refreshPendingWidget()
   }
 }
 

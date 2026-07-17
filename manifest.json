@@ -60,6 +60,7 @@
         "editor-ui.js",
         "links-service.js",
         "links-panel.js",
+        "pending-widget.js",
         "app.js"
       ],
       "css": [
@@ -71,7 +72,8 @@
         "styles/fab.css",
         "styles/info-panel.css",
         "styles/tags.css",
-        "styles/links-panel.css"
+        "styles/links-panel.css",
+        "styles/pending-widget.css"
       ],
       "run_at": "document_idle"
     },
