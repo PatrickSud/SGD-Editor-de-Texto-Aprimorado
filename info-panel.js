@@ -1233,6 +1233,17 @@ async function loadPendingItems(sectionElement, options = {}) {
     // Popular o seletor "Responsável monitorado" com as opções do SGD.
     populateMonitoredResponsible(sectionElement, result)
 
+    // Mantém a pílula do FAB sincronizada (conta só N1) ao abrir/atualizar a
+    // guia, evitando que ela fique defasada até o próximo ciclo do alarme.
+    if (
+      typeof checkNewPendings === 'function' &&
+      typeof updatePendingBadgeUI === 'function'
+    ) {
+      checkNewPendings()
+        .then(r => updatePendingBadgeUI(r))
+        .catch(() => {})
+    }
+
     // Gestor/ambíguo sem escolha: não buscamos com "Todos" (limite de 1000).
     if (result && result.needsSelection) {
       allPendingItems = []
@@ -1625,6 +1636,7 @@ function createPendingCard(item, showResponsible = false) {
                         ${slaBadgeHtml}
                         <span class="ip-meta-item" title="Dias em aberto">📅 ${escapeHTML(item.dias)}d</span>
                         <span class="ip-meta-item" title="Quantidade de trâmites">🔄 ${escapeHTML(item.qtdTramites)}</span>
+                        ${item.nivel === 'N2' ? `<span title="Aguardando Suporte Nível 2 (outro setor)" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:#b45309;background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:1px 7px;white-space:nowrap;">N2</span>` : ''}
                     </div>
                     <div style="display: flex; align-items: center; gap: 4px;">
                          <div class="ip-tags-container">${tagsHtml}</div>

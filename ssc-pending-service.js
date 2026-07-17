@@ -25,10 +25,12 @@
 // Caminho (mesmo host da página atual) da lista de SSCs.
 const SSC_PENDING_LIST_PATH = '/sgsc/faces/sscs.html'
 
-// Filtros aplicados no POST de busca (ajustáveis):
-//  - Situação -1 = "Pendentes" (agrupador de todas as pendentes).
+// Filtros aplicados nos POSTs de busca (ajustáveis):
+//  - Situação -3 = "Pendente Suporte Nível 1" (pendentes com o técnico) -> N1.
+//  - Situação -2 = "Pendente Suporte Nível 2" (aguardando outro setor)  -> N2.
 //  - Classificação 0 = "Todas" (não limita por TÉCNICA/FUNCIONAL/etc.).
-const SSC_PENDING_SITUACAO = '-1'
+const SSC_PENDING_SITUACAO_N1 = '-3'
+const SSC_PENDING_SITUACAO_N2 = '-2'
 const SSC_PENDING_CLASSIFICACAO = '0'
 
 // Janela de coalescing: buscas repetidas dentro desse intervalo reutilizam o
@@ -447,37 +449,48 @@ async function buscarDocumentoSscPendentes() {
     // Gestor/ambíguo sem escolha salva: NUNCA buscar com "Todos".
     logPendingDebug('Sem responsável definido — pedindo seleção (needsSelection).')
     return {
-      docBusca: null,
+      docN1: null,
+      docN2: null,
       responsaveis,
       responsavelUsado: null,
       needsSelection: true
     }
   }
 
-  // 2. POST de busca com os filtros desejados
-  const paramsBusca = new URLSearchParams(new FormData(form))
-  paramsBusca.delete('relSscForm:incluirSSCBtn')
-  paramsBusca.delete('relSscForm:incluirSSCHiddenBtn')
-  paramsBusca.set('relSscForm:situacao', SSC_PENDING_SITUACAO)
-  paramsBusca.set('relSscForm:responsavel', alvo)
-  paramsBusca.set('relSscForm:classificacao', SSC_PENDING_CLASSIFICACAO)
-  paramsBusca.set('relSscForm:atualizarBtn', 'relSscForm:atualizarBtn')
+  // Helper: um POST de busca por situação, encadeando o ViewState. Devolve o
+  // documento e o ViewState atualizado para a próxima requisição (JSF exige
+  // o ViewState mais recente a cada POST no mesmo view).
+  async function postBusca(situacao, viewStateOverride) {
+    const params = new URLSearchParams(new FormData(form))
+    params.delete('relSscForm:incluirSSCBtn')
+    params.delete('relSscForm:incluirSSCHiddenBtn')
+    params.set('relSscForm:situacao', situacao)
+    params.set('relSscForm:responsavel', alvo)
+    params.set('relSscForm:classificacao', SSC_PENDING_CLASSIFICACAO)
+    params.set('relSscForm:atualizarBtn', 'relSscForm:atualizarBtn')
+    if (viewStateOverride) params.set('javax.faces.ViewState', viewStateOverride)
+    const res = await fetch(actionUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+      credentials: 'same-origin'
+    })
+    if (!res.ok) throw new Error(`Erro ao buscar pendências: ${res.status}`)
+    const doc = parser.parseFromString(await res.text(), 'text/html')
+    const vs = doc.querySelector('[name="javax.faces.ViewState"]')?.value
+    return { doc, vs, status: res.status }
+  }
 
-  const resBusca = await fetch(actionUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: paramsBusca.toString(),
-    credentials: 'same-origin'
-  })
-  if (!resBusca.ok) throw new Error(`Erro ao buscar pendências: ${resBusca.status}`)
-  logPendingDebug('POST busca (responsável=' + alvo + ') ->', resBusca.status)
+  // 2a. POST N1 (situação -3): usa o ViewState do GET (já presente no FormData).
+  const buscaN1 = await postBusca(SSC_PENDING_SITUACAO_N1)
+  logPendingDebug('POST N1 (-3, responsável=' + alvo + ') ->', buscaN1.status)
 
-  const docBusca = parser.parseFromString(await resBusca.text(), 'text/html')
+  // 2b. POST N2 (situação -2): encadeia o ViewState devolvido pelo N1.
+  const buscaN2 = await postBusca(SSC_PENDING_SITUACAO_N2, buscaN1.vs)
+  logPendingDebug('POST N2 (-2, responsável=' + alvo + ') ->', buscaN2.status)
 
-  // 3. POST de restauração: devolve os filtros originais do usuário.
-  const viewStateAtualizado = docBusca.querySelector(
-    '[name="javax.faces.ViewState"]'
-  )?.value
+  // 3. POST de restauração: devolve os filtros originais do usuário, usando o
+  // ViewState mais recente (o devolvido pelo N2).
   try {
     const paramsRestauracao = new URLSearchParams(new FormData(form))
     paramsRestauracao.delete('relSscForm:incluirSSCBtn')
@@ -486,8 +499,8 @@ async function buscarDocumentoSscPendentes() {
     paramsRestauracao.set('relSscForm:responsavel', responsavelOriginal)
     paramsRestauracao.set('relSscForm:classificacao', classificacaoOriginal)
     paramsRestauracao.set('relSscForm:atualizarBtn', 'relSscForm:atualizarBtn')
-    if (viewStateAtualizado) {
-      paramsRestauracao.set('javax.faces.ViewState', viewStateAtualizado)
+    if (buscaN2.vs) {
+      paramsRestauracao.set('javax.faces.ViewState', buscaN2.vs)
     }
     await fetch(actionUrl, {
       method: 'POST',
@@ -499,7 +512,13 @@ async function buscarDocumentoSscPendentes() {
     console.warn('SscPendingService: falha ao restaurar filtros do usuário:', e)
   }
 
-  return { docBusca, responsaveis, responsavelUsado: alvo, needsSelection: false }
+  return {
+    docN1: buscaN1.doc,
+    docN2: buscaN2.doc,
+    responsaveis,
+    responsavelUsado: alvo,
+    needsSelection: false
+  }
 }
 
 /**
@@ -526,20 +545,50 @@ async function produceSscPendingItems() {
     }
   }
 
-  const parsed = parseSscPendingPage(busca.docBusca, arrivalTimes, now, arrivalTimesState)
+  // Parseia cada consulta, filtra as "minhas" (coluna Responsável preenchida)
+  // e marca o nível de origem (N1 = pendente com o técnico; N2 = aguardando
+  // outro setor). O mesmo mapa de arrivalTimes é compartilhado entre as duas.
+  const parseTagged = (doc, nivel) => {
+    const r = parseSscPendingPage(doc, arrivalTimes, now, arrivalTimesState)
+    const mine = r.items.filter(isMinhaSscPendencia)
+    mine.forEach(i => {
+      i.nivel = nivel
+    })
+    return { total: r.items.length, mine }
+  }
+
+  const n1 = parseTagged(busca.docN1, 'N1')
+  const n2 = parseTagged(busca.docN2, 'N2')
+
   if (arrivalTimesState.changed) {
     await savePendingArrivalTimes(arrivalTimes)
   }
 
-  const mine = parsed.items.filter(isMinhaSscPendencia)
+  // Merge com dedup por id (um SSC não deve estar em N1 e N2; se ocorrer, N1 vence).
+  const byId = new Map()
+  n1.mine.forEach(i => byId.set(i.id, i))
+  n2.mine.forEach(i => {
+    if (!byId.has(i.id)) byId.set(i.id, i)
+  })
+  const all = Array.from(byId.values())
+  const itemsN1 = all.filter(i => i.nivel === 'N1')
+  const itemsN2 = all.filter(i => i.nivel === 'N2')
+
   logPendingDebug(
-    `Parse: ${parsed.items.length} linha(s) na grade; ${mine.length} pendência(s) do usuário (responsável=${busca.responsavelUsado}).`
+    `Parse N1: ${n1.total} linha(s)/${itemsN1.length} minhas | N2: ${n2.total}/${itemsN2.length} minhas | responsável=${busca.responsavelUsado}`
   )
 
+  const noFilter = { active: false, name: null }
+  const tabs = [
+    { id: 'all', name: 'Todas', items: all, siteFilter: noFilter },
+    { id: 'n1', name: 'Pendente N1', items: itemsN1, siteFilter: noFilter },
+    { id: 'n2', name: 'Aguardando N2', items: itemsN2, siteFilter: noFilter }
+  ]
+
   return {
-    items: mine,
-    siteFilter: { active: false, name: null },
-    tabs: null,
+    items: all,
+    siteFilter: noFilter,
+    tabs,
     responsaveis: busca.responsaveis,
     responsavelUsado: busca.responsavelUsado,
     needsSelection: false

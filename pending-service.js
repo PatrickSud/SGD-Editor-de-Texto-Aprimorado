@@ -652,9 +652,9 @@ async function checkNewPendings() {
     const arrivalTimes = storage.pendingArrivalTimes || {}
     let arrivalTimesChanged = false
 
-    // A nova fonte (sscs.html) já traz apenas as pendências do responsável
-    // monitorado; o filtro por "preferredResponsible" ficou obsoleto.
-    let monitoredItems = currentItems
+    // A pílula do FAB conta apenas os itens acionáveis (N1); os de N2 (aguardando
+    // outro setor) aparecem só dentro da guia. A fonte já traz só as do usuário.
+    let monitoredItems = currentItems.filter(i => i.nivel === 'N1')
 
     // Verifica novos itens apenas dentro do conjunto monitorado
     const newItems = monitoredItems.filter(
