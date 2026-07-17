@@ -140,6 +140,9 @@ async function resolverResponsavelAlvo(doc) {
   const stored = await chrome.storage.local.get([SSC_MONITORED_RESP_KEY])
   const savedId = stored[SSC_MONITORED_RESP_KEY]
   if (savedId && savedId !== '0' && validIds.has(savedId)) return savedId
+  // Usuário limpou a seleção de propósito (string vazia salva) -> volta ao
+  // prompt "Selecione um responsável", sem auto-selecionar.
+  if (savedId === '') return null
   const reais = options.filter(o => o.id && o.id !== '0')
   if (reais.length === 1) return reais[0].id
   return null

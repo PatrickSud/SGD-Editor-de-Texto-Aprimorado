@@ -1002,8 +1002,9 @@ function applyPendingFilters(sectionElement) {
   const tagFilter =
     sectionElement.querySelector('#pending-tag-filter')?.value || ''
 
-  const responsibleFilter =
-    sectionElement.querySelector('#pending-responsible-filter')?.value || ''
+  // Filtro cliente de responsável foi removido (a seleção agora é pelo seletor
+  // "Responsável monitorado"); mantido vazio para a lógica de exibição abaixo.
+  const responsibleFilter = ''
 
   const criticalFilter = sectionElement.querySelector(
     '#pending-critical-filter'
@@ -1173,7 +1174,7 @@ function populateMonitoredResponsible(sectionElement, result) {
     .filter(r => r && r.id && r.id !== '0')
     .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
   sel.innerHTML =
-    `<option value="">👤 Responsável...</option>` +
+    `<option value="">👤 Selecionar responsável…</option>` +
     opts
       .map(r => `<option value="${escapeHTML(r.id)}">${escapeHTML(r.name)}</option>`)
       .join('')
@@ -1295,43 +1296,6 @@ async function loadPendingItems(sectionElement, options = {}) {
       tagFilterSelect.value = currentVal
     }
 
-    // Atualiza o select de filtro de responsável
-    const responsibleSelect = sectionElement.querySelector(
-      '#pending-responsible-filter'
-    )
-    if (responsibleSelect) {
-      // 1. Tenta recuperar a preferência salva
-      const storage = await chrome.storage.local.get(['preferredResponsible'])
-      const savedResponsible = storage.preferredResponsible || ''
-
-      // Se a preferência não estiver na lista atual (ex: usuário saiu da lista), mantém o valor atual do select ou vazio
-      const currentVal = responsibleSelect.value || savedResponsible
-
-      const responsibles = [
-        ...new Set(activeItems.map(i => i.responsible).filter(Boolean))
-      ].sort()
-
-      responsibleSelect.innerHTML = `
-            <option value="">Todos Responsáveis</option>
-            ${responsibles.map(r => `<option value="${escapeHTML(r)}">${escapeHTML(r)}</option>`).join('')}
-        `
-
-      // 2. Restaura a seleção se ela existir na lista
-      if (responsibles.includes(currentVal)) {
-        responsibleSelect.value = currentVal
-      } else if (currentVal !== '' && responsibles.length > 0) {
-        responsibleSelect.value = ''
-        chrome.storage.local.remove('preferredResponsible')
-      }
-
-      // Se houver apenas 1 ou nenhum responsável, esconde o filtro pois é desnecessário
-      if (responsibles.length <= 1) {
-        responsibleSelect.style.display = 'none'
-      } else {
-        responsibleSelect.style.display = ''
-      }
-    }
-
     if (activeItems.length === 0) {
       container.innerHTML = `
                 <div class="ip-empty-state">
@@ -1395,29 +1359,6 @@ function renderPendingTabs(sectionElement) {
         // Update warning banner for this tab
         manageSiteFilterWarning(sectionElement, activeTab)
         
-        // Dynamically update the responsible select filter for the new active tab
-        const responsibleSelect = sectionElement.querySelector('#pending-responsible-filter')
-        if (responsibleSelect) {
-          const currentVal = responsibleSelect.value
-          const responsibles = [
-            ...new Set(allPendingItems.map(i => i.responsible).filter(Boolean))
-          ].sort()
-          responsibleSelect.innerHTML = `
-                <option value="">Todos Responsáveis</option>
-                ${responsibles.map(r => `<option value="${escapeHTML(r)}">${escapeHTML(r)}</option>`).join('')}
-            `
-          if (responsibles.includes(currentVal)) {
-            responsibleSelect.value = currentVal
-          } else {
-            responsibleSelect.value = ''
-          }
-          if (responsibles.length <= 1) {
-            responsibleSelect.style.display = 'none'
-          } else {
-            responsibleSelect.style.display = ''
-          }
-        }
-
         // Apply filters
         applyPendingFilters(sectionElement)
       }
@@ -4776,7 +4717,7 @@ function getSectionContent(sectionId) {
                     </div>
                     <div class="ip-actions-group">
                         <select id="pending-monitored-responsible" class="ip-filter-select compact" title="Responsável monitorado — de quem buscar as pendências no SGD" style="max-width: 190px; height: 28px;">
-                            <option value="">👤 Responsável...</option>
+                            <option value="">👤 Selecionar responsável…</option>
                         </select>
                         <button id="toggle-notification-btn" class="action-btn small-btn enhanced-btn" title="Carregando estado..." style="width: auto; height: 28px; padding: 0 10px; display: flex; align-items: center; justify-content: center; white-space: nowrap; font-size: 11px; line-height: 1;">🔔 <span style="margin-left: 4px;">Notificações</span></button>
                         <button id="refresh-pending-btn" class="action-btn small-btn enhanced-btn compact" title="Atualizar lista">🔄</button>
