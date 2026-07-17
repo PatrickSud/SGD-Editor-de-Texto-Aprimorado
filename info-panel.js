@@ -392,45 +392,8 @@ async function openInfoPanel(initialTabId = 'pending') {
       })
     }
 
-    const notifyBtn = pendingSection.querySelector('#toggle-notification-btn')
-    if (notifyBtn) {
-      const updateNotifyBtnState = enabled => {
-        if (enabled) {
-          notifyBtn.innerHTML =
-            '🔔 <span style="margin-left: 4px;">Notificações Ativas</span>'
-          notifyBtn.classList.add('active-notification')
-          notifyBtn.title = 'Notificações Ativadas'
-          notifyBtn.style.opacity = '1'
-        } else {
-          notifyBtn.innerHTML =
-            '🔕 <span style="margin-left: 4px;">Notificações Inativas</span>'
-          notifyBtn.classList.remove('active-notification')
-          notifyBtn.title = 'Notificações Desativadas'
-          notifyBtn.style.opacity = '0.7'
-        }
-      }
-
-      chrome.storage.sync.get(['extensionSettingsData'], result => {
-        const settings = result.extensionSettingsData || {}
-        const prefs = settings.preferences || {}
-        // Padrão é habilitado; só aparece desativado se o usuário explicitamente desligou.
-        updateNotifyBtnState(prefs.enablePendingNotifications !== false)
-      })
-
-      notifyBtn.addEventListener('click', async () => {
-        const result = await chrome.storage.sync.get(['extensionSettingsData'])
-        let settings = result.extensionSettingsData || { preferences: {} }
-        if (!settings.preferences) settings.preferences = {}
-
-        const newState = !(
-          settings.preferences.enablePendingNotifications !== false
-        )
-        settings.preferences.enablePendingNotifications = newState
-
-        await chrome.storage.sync.set({ extensionSettingsData: settings })
-        updateNotifyBtnState(newState)
-      })
-    }
+    // A notificação de novas pendências (pílula do FAB) agora é SEMPRE ativada;
+    // o antigo botão "Notificações" foi removido da guia Pendências.
 
     // Toggle do widget lateral de pendências (padrão DESLIGADO).
     const widgetBtn = pendingSection.querySelector('#toggle-widget-btn')
@@ -4781,7 +4744,6 @@ function getSectionContent(sectionId) {
                         <select id="pending-monitored-responsible" class="ip-filter-select compact" title="Responsável monitorado — de quem buscar as pendências no SGD" style="max-width: 190px; height: 28px;">
                             <option value="">👤 Selecionar responsável…</option>
                         </select>
-                        <button id="toggle-notification-btn" class="action-btn small-btn enhanced-btn" title="Carregando estado..." style="width: auto; height: 28px; padding: 0 10px; display: flex; align-items: center; justify-content: center; white-space: nowrap; font-size: 11px; line-height: 1;">🔔 <span style="margin-left: 4px;">Notificações</span></button>
                         <button id="toggle-widget-btn" class="action-btn small-btn enhanced-btn" title="Alerta de Pendências" style="width: auto; height: 28px; padding: 0 10px; display: flex; align-items: center; justify-content: center; white-space: nowrap; font-size: 11px; line-height: 1;">🚨 <span style="margin-left: 4px;">Alerta</span></button>
                         <button id="refresh-pending-btn" class="action-btn small-btn enhanced-btn compact" title="Atualizar lista">🔄</button>
                         <button id="open-all-pending-btn" class="action-btn small-btn enhanced-btn compact" title="Filtre por um único responsável para habilitar" disabled style="opacity: 0.5;">Abrir Todas</button>

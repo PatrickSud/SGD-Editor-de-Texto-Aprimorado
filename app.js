@@ -2967,10 +2967,9 @@ async function updatePendingBadgeUI(result) {
 
     if (result.newCount > 0) {
       try {
-        const settings = await getSettings()
-        // Padrão agora é habilitado; só desativa se o usuário explicitamente desligou.
-        const notificationsEnabled =
-          settings.preferences.enablePendingNotifications !== false
+        // Notificação de novas pendências (pílula do FAB) agora é SEMPRE ativada
+        // — o toggle foi removido da guia Pendências.
+        const notificationsEnabled = true
 
         if (notificationsEnabled) {
           // Assinatura do lote atual de itens novos (para saber se é um
