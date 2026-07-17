@@ -1504,6 +1504,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         sendResponse({ success: true })
 
+      } else if (message.action === 'ABRIR_TODAS_SSCS') {
+        // Abre em novas guias todas as SSCs em faixa de atenção (widget lateral).
+        // Feito aqui no service worker via chrome.tabs.create para não esbarrar
+        // no bloqueio de múltiplos pop-ups do window.open na página.
+        const urls = Array.isArray(message.urls) ? message.urls : []
+        const validUrls = urls.filter(
+          u => typeof u === 'string' && /^https?:\/\//.test(u)
+        )
+        validUrls.forEach((url, i) => {
+          // Abre a primeira já ativa; as demais em segundo plano.
+          chrome.tabs.create({ url, active: i === 0 })
+        })
+        sendResponse({ success: true, opened: validUrls.length })
+
       } else if (message.action === 'UPDATE_TEAM_STATUS') {
         // Handler para receber dados do Power BI Scraper (Master PC)
         try {
