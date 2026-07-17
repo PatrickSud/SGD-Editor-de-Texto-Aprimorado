@@ -649,18 +649,12 @@ async function checkNewPendings() {
       'pendingArrivalTimes'
     ])
     const lastSeenIds = storage.lastSeenPendingIds || []
-    const preferredResponsible = storage.preferredResponsible || ''
     const arrivalTimes = storage.pendingArrivalTimes || {}
     let arrivalTimesChanged = false
 
-    // Filtra os itens monitorados com base na preferência
+    // A nova fonte (sscs.html) já traz apenas as pendências do responsável
+    // monitorado; o filtro por "preferredResponsible" ficou obsoleto.
     let monitoredItems = currentItems
-    if (preferredResponsible && preferredResponsible.trim() !== '') {
-      // Mantém apenas itens do responsável escolhido
-      monitoredItems = currentItems.filter(
-        item => item.responsible === preferredResponsible
-      )
-    }
 
     // Verifica novos itens apenas dentro do conjunto monitorado
     const newItems = monitoredItems.filter(

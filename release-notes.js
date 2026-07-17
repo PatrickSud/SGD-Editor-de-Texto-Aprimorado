@@ -394,6 +394,12 @@ const MINOR_RELEASE_NOTES = {
         '<b>🛡️ Mais estável:</b> As buscas de pendências passaram a ser coordenadas entre as abas do SGD, evitando requisições simultâneas na mesma sessão (que faziam a página vir em branco).',
         { text: '<b>🐞 Debug de pendências:</b> Logs [PENDING] (via sgdDebug.ativar() no console) para diagnosticar filtros, responsável usado, contagem de linhas e coalescing.', hidden: true }
       ]
+    },
+    {
+      version: '3.0.7.7',
+      features: [
+        { text: '<b>📋 Pendências (ajuste):</b> Removido o filtro de responsável duplicado ("Todos os Responsáveis") da guia Pendências; a seleção de responsável passa a ser feita apenas pelo seletor "Responsável monitorado", evitando confusão (especialmente para líderes/gestores).', hidden: true }
+      ]
     }
   ],
   '3.0.6': [

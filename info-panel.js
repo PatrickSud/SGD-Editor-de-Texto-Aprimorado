@@ -437,9 +437,6 @@ async function openInfoPanel(initialTabId = 'pending') {
     const statusFilter = pendingSection.querySelector('#pending-status-filter')
     const tagFilter = pendingSection.querySelector('#pending-tag-filter')
     const sortSelect = pendingSection.querySelector('#pending-sort')
-    const responsibleFilter = pendingSection.querySelector(
-      '#pending-responsible-filter'
-    )
     const criticalFilter = pendingSection.querySelector(
       '#pending-critical-filter'
     )
@@ -458,15 +455,6 @@ async function openInfoPanel(initialTabId = 'pending') {
     if (sortSelect) sortSelect.addEventListener('change', applyFiltersHandler)
     if (criticalFilter)
       criticalFilter.addEventListener('change', applyFiltersHandler)
-    if (responsibleFilter) {
-      responsibleFilter.addEventListener('change', e => {
-        // NOVO: Salva a preferência sempre que o usuário mudar
-        const selectedValue = e.target.value
-        chrome.storage.local.set({ preferredResponsible: selectedValue })
-
-        applyFiltersHandler()
-      })
-    }
   }
 
   const devModeSwitch = modal.querySelector('#ip-dev-mode-switch')
@@ -4766,10 +4754,6 @@ function getSectionContent(sectionId) {
                             <option value="outro">Outros</option>
                         </select>
 
-
-                        <select id="pending-responsible-filter" class="ip-filter-select compact" title="Filtrar por Responsável">
-                            <option value="">Todos Responsáveis</option>
-                        </select>
 
                         <select id="pending-tag-filter" class="ip-filter-select compact" title="Filtrar por Tag">
                             <option value="">Todas as Tags</option>
