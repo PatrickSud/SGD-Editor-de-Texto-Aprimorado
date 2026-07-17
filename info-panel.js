@@ -1179,6 +1179,10 @@ function populateMonitoredResponsible(sectionElement, result) {
       .map(r => `<option value="${escapeHTML(r.id)}">${escapeHTML(r.name)}</option>`)
       .join('')
   sel.value = used || ''
+  // Com apenas 1 responsável (o próprio usuário), ele já é usado automaticamente
+  // (resolverResponsavelAlvo), então o seletor fica oculto — desnecessário.
+  // Só aparece quando há mais de um responsável, para permitir a troca.
+  sel.style.display = opts.length > 1 ? '' : 'none'
 }
 
 async function loadPendingItems(sectionElement, options = {}) {
