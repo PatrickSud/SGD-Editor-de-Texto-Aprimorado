@@ -401,6 +401,14 @@ const MINOR_RELEASE_NOTES = {
         '<b>🚨 Alerta de Pendências (novo):</b> Widget lateral opcional que fica na borda direita e, ao clicar, lista suas SSCs por faixa de tempo — o marcador pisca quando uma pendência cruza o prazo. Ative na guia Pendências › botão "Alerta" e ajuste faixa de alerta, som, N2 e mais na engrenagem.',
         { text: '<b>📋 Pendências (ajuste):</b> Removido o filtro de responsável duplicado ("Todos os Responsáveis") da guia Pendências; a seleção de responsável passa a ser feita apenas pelo seletor "Responsável monitorado", evitando confusão (especialmente para líderes/gestores).', hidden: true }
       ]
+    },
+    {
+      version: '3.0.7.8',
+      features: [
+        '<b>💬 Resumir Solicitação lê o Chat:</b> Ao resumir uma SSC, a IA agora também lê o log do chat e a transcrição da ligação (quando disponíveis), trazendo mais contexto pro resumo gerado.',
+        '<b>📎 Anexos do Chat no Resumo:</b> Imagens e arquivos enviados pelo cliente durante o chat agora aparecem automaticamente na seção "Anexos" do modal de resumo, com link direto pra abrir.',
+        '<b>🔐 Dados de Acesso mais completos:</b> A seção "Dados de Acesso" do resumo agora também identifica credenciais (e-mail, senha, código) informadas pelo cliente durante o chat, mesmo quando pergunta e resposta estão em mensagens separadas.'
+      ]
     }
   ],
   '3.0.6': [
