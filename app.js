@@ -361,6 +361,11 @@ async function initializeExtension() {
   // Inicializa a verificação de pendências
   await initializePendingBadge()
 
+  // Widget lateral de pendências (controlado pela preferência enablePendingWidget).
+  if (typeof initPendingWidget === 'function') {
+    initPendingWidget()
+  }
+
   // Verifica se deve abrir o painel de pendências automaticamente (via URL param)
   const urlParams = new URLSearchParams(window.location.search)
   if (
@@ -1358,11 +1363,20 @@ async function createFloatingActionButtons() {
     'fab-wrapper-notes',
     'fab-wrapper-reminders',
     'fab-wrapper-quicksteps',
+    'fab-wrapper-links',
     'fab-wrapper-manage'
   ]
   const defaultWidgetsOrder = ['fab-copy-ssc-wrapper', 'fab-stopwatch-wrapper']
 
-  const optionsOrder = data.fabOptionsOrder || defaultOptionsOrder
+  // Usa a ordem salva pelo usuário, mas anexa quaisquer botões padrão novos
+  // que ainda não estejam na ordem persistida (ex.: 'fab-wrapper-links'
+  // adicionado em uma atualização). Assim novos recursos aparecem sem resetar
+  // a personalização do FAB.
+  const savedOptionsOrder = data.fabOptionsOrder || defaultOptionsOrder
+  const optionsOrder = [
+    ...savedOptionsOrder,
+    ...defaultOptionsOrder.filter(id => !savedOptionsOrder.includes(id))
+  ]
   const widgetsOrder = data.fabWidgetsOrder || defaultWidgetsOrder
 
   // Mapa de conteúdo dos botões de opções
@@ -1391,6 +1405,12 @@ async function createFloatingActionButtons() {
           <svg viewBox="0 0 24 24"><path d="M12,2A3,3 0 0,1 15,5V11L17,13V15H13V21L12,22L11,21V15H7V13L9,11V5A3,3 0 0,1 12,2Z" /></svg>
         </button>
         <button type="button" class="fab-button fab-option shine-effect" data-action="fab-quick-steps" data-tooltip="Trâmites">⚡</button>
+    `,
+    'fab-wrapper-links': `
+        <button type="button" class="fab-pin-btn" title="Fixar" data-target="fab-wrapper-links">
+          <svg viewBox="0 0 24 24"><path d="M12,2A3,3 0 0,1 15,5V11L17,13V15H13V21L12,22L11,21V15H7V13L9,11V5A3,3 0 0,1 12,2Z" /></svg>
+        </button>
+        <button type="button" class="fab-button fab-option shine-effect" data-action="fab-links-panel" data-tooltip="Central de Links">🌐</button>
     `,
     'fab-wrapper-manage': `
         <button type="button" class="fab-pin-btn" title="Fixar" data-target="fab-wrapper-manage">
@@ -1484,6 +1504,9 @@ function setupFabListeners() {
 
       case 'fab-quick-steps':
         openQuickInserterPanel()
+        break
+      case 'fab-links-panel':
+        if (typeof openLinksPanel === 'function') openLinksPanel()
         break
       case 'fab-reminders':
         openRemindersManagementModal()
@@ -1814,12 +1837,12 @@ Sigo a disposição.`
     })
 }
 
-// URL do assistente de suporte PLUG
-const PLUG_URL =
+// URL do assistente de suporte IAplug
+const IAPLUG_URL =
   'https://tria.plugsocial.online/?assunto=sped&codigoCliente=96797&identificacaoRevenda=3'
 
 /**
- * Abre o PLUG em uma janela dedicada do navegador (estilo "app", sem barra
+ * Abre o IAplug em uma janela dedicada do navegador (estilo "app", sem barra
  * de endereço), ou traz para frente a janela já existente.
  *
  * A janela é criada e gerenciada pelo service worker, pois a API chrome.windows
@@ -1830,15 +1853,31 @@ const PLUG_URL =
  * (detecção de frame no lado da Tria). Em janela própria, a Tria volta a ser a
  * página principal e funciona normalmente, com maximizar/redimensionar nativos.
  */
-async function togglePLUGWindow() {
+async function toggleIAplugWindow() {
   try {
-    const url = window.sgdPermissions?.getPLUGUrl ? await window.sgdPermissions.getPLUGUrl() : PLUG_URL
+    // Usa getIAplugLinkInfo (em vez de getIAplugUrl) para também saber a CHAVE/label
+    // do link resolvido (sul/sudeste/at/custom). Isso importa porque dois links
+    // podem compartilhar a mesma URL (ex.: "AT" hoje reaproveita a URL do "Sul")
+    // — nesse caso o service worker não teria como descobrir sozinho, só
+    // comparando URLs, que o usuário é do "AT".
+    let url = IAPLUG_URL
+    let regionKey = null
+    let regionLabel = null
+    if (window.sgdPermissions?.getIAplugLinkInfo) {
+      const info = await window.sgdPermissions.getIAplugLinkInfo()
+      url = info.url
+      regionKey = info.key
+      regionLabel = info.label
+    } else if (window.sgdPermissions?.getIAplugUrl) {
+      url = await window.sgdPermissions.getIAplugUrl()
+    }
+
     chrome.runtime.sendMessage(
-      { action: 'PLUG_OPEN_WINDOW', url: url },
+      { action: 'IAPLUG_OPEN_WINDOW', url, regionKey, regionLabel },
       resp => {
         if (chrome.runtime.lastError) return
         if (resp && typeof resp.open === 'boolean') {
-          updatePLUGFabState(resp.open)
+          updateIAplugFabState(resp.open)
         }
       }
     )
@@ -1848,15 +1887,15 @@ async function togglePLUGWindow() {
 }
 
 /**
- * Consulta o service worker sobre o estado atual da janela do PLUG e
+ * Consulta o service worker sobre o estado atual da janela do IAplug e
  * sincroniza o botão flutuante (útil ao carregar/recarregar a página).
  */
-function refreshPLUGFabState() {
+function refreshIAplugFabState() {
   try {
-    chrome.runtime.sendMessage({ action: 'PLUG_GET_STATE' }, resp => {
+    chrome.runtime.sendMessage({ action: 'IAPLUG_GET_STATE' }, resp => {
       if (chrome.runtime.lastError) return
       if (resp && typeof resp.open === 'boolean') {
-        updatePLUGFabState(resp.open)
+        updateIAplugFabState(resp.open)
       }
     })
   } catch (e) {
@@ -1865,25 +1904,25 @@ function refreshPLUGFabState() {
 }
 
 /**
- * Sincroniza o estado visual do botão PLUG com a janela dedicada.
- * @param {boolean} isOpen - Se a janela do PLUG está aberta.
+ * Sincroniza o estado visual do botão IAplug com a janela dedicada.
+ * @param {boolean} isOpen - Se a janela do IAplug está aberta.
  */
-function updatePLUGFabState(isOpen) {
-  const btn = document.getElementById('plug-scroll-btn')
+function updateIAplugFabState(isOpen) {
+  const btn = document.getElementById('iaplug-scroll-btn')
   if (!btn) return
   btn.classList.toggle('active', isOpen)
   btn.title = isOpen
-    ? 'PLUG - Trazer janela para frente'
-    : 'PLUG - Solicitar Suporte'
+    ? 'IAplug - Trazer janela para frente'
+    : 'IAplug - Solicitar Suporte'
 }
 
-// Mantém o botão sincronizado quando a janela do PLUG é aberta ou fechada a
+// Mantém o botão sincronizado quando a janela do IAplug é aberta ou fechada a
 // partir de qualquer guia: o service worker transmite o estado para todas as
 // abas do SGD sempre que a janela é criada ou encerrada.
 try {
   chrome.runtime.onMessage.addListener(message => {
-    if (message && message.action === 'PLUG_WINDOW_STATE') {
-      updatePLUGFabState(!!message.open)
+    if (message && message.action === 'IAPLUG_WINDOW_STATE') {
+      updateIAplugFabState(!!message.open)
     }
   })
 } catch (e) {
@@ -1971,29 +2010,29 @@ function adjustGoToTopButtonPosition(fabPosition) {
  * visível apenas se a página tiver uma barra de rolagem.
  */
 async function initializeScrollToTopButton() {
-  // Grupo que contém o botão PLUG e o botão Ir ao Topo lado a lado
+  // Grupo que contém o botão IAplug e o botão Ir ao Topo lado a lado
   const btnGroup = document.createElement('div')
   btnGroup.id = 'scroll-btn-group'
 
-  // TODO: Liberar o botão PLUG para todos os usuários quando aprovado.
+  // TODO: Liberar o botão IAplug para todos os usuários quando aprovado.
   // Por enquanto restrito a usuários com Modo Dev ativo na Central de Informações
   // (isInfoDevModeEnabled) ou que já sejam editores (sgdPermissions.isEditor) ou que possuam acesso ativo.
   try {
-    const hasAccess = window.sgdPermissions?.hasPLUGAccess ? await window.sgdPermissions.hasPLUGAccess() : false
+    const hasAccess = window.sgdPermissions?.hasIAplugAccess ? await window.sgdPermissions.hasIAplugAccess() : false
     if (hasAccess) {
-      const plugBtn = document.createElement('button')
-      plugBtn.id = 'plug-scroll-btn'
-      plugBtn.className = 'shine-effect'
-      plugBtn.title = 'PLUG - Solicitar Suporte'
-      plugBtn.innerHTML = '<img src="https://suporte.dominioatendimento.com/central/imagens/tria10.png" alt="PLUG" class="plug-scroll-icon">'
-      plugBtn.addEventListener('click', togglePLUGWindow)
-      btnGroup.appendChild(plugBtn)
-      // Sincroniza o estado do botão com a janela do PLUG (caso já esteja aberta).
-      refreshPLUGFabState()
+      const iaplugBtn = document.createElement('button')
+      iaplugBtn.id = 'iaplug-scroll-btn'
+      iaplugBtn.className = 'shine-effect'
+      iaplugBtn.title = 'IAplug - Solicitar Suporte'
+      iaplugBtn.innerHTML = '<img src="https://suporte.dominioatendimento.com/central/imagens/tria10.png" alt="IAplug" class="iaplug-scroll-icon">'
+      iaplugBtn.addEventListener('click', toggleIAplugWindow)
+      btnGroup.appendChild(iaplugBtn)
+      // Sincroniza o estado do botão com a janela do IAplug (caso já esteja aberta).
+      refreshIAplugFabState()
     }
   } catch (e) {
-    // Falha no setup do PLUG nunca deve impedir a criação do botão de scroll.
-    console.error('Erro ao inicializar o botão PLUG:', e)
+    // Falha no setup do IAplug nunca deve impedir a criação do botão de scroll.
+    console.error('Erro ao inicializar o botão IAplug:', e)
   }
 
   // Botão Ir ao Topo / Ir para o Final (à direita)
@@ -2165,9 +2204,9 @@ async function applyGlobalVisibilitySettings() {
   if (goToTopButton) {
     goToTopButton.style.display = visibility.goToTop === false ? 'none' : ''
   }
-  const plugScrollBtn = document.getElementById('plug-scroll-btn')
-  if (plugScrollBtn) {
-    plugScrollBtn.style.display = visibility.plug === false ? 'none' : ''
+  const iaplugScrollBtn = document.getElementById('iaplug-scroll-btn')
+  if (iaplugScrollBtn) {
+    iaplugScrollBtn.style.display = visibility.iaplug === false ? 'none' : ''
   }
 
   // Novo: visibilidade do botão "Pesquisar Resposta" clonado
@@ -2514,6 +2553,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     checkNewPendings().then(result => {
       updatePendingBadgeUI(result)
     })
+    // Atualiza também o widget lateral de pendências (se habilitado).
+    if (typeof refreshPendingWidget === 'function') {
+      refreshPendingWidget()
+    }
   }
 })
 
@@ -2924,10 +2967,9 @@ async function updatePendingBadgeUI(result) {
 
     if (result.newCount > 0) {
       try {
-        const settings = await getSettings()
-        // Padrão agora é habilitado; só desativa se o usuário explicitamente desligou.
-        const notificationsEnabled =
-          settings.preferences.enablePendingNotifications !== false
+        // Notificação de novas pendências (pílula do FAB) agora é SEMPRE ativada
+        // — o toggle foi removido da guia Pendências.
+        const notificationsEnabled = true
 
         if (notificationsEnabled) {
           // Assinatura do lote atual de itens novos (para saber se é um
@@ -2999,6 +3041,11 @@ async function handleInfoPanelOpen() {
     result.newItems = []
     await savePendingResult(result)
     updatePendingBadgeUI(result)
+  }
+  // Abrir a guia de pendências também conta como "visto" para o widget lateral.
+  if (typeof clearPendingWidgetHasNew === 'function') {
+    await clearPendingWidgetHasNew()
+    if (typeof refreshPendingWidget === 'function') refreshPendingWidget()
   }
 }
 

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SGD - PowerTools",
-  "version": "3.0.7.4",
+  "version": "3.0.7.7",
   "description": "Adiciona um editor de texto avançado ao site https://sgd.dominiosistemas.com.br/",
   "permissions": [
     "storage",
@@ -40,12 +40,14 @@
         "config.js",
         "utils.js",
         "storage.js",
+        "sgd-request-coordinator.js",
         "text-processor.js",
         "speech-service.js",
         "ui-components.js",
         "editor-core.js",
         "features.js",
         "pending-service.js",
+        "ssc-pending-service.js",
         "duplicate-checker.js",
         "quick-messages.js",
         "forms-service.js",
@@ -56,6 +58,9 @@
         "info-panel.js",
         "release-notes.js",
         "editor-ui.js",
+        "links-service.js",
+        "links-panel.js",
+        "pending-widget.js",
         "app.js"
       ],
       "css": [
@@ -66,7 +71,9 @@
         "styles/panel.css",
         "styles/fab.css",
         "styles/info-panel.css",
-        "styles/tags.css"
+        "styles/tags.css",
+        "styles/links-panel.css",
+        "styles/pending-widget.css"
       ],
       "run_at": "document_idle"
     },
@@ -110,4 +117,4 @@
     "default_icon": "logo.png",
     "default_title": "Editor Avançado"
   }
-}
+}

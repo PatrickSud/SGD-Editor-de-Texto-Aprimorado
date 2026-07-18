@@ -372,47 +372,72 @@ async function openInfoPanel(initialTabId = 'pending') {
     const refreshBtn = pendingSection.querySelector('#refresh-pending-btn')
     if (refreshBtn) {
       refreshBtn.addEventListener('click', () =>
-        loadPendingItems(pendingSection)
+        loadPendingItems(pendingSection, { force: true })
       )
     }
 
-    const notifyBtn = pendingSection.querySelector('#toggle-notification-btn')
-    if (notifyBtn) {
-      const updateNotifyBtnState = enabled => {
+    // Seletor "Responsável monitorado": salva a escolha e recarrega (force).
+    const monitoredSelect = pendingSection.querySelector(
+      '#pending-monitored-responsible'
+    )
+    if (monitoredSelect) {
+      monitoredSelect.addEventListener('change', async e => {
+        const id = e.target.value
+        const name = e.target.options[e.target.selectedIndex]?.text || ''
+        await chrome.storage.local.set({
+          sscMonitoredResponsavelId: id,
+          sscMonitoredResponsavelName: name
+        })
+        loadPendingItems(pendingSection, { force: true })
+      })
+    }
+
+    // A notificação de novas pendências (pílula do FAB) agora é SEMPRE ativada;
+    // o antigo botão "Notificações" foi removido da guia Pendências.
+
+    // Toggle do widget lateral de pendências (padrão DESLIGADO).
+    const widgetBtn = pendingSection.querySelector('#toggle-widget-btn')
+    if (widgetBtn) {
+      const updateWidgetBtnState = enabled => {
         if (enabled) {
-          notifyBtn.innerHTML =
-            '🔔 <span style="margin-left: 4px;">Notificações Ativas</span>'
-          notifyBtn.classList.add('active-notification')
-          notifyBtn.title = 'Notificações Ativadas'
-          notifyBtn.style.opacity = '1'
+          widgetBtn.innerHTML =
+            '🚨 <span style="margin-left: 4px;">Alerta Ativo</span>'
+          widgetBtn.classList.add('active-notification')
+          widgetBtn.title = 'Alerta de Pendências ativado'
+          widgetBtn.style.opacity = '1'
         } else {
-          notifyBtn.innerHTML =
-            '🔕 <span style="margin-left: 4px;">Notificações Inativas</span>'
-          notifyBtn.classList.remove('active-notification')
-          notifyBtn.title = 'Notificações Desativadas'
-          notifyBtn.style.opacity = '0.7'
+          widgetBtn.innerHTML =
+            '🚫 <span style="margin-left: 4px;">Alerta Inativo</span>'
+          widgetBtn.classList.remove('active-notification')
+          widgetBtn.title = 'Alerta de Pendências desativado'
+          widgetBtn.style.opacity = '0.7'
         }
       }
 
       chrome.storage.sync.get(['extensionSettingsData'], result => {
         const settings = result.extensionSettingsData || {}
         const prefs = settings.preferences || {}
-        // Padrão é habilitado; só aparece desativado se o usuário explicitamente desligou.
-        updateNotifyBtnState(prefs.enablePendingNotifications !== false)
+        // Padrão desligado: só aparece ativo se o usuário explicitamente ligou.
+        updateWidgetBtnState(prefs.enablePendingWidget === true)
       })
 
-      notifyBtn.addEventListener('click', async () => {
+      widgetBtn.addEventListener('click', async () => {
         const result = await chrome.storage.sync.get(['extensionSettingsData'])
         let settings = result.extensionSettingsData || { preferences: {} }
         if (!settings.preferences) settings.preferences = {}
 
-        const newState = !(
-          settings.preferences.enablePendingNotifications !== false
-        )
-        settings.preferences.enablePendingNotifications = newState
+        const newState = !(settings.preferences.enablePendingWidget === true)
+        settings.preferences.enablePendingWidget = newState
 
         await chrome.storage.sync.set({ extensionSettingsData: settings })
-        updateNotifyBtnState(newState)
+        updateWidgetBtnState(newState)
+
+        // Reflete imediatamente: liga/atualiza ou remove o widget.
+        if (newState) {
+          if (typeof initPendingWidget === 'function') initPendingWidget()
+        } else {
+          if (typeof destroyPendingWidget === 'function') destroyPendingWidget()
+        }
       })
     }
 
@@ -421,9 +446,6 @@ async function openInfoPanel(initialTabId = 'pending') {
     const statusFilter = pendingSection.querySelector('#pending-status-filter')
     const tagFilter = pendingSection.querySelector('#pending-tag-filter')
     const sortSelect = pendingSection.querySelector('#pending-sort')
-    const responsibleFilter = pendingSection.querySelector(
-      '#pending-responsible-filter'
-    )
     const criticalFilter = pendingSection.querySelector(
       '#pending-critical-filter'
     )
@@ -442,15 +464,6 @@ async function openInfoPanel(initialTabId = 'pending') {
     if (sortSelect) sortSelect.addEventListener('change', applyFiltersHandler)
     if (criticalFilter)
       criticalFilter.addEventListener('change', applyFiltersHandler)
-    if (responsibleFilter) {
-      responsibleFilter.addEventListener('change', e => {
-        // NOVO: Salva a preferência sempre que o usuário mudar
-        const selectedValue = e.target.value
-        chrome.storage.local.set({ preferredResponsible: selectedValue })
-
-        applyFiltersHandler()
-      })
-    }
   }
 
   const devModeSwitch = modal.querySelector('#ip-dev-mode-switch')
@@ -998,8 +1011,9 @@ function applyPendingFilters(sectionElement) {
   const tagFilter =
     sectionElement.querySelector('#pending-tag-filter')?.value || ''
 
-  const responsibleFilter =
-    sectionElement.querySelector('#pending-responsible-filter')?.value || ''
+  // Filtro cliente de responsável foi removido (a seleção agora é pelo seletor
+  // "Responsável monitorado"); mantido vazio para a lógica de exibição abaixo.
+  const responsibleFilter = ''
 
   const criticalFilter = sectionElement.querySelector(
     '#pending-critical-filter'
@@ -1156,7 +1170,31 @@ function applyPendingFilters(sectionElement) {
  * Carrega e renderiza os itens pendentes na seção fornecida.
  * @param {HTMLElement} sectionElement - O elemento da seção de pendências.
  */
-async function loadPendingItems(sectionElement) {
+/**
+ * Popula o seletor "Responsável monitorado" com as opções retornadas do SGD
+ * (nunca "Todos") e seleciona o responsável em uso.
+ */
+function populateMonitoredResponsible(sectionElement, result) {
+  const sel = sectionElement.querySelector('#pending-monitored-responsible')
+  if (!sel) return
+  const responsaveis = (result && result.responsaveis) || []
+  const used = (result && result.responsavelUsado) || ''
+  const opts = responsaveis
+    .filter(r => r && r.id && r.id !== '0')
+    .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+  sel.innerHTML =
+    `<option value="">👤 Selecionar responsável…</option>` +
+    opts
+      .map(r => `<option value="${escapeHTML(r.id)}">${escapeHTML(r.name)}</option>`)
+      .join('')
+  sel.value = used || ''
+  // Com apenas 1 responsável (o próprio usuário), ele já é usado automaticamente
+  // (resolverResponsavelAlvo), então o seletor fica oculto — desnecessário.
+  // Só aparece quando há mais de um responsável, para permitir a troca.
+  sel.style.display = opts.length > 1 ? '' : 'none'
+}
+
+async function loadPendingItems(sectionElement, options = {}) {
   const container = sectionElement.querySelector('#pending-list-container')
   const refreshBtn = sectionElement.querySelector('#refresh-pending-btn')
   const statsContainer = sectionElement.querySelector('#pending-stats')
@@ -1198,8 +1236,43 @@ async function loadPendingItems(sectionElement) {
 
   try {
     // fetchPendingItems deve estar disponível globalmente via pending-service.js
-    const result = await fetchPendingItems()
-    
+    // (agora delega para a fonte sscs.html, serializada pelo coordenador).
+    const result = await fetchPendingItems(options)
+
+    // Popular o seletor "Responsável monitorado" com as opções do SGD.
+    populateMonitoredResponsible(sectionElement, result)
+
+    // Mantém a pílula do FAB sincronizada (conta só N1) ao abrir/atualizar a
+    // guia, evitando que ela fique defasada até o próximo ciclo do alarme.
+    if (
+      typeof checkNewPendings === 'function' &&
+      typeof updatePendingBadgeUI === 'function'
+    ) {
+      checkNewPendings()
+        .then(r => updatePendingBadgeUI(r))
+        .catch(() => {})
+    }
+
+    // Gestor/ambíguo sem escolha: não buscamos com "Todos" (limite de 1000).
+    if (result && result.needsSelection) {
+      allPendingItems = []
+      filteredPendingItems = []
+      container.innerHTML = `
+                <div class="ip-empty-state">
+                    <span style="font-size: 24px;">👤</span>
+                    <h4>Selecione um responsável</h4>
+                    <p>Escolha um responsável no seletor "Responsável monitorado" (acima) para carregar as pendências.</p>
+                </div>
+            `
+      if (statsContainer) {
+        statsContainer.innerHTML = `
+            <span class="ip-stat-item">Total: <strong>0</strong></span>
+            <span class="ip-stat-item">Filtrado: <strong>0</strong></span>
+        `
+      }
+      return
+    }
+
     let activeItems = []
     let activeFilter = null
 
@@ -1245,43 +1318,6 @@ async function loadPendingItems(sectionElement) {
             ${availableTagsCache.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
         `
       tagFilterSelect.value = currentVal
-    }
-
-    // Atualiza o select de filtro de responsável
-    const responsibleSelect = sectionElement.querySelector(
-      '#pending-responsible-filter'
-    )
-    if (responsibleSelect) {
-      // 1. Tenta recuperar a preferência salva
-      const storage = await chrome.storage.local.get(['preferredResponsible'])
-      const savedResponsible = storage.preferredResponsible || ''
-
-      // Se a preferência não estiver na lista atual (ex: usuário saiu da lista), mantém o valor atual do select ou vazio
-      const currentVal = responsibleSelect.value || savedResponsible
-
-      const responsibles = [
-        ...new Set(activeItems.map(i => i.responsible).filter(Boolean))
-      ].sort()
-
-      responsibleSelect.innerHTML = `
-            <option value="">Todos Responsáveis</option>
-            ${responsibles.map(r => `<option value="${escapeHTML(r)}">${escapeHTML(r)}</option>`).join('')}
-        `
-
-      // 2. Restaura a seleção se ela existir na lista
-      if (responsibles.includes(currentVal)) {
-        responsibleSelect.value = currentVal
-      } else if (currentVal !== '' && responsibles.length > 0) {
-        responsibleSelect.value = ''
-        chrome.storage.local.remove('preferredResponsible')
-      }
-
-      // Se houver apenas 1 ou nenhum responsável, esconde o filtro pois é desnecessário
-      if (responsibles.length <= 1) {
-        responsibleSelect.style.display = 'none'
-      } else {
-        responsibleSelect.style.display = ''
-      }
     }
 
     if (activeItems.length === 0) {
@@ -1347,29 +1383,6 @@ function renderPendingTabs(sectionElement) {
         // Update warning banner for this tab
         manageSiteFilterWarning(sectionElement, activeTab)
         
-        // Dynamically update the responsible select filter for the new active tab
-        const responsibleSelect = sectionElement.querySelector('#pending-responsible-filter')
-        if (responsibleSelect) {
-          const currentVal = responsibleSelect.value
-          const responsibles = [
-            ...new Set(allPendingItems.map(i => i.responsible).filter(Boolean))
-          ].sort()
-          responsibleSelect.innerHTML = `
-                <option value="">Todos Responsáveis</option>
-                ${responsibles.map(r => `<option value="${escapeHTML(r)}">${escapeHTML(r)}</option>`).join('')}
-            `
-          if (responsibles.includes(currentVal)) {
-            responsibleSelect.value = currentVal
-          } else {
-            responsibleSelect.value = ''
-          }
-          if (responsibles.length <= 1) {
-            responsibleSelect.style.display = 'none'
-          } else {
-            responsibleSelect.style.display = ''
-          }
-        }
-
         // Apply filters
         applyPendingFilters(sectionElement)
       }
@@ -1632,6 +1645,7 @@ function createPendingCard(item, showResponsible = false) {
                         ${slaBadgeHtml}
                         <span class="ip-meta-item" title="Dias em aberto">📅 ${escapeHTML(item.dias)}d</span>
                         <span class="ip-meta-item" title="Quantidade de trâmites">🔄 ${escapeHTML(item.qtdTramites)}</span>
+                        ${item.nivel === 'N2' ? `<span title="Aguardando Suporte Nível 2 (outro setor)" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:#b45309;background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:1px 7px;white-space:nowrap;">N2</span>` : ''}
                     </div>
                     <div style="display: flex; align-items: center; gap: 4px;">
                          <div class="ip-tags-container">${tagsHtml}</div>
@@ -4707,10 +4721,6 @@ function getSectionContent(sectionId) {
                         </select>
 
 
-                        <select id="pending-responsible-filter" class="ip-filter-select compact" title="Filtrar por Responsável">
-                            <option value="">Todos Responsáveis</option>
-                        </select>
-
                         <select id="pending-tag-filter" class="ip-filter-select compact" title="Filtrar por Tag">
                             <option value="">Todas as Tags</option>
                             ${availableTagsCache.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
@@ -4731,7 +4741,10 @@ function getSectionContent(sectionId) {
                         </select>
                     </div>
                     <div class="ip-actions-group">
-                        <button id="toggle-notification-btn" class="action-btn small-btn enhanced-btn" title="Carregando estado..." style="width: auto; height: 28px; padding: 0 10px; display: flex; align-items: center; justify-content: center; white-space: nowrap; font-size: 11px; line-height: 1;">🔔 <span style="margin-left: 4px;">Notificações</span></button>
+                        <select id="pending-monitored-responsible" class="ip-filter-select compact" title="Responsável monitorado — de quem buscar as pendências no SGD" style="max-width: 190px; height: 28px;">
+                            <option value="">👤 Selecionar responsável…</option>
+                        </select>
+                        <button id="toggle-widget-btn" class="action-btn small-btn enhanced-btn" title="Alerta de Pendências" style="width: auto; height: 28px; padding: 0 10px; display: flex; align-items: center; justify-content: center; white-space: nowrap; font-size: 11px; line-height: 1;">🚨 <span style="margin-left: 4px;">Alerta</span></button>
                         <button id="refresh-pending-btn" class="action-btn small-btn enhanced-btn compact" title="Atualizar lista">🔄</button>
                         <button id="open-all-pending-btn" class="action-btn small-btn enhanced-btn compact" title="Filtre por um único responsável para habilitar" disabled style="opacity: 0.5;">Abrir Todas</button>
                     </div>
@@ -4787,6 +4800,40 @@ function getSectionContent(sectionId) {
 }
 
 /**
+ * Monta as <option> de um <select> de região/link do IAplug a partir do mapa de
+ * links (sul/sudeste/at + customizados), pulando os links inativados. Usado
+ * tanto nas linhas de editor/visualizador quanto no seletor por unidade dentro
+ * do modal "Configurar IAplug por Unidades".
+ * @param {Object} iaplugLinks - mapa { chave: { label, url, active } } resolvido por resolveIAplugLinksConfig
+ * @param {string} selectedKey - chave atualmente selecionada (pode ser um link já inativado)
+ * @param {string} labelPrefix - prefixo opcional exibido antes do label (ex: "Região: ")
+ */
+function buildIAplugLinkOptionsHtml(iaplugLinks, selectedKey, labelPrefix = '') {
+  const links = iaplugLinks || {}
+  const entries = Object.entries(links)
+
+  const activeOptionsHtml = entries
+    .filter(([, link]) => link && link.active !== false)
+    .map(([key, link]) => {
+      const label = labelPrefix + (link.label || key.toUpperCase())
+      return `<option value="${escapeHTML(key)}" ${selectedKey === key ? 'selected' : ''}>${escapeHTML(label)}</option>`
+    })
+    .join('')
+
+  // Se a seleção atual aponta para um link que foi inativado (ou removido) depois
+  // de atribuído, mantém a opção visível (marcada como inativa) para não trocar
+  // silenciosamente a seleção do usuário sem que o Master perceba.
+  const selectedIsActive = entries.some(([key, link]) => key === selectedKey && link && link.active !== false)
+  if (selectedKey && !selectedIsActive) {
+    const existing = links[selectedKey]
+    const label = labelPrefix + (existing ? (existing.label || selectedKey.toUpperCase()) : selectedKey.toUpperCase()) + ' (inativo)'
+    return activeOptionsHtml + `<option value="${escapeHTML(selectedKey)}" selected>${escapeHTML(label)}</option>`
+  }
+
+  return activeOptionsHtml
+}
+
+/**
  * Carrega e renderiza o painel de Controle de Acesso.
  * Permite a editores gerenciar a lista de outros editores.
  * @param {HTMLElement} sectionElement - Elemento da seção de controle de acesso
@@ -4839,12 +4886,12 @@ async function loadAccessControl(sectionElement) {
     const remoteConfig = localConfig.remoteConfig || {}
 
     // As duas funções abaixo delegam a decisão para os resolvers puros expostos por
-    // permissions-service.js (window.sgdPermissions.resolvePLUGAccess /
+    // permissions-service.js (window.sgdPermissions.resolveIAplugAccess /
     // resolveDuplicateIAAccess), os mesmos usados pela checagem real de acesso.
     // Isso garante que o badge do painel nunca mais divirja do que o usuário
     // realmente recebe em tempo de execução.
-    const checkUserPLUGAccessStatus = (user) => {
-      const result = window.sgdPermissions.resolvePLUGAccess({
+    const checkUserIAplugAccessStatus = (user) => {
+      const result = window.sgdPermissions.resolveIAplugAccess({
         isMasterBypass: user.role === 'master',
         iagenteDisabled: user.iagenteDisabled,
         iagenteIA_Enabled: user.iagenteIA_Enabled,
@@ -4854,7 +4901,7 @@ async function loadAccessControl(sectionElement) {
       // "Master (cadastro)" deixa claro que essa leitura vem do cargo cadastrado no
       // Firebase, e não é garantia de que a sessão do próprio usuário vai reconhecer
       // esse bypass automaticamente (depende do registro dele ser encontrado em tempo
-      // de execução — ver aviso "[PLUG Access] Nenhum registro encontrado...").
+      // de execução — ver aviso "[IAplug Access] Nenhum registro encontrado...").
       if (result.reason === 'Master') {
         return { active: true, reason: 'Master (cadastro)' }
       }
@@ -4875,18 +4922,22 @@ async function loadAccessControl(sectionElement) {
       return result
     }
 
+    // Mapa de links do IAplug (sul/sudeste/at + customizados), calculado uma vez por
+    // carregamento do painel e reaproveitado pelos seletores de região abaixo.
+    const iaplugLinks = window.sgdPermissions.resolveIAplugLinksConfig(remoteConfig)
+
     const resolveUserRegion = (user) => {
-      if (user.regiao === 'sul' || user.regiao === 'sudeste') {
+      if (user.regiao && iaplugLinks[user.regiao]) {
         return user.regiao
       }
       const unit = user.unidade ? user.unidade.trim() : ''
       if (unit) {
         const unitRegionMap = remoteConfig.iagente_unidade_regiao || {}
         const mappedRegion = unitRegionMap[unit]
-        if (mappedRegion === 'sul' || mappedRegion === 'sudeste') {
+        if (mappedRegion && iaplugLinks[mappedRegion]) {
           return mappedRegion
         }
-        
+
         const lowerUnit = unit.toLowerCase()
         const sudesteKeywords = ['campinas', 'sao paulo', 'são paulo', 'sp', 'rio de janeiro', 'rj', 'belo horizonte', 'mg', 'espirito santo', 'espírito santo', 'es', 'sudeste']
         const isSudeste = sudesteKeywords.some(keyword => lowerUnit.includes(keyword))
@@ -4988,18 +5039,18 @@ async function loadAccessControl(sectionElement) {
         `
         : ''
 
-      // Controles do PLUG (Apenas Master pode editar, Comum vê apenas leitura)
-      const isPLUGDisabled = editor.iagenteDisabled === true
-      const accessStatus = checkUserPLUGAccessStatus(editor)
-      const plugBtnHtml = isMaster
+      // Controles do IAplug (Apenas Master pode editar, Comum vê apenas leitura)
+      const isIAplugDisabled = editor.iagenteDisabled === true
+      const accessStatus = checkUserIAplugAccessStatus(editor)
+      const iaplugBtnHtml = isMaster
         ? `
-          <button class="action-btn small-btn ac-toggle-plug-btn" 
+          <button class="action-btn small-btn ac-toggle-iaplug-btn" 
             data-user-id="${escapeHTML(editor.id)}" 
             data-is-editor="true" 
-            data-current-status="${isPLUGDisabled}"
+            data-current-status="${isIAplugDisabled}"
             style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: 1px solid var(--border-color); background: ${accessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-gray, #9ca3af)'}; color: white; cursor: pointer; border-radius: 4px;"
             title="${accessStatus.active ? 'Ativo' : 'Inativo: ' + accessStatus.reason}">
-            ${accessStatus.active ? '🤖 PLUG: Ativo' : '🤖 PLUG: ' + accessStatus.reason}
+            ${accessStatus.active ? '🤖 IAplug: Ativo' : '🤖 IAplug: ' + accessStatus.reason}
           </button>
         `
         : `
@@ -5032,8 +5083,7 @@ async function loadAccessControl(sectionElement) {
       const regionSelectorHtml = (isMaster && accessStatus.active)
         ? `
           <select class="ac-user-region-select" data-user-id="${escapeHTML(editor.id)}" data-is-editor="true" style="font-size: 11px; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); outline: none;">
-            <option value="sul" ${resolvedRegion === 'sul' ? 'selected' : ''}>Região: Sul</option>
-            <option value="sudeste" ${resolvedRegion === 'sudeste' ? 'selected' : ''}>Região: Sudeste</option>
+            ${buildIAplugLinkOptionsHtml(iaplugLinks, resolvedRegion, 'Região: ')}
           </select>
         `
         : (accessStatus.active ? `
@@ -5066,7 +5116,7 @@ async function loadAccessControl(sectionElement) {
               </span>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
-              ${plugBtnHtml}
+              ${iaplugBtnHtml}
               ${regionSelectorHtml}
               ${duplicateBtnHtml}
               ${teamBtnHtml}
@@ -5134,18 +5184,18 @@ async function loadAccessControl(sectionElement) {
         `
         : ''
 
-      // Controles do PLUG (Apenas Master pode editar, Comum vê apenas leitura)
-      const isPLUGDisabled = viewer.iagenteDisabled === true
-      const accessStatus = checkUserPLUGAccessStatus(viewer)
-      const plugBtnHtml = isMaster
+      // Controles do IAplug (Apenas Master pode editar, Comum vê apenas leitura)
+      const isIAplugDisabled = viewer.iagenteDisabled === true
+      const accessStatus = checkUserIAplugAccessStatus(viewer)
+      const iaplugBtnHtml = isMaster
         ? `
-          <button class="action-btn small-btn ac-toggle-plug-btn" 
+          <button class="action-btn small-btn ac-toggle-iaplug-btn" 
             data-user-id="${escapeHTML(viewer.id)}" 
             data-is-editor="false" 
-            data-current-status="${isPLUGDisabled}"
+            data-current-status="${isIAplugDisabled}"
             style="font-size: 10px; padding: 2px 6px; white-space: nowrap; border: 1px solid var(--border-color); background: ${accessStatus.active ? 'var(--action-green, #22c55e)' : 'var(--action-gray, #9ca3af)'}; color: white; cursor: pointer; border-radius: 4px;"
             title="${accessStatus.active ? 'Ativo' : 'Inativo: ' + accessStatus.reason}">
-            ${accessStatus.active ? '🤖 PLUG: Ativo' : '🤖 PLUG: ' + accessStatus.reason}
+            ${accessStatus.active ? '🤖 IAplug: Ativo' : '🤖 IAplug: ' + accessStatus.reason}
           </button>
         `
         : `
@@ -5178,8 +5228,7 @@ async function loadAccessControl(sectionElement) {
       const regionSelectorHtml = (isMaster && accessStatus.active)
         ? `
           <select class="ac-user-region-select" data-user-id="${escapeHTML(viewer.id)}" data-is-editor="false" style="font-size: 11px; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); outline: none;">
-            <option value="sul" ${resolvedRegion === 'sul' ? 'selected' : ''}>Região: Sul</option>
-            <option value="sudeste" ${resolvedRegion === 'sudeste' ? 'selected' : ''}>Região: Sudeste</option>
+            ${buildIAplugLinkOptionsHtml(iaplugLinks, resolvedRegion, 'Região: ')}
           </select>
         `
         : (accessStatus.active ? `
@@ -5204,7 +5253,7 @@ async function loadAccessControl(sectionElement) {
               </label>
             </div>
             <div style="display: flex; gap: 8px; align-items: center;">
-              ${plugBtnHtml}
+              ${iaplugBtnHtml}
               ${regionSelectorHtml}
               ${duplicateBtnHtml}
             </div>
@@ -5326,7 +5375,7 @@ async function loadAccessControl(sectionElement) {
           ${isMaster ? `
             <button id="ac-edit-tabs-btn" class="action-btn secondary-btn compact" title="Editar conteúdo das guias" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">📝 Editar Guias</button>
             <button id="ac-config-channels-btn" class="action-btn secondary-btn compact" title="Configurar canais disponíveis" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">⚙️ Canais</button>
-            <button id="ac-config-plug-btn" class="action-btn secondary-btn compact" title="Configurar PLUG por Unidades" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">🤖 PLUG</button>
+            <button id="ac-config-iaplug-btn" class="action-btn secondary-btn compact" title="Configurar IAplug por Unidades" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">🤖 IAplug</button>
             <button id="ac-config-duplicados-btn" class="action-btn secondary-btn compact" title="Configurar Verificador de Duplicidade IA por Unidades" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">🔍 Duplicados IA</button>
             <button id="ac-audit-logs-btn" class="action-btn secondary-btn compact" title="Ver logs de auditoria" style="font-size: 12px; padding: 6px 12px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer;">📋 Auditoria</button>
           ` : ''}
@@ -6187,8 +6236,8 @@ async function loadAccessControl(sectionElement) {
       })
     })
 
-    // Alterna o status do PLUG individual
-    container.querySelectorAll('.ac-toggle-plug-btn').forEach(btn => {
+    // Alterna o status do IAplug individual
+    container.querySelectorAll('.ac-toggle-iaplug-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.preventDefault()
         e.stopPropagation()
@@ -6202,14 +6251,14 @@ async function loadAccessControl(sectionElement) {
         btn.disabled = true
         btn.textContent = 'Aguarde...'
         
-        const success = await window.sgdPermissions.toggleUserPLUG(userId, isEditor, currentStatus)
+        const success = await window.sgdPermissions.toggleUserIAplug(userId, isEditor, currentStatus)
         if (success) {
-          showNotification(`Acesso de "${userName}" ao PLUG ${!currentStatus ? 'desativado' : 'ativado'}!`, 'success')
+          showNotification(`Acesso de "${userName}" ao IAplug ${!currentStatus ? 'desativado' : 'ativado'}!`, 'success')
           loadAccessControl(sectionElement)
         } else {
-          showNotification('Erro ao alterar acesso do PLUG.', 'error')
+          showNotification('Erro ao alterar acesso do IAplug.', 'error')
           btn.disabled = false
-          btn.textContent = currentStatus ? '🤖 PLUG: Bloqueado' : '🤖 PLUG: Ativo'
+          btn.textContent = currentStatus ? '🤖 IAplug: Bloqueado' : '🤖 IAplug: Ativo'
         }
       })
     })
@@ -6232,7 +6281,7 @@ async function loadAccessControl(sectionElement) {
         const success = await window.sgdPermissions.toggleUserDuplicateIA(userId, isEditor, currentStatus)
         if (success) {
           // OBS: aqui "currentStatus" reflete duplicateAccessStatus.active (estado ANTES do
-          // clique), ao contrário do botão do PLUG cujo data-current-status reflete
+          // clique), ao contrário do botão do IAplug cujo data-current-status reflete
           // "está desativado". Por isso a condição é invertida em relação ao bloco acima.
           showNotification(`Acesso de "${userName}" ao Duplicados IA ${currentStatus ? 'desativado' : 'ativado'}!`, 'success')
           loadAccessControl(sectionElement)
@@ -6244,22 +6293,22 @@ async function loadAccessControl(sectionElement) {
       })
     })
 
-    // Botão de Configuração do PLUG
-    const configPLUGBtn = container.querySelector('#ac-config-plug-btn')
-    if (configPLUGBtn) {
-      configPLUGBtn.addEventListener('click', async (e) => {
+    // Botão de Configuração do IAplug
+    const configIAplugBtn = container.querySelector('#ac-config-iaplug-btn')
+    if (configIAplugBtn) {
+      configIAplugBtn.addEventListener('click', async (e) => {
         e.preventDefault()
         e.stopPropagation()
-        configPLUGBtn.disabled = true
-        const origText = configPLUGBtn.textContent
-        configPLUGBtn.textContent = 'Carregando...'
+        configIAplugBtn.disabled = true
+        const origText = configIAplugBtn.textContent
+        configIAplugBtn.textContent = 'Carregando...'
         try {
-          await openConfigPLUGModal(sectionElement)
+          await openConfigIAplugModal(sectionElement)
         } catch (err) {
-          alert('Erro ao abrir configurações do PLUG: ' + err.message)
+          alert('Erro ao abrir configurações do IAplug: ' + err.message)
         } finally {
-          configPLUGBtn.disabled = false
-          configPLUGBtn.textContent = origText
+          configIAplugBtn.disabled = false
+          configIAplugBtn.textContent = origText
         }
       })
     }
@@ -6547,14 +6596,16 @@ function openConfigChannelsModal(initialChannels, sectionElement) {
   }
 }
 
-async function openConfigPLUGModal(sectionElement) {
+async function openConfigIAplugModal(sectionElement) {
   // 1. Carrega as configurações remotas
   const localData = await chrome.storage.local.get(['remoteConfig'])
   const remoteConfig = localData.remoteConfig || {}
-  
-  const defaultSul = 'https://tria.plugsocial.online/?assunto=sped&codigoCliente=96797&identificacaoRevenda=3'
-  let urlSul = remoteConfig.iagente_url_sul || defaultSul
-  let urlSudeste = remoteConfig.iagente_url_sudeste || urlSul
+
+  // iaplugLinks é a fonte canônica (sul/sudeste/at + eventuais links customizados);
+  // usada aqui só para montar as opções do seletor de região por unidade. A
+  // edição das URLs em si (criar/migrar/inativar/renomear) fica só no modal
+  // "Gerenciar Links do IAplug", aberto pelo botão abaixo.
+  let iaplugLinks = window.sgdPermissions.resolveIAplugLinksConfig(remoteConfig)
   let enabledUnits = remoteConfig.iagente_enabled_unidades ? [...remoteConfig.iagente_enabled_unidades] : []
   
   const unitRegionChanges = remoteConfig.iagente_unidade_regiao ? { ...remoteConfig.iagente_unidade_regiao } : {}
@@ -6618,10 +6669,9 @@ async function openConfigPLUGModal(sectionElement) {
             </span>
           </span>
           <div style="display: flex; align-items: center; gap: 12px;">
-            <!-- Seletor de Região da Unidade -->
+            <!-- Seletor de Região/Link da Unidade -->
             <select class="cia-unit-region-select" data-unit="${escapeHTML(unit)}" style="font-size: 11px; padding: 2px 4px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); outline: none;">
-              <option value="sul" ${currentRegion === 'sul' ? 'selected' : ''}>Sul</option>
-              <option value="sudeste" ${currentRegion === 'sudeste' ? 'selected' : ''}>Sudeste</option>
+              ${buildIAplugLinkOptionsHtml(iaplugLinks, currentRegion)}
             </select>
             
             <div style="display: flex; align-items: center; position: relative;">
@@ -6664,21 +6714,15 @@ async function openConfigPLUGModal(sectionElement) {
   const modalHtml = `
     <div style="padding: 10px; max-height: 620px; display: flex; flex-direction: column; width: 480px; box-sizing: border-box;">
       <p style="font-size: 12px; color: var(--text-color-muted); margin-bottom: 15px; margin-top: 0;">
-        Gerencie as URLs de atendimento regional e controle o acesso do assistente PLUG (Tria) liberando por unidade de atendimento do SGD. Por padrão, todas as unidades iniciam bloqueadas.
+        Controle o acesso do assistente IAplug (Tria) liberando por unidade de atendimento do SGD e escolhendo o link de cada uma. Por padrão, todas as unidades iniciam bloqueadas.
       </p>
-      
-      <!-- Seção de URLs -->
-      <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
-        <div style="display: flex; flex-direction: column; gap: 4px;">
-          <label style="font-size: 11px; font-weight: bold; color: var(--text-color-muted);">URL do PLUG - SUL:</label>
-          <input type="text" id="cia-url-sul" value="${escapeHTML(urlSul)}" placeholder="URL do time do Sul" style="width: 100%; padding: 6px 10px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
-        </div>
-        <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 4px;">
-          <label style="font-size: 11px; font-weight: bold; color: var(--text-color-muted);">URL do PLUG - SUDESTE:</label>
-          <input type="text" id="cia-url-sudeste" value="${escapeHTML(urlSudeste)}" placeholder="URL do time do Sudeste" style="width: 100%; padding: 6px 10px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
-        </div>
+
+      <!-- Acesso ao gerenciamento dos links -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+        <span style="font-size: 11px; font-weight: bold; color: var(--text-color-muted); text-transform: uppercase;">Links do IAplug</span>
+        <button type="button" id="cia-manage-links-btn" class="action-btn small-btn" title="Editar, migrar, inativar ou criar novos links do IAplug" style="font-size: 11px; padding: 4px 10px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer; border-radius: 4px;">🔗 Gerenciar Links</button>
       </div>
-      
+
       <!-- Seção de Filtro e Busca -->
       <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
         <input type="text" id="cia-search-units" placeholder="🔎 Pesquisar unidade mapeada..." style="flex: 1; padding: 6px 10px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
@@ -6704,12 +6748,12 @@ async function openConfigPLUGModal(sectionElement) {
   `
   
   const modal = createModal(
-    'Configurar PLUG por Unidades',
+    'Configurar IAplug por Unidades',
     modalHtml,
     null,
     {
       isManagementModal: false,
-      modalId: 'config-plug-units-modal',
+      modalId: 'config-iaplug-units-modal',
       showShareButton: false
     }
   )
@@ -6777,16 +6821,16 @@ async function openConfigPLUGModal(sectionElement) {
     })
   }
   
-  // URL Input event listeners (stop propagation)
-  const urlSulInput = modal.querySelector('#cia-url-sul')
-  const urlSudesteInput = modal.querySelector('#cia-url-sudeste')
-  if (urlSulInput) {
-    urlSulInput.addEventListener('click', e => e.stopPropagation())
-    urlSulInput.addEventListener('keydown', e => e.stopPropagation())
-  }
-  if (urlSudesteInput) {
-    urlSudesteInput.addEventListener('click', e => e.stopPropagation())
-    urlSudesteInput.addEventListener('keydown', e => e.stopPropagation())
+  // Botão "Gerenciar Links": abre o modal de gerenciamento avançado (editar,
+  // migrar unidades entre links, inativar/ativar, criar novos links). Ao
+  // fechar, recarrega este modal do zero para refletir qualquer alteração.
+  const manageLinksBtn = modal.querySelector('#cia-manage-links-btn')
+  if (manageLinksBtn) {
+    manageLinksBtn.addEventListener('click', async (e) => {
+      e.stopPropagation()
+      cleanup()
+      await openManageIAplugLinksModal(sectionElement)
+    })
   }
 
   // Cancel and Close listeners
@@ -6802,33 +6846,26 @@ async function openConfigPLUGModal(sectionElement) {
   if (saveBtn) {
     saveBtn.addEventListener('click', async (e) => {
       e.stopPropagation()
-      
-      const valSul = urlSulInput ? urlSulInput.value.trim() : ''
-      const valSudeste = urlSudesteInput ? urlSudesteInput.value.trim() : ''
-      
-      if (!valSul) {
-        alert('O link do PLUG SUL é obrigatório.')
-        return
-      }
-      
+
       saveBtn.disabled = true
       saveBtn.textContent = 'Salvando...'
-      
-      // Atualiza o objeto remoteConfig completo
+
+      // Este modal só salva liberação/bloqueio por unidade e o link atribuído a
+      // cada uma (iagente_unidade_regiao); as URLs dos links em si (iagente_links
+      // e os campos legados iagente_url_*) são geridas exclusivamente pelo modal
+      // "Gerenciar Links do IAplug", então não são tocadas aqui.
       const updatedConfig = {
         ...remoteConfig,
-        iagente_url_sul: valSul,
-        iagente_url_sudeste: valSudeste || valSul,
         iagente_enabled_unidades: enabledUnits,
         iagente_unidade_regiao: unitRegionChanges
       }
-      
+
       // Remove a propriedade obsoleta iagente_disabled_unidades se houver
       delete updatedConfig.iagente_disabled_unidades
       
       const success = await window.sgdPermissions.saveRemoteConfig(updatedConfig)
       if (success) {
-        showNotification('Configurações do PLUG atualizadas com sucesso!', 'success')
+        showNotification('Configurações do IAplug atualizadas com sucesso!', 'success')
         cleanup()
         if (sectionElement) loadAccessControl(sectionElement)
       } else {
@@ -6838,6 +6875,306 @@ async function openConfigPLUGModal(sectionElement) {
       }
     })
   }
+}
+
+/**
+ * Gera uma chave estável (sem acentos/espaços) para um novo link customizado do
+ * IAplug a partir do label digitado pelo Master, evitando colisão com chaves já
+ * existentes (fixas ou customizadas).
+ * @param {string} label
+ * @param {string[]} existingKeys
+ */
+function slugifyIAplugLinkKey(label, existingKeys) {
+  let base = (label || '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+  if (!base) base = 'link'
+
+  let key = base
+  let i = 2
+  while (existingKeys.includes(key)) {
+    key = `${base}_${i}`
+    i++
+  }
+  return key
+}
+
+/**
+ * Modal de gerenciamento avançado dos links do IAplug: permite editar o
+ * label/URL de cada link (fixo ou customizado), migrar as unidades de um link
+ * para outro antes/depois de inativá-lo, inativar/reativar links, e criar
+ * novos links além dos 3 fixos (Sul, Sudeste, AT). Aberto a partir do botão
+ * "🔗 Gerenciar Links" dentro do modal "Configurar IAplug por Unidades".
+ *
+ * Cada ação (salvar link, inativar/ativar, migrar, criar) persiste
+ * imediatamente no Firebase via saveRemoteConfig — diferente do modal pai, que
+ * usa um único botão "Salvar Alterações" em lote — porque são ações
+ * individualmente reversíveis e o Master normalmente quer confirmação
+ * imediata ao inativar/migrar um link em produção.
+ *
+ * @param {HTMLElement} sectionElement - Seção de controle de acesso, para recarregar a lista ao fechar.
+ */
+async function openManageIAplugLinksModal(sectionElement) {
+  const localData = await chrome.storage.local.get(['remoteConfig'])
+  let remoteConfig = localData.remoteConfig || {}
+  let iaplugLinks = window.sgdPermissions.resolveIAplugLinksConfig(remoteConfig)
+  let unidadeRegiao = remoteConfig.iagente_unidade_regiao ? { ...remoteConfig.iagente_unidade_regiao } : {}
+
+  function countUnitsForKey(key) {
+    return Object.keys(unidadeRegiao).filter(u => unidadeRegiao[u] === key).length
+  }
+
+  // Persiste imediatamente no Firebase (PUT completo do config.json, como o resto
+  // do remoteConfig) e só atualiza o estado local em memória se a gravação deu certo.
+  async function persist(newLinks, newUnidadeRegiao) {
+    const updatedConfig = {
+      ...remoteConfig,
+      iagente_links: newLinks,
+      iagente_unidade_regiao: newUnidadeRegiao,
+      iagente_url_sul: newLinks.sul ? newLinks.sul.url : remoteConfig.iagente_url_sul,
+      iagente_url_sudeste: newLinks.sudeste ? newLinks.sudeste.url : remoteConfig.iagente_url_sudeste,
+      iagente_url_at: newLinks.at ? newLinks.at.url : remoteConfig.iagente_url_at
+    }
+    const success = await window.sgdPermissions.saveRemoteConfig(updatedConfig)
+    if (success) {
+      remoteConfig = updatedConfig
+      iaplugLinks = newLinks
+      unidadeRegiao = newUnidadeRegiao
+    }
+    return success
+  }
+
+  const modalHtml = `
+    <div style="padding: 10px; max-height: 620px; display: flex; flex-direction: column; width: 500px; box-sizing: border-box;">
+      <p style="font-size: 12px; color: var(--text-color-muted); margin-bottom: 12px; margin-top: 0;">
+        Edite o link de cada equipe, migre as unidades de um link para outro antes de inativá-lo, ou crie novos links do IAplug além dos 3 fixos (Sul, Sudeste, AT).
+      </p>
+      <div id="cia-links-rows"></div>
+
+      <div style="margin-top: 4px; padding: 10px; background: var(--background-secondary, #f9fafb); border: 1px solid var(--border-color); border-radius: 4px;">
+        <label style="font-size: 11px; font-weight: bold; color: var(--text-color-muted); display: block; margin-bottom: 6px;">+ Criar novo link</label>
+        <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+          <input type="text" id="cia-new-link-label" placeholder="Nome (ex: Nordeste)" style="flex: 1; padding: 5px 8px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
+        </div>
+        <div style="display: flex; gap: 6px;">
+          <input type="text" id="cia-new-link-url" placeholder="URL do link" style="flex: 1; padding: 5px 8px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
+          <button id="cia-new-link-btn" class="action-btn small-btn" style="background: var(--primary-color, #6366f1); color: white; border: none; padding: 5px 12px; cursor: pointer; font-size: 11px; border-radius: 4px; font-weight: bold; white-space: nowrap;">Criar</button>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+        <button id="cia-links-close-btn" class="action-btn secondary-btn compact" style="padding: 6px 14px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main); cursor: pointer; font-size: 12px;">Fechar</button>
+      </div>
+    </div>
+  `
+
+  const modal = createModal(
+    'Gerenciar Links do IAplug',
+    modalHtml,
+    null,
+    {
+      isManagementModal: false,
+      modalId: 'manage-iaplug-links-modal',
+      showShareButton: false
+    }
+  )
+
+  const defaultActions = modal.querySelector('.se-modal-actions')
+  if (defaultActions) defaultActions.remove()
+
+  modal.style.zIndex = '10010'
+  document.body.appendChild(modal)
+
+  const modalBody = modal.querySelector('.se-modal-body') || modal
+
+  // Ao fechar, volta para o modal "Configurar IAplug por Unidades" já atualizado
+  // e recarrega a lista de Controle de Acesso (o status "🤖 IAplug" de cada
+  // usuário pode ter mudado se o link ao qual sua unidade estava atrelada foi
+  // inativado nesta sessão).
+  const closeAndReturn = async () => {
+    modal.remove()
+    if (sectionElement) {
+      await openConfigIAplugModal(sectionElement)
+      loadAccessControl(sectionElement)
+    }
+  }
+
+  function renderRows() {
+    const rowsDiv = modalBody.querySelector('#cia-links-rows')
+    if (!rowsDiv) return
+    const keys = Object.keys(iaplugLinks)
+
+    rowsDiv.innerHTML = keys.map(key => {
+      const link = iaplugLinks[key] || {}
+      const isActive = link.active !== false
+      const unitCount = countUnitsForKey(key)
+      const otherActiveKeys = keys.filter(k => k !== key && iaplugLinks[k].active !== false)
+      const isSulLink = key === 'sul'
+      const migrateOptionsHtml = otherActiveKeys
+        .map(k => `<option value="${escapeHTML(k)}">${escapeHTML(iaplugLinks[k].label || k.toUpperCase())}</option>`)
+        .join('')
+
+      return `
+        <div class="cia-iaplug-link-row" data-link-key="${escapeHTML(key)}" style="border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; margin-bottom: 10px; ${isActive ? '' : 'opacity: 0.65;'}">
+          <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+            <input type="text" class="cia-link-label-input" value="${escapeHTML(link.label || key.toUpperCase())}" style="flex: 1; font-size: 12px; font-weight: bold; padding: 4px 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--background-main); color: var(--text-color-main); box-sizing: border-box;">
+            <span style="font-size: 10px; padding: 2px 8px; border-radius: 10px; white-space: nowrap; font-weight: 600; background: ${isActive ? 'rgba(34, 197, 94, 0.15)' : 'rgba(156, 163, 175, 0.2)'}; color: ${isActive ? 'var(--action-green, #22c55e)' : 'var(--action-gray, #9ca3af)'};">${isActive ? 'Ativo' : 'Inativo'}</span>
+            <span style="font-size: 10px; color: var(--text-color-muted); white-space: nowrap;">${unitCount} unidade${unitCount === 1 ? '' : 's'}</span>
+          </div>
+          <input type="text" class="cia-link-url-input" value="${escapeHTML(link.url || '')}" placeholder="URL do link" style="width: 100%; box-sizing: border-box; font-size: 12px; padding: 5px 8px; border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 8px; background: var(--background-main); color: var(--text-color-main);">
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+            <button class="action-btn small-btn cia-link-save-btn" style="font-size: 11px; padding: 4px 10px;">💾 Salvar</button>
+            <button class="action-btn small-btn cia-link-toggle-btn" ${(isSulLink && isActive) ? 'disabled title="O link Sul é o padrão de segurança e não pode ser inativado"' : ''} style="font-size: 11px; padding: 4px 10px;">
+              ${isActive ? '⛔ Inativar' : '✅ Ativar'}
+            </button>
+            ${(otherActiveKeys.length > 0 && unitCount > 0) ? `
+              <select class="cia-link-migrate-select" style="font-size: 11px; padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--background-main); color: var(--text-color-main);">
+                <option value="">Migrar unidades para...</option>
+                ${migrateOptionsHtml}
+              </select>
+              <button class="action-btn small-btn cia-link-migrate-btn" style="font-size: 11px; padding: 4px 10px;">➡️ Migrar</button>
+            ` : ''}
+          </div>
+        </div>
+      `
+    }).join('')
+
+    // Impede que cliques/teclas nos controles internos se propaguem para
+    // qualquer listener de fechamento do modal.
+    rowsDiv.querySelectorAll('input, select, button').forEach(el => {
+      el.addEventListener('click', e => e.stopPropagation())
+      el.addEventListener('keydown', e => e.stopPropagation())
+    })
+
+    rowsDiv.querySelectorAll('.cia-iaplug-link-row').forEach(rowEl => {
+      const key = rowEl.dataset.linkKey
+
+      const saveBtn = rowEl.querySelector('.cia-link-save-btn')
+      if (saveBtn) {
+        saveBtn.addEventListener('click', async () => {
+          const labelInput = rowEl.querySelector('.cia-link-label-input')
+          const urlInput = rowEl.querySelector('.cia-link-url-input')
+          const newLabel = labelInput ? labelInput.value.trim() : ''
+          const newUrl = urlInput ? urlInput.value.trim() : ''
+          if (!newUrl) {
+            alert('A URL do link não pode ficar vazia.')
+            return
+          }
+          saveBtn.disabled = true
+          saveBtn.textContent = 'Salvando...'
+          const newLinks = { ...iaplugLinks, [key]: { ...iaplugLinks[key], label: newLabel || key.toUpperCase(), url: newUrl } }
+          const success = await persist(newLinks, unidadeRegiao)
+          if (success) {
+            showNotification(`Link "${newLabel || key.toUpperCase()}" atualizado!`, 'success')
+            renderRows()
+          } else {
+            alert('Erro ao salvar o link. Tente novamente.')
+            saveBtn.disabled = false
+            saveBtn.textContent = '💾 Salvar'
+          }
+        })
+      }
+
+      const toggleBtn = rowEl.querySelector('.cia-link-toggle-btn')
+      if (toggleBtn && !toggleBtn.disabled) {
+        toggleBtn.addEventListener('click', async () => {
+          const link = iaplugLinks[key]
+          const willActivate = link.active === false
+          if (!willActivate) {
+            const unitCount = countUnitsForKey(key)
+            if (unitCount > 0) {
+              const confirmMsg = `${unitCount} unidade(s) ainda estão apontando para o link "${link.label || key.toUpperCase()}". Ao inativar, essas unidades cairão automaticamente no link SUL até serem migradas manualmente. Deseja continuar?`
+              if (!confirm(confirmMsg)) return
+            }
+          }
+          toggleBtn.disabled = true
+          const newLinks = { ...iaplugLinks, [key]: { ...link, active: willActivate } }
+          const success = await persist(newLinks, unidadeRegiao)
+          if (success) {
+            showNotification(`Link "${link.label || key.toUpperCase()}" ${willActivate ? 'ativado' : 'inativado'}!`, 'success')
+            renderRows()
+          } else {
+            alert('Erro ao alterar o status do link. Tente novamente.')
+            toggleBtn.disabled = false
+          }
+        })
+      }
+
+      const migrateBtn = rowEl.querySelector('.cia-link-migrate-btn')
+      if (migrateBtn) {
+        migrateBtn.addEventListener('click', async () => {
+          const select = rowEl.querySelector('.cia-link-migrate-select')
+          const targetKey = select ? select.value : ''
+          if (!targetKey) {
+            alert('Selecione o link de destino da migração.')
+            return
+          }
+          const unitCount = countUnitsForKey(key)
+          const targetLabel = iaplugLinks[targetKey] ? (iaplugLinks[targetKey].label || targetKey.toUpperCase()) : targetKey.toUpperCase()
+          if (!confirm(`Mover ${unitCount} unidade(s) do link "${iaplugLinks[key].label || key.toUpperCase()}" para "${targetLabel}"?`)) return
+
+          migrateBtn.disabled = true
+          const newUnidadeRegiao = { ...unidadeRegiao }
+          Object.keys(newUnidadeRegiao).forEach(unit => {
+            if (newUnidadeRegiao[unit] === key) newUnidadeRegiao[unit] = targetKey
+          })
+          const success = await persist(iaplugLinks, newUnidadeRegiao)
+          if (success) {
+            showNotification(`${unitCount} unidade(s) migrada(s) para "${targetLabel}"!`, 'success')
+            renderRows()
+          } else {
+            alert('Erro ao migrar as unidades. Tente novamente.')
+            migrateBtn.disabled = false
+          }
+        })
+      }
+    })
+  }
+
+  renderRows()
+
+  // Formulário de criação de novo link
+  const newLinkBtn = modal.querySelector('#cia-new-link-btn')
+  const newLinkLabelInput = modal.querySelector('#cia-new-link-label')
+  const newLinkUrlInput = modal.querySelector('#cia-new-link-url')
+  ;[newLinkLabelInput, newLinkUrlInput, newLinkBtn].forEach(el => {
+    if (!el) return
+    el.addEventListener('click', e => e.stopPropagation())
+    el.addEventListener('keydown', e => e.stopPropagation())
+  })
+  if (newLinkBtn) {
+    newLinkBtn.addEventListener('click', async () => {
+      const label = newLinkLabelInput ? newLinkLabelInput.value.trim() : ''
+      const url = newLinkUrlInput ? newLinkUrlInput.value.trim() : ''
+      if (!label || !url) {
+        alert('Preencha o nome e a URL do novo link.')
+        return
+      }
+      const key = slugifyIAplugLinkKey(label, Object.keys(iaplugLinks))
+      newLinkBtn.disabled = true
+      newLinkBtn.textContent = 'Criando...'
+      const newLinks = { ...iaplugLinks, [key]: { label, url, active: true } }
+      const success = await persist(newLinks, unidadeRegiao)
+      if (success) {
+        showNotification(`Link "${label}" criado!`, 'success')
+        if (newLinkLabelInput) newLinkLabelInput.value = ''
+        if (newLinkUrlInput) newLinkUrlInput.value = ''
+        renderRows()
+      } else {
+        alert('Erro ao criar o link. Tente novamente.')
+      }
+      newLinkBtn.disabled = false
+      newLinkBtn.textContent = 'Criar'
+    })
+  }
+
+  const closeBtn = modal.querySelector('#cia-links-close-btn')
+  const xBtn = modal.querySelector('.se-close-modal-btn')
+  if (closeBtn) closeBtn.addEventListener('click', (e) => { e.stopPropagation(); closeAndReturn() })
+  if (xBtn) xBtn.addEventListener('click', (e) => { e.stopPropagation(); closeAndReturn() })
 }
 
 async function openConfigDuplicateModal(sectionElement) {

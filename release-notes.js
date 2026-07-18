@@ -151,8 +151,8 @@ const RELEASE_NOTES = {
 
       '<b>🪟 Interface & Usabilidade:</b>' +
       '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-      '<li><b>PLUG em Janela Dedicada:</b> O assistente Tria agora abre em janela popup estilo App (lembra tamanho e posição).</li>' +
-      '<li><b>Responsividade dos Botões:</b> Ocultação automática de botões flutuantes (FAB, PLUG) em telas muito pequenas (menores que 680×450px).</li>' +
+      '<li><b>IAplug em Janela Dedicada:</b> O assistente Tria agora abre em janela popup estilo App (lembra tamanho e posição).</li>' +
+      '<li><b>Responsividade dos Botões:</b> Ocultação automática de botões flutuantes (FAB, IAplug) em telas muito pequenas (menores que 680×450px).</li>' +
       '<li><b>Drag & Drop no FAB:</b> Reordenação visual por clique e arraste dos atalhos do menu flutuante.</li>' +
       '<li><b>Verificador Otimizado:</b> Checagem de SSCs duplicadas feita em segundo plano com restauração automática de filtros.</li>' +
       '</ul>'
@@ -183,8 +183,8 @@ const RELEASE_NOTES = {
 
       '<b>🪟 Interface & Usabilidade:</b>' +
       '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
-      '<li><b>PLUG em Janela Dedicada:</b> O assistente Tria agora abre em janela popup estilo App (lembra tamanho e posição).</li>' +
-      '<li><b>Responsividade dos Botões:</b> Ocultação automática de botões flutuantes (FAB, PLUG) em telas muito pequenas (menores que 680×450px).</li>' +
+      '<li><b>IAplug em Janela Dedicada:</b> O assistente Tria agora abre em janela popup estilo App (lembra tamanho e posição).</li>' +
+      '<li><b>Responsividade dos Botões:</b> Ocultação automática de botões flutuantes (FAB, IAplug) em telas muito pequenas (menores que 680×450px).</li>' +
       '<li><b>Drag & Drop no FAB:</b> Reordenação visual por clique e arraste dos atalhos do menu flutuante.</li>' +
       '<li><b>Verificador Otimizado:</b> Checagem de SSCs duplicadas feita em segundo plano com restauração automática de filtros.</li>' +
       '</ul>'
@@ -375,7 +375,31 @@ const MINOR_RELEASE_NOTES = {
       version: '3.0.7.4',
       features: [
         '<b>🔔 Notificação de Pendências Redesenhada:</b> A pílula de pendências novas no FAB agora expande brevemente mostrando a descrição completa (ex: "4 pendências (1 nova)") e recolhe sozinha — passe o mouse sobre ela a qualquer momento para conferir. Habilitada por padrão, repete o lembrete a cada 1h enquanto não for vista, e não exibe mais o toast no canto superior direito.',
-        '<b>🔍 Verificação de Duplicidade Configurável:</b> Novas opções em Configurações > Preferências para usar (ou não) Inteligência Artificial e/ou o Fallback por palavras-chave na Verificação de Duplicidade, com um atalho rápido (⚙️) direto no widget de aviso.'
+        '<b>🔍 Verificação de Duplicidade Configurável:</b> Novas opções em Configurações > Preferências para usar (ou não) Inteligência Artificial e/ou o Fallback por palavras-chave na Verificação de Duplicidade, com um atalho rápido (⚙️) direto no widget de aviso.',
+        '<b>🌐 Central de Links:</b> Novo painel no FAB (🌐) com um repositório colaborativo de links de suporte por canal — guias Comunidade, Pessoal e Pendências, com curtidas, salvamento, busca e agrupamento por tipo (SS/SSC/SA/NE).'
+      ]
+    },
+    {
+      version: '3.0.7.5',
+      features: [
+        { text: '<b>🤖 IAplug - Novo link AT:</b> Adicionado um terceiro link regional (AT) em Central de Informações > Controle de Acesso > 🤖 IAplug, ao lado dos já existentes Sul e Sudeste.', hidden: true },
+        { text: '<b>🔗 Gerenciar Links do IAplug:</b> Novo modal (botão "🔗 Gerenciar Links" dentro de "Configurar IAplug por Unidades") para editar o link de cada equipe, migrar as unidades de um link para outro, inativar/reativar links e criar novos links além dos 3 fixos.', hidden: true }
+      ]
+    },
+    {
+      version: '3.0.7.6',
+      features: [
+        '<b>📋 Pendências reformuladas:</b> A guia Pendências agora mostra as suas SSCs pendentes (aquelas em que você é o responsável), capturadas diretamente da lista de Solicitações do SGD. O tempo desde o último trâmite passou a ser calculado em horas úteis, desconsiderando fins de semana e feriados.',
+        '<b>👤 Responsável monitorado:</b> Novo seletor no topo da guia Pendências para escolher de qual responsável ver as pendências — útil para líderes e gestores que enxergam vários usuários. A escolha fica salva e evita a limitação de 1.000 registros da primeira página.',
+        '<b>🛡️ Mais estável:</b> As buscas de pendências passaram a ser coordenadas entre as abas do SGD, evitando requisições simultâneas na mesma sessão (que faziam a página vir em branco).',
+        { text: '<b>🐞 Debug de pendências:</b> Logs [PENDING] (via sgdDebug.ativar() no console) para diagnosticar filtros, responsável usado, contagem de linhas e coalescing.', hidden: true }
+      ]
+    },
+    {
+      version: '3.0.7.7',
+      features: [
+        '<b>🚨 Alerta de Pendências (novo):</b> Widget lateral opcional que fica na borda direita e, ao clicar, lista suas SSCs por faixa de tempo — o marcador pisca quando uma pendência cruza o prazo. Ative na guia Pendências › botão "Alerta" e ajuste faixa de alerta, som, N2 e mais na engrenagem.',
+        { text: '<b>📋 Pendências (ajuste):</b> Removido o filtro de responsável duplicado ("Todos os Responsáveis") da guia Pendências; a seleção de responsável passa a ser feita apenas pelo seletor "Responsável monitorado", evitando confusão (especialmente para líderes/gestores).', hidden: true }
       ]
     }
   ],

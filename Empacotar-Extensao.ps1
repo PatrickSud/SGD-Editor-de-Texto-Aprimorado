@@ -34,8 +34,9 @@ try {
 
     $exclude = @(
         '.git', '.github', '.vscode', '.cursor', 'node_modules',
-        'README.md', 'CODING_STYLE_RULES.md', 'rename-project.js',
-        'gist-forms-config-correct.json', '.gitignore',
+        'README.md', 'CODING_STYLE_RULES.md',
+        'rename-project.js', 'rename-iagente-to-plug.js', 'rename-plug-to-iaplug.js',
+        'gist-forms-config-correct.json', '.gitignore', '.git-credentials',
         'Thumbs.db', 'desktop.ini',
         'Empacotar-Extensao.bat', 'Empacotar-Extensao.ps1'
     )

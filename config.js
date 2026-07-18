@@ -5,7 +5,7 @@
 
 // ─── DEBUG LOGS (console) ──────────────────────────────────────────────────
 // Controla a exibição dos logs de diagnóstico da extensão (ex.: "[AI WS]",
-// "[SugerirSAM]", "[PLUG Access]", "[DEBUG]" do Verificador de Duplicidade).
+// "[SugerirSAM]", "[IAplug Access]", "[DEBUG]" do Verificador de Duplicidade).
 // Por padrão fica DESATIVADO para não poluir o console de todos os usuários.
 // Cada técnico pode ativar/desativar no console da página do SGD (F12):
 //   sgdDebug.ativar()     → liga os logs (persiste entre recarregamentos)
@@ -183,7 +183,13 @@ const DEFAULT_SETTINGS = {
     enableTeamManagement: false, // Habilita o gerenciamento de Equipe AT na guia Controle de Acesso por padrão desativado
     rememberLastClassification: false, // Lembrar e preencher automaticamente a última classificação selecionada (desativado por padrão)
     enableAutoCapitalize: true, // Capitaliza automaticamente a primeira letra de frases ao digitar (habilitado por padrão)
-    enablePendingNotifications: true // Notificação minimalista de novas pendências (toast + pílula expandida no FAB). Habilitada por padrão.
+    enablePendingNotifications: true, // Notificação minimalista de novas pendências (toast + pílula expandida no FAB). Habilitada por padrão.
+    enablePendingWidget: false, // Widget lateral de pendências (marcador na borda direita que expande). Desabilitado por padrão (lançamento gradual).
+    pendingWidgetAlertTier: 'notice', // Faixa a partir da qual o widget sinaliza (treme/pisca): notice(30h)|warning(40h)|urgent(44h)|critical(48h)|fatal(72h)|none(só contagem).
+    pendingWidgetOpenAllTier: 'notice', // Faixa a partir da qual o botão "Abrir" abre as SSCs: notice(30h)|warning(40h)|urgent(44h)|critical(48h)|fatal(72h). O rótulo do botão acompanha a seleção.
+    pendingWidgetIncludeN2: false, // Incluir pendências N2 (aguardando outro setor) na lista/contagem do widget. Padrão: só N1.
+    pendingWidgetSound: false, // Tocar um bip curto quando uma SSC cruzar a faixa de alerta configurada.
+    pendingWidgetRepeatAlert: false // Voltar a piscar (~1x/h) enquanto houver pendência nova não vista.
   },
   pinnedAIButtons: []
 }
@@ -400,7 +406,7 @@ const FEATURE_SUGERIR_SAM = true
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ─── LIMIARES DE JANELA PARA BOTÕES FLUTUANTES ───────────────────────────────
-// FAB e botões Ir ao Topo/PLUG ficam ocultos quando a janela do navegador
+// FAB e botões Ir ao Topo/IAplug ficam ocultos quando a janela do navegador
 // for menor que estas dimensões (comum em janelas SGD abertas em tamanho reduzido).
 const FAB_MIN_WINDOW_WIDTH = 680   // px — largura mínima para exibir os botões
 const FAB_MIN_WINDOW_HEIGHT = 450  // px — altura mínima para exibir os botões

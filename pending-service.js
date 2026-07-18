@@ -53,6 +53,227 @@ function calculateBusinessTimeMs(startTs, endTs) {
 }
 
 /**
+ * Definição ÚNICA das faixas de SLA das pendências (fonte de verdade
+ * compartilhada entre o card do painel, o widget lateral e o alerta 🚨).
+ *
+ * Os limiares (minHours) são os mesmos já usados no card de pendências e são
+ * medidos em HORAS ÚTEIS (ver calculateBusinessTimeMs). `countable=false`
+ * marca a faixa "No prazo" (<30h), que é apenas informativa: não entra na
+ * contagem do widget, não sinaliza o usuário e não é aberta pelo "Abrir 30h+".
+ *
+ * rank cresce com a gravidade (0 = no prazo ... 5 = atrasado), útil para
+ * ordenar as faixas e para detectar quando uma SSC "sobe" de faixa.
+ */
+const PENDING_SLA_TIERS = {
+  fatal: {
+    rank: 5,
+    icon: '☠️',
+    label: 'Atrasado',
+    minHours: 72,
+    countable: true,
+    color: '#7f1d1d',
+    bg: '#fef2f2'
+  },
+  critical: {
+    rank: 4,
+    icon: '💣',
+    label: 'Estourado',
+    minHours: 48,
+    countable: true,
+    color: '#dc2626',
+    bg: '#fef2f2'
+  },
+  urgent: {
+    rank: 3,
+    icon: '🔥',
+    label: 'Urgente',
+    minHours: 44,
+    countable: true,
+    color: '#ea580c',
+    bg: '#fff7ed'
+  },
+  warning: {
+    rank: 2,
+    icon: '⏳',
+    label: 'Atenção',
+    minHours: 40,
+    countable: true,
+    color: '#f59e0b',
+    bg: '#fffbeb'
+  },
+  notice: {
+    rank: 1,
+    icon: '👀',
+    label: 'Fique atento',
+    minHours: 30,
+    countable: true,
+    color: '#65a30d',
+    bg: '#f7fee7'
+  },
+  'no-prazo': {
+    rank: 0,
+    icon: '🕓',
+    label: 'No prazo',
+    minHours: 0,
+    countable: false,
+    color: '#cbd5e1',
+    bg: '#f8fafc'
+  }
+}
+
+/**
+ * Menor limiar considerado "faixa de atenção" (entra na contagem e sinaliza).
+ * Derivado da menor faixa contável, para não repetir o número mágico 30.
+ */
+const PENDING_SLA_ATTENTION_MIN_HOURS = Math.min(
+  ...Object.values(PENDING_SLA_TIERS)
+    .filter(t => t.countable)
+    .map(t => t.minHours)
+)
+
+/**
+ * Extrai as horas (úteis) desde o último trâmite de uma pendência.
+ * Prefere o valor preciso (hoursSinceUpdate); se só houver a estimativa em
+ * dias (usuário comum / SSC antiga), converte para horas aproximadas.
+ * @param {object} item
+ * @returns {number|null} horas, ou null se não houver como estimar.
+ */
+function getPendingHoursSinceUpdate(item) {
+  if (item && Number.isFinite(item.hoursSinceUpdate)) {
+    return item.hoursSinceUpdate
+  }
+  if (item && Number.isFinite(item.estimatedDaysSinceUpdate)) {
+    return item.estimatedDaysSinceUpdate * 24
+  }
+  return null
+}
+
+/**
+ * Classifica uma pendência em uma faixa de SLA (fonte de verdade única).
+ * @param {object} item - Item de pendência (usa hoursSinceUpdate/estimated).
+ * @returns {{tier:string, rank:number, icon:string, label:string,
+ *   countable:boolean, color:string, bg:string, hours:(number|null),
+ *   rangeLabel:string}}
+ */
+function classificarSlaPendencia(item) {
+  const hours = getPendingHoursSinceUpdate(item)
+  let tierKey = 'no-prazo'
+
+  if (hours !== null) {
+    const h = Math.floor(hours)
+    if (h >= PENDING_SLA_TIERS.fatal.minHours) tierKey = 'fatal'
+    else if (h >= PENDING_SLA_TIERS.critical.minHours) tierKey = 'critical'
+    else if (h >= PENDING_SLA_TIERS.urgent.minHours) tierKey = 'urgent'
+    else if (h >= PENDING_SLA_TIERS.warning.minHours) tierKey = 'warning'
+    else if (h >= PENDING_SLA_TIERS.notice.minHours) tierKey = 'notice'
+    else tierKey = 'no-prazo'
+  }
+
+  const meta = PENDING_SLA_TIERS[tierKey]
+  const rangeLabel = meta.countable ? `${meta.minHours}h+` : '<30h'
+
+  return {
+    tier: tierKey,
+    rank: meta.rank,
+    icon: meta.icon,
+    label: meta.label,
+    countable: meta.countable,
+    color: meta.color,
+    bg: meta.bg,
+    hours,
+    rangeLabel
+  }
+}
+
+/**
+ * Indica se a pendência está em faixa de atenção (>=30h úteis): entra na
+ * contagem do widget e pode sinalizar o usuário. Itens "No prazo" retornam false.
+ * @param {object} item
+ * @returns {boolean}
+ */
+function isPendenciaEmAtencao(item) {
+  return classificarSlaPendencia(item).countable === true
+}
+
+// Mapa persistido {sscId: rank} do ÚLTIMO tier conhecido de cada pendência,
+// usado para detectar quando uma SSC "sobe" para faixa de atenção (>=30h).
+const PENDING_TIER_RANKS_KEY = 'pendingTierRanks'
+// Flag persistida: há pelo menos uma SSC que acabou de cruzar para atenção e
+// ainda não foi vista pelo usuário (o widget usa isso para tremer/piscar 🚨).
+const PENDING_WIDGET_HAS_NEW_KEY = 'pendingWidgetHasNew'
+
+/**
+ * Avalia, a cada ciclo, quais pendências CRUZARAM para faixa de atenção
+ * (passaram de "No prazo"/inexistente para >=30h úteis) desde a última
+ * verificação. Persiste o mapa de tiers e, se houve cruzamento, marca a flag
+ * que faz o widget sinalizar. NÃO sinaliza no primeiro povoamento (baseline),
+ * para não alertar sobre pendências que já estavam antigas na instalação.
+ *
+ * @param {Array<object>} items - Pendências atuais do usuário (todas as faixas).
+ * @param {number} [alertMinRank] - Rank mínimo (faixa) que dispara o alerta.
+ *   Padrão = rank de "Fique atento" (30h). Use um valor alto (ex.: 99) para
+ *   NÃO alertar em nenhuma faixa (só contagem).
+ * @returns {Promise<{escalatedIds:string[], hasNew:boolean}>}
+ */
+async function evaluatePendingEscalation(items, alertMinRank) {
+  try {
+    const minRank = Number.isFinite(alertMinRank)
+      ? alertMinRank
+      : PENDING_SLA_TIERS.notice.rank
+    const currentItems = Array.isArray(items) ? items : []
+    const storage = await chrome.storage.local.get([
+      PENDING_TIER_RANKS_KEY,
+      PENDING_WIDGET_HAS_NEW_KEY
+    ])
+    const prevRanks = storage[PENDING_TIER_RANKS_KEY]
+    const isBaseline = !prevRanks || typeof prevRanks !== 'object'
+    const prev = isBaseline ? {} : prevRanks
+
+    const currentRanks = {}
+    const escalatedIds = []
+
+    currentItems.forEach(item => {
+      const { rank } = classificarSlaPendencia(item)
+      currentRanks[item.id] = rank
+      if (isBaseline) return
+      // Cruzou para a "zona de alerta" se agora está numa faixa >= a mínima
+      // configurada e antes estava ABAIXO dela (ou não existia no mapa).
+      const prevRank = Object.prototype.hasOwnProperty.call(prev, item.id)
+        ? prev[item.id]
+        : 0
+      if (rank >= minRank && prevRank < minRank) {
+        escalatedIds.push(item.id)
+      }
+    })
+
+    const toSave = { [PENDING_TIER_RANKS_KEY]: currentRanks }
+    let hasNew = storage[PENDING_WIDGET_HAS_NEW_KEY] === true
+    if (escalatedIds.length > 0) {
+      hasNew = true
+      toSave[PENDING_WIDGET_HAS_NEW_KEY] = true
+    }
+    await chrome.storage.local.set(toSave)
+
+    return { escalatedIds, hasNew }
+  } catch (error) {
+    console.error('PendingService: erro ao avaliar cruzamento de SLA:', error)
+    return { escalatedIds: [], hasNew: false }
+  }
+}
+
+/**
+ * Limpa a flag de "nova pendência em atenção" (o widget para de piscar).
+ * Chamado quando o usuário abre/expande o widget ou a guia de pendências.
+ */
+async function clearPendingWidgetHasNew() {
+  try {
+    await chrome.storage.local.set({ [PENDING_WIDGET_HAS_NEW_KEY]: false })
+  } catch (error) {
+    console.error('PendingService: erro ao limpar flag do widget:', error)
+  }
+}
+
+/**
  * Remove elementos span ocultos e retorna o texto limpo.
  * @param {HTMLElement} cell - A célula da tabela.
  * @returns {string} Texto limpo.
@@ -402,7 +623,22 @@ function parsePendingPage(doc, arrivalTimes, now, arrivalTimesState) {
  * Busca e processa a lista de pendências.
  * @returns {Promise<object>} Uma promessa que resolve com um objeto contendo os itens e informações de abas.
  */
-async function fetchPendingItems() {
+/**
+ * Busca as pendências do usuário. Delegador para a nova fonte (sscs.html),
+ * que serializa TODAS as buscas pelo SgdRequestCoordinator. Mantém a assinatura
+ * antiga para que os consumidores (info-panel, badge do FAB, alarme de 15 min)
+ * sigam funcionando sem alteração.
+ * @param {object} [opts] - { force, maxAgeMs } repassados ao coordenador.
+ */
+async function fetchPendingItems(opts = {}) {
+  return fetchSscPendingItems(opts)
+}
+
+/**
+ * @deprecated Fonte ANTIGA (filtro-listas.html), descontinuada em favor da
+ * sscs.html. Mantida apenas para referência/rollback; não é mais chamada.
+ */
+async function fetchPendingItemsLegacy() {
   try {
     // 1. Carrega os tempos precisos salvos
     const arrivalTimes = await getPendingArrivalTimes()
@@ -634,18 +870,12 @@ async function checkNewPendings() {
       'pendingArrivalTimes'
     ])
     const lastSeenIds = storage.lastSeenPendingIds || []
-    const preferredResponsible = storage.preferredResponsible || ''
     const arrivalTimes = storage.pendingArrivalTimes || {}
     let arrivalTimesChanged = false
 
-    // Filtra os itens monitorados com base na preferência
-    let monitoredItems = currentItems
-    if (preferredResponsible && preferredResponsible.trim() !== '') {
-      // Mantém apenas itens do responsável escolhido
-      monitoredItems = currentItems.filter(
-        item => item.responsible === preferredResponsible
-      )
-    }
+    // A pílula do FAB conta apenas os itens acionáveis (N1); os de N2 (aguardando
+    // outro setor) aparecem só dentro da guia. A fonte já traz só as do usuário.
+    let monitoredItems = currentItems.filter(i => i.nivel === 'N1')
 
     // Verifica novos itens apenas dentro do conjunto monitorado
     const newItems = monitoredItems.filter(
@@ -655,11 +885,13 @@ async function checkNewPendings() {
     // REGISTRO DE TIMESTAMP COM ADOÇÃO INTELIGENTE (Preciso/Estimado)
     const now = Date.now()
     const parseDMY = str => {
-      const m = (str || '').match(/(\d{2})\/(\d{2})\/(\d{4})/)
+      // sscs.html usa ano com 2 dígitos (ex.: 16/07/26); aceitamos 2 ou 4.
+      const m = (str || '').match(/(\d{2})\/(\d{2})\/(\d{2,4})/)
       if (!m) return null
       const d = parseInt(m[1], 10)
       const mo = parseInt(m[2], 10) - 1
-      const y = parseInt(m[3], 10)
+      let y = parseInt(m[3], 10)
+      if (y < 100) y += 2000
       const dt = new Date(y, mo, d)
       return dt.getTime()
     }
