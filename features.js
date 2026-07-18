@@ -565,6 +565,9 @@ FATOS RELEVANTES:
 PRÓXIMA AÇÃO SUGERIDA:
 [Recomende a próxima ação mais lógica com base no histórico. Seja objetivo. Use tom de sugestão: "Sugerimos...", "Considerar...", "Verificar se...". Baseie-se apenas no que está no atendimento — não invente soluções sem evidência.]
 
+DADOS DE ACESSO:
+[Analise o CONTEXTO da conversa (chat, trâmites e ligação) para identificar se o cliente informou e-mail, login, senha, código de acesso ou qualquer credencial em algum momento do atendimento. Preste atenção especial a perguntas e respostas em mensagens separadas — por exemplo, se alguém perguntou "qual seu e-mail?" e a resposta veio na mensagem seguinte. Liste cada credencial encontrada em uma linha, no formato "campo: valor". Se nenhuma credencial foi identificada em nenhum momento do atendimento, escreva apenas "N/A".]
+
 # REGRAS ESTRITAS
 - Não invente informações que não estão no atendimento
 - Não sugira escalação para N2 se o problema ocorre em apenas uma máquina
@@ -1118,10 +1121,7 @@ ${transcricao}`
   return { contextoTexto: contexto, anexosDoChat }
 }
 
-/**
- * Manipula a ação de resumir a solicitação de suporte via IA.
- */
-/**
+/*
  * Manipula a ação de resumir a solicitação de suporte via IA.
  */
 async function handleAISummary(textArea) {
@@ -1227,7 +1227,21 @@ async function handleAISummary(textArea) {
 
       const resumoTexto      = extrairSecao(rawApiResponse, 'RESUMO DO PROBLEMA',    'FATOS RELEVANTES').replace(/^[-–—]+\s*$/gm, '').trim()
       const fatosTexto       = extrairSecao(rawApiResponse, 'FATOS RELEVANTES',      'PRÓXIMA AÇÃO SUGERIDA').replace(/^[-–—]+\s*$/gm, '').trim()
-      const proximaAcaoTexto = extrairSecao(rawApiResponse, 'PRÓXIMA AÇÃO SUGERIDA', null).replace(/^[-–—]+\s*$/gm, '').trim()
+      const proximaAcaoTexto = extrairSecao(rawApiResponse, 'PRÓXIMA AÇÃO SUGERIDA', 'DADOS DE ACESSO').replace(/^[-–—]+\s*$/gm, '').trim()
+      const dadosAcessoTexto = extrairSecao(rawApiResponse, 'DADOS DE ACESSO',       null).replace(/^[-–—]+\s*$/gm, '').trim()
+
+      // Soma com o que o regex já achou nos trâmites (relevantData.accessData) —
+      // não substitui, só acrescenta o que só existia no chat/ligação.
+      if (dadosAcessoTexto && !/^n\/a$/i.test(dadosAcessoTexto)) {
+        const linhasAcessoIA = dadosAcessoTexto
+          .split('\n')
+          .map(l => l.replace(/^[-*]\s*/, '').trim())
+          .filter(l => l.length > 0 && !/^n\/a$/i.test(l))
+
+        relevantData.accessData = Array.from(
+          new Set([...(relevantData.accessData || []), ...linhasAcessoIA])
+        )
+      }
 
       showSummaryModal(
         resumoTexto,
