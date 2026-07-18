@@ -1010,6 +1010,118 @@ function preencherDescricaoSAM(textoGerado) {
 }
 
 /**
+ * Extrai URLs de anexos enviados pelo cliente no chat. O widget de upload
+ * do chat sempre usa o domínio storage.plug.social — esses links aparecem
+ * no texto do chat mas NÃO viram um "Anexo:" formal na SSC (confirmado:
+ * só existem dentro do .txt do chat). Por isso extraímos aqui pra juntar
+ * na mesma lista de Anexos que o modal do resumo já exibe.
+ *
+ * @param {string} textoChat - Chat higienizado (texto bruto, antes do pré-resumo)
+ * @returns {Array<{fileName: string, fileUrl: string}>} No mesmo formato de relevantData.attachments
+ */
+function extrairLinksDeAnexoChat(textoChat) {
+  if (!textoChat) return []
+
+  const URL_REGEX = /https?:\/\/storage\.plug\.social\/[^\s<>"']+/g
+  const matches = textoChat.match(URL_REGEX) || []
+
+  return [...new Set(matches)].map((url, i) => ({
+    fileName: `Anexo do chat ${i + 1}`,
+    fileUrl: url
+  }))
+}
+
+/**
+ * Coleta o log do chat (anexo sscpre*.txt) e a transcrição telefônica da SSC,
+ * reaproveitando as funções já existentes no sugestor-ss.js (extrairAnexosChat,
+ * extrairTranscricao, higienização e pré-resumo via CHAT_RESUMO_LIMITE).
+ *
+ * Só funciona na tela de SSC — sugestor-ss.js é injetado apenas em
+ * .../sgsc/faces/ssc.html* (ver manifest.json). Em outras telas (SS, Ocorrência),
+ * essas funções não existem no escopo global, então a leitura é pulada
+ * silenciosamente e o fluxo de "Resumir Solicitação" continua normal.
+ *
+ * @returns {Promise<{contextoTexto: string, anexosDoChat: Array}>}
+ *   contextoTexto: bloco de texto pra anexar ao conteúdo da página (pro prompt da IA)
+ *   anexosDoChat: links de anexo do chat, no formato de relevantData.attachments
+ */
+async function coletarChatETranscricaoSSC() {
+  if (typeof extrairAnexosChat !== 'function' || typeof extrairTranscricao !== 'function') {
+    return { contextoTexto: '', anexosDoChat: [] }
+  }
+
+  const [anexosChat, transcricao] = await Promise.all([
+    extrairAnexosChat(),
+    extrairTranscricao()
+  ])
+
+  let anexosChatFinal = anexosChat
+  let transcricaoFinal = transcricao
+
+  const chatCombinado = anexosChat.join('\n\n')
+  const chatGrande = chatCombinado.length > CHAT_RESUMO_LIMITE
+  const transcricaoGrande = transcricao && transcricao.length > CHAT_RESUMO_LIMITE
+
+  // Extrai os links ANTES do pré-resumo, pra não perder nenhum caso o chat
+  // seja grande e vá ser condensado pela IA.
+  const anexosDoChat = extrairLinksDeAnexoChat(chatCombinado)
+
+  if (chatGrande) {
+    sgdLog('[Resumir Solicitação] Chat com', chatCombinado.length, 'chars — iniciando pré-resumo')
+    anexosChatFinal = [await resumirChatViaWS(chatCombinado)]
+  }
+
+  if (transcricaoGrande) {
+    sgdLog('[Resumir Solicitação] Transcrição com', transcricao.length, 'chars — iniciando pré-resumo')
+    const promptTranscricao = `Você receberá a transcrição de uma ligação de suporte técnico entre um cliente e um agente.
+
+A transcrição foi gerada automaticamente por reconhecimento de voz, então pode conter erros, palavras cortadas e frases fora de contexto.
+
+Sua tarefa é extrair APENAS as informações relevantes para abertura de um ticket de suporte N2, no seguinte formato:
+
+PROBLEMA RELATADO:
+[Descreva em 2-3 frases o problema principal que o cliente relatou]
+
+O QUE JÁ FOI ANALISADO:
+[Liste em bullet points com hífen o que foi verificado, testado ou identificado durante a ligação]
+
+INFORMAÇÕES TÉCNICAS:
+[Liste dados técnicos mencionados: empresa, código, senhas, versões, módulos, configurações relevantes. Se não houver, escreva "N/A"]
+
+REGRAS:
+- Ignore saudações, despedidas e ruídos de transcrição ("uhum", "tá", palavras soltas)
+- Foque no problema técnico e no que foi feito para resolvê-lo
+- Seja objetivo e direto
+- Não invente informações que não estão na transcrição
+
+TRANSCRIÇÃO:
+${transcricao}`
+
+    transcricaoFinal = await resumirChatViaWS(promptTranscricao)
+  }
+
+  let contexto = ''
+
+  if (anexosChatFinal.length > 0) {
+    contexto += '\n\n## Logs do Atendimento Chat\n\n'
+    anexosChatFinal.forEach((conteudo, i) => {
+      if (anexosChatFinal.length > 1) contexto += `### Arquivo ${i + 1}\n`
+      contexto += conteudo + '\n\n'
+    })
+  }
+
+  if (transcricaoFinal) {
+    contexto += '\n\n## Transcrição do Atendimento Telefônico\n\n'
+    contexto += transcricaoFinal + '\n\n'
+  }
+
+  return { contextoTexto: contexto, anexosDoChat }
+}
+
+/**
+ * Manipula a ação de resumir a solicitação de suporte via IA.
+ */
+/**
  * Manipula a ação de resumir a solicitação de suporte via IA.
  */
 async function handleAISummary(textArea) {
@@ -1042,6 +1154,17 @@ async function handleAISummary(textArea) {
     }
   }
 
+  // Lê chat/transcrição ANTES de decidir a fila. Mostra loading já aqui
+  // porque essa etapa pode demorar (fetch dos anexos + pré-resumo se for grande).
+  ligarLoading('📎')
+  const { contextoTexto, anexosDoChat } = await coletarChatETranscricaoSSC()
+  const conteudoParaGeracao = rawContent + contextoTexto
+
+  // Mescla os links de anexo do chat na mesma lista que o modal já exibe
+  if (anexosDoChat.length > 0) {
+    relevantData.attachments = [...(relevantData.attachments || []), ...anexosDoChat]
+  }
+
   // ── Verifica classificação ANTES de registrar qualquer listener ──────
   const classificacaoSgd = getSgdClassificacao()
 
@@ -1066,7 +1189,7 @@ async function handleAISummary(textArea) {
     chrome.runtime.sendMessage({
       action: 'resumirDireto',
       chainKey: 'PERFORMANCE',
-      prompt: rawContent
+      prompt: conteudoParaGeracao
     })
     return // ← para aqui, não registra o listener normal
   }
@@ -1129,7 +1252,7 @@ async function handleAISummary(textArea) {
   chrome.runtime.sendMessage({
     action: 'rotearEResumir',
     prompt: rawContent,
-    promptCompleto: montarPromptResumo(rawContent)
+    promptCompleto: montarPromptResumo(conteudoParaGeracao)
   })
 }
 
