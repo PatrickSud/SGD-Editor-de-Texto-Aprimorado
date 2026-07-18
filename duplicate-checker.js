@@ -1001,15 +1001,17 @@ async function verificarDuplicidadeManualSSC(botao, statusEl, assuntoEl) {
     // de uma verificação anterior nunca fica desatualizado na tela.
     exibirWidgetDuplicidadeSSC(resultados)
 
-    if (resultados.length > 0) {
+if (resultados.length > 0) {
       const plural = resultados.length > 1 ? 's' : ''
       atualizarStatusBotaoDuplicidade(
         statusEl,
         'duplicidade',
         `⚠️ ${resultados.length} SSC${plural} parecida${plural} encontrada${plural}.`
       )
+      registrarUsoDuplicateChecker('Verificação manual: duplicidade encontrada')
     } else {
       atualizarStatusBotaoDuplicidade(statusEl, 'success', '✅ Nenhuma SSC parecida encontrada.')
+      registrarUsoDuplicateChecker('Verificação manual: nenhuma duplicidade')
     }
   } catch (erro) {
     console.error('[Verificador de Duplicidade] Erro na verificação manual:', erro)
