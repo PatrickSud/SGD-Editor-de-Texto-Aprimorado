@@ -1344,6 +1344,12 @@ async function openManagementModal() {
                     <label for="enable-auto-capitalize">Capitalizar automaticamente a primeira letra de frases ao digitar</label>
                 </div>
                 <hr style="margin: 15px 0;">
+                <h5>Visualizador de Chat</h5>
+                <div class="form-checkbox-group">
+                    <input type="checkbox" id="enable-chat-viewer" ${preferences.enableChatViewer !== false ? 'checked' : ''}>
+                    <label for="enable-chat-viewer">Exibir o botão "Visualizar Chat" nos anexos .txt de atendimento (conversa formatada, mídias e transcrição)</label>
+                </div>
+                <hr style="margin: 15px 0;">
                 <h5>Classificação Padrão</h5>
                 <div class="form-checkbox-group">
                     <input type="checkbox" id="remember-last-classification" ${rememberChecked ? 'checked' : ''} ${rememberDisabled ? 'disabled' : ''}>
@@ -3251,6 +3257,12 @@ async function savePreferencesSettings(modal) {
   const enableAutoCapitalizeCheckbox = container.querySelector('#enable-auto-capitalize');
   if (enableAutoCapitalizeCheckbox) {
     newPreferences.enableAutoCapitalize = enableAutoCapitalizeCheckbox.checked;
+  }
+
+  // NOVO: Ler preferência para habilitar o Visualizador de Chat
+  const enableChatViewerCheckbox = container.querySelector('#enable-chat-viewer');
+  if (enableChatViewerCheckbox) {
+    newPreferences.enableChatViewer = enableChatViewerCheckbox.checked;
   }
 
   // NOVO: Ler preferência para lembrar a classificação automática padrão

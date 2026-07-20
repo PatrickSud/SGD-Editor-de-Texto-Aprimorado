@@ -183,6 +183,7 @@ const DEFAULT_SETTINGS = {
     enableTeamManagement: false, // Habilita o gerenciamento de Equipe AT na guia Controle de Acesso por padrão desativado
     rememberLastClassification: false, // Lembrar e preencher automaticamente a última classificação selecionada (desativado por padrão)
     enableAutoCapitalize: true, // Capitaliza automaticamente a primeira letra de frases ao digitar (habilitado por padrão)
+    enableChatViewer: true, // Botão "Visualizar Chat" nos anexos .txt de atendimento (chat-viewer-service.js). Habilitado por padrão.
     enablePendingNotifications: true, // Notificação minimalista de novas pendências (toast + pílula expandida no FAB). Habilitada por padrão.
     enablePendingWidget: false, // Widget lateral de pendências (marcador na borda direita que expande). Desabilitado por padrão (lançamento gradual).
     pendingWidgetAlertTier: 'notice', // Faixa ÚNICA usada tanto para notificar (piscar/bipar) quanto para o botão "Abrir" (unificado a pedido do Patrick, 2026-07-20): recente(0h)|no-prazo(24h)|notice(30h, padrão)|warning(36h)|critical(42h)|urgent(46h)|estourado(48h)|fatal(72h, não notifica - ver PENDING_SLA_TIERS.fatal.notify). Só é aplicada de fato quando pendingWidgetAlertDisabled=false.

@@ -61,6 +61,7 @@
         "links-service.js",
         "links-panel.js",
         "pending-widget.js",
+        "chat-viewer-service.js",
         "app.js"
       ],
       "css": [
@@ -73,7 +74,8 @@
         "styles/info-panel.css",
         "styles/tags.css",
         "styles/links-panel.css",
-        "styles/pending-widget.css"
+        "styles/pending-widget.css",
+        "styles/chat-viewer.css"
       ],
       "run_at": "document_idle"
     },

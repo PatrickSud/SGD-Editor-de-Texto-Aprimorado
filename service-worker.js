@@ -1324,6 +1324,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           when: message.alarmTime
         })
         sendResponse({ success: true })
+      } else if (message.action === 'LOAD_JSZIP') {
+        // Carrega o JSZip sob demanda (só quando o Chat Viewer precisa gerar um
+        // .zip), injetando o arquivo na aba que pediu — assim evitamos somar
+        // ~96KB ao carregamento de todas as páginas do SGD.
+        try {
+          const tabId = sender?.tab?.id
+          if (!tabId) {
+            sendResponse({ success: false, error: 'sem tabId' })
+          } else {
+            await chrome.scripting.executeScript({
+              target: { tabId },
+              files: ['jszip.min.js']
+            })
+            sendResponse({ success: true })
+          }
+        } catch (error) {
+          console.error('Service Worker: erro ao injetar JSZip:', error)
+          sendResponse({ success: false, error: error.message })
+        }
       } else if (message.action === 'CLEAR_ALARM' && message.reminderId) {
         await chrome.alarms.clear(message.reminderId)
         sendResponse({ success: true })

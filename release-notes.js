@@ -147,6 +147,12 @@ const RELEASE_NOTES = {
       '<b>🔍 Verificação de Duplicidade:</b>' +
       '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
       '<li>Novas opções em Configurações > Preferências para usar (ou não) Inteligência Artificial e/ou o Fallback por palavras-chave, com um atalho rápido (⚙️) direto no widget de aviso.</li>' +
+      '</ul>',
+
+      '<b>💬 Visualizador de Chat (novo):</b>' +
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      '<li>Botão "Visualizar Chat" nos anexos .txt do atendimento: abre a conversa formatada, com abas de Arquivos e Transcrição, busca, imagens em tela cheia e resumo com IA.</li>' +
+      '<li>Baseado na ideia original de Ruan Fiori Marcelino.</li>' +
       '</ul>'
     ],
     consolidates: '3.0.7'
