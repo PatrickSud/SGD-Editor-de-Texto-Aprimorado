@@ -256,7 +256,7 @@ async function ensurePendingWidgetDom() {
           </select>
         </div>
 
-        <label class="sgd-pw-check" style="margin-top:10px;"><input type="checkbox" class="sgd-pw-include-lower"> Faixas abaixo de 30h também contam e abrem</label>
+        <label class="sgd-pw-check sgd-pw-include-lower-row" style="margin-top:10px;display:none;"><input type="checkbox" class="sgd-pw-include-lower"> Faixas abaixo de 30h também contam e abrem</label>
         <label class="sgd-pw-check"><input type="checkbox" class="sgd-pw-include-n2"> Incluir pendências N2</label>
         <label class="sgd-pw-check"><input type="checkbox" class="sgd-pw-sound"> Alerta sonoro (bip ao cruzar a faixa)</label>
         <label class="sgd-pw-check"><input type="checkbox" class="sgd-pw-repeat"> Repetir alerta se não visto (~1x/h)</label>
@@ -706,6 +706,16 @@ async function refreshPendingWidget(opts = {}) {
     }
     const cbIncludeLower = wrap0.querySelector('.sgd-pw-include-lower')
     if (cbIncludeLower) cbIncludeLower.checked = cfg.includeLowerTiers
+    // Essa opção só faz sentido quando a faixa ATIVA (a que de fato conta pra
+    // notificar/abrir) está abaixo de 30h — acima disso não há nada "abaixo
+    // de 30h" pra incluir, então escondemos a linha inteira.
+    const includeLowerRow = wrap0.querySelector('.sgd-pw-include-lower-row')
+    if (includeLowerRow) {
+      const activeTierKey = getPendingWidgetActiveTier(cfg)
+      const activeRank = pendingAlertTierToMinRank(activeTierKey)
+      const belowNotice = activeRank < PENDING_SLA_TIERS.notice.rank
+      includeLowerRow.style.display = belowNotice ? '' : 'none'
+    }
     const cbN2 = wrap0.querySelector('.sgd-pw-include-n2')
     if (cbN2) cbN2.checked = cfg.includeN2
     const cbSound = wrap0.querySelector('.sgd-pw-sound')
