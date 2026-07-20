@@ -1071,10 +1071,11 @@ function applyPendingFilters(sectionElement) {
       }
     }
 
-    // Filtro de Críticos (>40h ou >2 dias estimados)
+    // Filtro de Críticos (>=42h, início da faixa "Crítico" da régua de SLA, ou >2 dias estimados)
     if (criticalFilter) {
       const isCriticalPrecise =
-        item.hoursSinceUpdate !== null && item.hoursSinceUpdate >= 40
+        item.hoursSinceUpdate !== null &&
+        item.hoursSinceUpdate >= PENDING_SLA_TIERS.critical.minHours
       const isCriticalEstimated =
         item.estimatedDaysSinceUpdate !== null &&
         item.estimatedDaysSinceUpdate > 2
@@ -1585,39 +1586,41 @@ function createPendingCard(item, showResponsible = false) {
     !showHours && typeof item.estimatedDaysSinceUpdate === 'number'
 
   if (showHours) {
+    // Régua ÚNICA de SLA (mesma do widget lateral) — ver classificarSlaPendencia
+    // em pending-service.js. Evita duas versões divergentes do mesmo status.
+    const classification = classificarSlaPendencia(item)
     const hours = Math.floor(item.hoursSinceUpdate)
     const exactTime = formatHoursToHHMM(item.hoursSinceUpdate)
+    const estouradoMinHours = PENDING_SLA_TIERS.estourado.minHours // 48h
 
-    if (hours >= 72) {
-      icon = '☠️'
-      styleClass = 'fatal'
-      slaClass = 'border-fatal-time'
-      tooltip = `Atrasado (${hours - 48}h além do prazo) | Tempo: ${exactTime}`
-    } else if (hours >= 48) {
-      icon = '💣'
-      styleClass = 'critical'
-      slaClass = 'border-critical-time'
-      tooltip = `Estourado há ${hours - 48} horas | Tempo: ${exactTime}`
-    } else if (hours >= 44) {
-      icon = '🔥'
-      styleClass = 'urgent'
-      slaClass = 'border-urgent-time'
-      tooltip = `Faltam ${48 - hours} horas para o prazo | Tempo: ${exactTime}`
-    } else if (hours >= 40) {
-      icon = '⏳'
-      styleClass = 'warning'
-      slaClass = 'border-warning-time'
-      tooltip = `Atenção: ${hours} horas corridas | Tempo: ${exactTime}`
-    } else if (hours >= 30) {
-      icon = '👀'
-      styleClass = 'notice'
-      slaClass = 'border-notice-time'
-      tooltip = `Fique atento (${hours}h) | Tempo: ${exactTime}`
-    } else {
-      icon = '✅'
-      styleClass = 'normal'
-      slaClass = 'border-normal-time'
-      tooltip = `Dentro do prazo (${hours}h) | Tempo: ${exactTime}`
+    icon = classification.icon
+    styleClass = classification.tier
+    slaClass = `border-${classification.tier}-time`
+
+    switch (classification.tier) {
+      case 'fatal':
+        tooltip = `Atrasado (${hours - estouradoMinHours}h além do prazo) | Tempo: ${exactTime}`
+        break
+      case 'estourado':
+        tooltip = `Estourado há ${hours - estouradoMinHours} horas | Tempo: ${exactTime}`
+        break
+      case 'urgent':
+        tooltip = `Urgente: faltam ${estouradoMinHours - hours}h para estourar | Tempo: ${exactTime}`
+        break
+      case 'critical':
+        tooltip = `Crítico: ${hours}h sem retorno (${classification.rangeLabel}) | Tempo: ${exactTime}`
+        break
+      case 'warning':
+        tooltip = `Atenção: ${hours} horas corridas | Tempo: ${exactTime}`
+        break
+      case 'notice':
+        tooltip = `Fique atento (${hours}h) | Tempo: ${exactTime}`
+        break
+      case 'no-prazo':
+        tooltip = `No prazo (${hours}h) | Tempo: ${exactTime}`
+        break
+      default:
+        tooltip = `Recente (${hours}h) | Tempo: ${exactTime}`
     }
 
     slaBadgeHtml = `<span class="ip-time-badge ${styleClass}" title="${tooltip}">${icon} ${hours}h</span>`
@@ -4726,9 +4729,9 @@ function getSectionContent(sectionId) {
                             ${availableTagsCache.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
                         </select>
 
-                        <div class="form-checkbox-group" style="display:flex; align-items:center; margin-left:8px;" title="Mostrar apenas chamados com mais de 40h sem interação">
+                        <div class="form-checkbox-group" style="display:flex; align-items:center; margin-left:8px;" title="Mostrar apenas chamados com mais de 42h sem interação (faixa Crítico+)">
                             <input type="checkbox" id="pending-critical-filter" style="width:16px; height:16px;">
-                            <label for="pending-critical-filter" style="color:#dc2626; font-weight:bold; font-size:12px; margin-left:4px; cursor:pointer;">⚠️ Críticos (>40h)</label>
+                            <label for="pending-critical-filter" style="color:#dc2626; font-weight:bold; font-size:12px; margin-left:4px; cursor:pointer;">⚠️ Críticos (>42h)</label>
                         </div>
 
                         <select id="pending-sort" class="ip-filter-select compact" title="Ordenar por">

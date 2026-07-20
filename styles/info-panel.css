@@ -1163,7 +1163,8 @@
   transform: scale(1.1);
 }
 
-/* Badges de Tempo SLA - Atualizado */
+/* Badges de Tempo SLA - régua única de 8 faixas (ver PENDING_SLA_TIERS em
+   pending-service.js, mesma fonte de verdade usada pelo widget lateral). */
 
 .ip-time-badge {
     font-size: 11px;
@@ -1178,12 +1179,19 @@
     transition: all 0.3s ease;
 }
 
-/* Nível 0: Normal / Aviso */
-.ip-time-badge.normal { background-color: #f0fdf4; color: #15803d; border: 1px solid #86efac; }
+/* Nível 0: Recente (<24h) - Cinza neutro, sem urgência */
+.ip-time-badge.recente { background-color: #f8fafc; color: #64748b; border: 1px solid #cbd5e1; }
+.border-recente-time { border-left: 4px solid #94a3b8 !important; }
+
+/* Nível 1: No prazo (24h - 29h) - Verde */
+.ip-time-badge.no-prazo, .ip-time-badge.normal { background-color: #f0fdf4; color: #15803d; border: 1px solid #86efac; }
+.border-no-prazo-time { border-left: 4px solid #22c55e !important; }
+
+/* Nível 2: Fique atento (30h - 35h) - Azul */
 .ip-time-badge.notice { background-color: #f0f9ff; color: #0369a1; border: 1px solid #7dd3fc; }
 .border-notice-time { border-left: 4px solid #0ea5e9 !important; }
 
-/* Nível 1: Atenção (40h - 43h) - Amarelo/Laranja */
+/* Nível 3: Atenção (36h - 41h) - Amarelo/Laranja */
 .ip-time-badge.warning {
     background-color: #fff7ed;
     color: #c2410c;
@@ -1191,25 +1199,34 @@
 }
 .border-warning-time { border-left: 4px solid #f59e0b !important; }
 
-/* Nível 2: Urgente (44h - 47h) - Laranja Escuro/Vermelho Claro - Pisca suavemente */
-.ip-time-badge.urgent {
+/* Nível 4: Crítico (42h - 45h) - Laranja Escuro/Vermelho Claro - Pisca suavemente */
+.ip-time-badge.critical {
     background-color: #fff1f2;
     color: #e11d48;
     border: 1px solid #fda4af;
     animation: pulse-soft 2s infinite;
 }
-.border-urgent-time { border-left: 4px solid #e11d48 !important; }
+.border-critical-time { border-left: 4px solid #e11d48 !important; }
 
-/* Nível 3: Crítico (48h - 71h) - Vermelho Intenso/Escuro - Pisca alerta */
-.ip-time-badge.critical {
+/* Nível 5: Urgente (46h - 47h) - Vermelho Intenso/Escuro - Pisca alerta */
+.ip-time-badge.urgent {
     background-color: #450a0a;
     color: #fca5a5;
     border: 1px solid #ef4444;
     animation: pulse-hard 1s infinite;
 }
-.border-critical-time { border-left: 4px solid #dc2626 !important; }
+.border-urgent-time { border-left: 4px solid #dc2626 !important; }
 
-/* Nível 4: Fatal (72h+) - Extremo */
+/* Nível 6: Estourado (48h - 71h) - Vermelho ainda mais escuro - Pisca mais rápido */
+.ip-time-badge.estourado {
+    background-color: #2a0a0a;
+    color: #fecaca;
+    border: 1px solid #dc2626;
+    animation: pulse-hard 0.9s infinite;
+}
+.border-estourado-time { border-left: 5px solid #b91c1c !important; }
+
+/* Nível 7: Atrasado (72h+) - Extremo */
 .ip-time-badge.fatal {
     background-color: #000;
     color: #ef4444;

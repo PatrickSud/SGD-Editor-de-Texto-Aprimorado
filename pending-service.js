@@ -53,77 +53,147 @@ function calculateBusinessTimeMs(startTs, endTs) {
 }
 
 /**
- * Definição ÚNICA das faixas de SLA das pendências (fonte de verdade
+ * Definição ÚNICA da régua de status das pendências (fonte de verdade
  * compartilhada entre o card do painel, o widget lateral e o alerta 🚨).
  *
- * Os limiares (minHours) são os mesmos já usados no card de pendências e são
- * medidos em HORAS ÚTEIS (ver calculateBusinessTimeMs). `countable=false`
- * marca a faixa "No prazo" (<30h), que é apenas informativa: não entra na
- * contagem do widget, não sinaliza o usuário e não é aberta pelo "Abrir 30h+".
+ * Os limiares (minHours) são medidos em HORAS ÚTEIS (ver
+ * calculateBusinessTimeMs). Cada faixa tem dois atributos independentes:
+ * - `countable`: entra na contagem/agrupamento de "atenção" do widget e no
+ *   "Abrir Xh+". As duas faixas mais baixas (Recente e No prazo) são
+ *   apenas informativas: NÃO contam, NÃO abrem e NÃO notificam.
+ * - `notify`: pode gerar uma notificação (piscar/bipar) ao ser alcançada.
+ *   "Atrasado" (72h+) é `countable` (segue contando/abrindo) mas NÃO
+ *   notifica mais — já passou do prazo, não há novo alerta a dar.
  *
- * rank cresce com a gravidade (0 = no prazo ... 5 = atrasado), útil para
- * ordenar as faixas e para detectar quando uma SSC "sobe" de faixa.
+ * rank cresce com a gravidade (0 = recente ... 7 = atrasado), usado para
+ * ordenar as faixas e para detectar quando uma SSC "sobe" de faixa (só sobe
+ * gera notificação; nunca ao cair, ex.: reset por novo trâmite).
  */
 const PENDING_SLA_TIERS = {
   fatal: {
-    rank: 5,
+    rank: 7,
     icon: '☠️',
     label: 'Atrasado',
     minHours: 72,
     countable: true,
+    notify: false, // já passou do prazo: não gera nova notificação
     color: '#7f1d1d',
     bg: '#fef2f2'
   },
-  critical: {
-    rank: 4,
+  estourado: {
+    rank: 6,
     icon: '💣',
     label: 'Estourado',
     minHours: 48,
     countable: true,
+    notify: true,
     color: '#dc2626',
     bg: '#fef2f2'
   },
   urgent: {
-    rank: 3,
-    icon: '🔥',
+    rank: 5,
+    icon: '🧨',
     label: 'Urgente',
-    minHours: 44,
+    minHours: 46,
     countable: true,
+    notify: true,
     color: '#ea580c',
     bg: '#fff7ed'
   },
+  critical: {
+    rank: 4,
+    icon: '🔥',
+    label: 'Crítico',
+    minHours: 42,
+    countable: true,
+    notify: true,
+    color: '#f97316',
+    bg: '#fff7ed'
+  },
   warning: {
-    rank: 2,
+    rank: 3,
     icon: '⏳',
     label: 'Atenção',
-    minHours: 40,
+    minHours: 36,
     countable: true,
+    notify: true,
     color: '#f59e0b',
     bg: '#fffbeb'
   },
   notice: {
-    rank: 1,
+    rank: 2,
     icon: '👀',
     label: 'Fique atento',
     minHours: 30,
     countable: true,
+    notify: true,
     color: '#65a30d',
     bg: '#f7fee7'
   },
   'no-prazo': {
-    rank: 0,
+    rank: 1,
     icon: '🕓',
     label: 'No prazo',
+    minHours: 24,
+    countable: false,
+    notify: false,
+    color: '#3b82f6',
+    bg: '#eff6ff'
+  },
+  recente: {
+    rank: 0,
+    icon: '🆕',
+    label: 'Recente',
     minHours: 0,
     countable: false,
-    color: '#cbd5e1',
+    notify: false,
+    color: '#94a3b8',
     bg: '#f8fafc'
   }
 }
 
 /**
- * Menor limiar considerado "faixa de atenção" (entra na contagem e sinaliza).
- * Derivado da menor faixa contável, para não repetir o número mágico 30.
+ * Calcula e grava `rangeLabel` em cada faixa (ex.: "30h a <36h", "72h+"), a
+ * partir do minHours da PRÓPRIA faixa e do minHours da PRÓXIMA faixa acima —
+ * assim o texto nunca fica dessincronizado dos limiares acima.
+ */
+;(function computeSlaRangeLabels(tiers) {
+  const ascending = Object.keys(tiers).sort((a, b) => tiers[a].rank - tiers[b].rank)
+  ascending.forEach((key, idx) => {
+    const meta = tiers[key]
+    const nextKey = ascending[idx + 1]
+    if (!nextKey) {
+      meta.rangeLabel = `${meta.minHours}h+`
+    } else if (idx === 0) {
+      meta.rangeLabel = `<${tiers[nextKey].minHours}h`
+    } else {
+      meta.rangeLabel = `${meta.minHours}h a <${tiers[nextKey].minHours}h`
+    }
+  })
+})(PENDING_SLA_TIERS)
+
+/**
+ * Ordem das faixas "countable" (mais grave primeiro), usada para agrupar e
+ * contar as pendências em atenção no widget lateral e no botão "Abrir Xh+".
+ */
+const PENDING_SLA_COUNTABLE_ORDER = [
+  'fatal',
+  'estourado',
+  'urgent',
+  'critical',
+  'warning',
+  'notice'
+]
+
+/**
+ * Ordem das faixas informativas (fora da contagem/alerta), mais alta primeiro.
+ */
+const PENDING_SLA_INFORMATIVE_ORDER = ['no-prazo', 'recente']
+
+/**
+ * Menor limiar considerado "faixa de atenção" (entra na contagem e pode
+ * notificar). Derivado da menor faixa contável, para não repetir o número
+ * mágico 30.
  */
 const PENDING_SLA_ATTENTION_MIN_HOURS = Math.min(
   ...Object.values(PENDING_SLA_TIERS)
@@ -162,15 +232,16 @@ function classificarSlaPendencia(item) {
   if (hours !== null) {
     const h = Math.floor(hours)
     if (h >= PENDING_SLA_TIERS.fatal.minHours) tierKey = 'fatal'
-    else if (h >= PENDING_SLA_TIERS.critical.minHours) tierKey = 'critical'
+    else if (h >= PENDING_SLA_TIERS.estourado.minHours) tierKey = 'estourado'
     else if (h >= PENDING_SLA_TIERS.urgent.minHours) tierKey = 'urgent'
+    else if (h >= PENDING_SLA_TIERS.critical.minHours) tierKey = 'critical'
     else if (h >= PENDING_SLA_TIERS.warning.minHours) tierKey = 'warning'
     else if (h >= PENDING_SLA_TIERS.notice.minHours) tierKey = 'notice'
-    else tierKey = 'no-prazo'
+    else if (h >= PENDING_SLA_TIERS['no-prazo'].minHours) tierKey = 'no-prazo'
+    else tierKey = 'recente'
   }
 
   const meta = PENDING_SLA_TIERS[tierKey]
-  const rangeLabel = meta.countable ? `${meta.minHours}h+` : '<30h'
 
   return {
     tier: tierKey,
@@ -178,10 +249,11 @@ function classificarSlaPendencia(item) {
     icon: meta.icon,
     label: meta.label,
     countable: meta.countable,
+    notify: meta.notify,
     color: meta.color,
     bg: meta.bg,
     hours,
-    rangeLabel
+    rangeLabel: meta.rangeLabel
   }
 }
 
@@ -203,15 +275,22 @@ const PENDING_TIER_RANKS_KEY = 'pendingTierRanks'
 const PENDING_WIDGET_HAS_NEW_KEY = 'pendingWidgetHasNew'
 
 /**
- * Avalia, a cada ciclo, quais pendências CRUZARAM para faixa de atenção
- * (passaram de "No prazo"/inexistente para >=30h úteis) desde a última
- * verificação. Persiste o mapa de tiers e, se houve cruzamento, marca a flag
- * que faz o widget sinalizar. NÃO sinaliza no primeiro povoamento (baseline),
- * para não alertar sobre pendências que já estavam antigas na instalação.
+ * Avalia, a cada ciclo, quais pendências SUBIRAM para uma NOVA faixa desde a
+ * última verificação (ex.: 24h → 30h → 36h → 42h → 46h → 48h → 72h). Gera uma
+ * notificação a cada faixa nova alcançada — não só na primeira vez que entra
+ * na "zona de atenção" — mas nunca duas vezes na mesma faixa (a pendência
+ * pode ficar horas parada em "Atenção" sem repetir o alerta) e nunca ao CAIR
+ * de faixa (ex.: novo trâmite reseta o relógio). Faixas com `notify:false`
+ * (Recente, No prazo, Atrasado) nunca disparam alerta, mesmo que a pendência
+ * "suba" para elas. Persiste o mapa de ranks e, se houve alguma faixa nova
+ * notificável, marca a flag que faz o widget sinalizar. NÃO sinaliza no
+ * primeiro povoamento (baseline), para não alertar sobre pendências que já
+ * estavam antigas na instalação.
  *
  * @param {Array<object>} items - Pendências atuais do usuário (todas as faixas).
- * @param {number} [alertMinRank] - Rank mínimo (faixa) que dispara o alerta.
- *   Padrão = rank de "Fique atento" (30h). Use um valor alto (ex.: 99) para
+ * @param {number} [alertMinRank] - Rank mínimo (faixa) a partir do qual
+ *   notificar. Padrão = rank de "Fique atento" (30h); o usuário pode ajustar
+ *   para uma faixa inferior ou superior. Use um valor alto (ex.: 99) para
  *   NÃO alertar em nenhuma faixa (só contagem).
  * @returns {Promise<{escalatedIds:string[], hasNew:boolean}>}
  */
@@ -233,15 +312,18 @@ async function evaluatePendingEscalation(items, alertMinRank) {
     const escalatedIds = []
 
     currentItems.forEach(item => {
-      const { rank } = classificarSlaPendencia(item)
+      const classification = classificarSlaPendencia(item)
+      const { rank, tier } = classification
       currentRanks[item.id] = rank
       if (isBaseline) return
-      // Cruzou para a "zona de alerta" se agora está numa faixa >= a mínima
-      // configurada e antes estava ABAIXO dela (ou não existia no mapa).
       const prevRank = Object.prototype.hasOwnProperty.call(prev, item.id)
         ? prev[item.id]
         : 0
-      if (rank >= minRank && prevRank < minRank) {
+      const tierMeta = PENDING_SLA_TIERS[tier]
+      const tierNotifies = tierMeta ? tierMeta.notify !== false : true
+      // Só notifica ao SUBIR de faixa (nunca ao cair) e apenas se a NOVA
+      // faixa notificar e atingir o rank mínimo escolhido pelo usuário.
+      if (rank > prevRank && rank >= minRank && tierNotifies) {
         escalatedIds.push(item.id)
       }
     })

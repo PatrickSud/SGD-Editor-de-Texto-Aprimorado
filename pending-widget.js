@@ -16,14 +16,9 @@
 // local, não persistido) — expandir numa aba não replica nas demais.
 const PENDING_WIDGET_TOP_KEY = 'pendingWidgetTop'
 
-// Ordem das faixas contáveis (mais grave primeiro) na listagem.
-const PENDING_WIDGET_TIER_ORDER = [
-  'fatal',
-  'critical',
-  'urgent',
-  'warning',
-  'notice'
-]
+// Ordem de agrupamento na listagem: as faixas contáveis/de atenção (mais
+// grave primeiro) e, depois, as informativas — ambas vêm de pending-service.js
+// (fonte de verdade única da régua de SLA).
 
 /** Escape defensivo (usa o global escapeHTML se existir). */
 function sgdPwEscape(str) {
@@ -174,7 +169,9 @@ function pendingAlertTierToMinRank(tier) {
   if (tier === 'none') return 99
   const meta =
     typeof PENDING_SLA_TIERS !== 'undefined' ? PENDING_SLA_TIERS[tier] : null
-  return meta && Number.isFinite(meta.rank) ? meta.rank : 1
+  return meta && Number.isFinite(meta.rank)
+    ? meta.rank
+    : PENDING_SLA_TIERS.notice.rank
 }
 
 /** Remove o widget do DOM (quando a preferência está desligada). */
@@ -209,18 +206,19 @@ async function ensurePendingWidgetDom() {
         <label class="sgd-pw-settings-label">Alertar a partir de:</label>
         <select class="sgd-pw-alert-tier">
           <option value="notice">👀 Fique atento (30h+)</option>
-          <option value="warning">⏳ Atenção (40h+)</option>
-          <option value="urgent">🔥 Urgente (44h+)</option>
-          <option value="critical">💣 Estourado (48h+)</option>
-          <option value="fatal">☠️ Atrasado (72h+)</option>
+          <option value="warning">⏳ Atenção (36h+)</option>
+          <option value="critical">🔥 Crítico (42h+)</option>
+          <option value="urgent">🧨 Urgente (46h+)</option>
+          <option value="estourado">💣 Estourado (48h+)</option>
           <option value="none">🔕 Não alertar (só contagem)</option>
         </select>
         <label class="sgd-pw-settings-label" style="margin-top:10px;">Botão "Abrir" a partir de:</label>
         <select class="sgd-pw-openall-tier">
           <option value="notice">👀 Fique atento (30h+)</option>
-          <option value="warning">⏳ Atenção (40h+)</option>
-          <option value="urgent">🔥 Urgente (44h+)</option>
-          <option value="critical">💣 Estourado (48h+)</option>
+          <option value="warning">⏳ Atenção (36h+)</option>
+          <option value="critical">🔥 Crítico (42h+)</option>
+          <option value="urgent">🧨 Urgente (46h+)</option>
+          <option value="estourado">💣 Estourado (48h+)</option>
           <option value="fatal">☠️ Atrasado (72h+)</option>
         </select>
         <label class="sgd-pw-check"><input type="checkbox" class="sgd-pw-include-n2"> Incluir pendências N2</label>
@@ -479,7 +477,7 @@ async function renderPendingWidget(widgetItems, cfg) {
 
   // Coleta os itens em faixa de atenção (>=30h) — contam e vão no "Abrir 30h+".
   const attention = []
-  PENDING_WIDGET_TIER_ORDER.forEach(tier => {
+  PENDING_SLA_COUNTABLE_ORDER.forEach(tier => {
     ;(groups[tier] || []).forEach(g => attention.push(g))
   })
   const count = attention.length
@@ -531,33 +529,49 @@ async function renderPendingWidget(widgetItems, cfg) {
       <b>${sgdPwEscape(it.id)}</b>${n2Tag(it)} · ${sgdPwEscape(it.subject)}
     </a>`
 
-  PENDING_WIDGET_TIER_ORDER.forEach(tier => {
+  // Cabeçalho de grupo com contador: "{icon} {label} {count} {faixa de horas}".
+  const renderGroupHeader = (meta, itemCount, extraNote) => `
+    <div class="sgd-pw-grp" style="color:${meta.color};">
+      <span class="sgd-pw-grp-label">${meta.icon} ${sgdPwEscape(meta.label)}</span>
+      <span class="sgd-pw-grp-count">${itemCount}</span>
+      <span class="sgd-pw-grp-range">${sgdPwEscape(meta.rangeLabel)}${
+        extraNote ? ` ${extraNote}` : ''
+      }</span>
+    </div>`
+
+  PENDING_SLA_COUNTABLE_ORDER.forEach(tier => {
     const g = groups[tier]
     if (!g || g.length === 0) return
     const meta = g[0].c
-    html += `<div class="sgd-pw-grp" style="color:${meta.color};">${meta.icon} ${sgdPwEscape(
-      meta.label
-    )} — ${sgdPwEscape(meta.rangeLabel)}</div>`
+    html += renderGroupHeader(meta, g.length)
     g.forEach(({ it, c }) => {
       html += renderRow(it, c)
     })
   })
 
-  // Seção informativa "No prazo (<30h)": não conta, não sinaliza.
-  const noPrazo = groups['no-prazo'] || []
-  if (noPrazo.length > 0) {
-    const meta = noPrazo[0].c
+  // Seções informativas "No prazo" e "Recente": não contam, não sinalizam,
+  // mas cada uma mostra seu próprio contador para refletir o agrupamento atual.
+  const informativeGroups = PENDING_SLA_INFORMATIVE_ORDER.filter(
+    tier => (groups[tier] || []).length > 0
+  )
+  if (informativeGroups.length > 0) {
     html += `<div class="sgd-pw-sep"></div>`
-    html += `<div class="sgd-pw-grp" style="color:#64748b;">${meta.icon} ${sgdPwEscape(
-      meta.label
-    )} — &lt;30h <span style="font-weight:500;opacity:.8;">(informativo)</span></div>`
-    noPrazo.forEach(({ it }) => {
-      html += `
-        <a class="sgd-pw-row" style="border-left-color:#cbd5e1;background:#f8fafc;color:#64748b;"
-           href="${sgdPwEscape(it.link)}" target="_blank" rel="noopener noreferrer"
-           title="${sgdPwEscape(it.subject)}">
-          <b style="color:#475569;">${sgdPwEscape(it.id)}</b> · ${sgdPwEscape(it.subject)}
-        </a>`
+    informativeGroups.forEach(tier => {
+      const g = groups[tier]
+      const meta = g[0].c
+      html += renderGroupHeader(
+        meta,
+        g.length,
+        '<span style="font-weight:500;opacity:.8;">(informativo)</span>'
+      )
+      g.forEach(({ it }) => {
+        html += `
+          <a class="sgd-pw-row" style="border-left-color:${meta.color};background:${meta.bg};color:#64748b;"
+             href="${sgdPwEscape(it.link)}" target="_blank" rel="noopener noreferrer"
+             title="${sgdPwEscape(it.subject)}">
+            <b style="color:#475569;">${sgdPwEscape(it.id)}</b> · ${sgdPwEscape(it.subject)}
+          </a>`
+      })
     })
   }
 
