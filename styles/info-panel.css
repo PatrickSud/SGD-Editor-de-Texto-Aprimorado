@@ -1179,9 +1179,9 @@
     transition: all 0.3s ease;
 }
 
-/* Nível 0: Recente (<24h) - Cinza neutro, sem urgência */
-.ip-time-badge.recente { background-color: #f8fafc; color: #64748b; border: 1px solid #cbd5e1; }
-.border-recente-time { border-left: 4px solid #94a3b8 !important; }
+/* Nível 0: Recente (<24h) - Verde, igual ao No prazo (sem urgência) */
+.ip-time-badge.recente { background-color: #f0fdf4; color: #15803d; border: 1px solid #86efac; }
+.border-recente-time { border-left: 4px solid #22c55e !important; }
 
 /* Nível 1: No prazo (24h - 29h) - Verde */
 .ip-time-badge.no-prazo, .ip-time-badge.normal { background-color: #f0fdf4; color: #15803d; border: 1px solid #86efac; }

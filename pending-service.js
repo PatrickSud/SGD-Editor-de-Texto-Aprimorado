@@ -142,13 +142,13 @@ const PENDING_SLA_TIERS = {
   },
   recente: {
     rank: 0,
-    icon: '🆕',
+    icon: '✅',
     label: 'Recente',
     minHours: 0,
     countable: false,
     notify: false,
-    color: '#94a3b8',
-    bg: '#f8fafc'
+    color: '#3b82f6',
+    bg: '#eff6ff'
   }
 }
 
