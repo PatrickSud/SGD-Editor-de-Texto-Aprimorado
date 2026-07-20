@@ -1442,15 +1442,13 @@ ${chatLog}${extra}`
   // ─── Detecção e injeção do botão ─────────────────────────────────────────────
 
   function isChatTxtLink(el) {
-    const href = (el.href || '').toLowerCase()
+    const hrefName = (el.href || '').split('/').pop().split('?')[0].toLowerCase()
     const download = (el.getAttribute('download') || '').toLowerCase()
     const text = (el.textContent || '').trim().toLowerCase()
-    // Prioriza o padrão real do SGD (sscpre*.txt), mas aceita qualquer .txt
-    const isTxt =
-      /\.txt(\?.*)?$/.test(href) ||
-      /\.txt(\?.*)?$/.test(download) ||
-      /\.txt(\?.*)?$/.test(text)
-    return isTxt
+    // Só os anexos de chat do SGD (sscpre*.txt) — não polui outros anexos .txt.
+    // Se o nome do chat mudar de padrão no futuro, ajustar este teste.
+    const isChatName = name => /^sscpre.*\.txt$/.test(name)
+    return isChatName(text) || isChatName(download) || isChatName(hrefName)
   }
 
   /**
