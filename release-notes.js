@@ -121,6 +121,36 @@ function buildNotesToShow(noteworthyVersion, lastSeenVersion) {
 }
 
 const RELEASE_NOTES = {
+  '3.0.8': {
+    title: '🚀 Consolidação e Novidades da Versão 3.0.8',
+    features: [
+      '<b>🚨 Pendências & Alertas:</b>' +
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      '<li><b>Alerta de Pendências (novo):</b> Widget lateral opcional na borda direita que lista suas SSCs por faixa de tempo — o marcador pisca quando uma pendência cruza o prazo. Ative na guia Pendências › botão "Alerta".</li>' +
+      '<li><b>Guia Pendências reformulada:</b> Passa a mostrar suas SSCs pendentes direto da lista de Solicitações do SGD, com o tempo desde o último trâmite calculado em horas úteis (desconsiderando fins de semana e feriados).</li>' +
+      '<li><b>Responsável monitorado:</b> Novo seletor para escolher de qual responsável ver as pendências — útil para líderes e gestores que acompanham vários usuários.</li>' +
+      '<li><b>Notificações mais estáveis:</b> Corrigido bug que impedia o toast de novas pendências de aparecer, e a pílula de aviso no FAB agora expande e recolhe sozinha mostrando a descrição completa.</li>' +
+      '</ul>',
+
+      '<b>💬 Resumir Solicitação com IA:</b>' +
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      '<li>O resumo gerado pela IA agora também lê o log do chat e a transcrição da ligação, trazendo mais contexto.</li>' +
+      '<li>Imagens e arquivos enviados pelo cliente no chat aparecem automaticamente na seção "Anexos" do resumo, com link direto pra abrir.</li>' +
+      '<li>A seção "Dados de Acesso" passa a identificar credenciais (e-mail, senha, código) informadas pelo cliente durante o chat, mesmo quando pergunta e resposta estão em mensagens separadas.</li>' +
+      '</ul>',
+
+      '<b>🌐 Central de Links (novo):</b>' +
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      '<li>Novo painel no FAB com um repositório colaborativo de links de suporte por canal — guias Comunidade, Pessoal e Pendências, com curtidas, busca e agrupamento por tipo (SS/SSC/SA/NE).</li>' +
+      '</ul>',
+
+      '<b>🔍 Verificação de Duplicidade:</b>' +
+      '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+      '<li>Novas opções em Configurações > Preferências para usar (ou não) Inteligência Artificial e/ou o Fallback por palavras-chave, com um atalho rápido (⚙️) direto no widget de aviso.</li>' +
+      '</ul>'
+    ],
+    consolidates: '3.0.7'
+  },
   '3.0.7': {
     title: '🚀 Consolidação e Ajustes da Versão 3.0.7',
     features: [],
@@ -359,24 +389,28 @@ const MINOR_RELEASE_NOTES = {
     {
       version: '3.0.7.2',
       features: [
-        '<b>⚠️ Widget de SSCs Parecidas:</b> Agora é possível expandir/recolher clicando em qualquer ponto da barra vermelha de aviso, não apenas no botão "▾".',
-        '<b>🔍 Pesquisar Resposta:</b> Botão reposicionado para ficar ao lado esquerdo do botão "Gravar" (ou "Visualizar", quando aplicável) na toolbar.',
-        '<b>⚡ Botão "Continuar":</b> Passa a ser ocultado automaticamente da toolbar quando o botão nativo "Gravar e Continuar" está desabilitado (ex: ao habilitar "Cadastro com IA").'
+        // Conteúdo agora resumido em RELEASE_NOTES['3.0.8'] (grupo "Ajustes de Interface").
+        { text: '<b>⚠️ Widget de SSCs Parecidas:</b> Agora é possível expandir/recolher clicando em qualquer ponto da barra vermelha de aviso, não apenas no botão "▾".', hidden: true },
+        { text: '<b>🔍 Pesquisar Resposta:</b> Botão reposicionado para ficar ao lado esquerdo do botão "Gravar" (ou "Visualizar", quando aplicável) na toolbar.', hidden: true },
+        { text: '<b>⚡ Botão "Continuar":</b> Passa a ser ocultado automaticamente da toolbar quando o botão nativo "Gravar e Continuar" está desabilitado (ex: ao habilitar "Cadastro com IA").', hidden: true }
       ]
     },
     {
       version: '3.0.7.3',
       features: [
-        '<b>🔔 Correção de Notificações:</b> Corrigido o bug que impedia a exibição das notificações Toast de novas pendências na tela.',
-        '<b>⚡ Otimização de Consumo (Firestore):</b> Intervalo do monitor de equipe alterado para 15 minutos e implementação de cache inteligente de 5 minutos nas abas de Instabilidade e Equipe para evitar erros 429.'
+        // Conteúdo agora resumido em RELEASE_NOTES['3.0.8'] (grupo "Pendências & Alertas").
+        { text: '<b>🔔 Correção de Notificações:</b> Corrigido o bug que impedia a exibição das notificações Toast de novas pendências na tela.', hidden: true },
+        // Puramente técnico/backend (sem impacto visível pro usuário) — nunca deve aparecer no popup.
+        { text: '<b>⚡ Otimização de Consumo (Firestore):</b> Intervalo do monitor de equipe alterado para 15 minutos e implementação de cache inteligente de 5 minutos nas abas de Instabilidade e Equipe para evitar erros 429.', hidden: true }
       ]
     },
     {
       version: '3.0.7.4',
       features: [
-        '<b>🔔 Notificação de Pendências Redesenhada:</b> A pílula de pendências novas no FAB agora expande brevemente mostrando a descrição completa (ex: "4 pendências (1 nova)") e recolhe sozinha — passe o mouse sobre ela a qualquer momento para conferir. Habilitada por padrão, repete o lembrete a cada 1h enquanto não for vista, e não exibe mais o toast no canto superior direito.',
-        '<b>🔍 Verificação de Duplicidade Configurável:</b> Novas opções em Configurações > Preferências para usar (ou não) Inteligência Artificial e/ou o Fallback por palavras-chave na Verificação de Duplicidade, com um atalho rápido (⚙️) direto no widget de aviso.',
-        '<b>🌐 Central de Links:</b> Novo painel no FAB (🌐) com um repositório colaborativo de links de suporte por canal — guias Comunidade, Pessoal e Pendências, com curtidas, salvamento, busca e agrupamento por tipo (SS/SSC/SA/NE).'
+        // Conteúdo agora resumido em RELEASE_NOTES['3.0.8'] (grupos "Pendências & Alertas", "Verificação de Duplicidade" e "Central de Links").
+        { text: '<b>🔔 Notificação de Pendências Redesenhada:</b> A pílula de pendências novas no FAB agora expande brevemente mostrando a descrição completa (ex: "4 pendências (1 nova)") e recolhe sozinha — passe o mouse sobre ela a qualquer momento para conferir. Habilitada por padrão, repete o lembrete a cada 1h enquanto não for vista, e não exibe mais o toast no canto superior direito.', hidden: true },
+        { text: '<b>🔍 Verificação de Duplicidade Configurável:</b> Novas opções em Configurações > Preferências para usar (ou não) Inteligência Artificial e/ou o Fallback por palavras-chave na Verificação de Duplicidade, com um atalho rápido (⚙️) direto no widget de aviso.', hidden: true },
+        { text: '<b>🌐 Central de Links:</b> Novo painel no FAB (🌐) com um repositório colaborativo de links de suporte por canal — guias Comunidade, Pessoal e Pendências, com curtidas, salvamento, busca e agrupamento por tipo (SS/SSC/SA/NE).', hidden: true }
       ]
     },
     {
@@ -389,25 +423,28 @@ const MINOR_RELEASE_NOTES = {
     {
       version: '3.0.7.6',
       features: [
-        '<b>📋 Pendências reformuladas:</b> A guia Pendências agora mostra as suas SSCs pendentes (aquelas em que você é o responsável), capturadas diretamente da lista de Solicitações do SGD. O tempo desde o último trâmite passou a ser calculado em horas úteis, desconsiderando fins de semana e feriados.',
-        '<b>👤 Responsável monitorado:</b> Novo seletor no topo da guia Pendências para escolher de qual responsável ver as pendências — útil para líderes e gestores que enxergam vários usuários. A escolha fica salva e evita a limitação de 1.000 registros da primeira página.',
-        '<b>🛡️ Mais estável:</b> As buscas de pendências passaram a ser coordenadas entre as abas do SGD, evitando requisições simultâneas na mesma sessão (que faziam a página vir em branco).',
+        // Conteúdo agora resumido em RELEASE_NOTES['3.0.8'] (grupo "Pendências & Alertas").
+        { text: '<b>📋 Pendências reformuladas:</b> A guia Pendências agora mostra as suas SSCs pendentes (aquelas em que você é o responsável), capturadas diretamente da lista de Solicitações do SGD. O tempo desde o último trâmite passou a ser calculado em horas úteis, desconsiderando fins de semana e feriados.', hidden: true },
+        { text: '<b>👤 Responsável monitorado:</b> Novo seletor no topo da guia Pendências para escolher de qual responsável ver as pendências — útil para líderes e gestores que enxergam vários usuários. A escolha fica salva e evita a limitação de 1.000 registros da primeira página.', hidden: true },
+        { text: '<b>🛡️ Mais estável:</b> As buscas de pendências passaram a ser coordenadas entre as abas do SGD, evitando requisições simultâneas na mesma sessão (que faziam a página vir em branco).', hidden: true },
         { text: '<b>🐞 Debug de pendências:</b> Logs [PENDING] (via sgdDebug.ativar() no console) para diagnosticar filtros, responsável usado, contagem de linhas e coalescing.', hidden: true }
       ]
     },
     {
       version: '3.0.7.7',
       features: [
-        '<b>🚨 Alerta de Pendências (novo):</b> Widget lateral opcional que fica na borda direita e, ao clicar, lista suas SSCs por faixa de tempo — o marcador pisca quando uma pendência cruza o prazo. Ative na guia Pendências › botão "Alerta" e ajuste faixa de alerta, som, N2 e mais na engrenagem.',
+        // Conteúdo agora resumido em RELEASE_NOTES['3.0.8'] (grupo "Pendências & Alertas").
+        { text: '<b>🚨 Alerta de Pendências (novo):</b> Widget lateral opcional que fica na borda direita e, ao clicar, lista suas SSCs por faixa de tempo — o marcador pisca quando uma pendência cruza o prazo. Ative na guia Pendências › botão "Alerta" e ajuste faixa de alerta, som, N2 e mais na engrenagem.', hidden: true },
         { text: '<b>📋 Pendências (ajuste):</b> Removido o filtro de responsável duplicado ("Todos os Responsáveis") da guia Pendências; a seleção de responsável passa a ser feita apenas pelo seletor "Responsável monitorado", evitando confusão (especialmente para líderes/gestores).', hidden: true }
       ]
     },
     {
       version: '3.0.7.8',
       features: [
-        '<b>💬 Resumir Solicitação lê o Chat:</b> Ao resumir uma SSC, a IA agora também lê o log do chat e a transcrição da ligação (quando disponíveis), trazendo mais contexto pro resumo gerado.',
-        '<b>📎 Anexos do Chat no Resumo:</b> Imagens e arquivos enviados pelo cliente durante o chat agora aparecem automaticamente na seção "Anexos" do modal de resumo, com link direto pra abrir.',
-        '<b>🔐 Dados de Acesso mais completos:</b> A seção "Dados de Acesso" do resumo agora também identifica credenciais (e-mail, senha, código) informadas pelo cliente durante o chat, mesmo quando pergunta e resposta estão em mensagens separadas.'
+        // Conteúdo agora resumido em RELEASE_NOTES['3.0.8'] (grupo "IA no Resumo de Solicitação").
+        { text: '<b>💬 Resumir Solicitação lê o Chat:</b> Ao resumir uma SSC, a IA agora também lê o log do chat e a transcrição da ligação (quando disponíveis), trazendo mais contexto pro resumo gerado.', hidden: true },
+        { text: '<b>📎 Anexos do Chat no Resumo:</b> Imagens e arquivos enviados pelo cliente durante o chat agora aparecem automaticamente na seção "Anexos" do modal de resumo, com link direto pra abrir.', hidden: true },
+        { text: '<b>🔐 Dados de Acesso mais completos:</b> A seção "Dados de Acesso" do resumo agora também identifica credenciais (e-mail, senha, código) informadas pelo cliente durante o chat, mesmo quando pergunta e resposta estão em mensagens separadas.', hidden: true }
       ]
     }
   ],
