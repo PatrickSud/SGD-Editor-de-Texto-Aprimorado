@@ -185,8 +185,10 @@ const DEFAULT_SETTINGS = {
     enableAutoCapitalize: true, // Capitaliza automaticamente a primeira letra de frases ao digitar (habilitado por padrão)
     enablePendingNotifications: true, // Notificação minimalista de novas pendências (toast + pílula expandida no FAB). Habilitada por padrão.
     enablePendingWidget: false, // Widget lateral de pendências (marcador na borda direita que expande). Desabilitado por padrão (lançamento gradual).
-    pendingWidgetAlertTier: 'notice', // Faixa a partir da qual o widget notifica (treme/pisca): notice(30h)|warning(36h)|critical(42h)|urgent(46h)|estourado(48h)|none(só contagem). "fatal"(Atrasado, 72h+) não é selecionável aqui: já passou do prazo e nunca notifica (ver PENDING_SLA_TIERS.fatal.notify em pending-service.js).
-    pendingWidgetOpenAllTier: 'notice', // Faixa a partir da qual o botão "Abrir" abre as SSCs: notice(30h)|warning(36h)|critical(42h)|urgent(46h)|estourado(48h)|fatal(72h). O rótulo do botão acompanha a seleção.
+    pendingWidgetAlertTier: 'notice', // Faixa ÚNICA usada tanto para notificar (piscar/bipar) quanto para o botão "Abrir" (unificado a pedido do Patrick, 2026-07-20): recente(0h)|no-prazo(24h)|notice(30h, padrão)|warning(36h)|critical(42h)|urgent(46h)|estourado(48h)|fatal(72h, não notifica - ver PENDING_SLA_TIERS.fatal.notify). Só é aplicada de fato quando pendingWidgetAlertDisabled=false.
+    pendingWidgetAlertDisabled: false, // Se true, desliga a notificação (a régua acima vira só um "abrir a partir de" via pendingWidgetOpenAllTier, mostrado no lugar do select de alerta).
+    pendingWidgetOpenAllTier: 'notice', // Faixa do botão "Abrir" usada SOMENTE quando pendingWidgetAlertDisabled=true (sem isso, o botão usa pendingWidgetAlertTier). Mesmas opções de faixa.
+    pendingWidgetIncludeLowerTiers: false, // Se true, escolher uma faixa abaixo de "Fique atento" (no-prazo/recente) também estende a contagem do 🚨, o agrupamento e o botão "Abrir" pra baixo de 30h. Padrão false: essas duas faixas continuam só informativas mesmo se escolhidas para alertar.
     pendingWidgetIncludeN2: false, // Incluir pendências N2 (aguardando outro setor) na lista/contagem do widget. Padrão: só N1.
     pendingWidgetSound: false, // Tocar um bip curto quando uma SSC cruzar a faixa de alerta configurada.
     pendingWidgetRepeatAlert: false // Voltar a piscar (~1x/h) enquanto houver pendência nova não vista.

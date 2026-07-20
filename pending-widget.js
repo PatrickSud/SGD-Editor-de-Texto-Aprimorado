@@ -62,7 +62,9 @@ async function getPendingWidgetAlertTier() {
 async function getPendingWidgetConfig() {
   const cfg = {
     alertTier: 'notice',
+    alertDisabled: false,
     openAllTier: 'notice',
+    includeLowerTiers: false,
     includeN2: false,
     sound: false,
     repeat: false
@@ -75,6 +77,13 @@ async function getPendingWidgetConfig() {
     cfg.includeN2 = p.pendingWidgetIncludeN2 === true
     cfg.sound = p.pendingWidgetSound === true
     cfg.repeat = p.pendingWidgetRepeatAlert === true
+    cfg.includeLowerTiers = p.pendingWidgetIncludeLowerTiers === true
+    // Migração de instalações antigas: o valor 'none' (removido do select)
+    // agora vira o checkbox separado "Não alertar".
+    if (p.pendingWidgetAlertDisabled === true || cfg.alertTier === 'none') {
+      cfg.alertDisabled = true
+      if (cfg.alertTier === 'none') cfg.alertTier = 'notice'
+    }
   } catch (e) {
     /* usa defaults */
   }
@@ -97,6 +106,19 @@ async function savePendingWidgetPref(key, value) {
 /** Grava a faixa de alerta na preferência (chrome.storage.sync). */
 async function setPendingWidgetAlertTier(tier) {
   await savePendingWidgetPref('pendingWidgetAlertTier', tier)
+}
+
+/**
+ * Resolve a faixa ATIVA que rege notificação + botão "Abrir": normalmente é
+ * `pendingWidgetAlertTier` (o campo único, unificado a pedido do Patrick); se
+ * o usuário desligou o alerta (`pendingWidgetAlertDisabled`), passa a usar
+ * `pendingWidgetOpenAllTier` (que só existe pra cobrir esse cenário, já que
+ * sem alerta não há mais um valor único a compartilhar).
+ * @param {object} cfg - Retorno de getPendingWidgetConfig().
+ * @returns {string} chave da faixa (ex.: 'notice').
+ */
+function getPendingWidgetActiveTier(cfg) {
+  return cfg && cfg.alertDisabled ? cfg.openAllTier : cfg.alertTier
 }
 
 /** Desabilita o widget na preferência (chrome.storage.sync). */
@@ -162,8 +184,9 @@ function triggerPendingWidgetBurst(wrap) {
 }
 
 /**
- * Converte a faixa configurada no rank mínimo para disparar o alerta.
- * 'none' => 99 (nunca alerta, só contagem).
+ * Converte a chave de uma faixa (ex.: 'notice') no rank mínimo correspondente.
+ * Aceita qualquer faixa da régua, incluindo as informativas (no-prazo/recente).
+ * 'none' (valor legado, migrado para o checkbox `alertDisabled`) => 99, nunca alerta.
  */
 function pendingAlertTierToMinRank(tier) {
   if (tier === 'none') return 99
@@ -203,24 +226,37 @@ async function ensurePendingWidgetDom() {
         <button class="sgd-pw-gear" type="button" title="Configurar alerta" aria-label="Configurar alerta">⚙️</button>
       </div>
       <div class="sgd-pw-settings" style="display:none;">
-        <label class="sgd-pw-settings-label">Alertar a partir de:</label>
-        <select class="sgd-pw-alert-tier">
-          <option value="notice">👀 Fique atento (30h+)</option>
-          <option value="warning">⏳ Atenção (36h+)</option>
-          <option value="critical">🔥 Crítico (42h+)</option>
-          <option value="urgent">🧨 Urgente (46h+)</option>
-          <option value="estourado">💣 Estourado (48h+)</option>
-          <option value="none">🔕 Não alertar (só contagem)</option>
-        </select>
-        <label class="sgd-pw-settings-label" style="margin-top:10px;">Botão "Abrir" a partir de:</label>
-        <select class="sgd-pw-openall-tier">
-          <option value="notice">👀 Fique atento (30h+)</option>
-          <option value="warning">⏳ Atenção (36h+)</option>
-          <option value="critical">🔥 Crítico (42h+)</option>
-          <option value="urgent">🧨 Urgente (46h+)</option>
-          <option value="estourado">💣 Estourado (48h+)</option>
-          <option value="fatal">☠️ Atrasado (72h+)</option>
-        </select>
+        <label class="sgd-pw-check"><input type="checkbox" class="sgd-pw-alert-disabled"> 🔕 Não alertar (só contagem)</label>
+
+        <div class="sgd-pw-alert-block" style="margin-top:8px;">
+          <label class="sgd-pw-settings-label">Alertar a partir de:</label>
+          <select class="sgd-pw-alert-tier">
+            <option value="recente">✅ Recente (0h+)</option>
+            <option value="no-prazo">🕓 No prazo (24h+)</option>
+            <option value="notice">👀 Fique atento (30h+)</option>
+            <option value="warning">⏳ Atenção (36h+)</option>
+            <option value="critical">🔥 Crítico (42h+)</option>
+            <option value="urgent">🧨 Urgente (46h+)</option>
+            <option value="estourado">💣 Estourado (48h+)</option>
+            <option value="fatal">☠️ Atrasado (72h+, não notifica)</option>
+          </select>
+        </div>
+
+        <div class="sgd-pw-openall-block" style="display:none;margin-top:8px;">
+          <label class="sgd-pw-settings-label">Abrir a partir de:</label>
+          <select class="sgd-pw-openall-tier">
+            <option value="recente">✅ Recente (0h+)</option>
+            <option value="no-prazo">🕓 No prazo (24h+)</option>
+            <option value="notice">👀 Fique atento (30h+)</option>
+            <option value="warning">⏳ Atenção (36h+)</option>
+            <option value="critical">🔥 Crítico (42h+)</option>
+            <option value="urgent">🧨 Urgente (46h+)</option>
+            <option value="estourado">💣 Estourado (48h+)</option>
+            <option value="fatal">☠️ Atrasado (72h+)</option>
+          </select>
+        </div>
+
+        <label class="sgd-pw-check" style="margin-top:10px;"><input type="checkbox" class="sgd-pw-include-lower"> Faixas abaixo de 30h também contam e abrem</label>
         <label class="sgd-pw-check"><input type="checkbox" class="sgd-pw-include-n2"> Incluir pendências N2</label>
         <label class="sgd-pw-check"><input type="checkbox" class="sgd-pw-sound"> Alerta sonoro (bip ao cruzar a faixa)</label>
         <label class="sgd-pw-check"><input type="checkbox" class="sgd-pw-repeat"> Repetir alerta se não visto (~1x/h)</label>
@@ -347,7 +383,31 @@ function bindPendingWidgetEvents(wrap) {
     })
   }
 
-  // --- Select da faixa de alerta ---
+  // --- Checkbox "Não alertar (só contagem)": alterna qual select aparece ---
+  // Desligado (padrão): mostra "Alertar a partir de:" (vale pra alerta + Abrir).
+  // Ligado: some o select de alerta e mostra "Abrir a partir de:" no lugar,
+  // já que sem alerta não há mais um valor único pra compartilhar.
+  const alertBlock = wrap.querySelector('.sgd-pw-alert-block')
+  const openAllBlock = wrap.querySelector('.sgd-pw-openall-block')
+  const cbAlertDisabled = wrap.querySelector('.sgd-pw-alert-disabled')
+  if (cbAlertDisabled) {
+    cbAlertDisabled.addEventListener('change', async () => {
+      await savePendingWidgetPref(
+        'pendingWidgetAlertDisabled',
+        cbAlertDisabled.checked
+      )
+      if (alertBlock) alertBlock.style.display = cbAlertDisabled.checked ? 'none' : ''
+      if (openAllBlock) openAllBlock.style.display = cbAlertDisabled.checked ? '' : 'none'
+      wrap.classList.remove('has-new')
+      if (typeof clearPendingWidgetHasNew === 'function') {
+        await clearPendingWidgetHasNew()
+      }
+      refreshPendingWidget()
+    })
+  }
+
+  // --- Select da faixa de alerta (também rege o botão "Abrir" quando o
+  //     alerta está ligado — campo único, unificado) ---
   const tierSelect = wrap.querySelector('.sgd-pw-alert-tier')
   if (tierSelect) {
     tierSelect.addEventListener('change', async () => {
@@ -361,7 +421,7 @@ function bindPendingWidgetEvents(wrap) {
     })
   }
 
-  // --- Select da faixa do botão "Abrir" ---
+  // --- Select da faixa do botão "Abrir" (só visível com o alerta desligado) ---
   const openAllTierSelect = wrap.querySelector('.sgd-pw-openall-tier')
   if (openAllTierSelect) {
     openAllTierSelect.addEventListener('change', async () => {
@@ -370,6 +430,18 @@ function bindPendingWidgetEvents(wrap) {
         openAllTierSelect.value
       )
       refreshPendingWidget() // atualiza o rótulo e o conjunto do botão
+    })
+  }
+
+  // --- Checkbox: estender contagem/agrupamento/Abrir pras faixas <30h ---
+  const cbIncludeLower = wrap.querySelector('.sgd-pw-include-lower')
+  if (cbIncludeLower) {
+    cbIncludeLower.addEventListener('change', async () => {
+      await savePendingWidgetPref(
+        'pendingWidgetIncludeLowerTiers',
+        cbIncludeLower.checked
+      )
+      refreshPendingWidget()
     })
   }
 
@@ -401,7 +473,7 @@ function bindPendingWidgetEvents(wrap) {
   if (simulateBtn) {
     simulateBtn.addEventListener('click', async () => {
       const cfg = await getPendingWidgetConfig()
-      if (cfg.alertTier === 'none') {
+      if (cfg.alertDisabled) {
         if (typeof showNotification === 'function') {
           showNotification(
             'Alerta configurado como "Não alertar": só a contagem é exibida.',
@@ -459,13 +531,30 @@ function bindPendingWidgetEvents(wrap) {
 /**
  * Renderiza o conteúdo do widget a partir das pendências do usuário.
  * A animação de "piscar" NÃO é decidida aqui (ver triggerPendingWidgetBurst).
+ *
+ * Faixa única (unificada, 2026-07-20): a mesma faixa escolhida pelo usuário
+ * (`alertTier`, ou `openAllTier` quando o alerta está desligado) rege tanto o
+ * botão "Abrir" quanto — se `includeLowerTiers` estiver ligado e a faixa
+ * escolhida for abaixo de "Fique atento"/30h — o piso da contagem/agrupamento
+ * do widget. Sem isso, o piso de contagem/agrupamento fica sempre fixo em
+ * 30h (comportamento de sempre), mesmo que a faixa de alerta/abrir seja mais
+ * baixa (nesse caso ela só antecipa a notificação e amplia o que o "Abrir"
+ * inclui, sem tirar nada do rodapé informativo).
  * @param {Array<object>} widgetItems - Itens a exibir (N1, e N2 se habilitado).
- * @param {object} [cfg] - Config do widget (usa openAllTier para o botão "Abrir").
+ * @param {object} [cfg] - Config do widget (ver getPendingWidgetConfig).
  */
 async function renderPendingWidget(widgetItems, cfg) {
   const wrap = await ensurePendingWidgetDom()
   const items = Array.isArray(widgetItems) ? widgetItems : []
-  const openAllTier = (cfg && cfg.openAllTier) || 'notice'
+  const activeTierKey = getPendingWidgetActiveTier(cfg || {})
+  const activeMeta = PENDING_SLA_TIERS[activeTierKey] || PENDING_SLA_TIERS.notice
+  const minRankSelected = activeMeta.rank
+  const noticeRank = PENDING_SLA_TIERS.notice.rank
+  const includeLower = !!(cfg && cfg.includeLowerTiers)
+  // Piso da contagem/agrupamento: só desce abaixo de 30h se o usuário ligou
+  // "Faixas abaixo de 30h também contam e abrem" E escolheu uma faixa < 30h.
+  const countMinRank =
+    includeLower && minRankSelected < noticeRank ? minRankSelected : noticeRank
 
   // Agrupa por faixa de SLA.
   const groups = {}
@@ -475,10 +564,13 @@ async function renderPendingWidget(widgetItems, cfg) {
     groups[c.tier].push({ it, c })
   })
 
-  // Coleta os itens em faixa de atenção (>=30h) — contam e vão no "Abrir 30h+".
+  // Itens "em atenção" (>= piso de contagem) — contam no 🚨 e ficam no grupo
+  // colorido; o restante cai no rodapé informativo.
   const attention = []
-  PENDING_SLA_COUNTABLE_ORDER.forEach(tier => {
-    ;(groups[tier] || []).forEach(g => attention.push(g))
+  PENDING_SLA_ALL_ORDER.forEach(tier => {
+    if (PENDING_SLA_TIERS[tier].rank >= countMinRank) {
+      ;(groups[tier] || []).forEach(g => attention.push(g))
+    }
   })
   const count = attention.length
 
@@ -497,19 +589,21 @@ async function renderPendingWidget(widgetItems, cfg) {
   // Segurança: sem itens em atenção não há o que piscar.
   if (count === 0) wrap.classList.remove('has-new')
 
-  // Botão "Abrir": abre as SSCs a partir da faixa configurada (openAllTier).
-  // O conjunto e o rótulo (ex.: "Abrir 48h+") acompanham a seleção.
-  const openAllMeta =
-    typeof PENDING_SLA_TIERS !== 'undefined'
-      ? PENDING_SLA_TIERS[openAllTier] || PENDING_SLA_TIERS.notice
-      : { rank: 1, minHours: 30 }
-  const openAllItems = attention.filter(g => g.c.rank >= openAllMeta.rank)
-  wrap._pendingAttentionUrls = openAllItems
+  // Botão "Abrir": sempre segue a faixa ATIVA diretamente (independe do piso
+  // de contagem acima) — abre tudo a partir do rank escolhido, mesmo que
+  // ainda apareça no rodapé informativo por conta do piso não ter descido.
+  const openItems = []
+  PENDING_SLA_ALL_ORDER.forEach(tier => {
+    if (PENDING_SLA_TIERS[tier].rank >= minRankSelected) {
+      ;(groups[tier] || []).forEach(g => openItems.push(g))
+    }
+  })
+  wrap._pendingAttentionUrls = openItems
     .map(g => g.it.link)
     .filter(u => u && u !== '#')
   const openAllBtn = wrap.querySelector('.sgd-pw-openall')
   if (openAllBtn) {
-    openAllBtn.textContent = `↗ Abrir ${openAllMeta.minHours}h+`
+    openAllBtn.textContent = `↗ Abrir ${activeMeta.minHours}h+`
     openAllBtn.disabled = wrap._pendingAttentionUrls.length === 0
   }
 
@@ -522,11 +616,13 @@ async function renderPendingWidget(widgetItems, cfg) {
       ? '<span class="sgd-pw-n2" title="Aguardando Suporte Nível 2 (outro setor)">N2</span>'
       : ''
 
-  const renderRow = (it, c) => `
-    <a class="sgd-pw-row" style="border-left-color:${c.color};background:${c.bg};"
+  const renderRow = (it, c, muted) => `
+    <a class="sgd-pw-row" style="border-left-color:${c.color};background:${c.bg};${
+      muted ? 'color:#64748b;' : ''
+    }"
        href="${sgdPwEscape(it.link)}" target="_blank" rel="noopener noreferrer"
        title="${sgdPwEscape(it.subject)}">
-      <b>${sgdPwEscape(it.id)}</b>${n2Tag(it)} · ${sgdPwEscape(it.subject)}
+      <b${muted ? ' style="color:#475569;"' : ''}>${sgdPwEscape(it.id)}</b>${n2Tag(it)} · ${sgdPwEscape(it.subject)}
     </a>`
 
   // Cabeçalho de grupo com contador: "{icon} {label} {count} {faixa de horas}".
@@ -539,41 +635,29 @@ async function renderPendingWidget(widgetItems, cfg) {
       }</span>
     </div>`
 
-  PENDING_SLA_COUNTABLE_ORDER.forEach(tier => {
+  let separatorAdded = false
+  PENDING_SLA_ALL_ORDER.forEach(tier => {
     const g = groups[tier]
     if (!g || g.length === 0) return
     const meta = g[0].c
-    html += renderGroupHeader(meta, g.length)
+    const isAttention = meta.rank >= countMinRank
+
+    if (!isAttention && !separatorAdded) {
+      html += `<div class="sgd-pw-sep"></div>`
+      separatorAdded = true
+    }
+
+    html += renderGroupHeader(
+      meta,
+      g.length,
+      isAttention
+        ? undefined
+        : '<span style="font-weight:500;opacity:.8;">(informativo)</span>'
+    )
     g.forEach(({ it, c }) => {
-      html += renderRow(it, c)
+      html += renderRow(it, c, !isAttention)
     })
   })
-
-  // Seções informativas "No prazo" e "Recente": não contam, não sinalizam,
-  // mas cada uma mostra seu próprio contador para refletir o agrupamento atual.
-  const informativeGroups = PENDING_SLA_INFORMATIVE_ORDER.filter(
-    tier => (groups[tier] || []).length > 0
-  )
-  if (informativeGroups.length > 0) {
-    html += `<div class="sgd-pw-sep"></div>`
-    informativeGroups.forEach(tier => {
-      const g = groups[tier]
-      const meta = g[0].c
-      html += renderGroupHeader(
-        meta,
-        g.length,
-        '<span style="font-weight:500;opacity:.8;">(informativo)</span>'
-      )
-      g.forEach(({ it }) => {
-        html += `
-          <a class="sgd-pw-row" style="border-left-color:${meta.color};background:${meta.bg};color:#64748b;"
-             href="${sgdPwEscape(it.link)}" target="_blank" rel="noopener noreferrer"
-             title="${sgdPwEscape(it.subject)}">
-            <b style="color:#475569;">${sgdPwEscape(it.id)}</b> · ${sgdPwEscape(it.subject)}
-          </a>`
-      })
-    })
-  }
 
   if (!html) {
     html = `<div class="sgd-pw-empty">Nenhuma pendência sua no momento. 🎉</div>`
@@ -598,8 +682,20 @@ async function refreshPendingWidget(opts = {}) {
 
     // Lê as preferências e sincroniza os controles do painel de config.
     const cfg = await getPendingWidgetConfig()
-    const minRank = pendingAlertTierToMinRank(cfg.alertTier)
+    // Notificação só usa a faixa ATIVA quando o alerta está ligado; desligado
+    // (checkbox "Não alertar"), nunca escalona, não importa a faixa guardada.
+    const minRank = cfg.alertDisabled
+      ? 99
+      : pendingAlertTierToMinRank(cfg.alertTier)
     const wrap0 = await ensurePendingWidgetDom()
+
+    const cbAlertDisabled = wrap0.querySelector('.sgd-pw-alert-disabled')
+    if (cbAlertDisabled) cbAlertDisabled.checked = cfg.alertDisabled
+    const alertBlock = wrap0.querySelector('.sgd-pw-alert-block')
+    if (alertBlock) alertBlock.style.display = cfg.alertDisabled ? 'none' : ''
+    const openAllBlock = wrap0.querySelector('.sgd-pw-openall-block')
+    if (openAllBlock) openAllBlock.style.display = cfg.alertDisabled ? '' : 'none'
+
     const tierSelect = wrap0.querySelector('.sgd-pw-alert-tier')
     if (tierSelect && tierSelect.value !== cfg.alertTier) {
       tierSelect.value = cfg.alertTier
@@ -608,6 +704,8 @@ async function refreshPendingWidget(opts = {}) {
     if (openAllSelect && openAllSelect.value !== cfg.openAllTier) {
       openAllSelect.value = cfg.openAllTier
     }
+    const cbIncludeLower = wrap0.querySelector('.sgd-pw-include-lower')
+    if (cbIncludeLower) cbIncludeLower.checked = cfg.includeLowerTiers
     const cbN2 = wrap0.querySelector('.sgd-pw-include-n2')
     if (cbN2) cbN2.checked = cfg.includeN2
     const cbSound = wrap0.querySelector('.sgd-pw-sound')

@@ -58,12 +58,15 @@ function calculateBusinessTimeMs(startTs, endTs) {
  *
  * Os limiares (minHours) são medidos em HORAS ÚTEIS (ver
  * calculateBusinessTimeMs). Cada faixa tem dois atributos independentes:
- * - `countable`: entra na contagem/agrupamento de "atenção" do widget e no
- *   "Abrir Xh+". As duas faixas mais baixas (Recente e No prazo) são
- *   apenas informativas: NÃO contam, NÃO abrem e NÃO notificam.
- * - `notify`: pode gerar uma notificação (piscar/bipar) ao ser alcançada.
- *   "Atrasado" (72h+) é `countable` (segue contando/abrindo) mas NÃO
- *   notifica mais — já passou do prazo, não há novo alerta a dar.
+ * - `countable`: é o piso PADRÃO da contagem/agrupamento de "atenção" do
+ *   widget (fixo em "Fique atento"/30h). As duas faixas mais baixas (Recente
+ *   e No prazo) ficam de fora desse piso por padrão — mas o usuário pode
+ *   optar por incluí-las (pref `pendingWidgetIncludeLowerTiers`, ver
+ *   pending-widget.js) quando escolher uma delas como faixa de alerta/abrir.
+ * - `notify`: a faixa PODE gerar notificação (depende ainda do rank mínimo
+ *   escolhido pelo usuário em `pendingWidgetAlertTier`). Só "Atrasado" (72h+)
+ *   tem `notify:false` de forma permanente — já passou do prazo, não há novo
+ *   alerta a dar, não importa a configuração do usuário.
  *
  * rank cresce com a gravidade (0 = recente ... 7 = atrasado), usado para
  * ordenar as faixas e para detectar quando uma SSC "sobe" de faixa (só sobe
@@ -136,7 +139,10 @@ const PENDING_SLA_TIERS = {
     label: 'No prazo',
     minHours: 24,
     countable: false,
-    notify: false,
+    // notify:true — não notifica por padrão só porque o rank mínimo padrão
+    // (30h/"Fique atento") já exclui esta faixa; o usuário pode escolher
+    // "No prazo" como faixa de alerta para ser avisado a partir daqui.
+    notify: true,
     color: '#3b82f6',
     bg: '#eff6ff'
   },
@@ -146,7 +152,7 @@ const PENDING_SLA_TIERS = {
     label: 'Recente',
     minHours: 0,
     countable: false,
-    notify: false,
+    notify: true, // idem "No prazo": elegível se o usuário escolher essa faixa
     color: '#3b82f6',
     bg: '#eff6ff'
   }
@@ -186,9 +192,21 @@ const PENDING_SLA_COUNTABLE_ORDER = [
 ]
 
 /**
- * Ordem das faixas informativas (fora da contagem/alerta), mais alta primeiro.
+ * Ordem das faixas informativas (fora da contagem/alerta POR PADRÃO), mais
+ * alta primeiro. O usuário pode incluí-las na contagem/agrupamento/"Abrir"
+ * via a pref `pendingWidgetIncludeLowerTiers` (ver pending-widget.js).
  */
 const PENDING_SLA_INFORMATIVE_ORDER = ['no-prazo', 'recente']
+
+/**
+ * Todas as 8 faixas, da mais grave pra menos grave — usado pelo widget para
+ * decidir dinamicamente, por rank, o que é "atenção" (contável/abrível) vs
+ * informativo, conforme a faixa escolhida pelo usuário e a pref
+ * `pendingWidgetIncludeLowerTiers`.
+ */
+const PENDING_SLA_ALL_ORDER = PENDING_SLA_COUNTABLE_ORDER.concat(
+  PENDING_SLA_INFORMATIVE_ORDER
+)
 
 /**
  * Menor limiar considerado "faixa de atenção" (entra na contagem e pode
