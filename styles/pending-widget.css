@@ -150,6 +150,10 @@
   gap: 2px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   flex: 0 0 auto;
+  /* O painel expandido é bem mais alto que o marcador (52px); um pequeno
+     empurrão pra baixo evita que aquele espaço em branco da página apareça
+     colado no topo, entre o marcador e o cabeçalho do painel. */
+  margin-top: 8px;
   user-select: none;
   touch-action: none;
   transition: filter 0.2s ease, box-shadow 0.2s ease;
