@@ -395,7 +395,8 @@ async function openInfoPanel(initialTabId = 'pending') {
     // A notificação de novas pendências (pílula do FAB) agora é SEMPRE ativada;
     // o antigo botão "Notificações" foi removido da guia Pendências.
 
-    // Toggle do widget lateral de pendências (padrão DESLIGADO).
+    // Toggle do widget lateral de pendências (padrão LIGADO a partir de
+    // 2026-07-21, a pedido do Patrick — antes era desligado por padrão).
     const widgetBtn = pendingSection.querySelector('#toggle-widget-btn')
     if (widgetBtn) {
       const updateWidgetBtnState = enabled => {
@@ -417,8 +418,8 @@ async function openInfoPanel(initialTabId = 'pending') {
       chrome.storage.sync.get(['extensionSettingsData'], result => {
         const settings = result.extensionSettingsData || {}
         const prefs = settings.preferences || {}
-        // Padrão desligado: só aparece ativo se o usuário explicitamente ligou.
-        updateWidgetBtnState(prefs.enablePendingWidget === true)
+        // Padrão ligado: só aparece inativo se o usuário explicitamente desligou.
+        updateWidgetBtnState(prefs.enablePendingWidget !== false)
       })
 
       widgetBtn.addEventListener('click', async () => {
@@ -426,7 +427,8 @@ async function openInfoPanel(initialTabId = 'pending') {
         let settings = result.extensionSettingsData || { preferences: {} }
         if (!settings.preferences) settings.preferences = {}
 
-        const newState = !(settings.preferences.enablePendingWidget === true)
+        const currentlyEnabled = settings.preferences.enablePendingWidget !== false
+        const newState = !currentlyEnabled
         settings.preferences.enablePendingWidget = newState
 
         await chrome.storage.sync.set({ extensionSettingsData: settings })

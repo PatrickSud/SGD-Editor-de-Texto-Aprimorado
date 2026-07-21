@@ -210,11 +210,12 @@ const PENDING_SLA_ALL_ORDER = PENDING_SLA_COUNTABLE_ORDER.concat(
 
 /**
  * Paleta alternativa de cada faixa para o TEMA ESCURO do widget lateral
- * (pref `pendingWidgetDarkMode`, padrão true). `PENDING_SLA_TIERS.color/bg`
- * continuam sendo a paleta clara "canônica" (usada pelo card do painel em
- * info-panel.js, que não tem tema escuro); esta paleta só existe porque os
- * tons pastel claros de `bg` ficam ilegíveis sobre um painel escuro — o
- * widget escolhe uma ou outra em runtime conforme o tema ativo.
+ * (pref `pendingWidgetDarkMode`, padrão false/claro a partir de 2026-07-21).
+ * `PENDING_SLA_TIERS.color/bg` continuam sendo a paleta clara "canônica"
+ * (usada pelo card do painel em info-panel.js, que não tem tema escuro);
+ * esta paleta só existe porque os tons pastel claros de `bg` ficam
+ * ilegíveis sobre um painel escuro — o widget escolhe uma ou outra em
+ * runtime conforme o tema ativo.
  */
 const PENDING_SLA_DARK_TIER_STYLE = {
   fatal: { color: '#f87171', bg: 'rgba(127,29,29,0.35)' },

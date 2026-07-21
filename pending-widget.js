@@ -6,7 +6,8 @@
  * pending-service.js). O marcador treme/pisca quando uma SSC cruza para faixa
  * de atenção (>=30h) — flag calculada por evaluatePendingEscalation.
  *
- * Controlado pela preferência `enablePendingWidget` (padrão desligado). Não faz
+ * Controlado pela preferência `enablePendingWidget` (padrão HABILITADO a
+ * partir de 2026-07-21 — ver isPendingWidgetEnabled). Não faz
  * requisição própria de rede além do fetchPendingItems já coalescido pelo
  * coordenador — reutiliza o mesmo ciclo do FAB/guia.
  */
@@ -42,14 +43,20 @@ function sgdPwEscape(str) {
   )
 }
 
-/** Lê a preferência enablePendingWidget (padrão false). */
+/**
+ * Lê a preferência enablePendingWidget. PADRÃO true (habilitado) a partir de
+ * 2026-07-21 — só fica desligado com valor EXPLICITAMENTE false (checa
+ * `!== false`, não `=== true`), pra que instalações antigas que nunca
+ * mexeram nessa preferência migrem sozinhas pro novo padrão, sem precisar de
+ * nenhuma escrita/migração no storage.
+ */
 async function isPendingWidgetEnabled() {
   try {
-    if (typeof getSettings !== 'function') return false
+    if (typeof getSettings !== 'function') return true
     const settings = await getSettings()
-    return settings?.preferences?.enablePendingWidget === true
+    return settings?.preferences?.enablePendingWidget !== false
   } catch (e) {
-    return false
+    return true
   }
 }
 
@@ -64,7 +71,15 @@ async function getPendingWidgetAlertTier() {
   }
 }
 
-/** Lê de uma vez as preferências do widget (com defaults). */
+/**
+ * Lê de uma vez as preferências do widget (com defaults).
+ * A partir de 2026-07-21 (a pedido do Patrick): Modo Claro, Alerta Sonoro e
+ * o próprio widget habilitado passaram a ser o padrão pra instalações novas
+ * E antigas — por isso `sound`/`darkMode` abaixo checam o valor que DESLIGA
+ * (`!== false` / `=== true`) em vez do que LIGA, garantindo que quem nunca
+ * mexeu nessas prefs (instalação antiga ou nova) já caia no novo padrão sem
+ * precisar de nenhuma migração/escrita no storage.
+ */
 async function getPendingWidgetConfig() {
   const cfg = {
     alertTier: 'notice',
@@ -72,9 +87,9 @@ async function getPendingWidgetConfig() {
     openAllTier: 'notice',
     includeLowerTiers: false,
     includeN2: false,
-    sound: false,
+    sound: true,
     repeat: false,
-    darkMode: true
+    darkMode: false
   }
   try {
     if (typeof getSettings !== 'function') return cfg
@@ -82,11 +97,12 @@ async function getPendingWidgetConfig() {
     cfg.alertTier = p.pendingWidgetAlertTier || 'notice'
     cfg.openAllTier = p.pendingWidgetOpenAllTier || 'notice'
     cfg.includeN2 = p.pendingWidgetIncludeN2 === true
-    cfg.sound = p.pendingWidgetSound === true
+    // Padrão true (som ligado): só desliga se a pref existir e for false.
+    cfg.sound = p.pendingWidgetSound !== false
     cfg.repeat = p.pendingWidgetRepeatAlert === true
     cfg.includeLowerTiers = p.pendingWidgetIncludeLowerTiers === true
-    // Padrão true (escuro): só vira claro se a pref existir e for false.
-    cfg.darkMode = p.pendingWidgetDarkMode !== false
+    // Padrão false (claro): só vira escuro se a pref existir e for true.
+    cfg.darkMode = p.pendingWidgetDarkMode === true
     // Migração de instalações antigas: o valor 'none' (removido do select)
     // agora vira o checkbox separado "Não alertar".
     if (p.pendingWidgetAlertDisabled === true || cfg.alertTier === 'none') {
@@ -242,7 +258,10 @@ async function ensurePendingWidgetDom() {
 
   wrap = document.createElement('div')
   wrap.id = 'sgd-pending-widget'
-  wrap.className = 'collapsed neutral'
+  // Já nasce com sgd-pw-light (novo padrão, 2026-07-21) pra evitar um flash
+  // do tema escuro antes do refreshPendingWidget sincronizar a preferência
+  // real (que pode ser escuro, se o usuário tiver ligado explicitamente).
+  wrap.className = 'collapsed neutral sgd-pw-light'
   wrap.innerHTML = `
     <button class="sgd-pw-handle" type="button" aria-label="Abrir painel de pendências">
       <span class="sgd-pw-icon">🚨</span>
@@ -255,7 +274,7 @@ async function ensurePendingWidgetDom() {
         <button class="sgd-pw-gear" type="button" title="Configurar alerta" aria-label="Configurar alerta">⚙️</button>
       </div>
       <div class="sgd-pw-settings" style="display:none;">
-        <label class="sgd-pw-check"><input type="checkbox" class="sgd-pw-dark-mode" checked> 🌙 Modo escuro</label>
+        <label class="sgd-pw-check"><input type="checkbox" class="sgd-pw-dark-mode"> 🌙 Modo escuro</label>
         <label class="sgd-pw-check"><input type="checkbox" class="sgd-pw-alert-disabled"> 🔕 Não alertar (só contagem)</label>
 
         <div class="sgd-pw-alert-block" style="margin-top:8px;">
@@ -898,9 +917,42 @@ async function refreshPendingWidget(opts = {}) {
 }
 
 /**
+ * Mostra (uma única vez por usuário) um aviso informando que o Alerta de
+ * Pendências passou a vir HABILITADO por padrão a partir de 2026-07-21 — a
+ * pedido do Patrick, pra ninguém ser pego de surpresa pela mudança de
+ * padrão. Só dispara pra quem NUNCA setou explicitamente
+ * `enablePendingWidget` (ou seja, está usando o novo padrão "de fábrica",
+ * seja instalação antiga ou nova); quem já ligou/desligou de propósito não
+ * vê o aviso. Controlado pela flag `pendingWidgetDefaultOnNotified`, gravada
+ * assim que o aviso é exibido, pra não repetir a cada carregamento.
+ */
+async function maybeNotifyPendingWidgetDefaultOn() {
+  try {
+    if (typeof getSettings !== 'function') return
+    const settings = await getSettings()
+    const p = settings?.preferences || {}
+    const neverSetExplicitly = p.enablePendingWidget === undefined
+    const alreadyNotified = p.pendingWidgetDefaultOnNotified === true
+    if (!neverSetExplicitly || alreadyNotified) return
+
+    if (typeof showNotification === 'function') {
+      showNotification(
+        '🚨 O Alerta de Pendências (widget lateral) agora vem habilitado por padrão. Pra desabilitar, abra a guia Pendências e clique em "Alerta", ou use a engrenagem (⚙️) do próprio widget.',
+        'info',
+        10000
+      )
+    }
+    await savePendingWidgetPref('pendingWidgetDefaultOnNotified', true)
+  } catch (e) {
+    /* silencioso */
+  }
+}
+
+/**
  * Inicializa o widget no carregamento da página (se a preferência permitir).
  */
 async function initPendingWidget() {
+  await maybeNotifyPendingWidgetDefaultOn()
   const enabled = await isPendingWidgetEnabled()
   if (!enabled) {
     destroyPendingWidget()
