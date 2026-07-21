@@ -663,8 +663,9 @@ async function renderPendingWidget(widgetItems, cfg) {
       ? '<span class="sgd-pw-n2" title="Aguardando Suporte Nível 2 (outro setor)">N2</span>'
       : ''
 
-  // Em vez do número da SSC, a linha mostra o badge de tempo (ícone da faixa
-  // + horas) e o de dias em aberto (mesmo dado "📅 Xd" do card do painel).
+  // Em vez do número da SSC, a linha mostra o badge de dias em aberto (mesmo
+  // dado "📅 Xd" do card do painel) e o de tempo sem retorno — sem ícone
+  // neste último, já que o ícone da faixa já aparece no cabeçalho do grupo.
   const renderRow = (it, meta, style, muted) => {
     const hoursLabel = Number.isFinite(meta.hours)
       ? `${Math.floor(meta.hours)}h`
@@ -677,7 +678,7 @@ async function renderPendingWidget(widgetItems, cfg) {
     <a class="sgd-pw-row${muted ? ' sgd-pw-row-muted' : ''}" style="border-left-color:${style.color};background:${style.bg};"
        href="${sgdPwEscape(it.link)}" target="_blank" rel="noopener noreferrer"
        title="${sgdPwEscape(it.id)} · ${sgdPwEscape(it.subject)}">
-      <span class="sgd-pw-badge sgd-pw-badge-time" style="color:${style.color};" title="Tempo sem retorno">${meta.icon} ${hoursLabel}</span><span class="sgd-pw-badge sgd-pw-badge-days" title="Dias em aberto">📅 ${diasLabel}</span>${n2Tag(it)} · ${sgdPwEscape(it.subject)}
+      <span class="sgd-pw-badge sgd-pw-badge-days" title="Dias em aberto">📅 ${diasLabel}</span><span class="sgd-pw-badge sgd-pw-badge-time" style="color:${style.color};" title="Tempo sem retorno">${hoursLabel}</span>${n2Tag(it)} · ${sgdPwEscape(it.subject)}
     </a>`
   }
 
