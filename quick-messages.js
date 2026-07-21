@@ -1073,6 +1073,48 @@ async function renderQuickStepsList(modal) {
   })
 }
 
+// ─── Créditos e Colaboradores ────────────────────────────────────────────────
+
+/**
+ * Lista de colaboradores exibida no modal de Créditos.
+ *
+ * COMO ADICIONAR UM NOVO CRÉDITO: acrescente um objeto a esta lista, no formato
+ * { name: 'Nome da pessoa', role: 'O que ela contribuiu' }. A ordem aqui é a
+ * ordem de exibição. É a única coisa que precisa mudar — não há storage nem
+ * back-end envolvido (a lista é fixa no código, versionada junto com a extensão).
+ */
+const COLLABORATORS = [
+  { name: 'Luiza Moro & Patrick Godoy', role: 'Desenvolvimento e manutenção' },
+  { name: 'Ruan Fiori Marcelino', role: 'Ideia original do Visualizador de Chat' }
+]
+
+/**
+ * Abre o modal de Créditos e Colaboradores (somente leitura).
+ */
+function openCreditsModal() {
+  if (document.getElementById('credits-modal')) return
+
+  const itemsHtml = COLLABORATORS.map(
+    c =>
+      '<li>' +
+      '<div class="credits-info">' +
+      `<span class="credits-name">${escapeHTML(c.name)}</span>` +
+      `<span class="credits-role">${escapeHTML(c.role)}</span>` +
+      '</div></li>'
+  ).join('')
+
+  const contentHtml = `<ul class="credits-list">${itemsHtml}</ul>`
+
+  const modal = createModal('👥 Créditos e Colaboradores', contentHtml, null, {
+    isManagementModal: true,
+    showShareButton: false,
+    modalId: 'credits-modal'
+  })
+  // Fica acima do modal de Configurações
+  modal.style.zIndex = '2147483646'
+  document.body.appendChild(modal)
+}
+
 /**
  * Abre o modal principal de gerenciamento de trâmites (Categorias, Import/Export, Configs IA).
  */
@@ -1155,6 +1197,7 @@ async function openManagementModal() {
                 </div>
     `
   }
+
 
   // let aiSettingsHtml = '' // Inicia como string vazia
   // if (devMode) {
@@ -1476,6 +1519,28 @@ async function openManagementModal() {
 
     // Anexa o gatilho ao conteúdo do modal
     modalContentElement.appendChild(watermarkTrigger)
+
+    // Acesso central aos Créditos e Colaboradores (abre o modal dedicado).
+    const creditsAccess = document.createElement('div')
+    creditsAccess.id = 'credits-access'
+    creditsAccess.textContent = 'Créditos e Colaboradores'
+    Object.assign(creditsAccess.style, {
+      position: 'absolute',
+      bottom: '16px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      fontSize: '11px',
+      color: 'var(--text-color-muted)',
+      opacity: '0.8',
+      cursor: 'pointer',
+      userSelect: 'none',
+      textDecoration: 'underline dotted',
+      textUnderlineOffset: '3px',
+      zIndex: '1'
+    })
+    creditsAccess.title = 'Ver créditos e colaboradores'
+    creditsAccess.addEventListener('click', () => openCreditsModal())
+    modalContentElement.appendChild(creditsAccess)
 
     // --- LÓGICA DO ATIVADOR SECRETO ---
     let clickCount = 0

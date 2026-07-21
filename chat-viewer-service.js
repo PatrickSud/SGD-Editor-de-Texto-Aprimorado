@@ -1177,6 +1177,17 @@ ${chatLog}${extra}`
     aiBtn.title = 'Gerar um resumo do atendimento com IA'
     aiBtn.innerHTML = '✨ Resumir com IA'
 
+    // Ícone ⓘ com tooltip de crédito ao autor da ideia original
+    const infoBtn = document.createElement('button')
+    infoBtn.type = 'button'
+    infoBtn.className = 'sgd-chat-info-btn'
+    infoBtn.setAttribute('aria-label', 'Sobre o Visualizador de Chat')
+    const infoTip = document.createElement('span')
+    infoTip.className = 'sgd-chat-info-tip'
+    infoTip.textContent = 'Visualizador de Chat — ideia original de Ruan Fiori Marcelino'
+    infoBtn.textContent = 'ⓘ'
+    infoBtn.appendChild(infoTip)
+
     const closeBtn = document.createElement('button')
     closeBtn.className = 'sgd-chat-modal-close'
     closeBtn.innerHTML = '&#x2715;'
@@ -1185,6 +1196,7 @@ ${chatLog}${extra}`
     modalHeader.appendChild(title)
     modalHeader.appendChild(counter)
     modalHeader.appendChild(aiBtn)
+    modalHeader.appendChild(infoBtn)
     modalHeader.appendChild(closeBtn)
 
     // ── Busca
@@ -1407,18 +1419,12 @@ ${chatLog}${extra}`
     tabTranscricao.addEventListener('click', () => activateTab(tabTranscricao, panelTranscricao))
     tabMedia.addEventListener('click', () => activateTab(tabMedia, panelMedia))
 
-    // ── Rodapé com crédito ao autor da ideia original
-    const modalFooter = document.createElement('div')
-    modalFooter.className = 'sgd-chat-modal-footer'
-    modalFooter.textContent = 'Visualizador de Chat — ideia original de Ruan Fiori Marcelino'
-
     modal.appendChild(modalHeader)
     modal.appendChild(tabs)
     modal.appendChild(searchWrap)
     modal.appendChild(panelChat)
     modal.appendChild(panelTranscricao)
     modal.appendChild(panelMedia)
-    modal.appendChild(modalFooter)
     overlay.appendChild(modal)
     document.body.appendChild(overlay)
 

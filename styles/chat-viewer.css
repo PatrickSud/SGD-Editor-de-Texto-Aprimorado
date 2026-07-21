@@ -145,15 +145,49 @@
   margin-top: 14px;
 }
 
-/* ── Rodapé (crédito) ── */
-.sgd-chat-modal-footer {
-  flex-shrink: 0;
-  text-align: center;
-  font-size: 10.5px;
-  color: var(--text-color-muted, #999);
-  padding: 6px 12px;
-  background: var(--background-secondary, #f5f5f5);
-  border-top: 1px solid var(--border-color, #e0e0e0);
+/* ── Ícone ⓘ de crédito (tooltip) ── */
+.sgd-chat-info-btn {
+  position: relative;
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: help;
+  font-size: 15px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
+  opacity: 0.85;
+  transition: opacity 0.15s, background 0.15s;
+}
+.sgd-chat-info-btn:hover,
+.sgd-chat-info-btn:focus-visible { opacity: 1; background: rgba(255, 255, 255, 0.18); }
+.sgd-chat-info-tip {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: max-content;
+  max-width: 260px;
+  background: #20212b;
+  color: #e6e6ea;
+  font-size: 11.5px;
+  font-weight: 400;
+  line-height: 1.4;
+  text-align: left;
+  padding: 7px 10px;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
+  z-index: 5;
+  pointer-events: none;
+}
+.sgd-chat-info-btn:hover .sgd-chat-info-tip,
+.sgd-chat-info-btn:focus-visible .sgd-chat-info-tip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
 }
 
 /* ── Busca ── */
