@@ -409,7 +409,9 @@
 }
 
 .sgd-pw-list {
-  max-height: 340px;
+  /* Aumentado de 340px (a pedido do Patrick) pra caber mais solicitações
+     visíveis antes de precisar rolar. */
+  max-height: 520px;
   overflow: auto;
   padding-bottom: 10px;
 }
@@ -433,13 +435,15 @@
   outline-offset: 1px;
 }
 
-/* Seta de recolher/expandir a faixa (▾ expandido / ▸ recolhido). */
+/* Seta de recolher/expandir a faixa (▾ expandido / ▸ recolhido). Aumentada
+   (a pedido do Patrick) pra ficar mais visível/fácil de identificar. */
 .sgd-pw-grp-toggle {
   flex: 0 0 auto;
   display: inline-block;
-  width: 10px;
-  font-size: 10px;
-  opacity: 0.75;
+  width: 14px;
+  font-size: 15px;
+  line-height: 1;
+  opacity: 0.9;
 }
 
 .sgd-pw-grp-label {
