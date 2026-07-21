@@ -391,6 +391,14 @@ const RELEASE_NOTES = {
 // Hotfixes/patches (4 dígitos) agrupados pela versão notável anterior (3 dígitos).
 // NÃO exibidos isoladamente — ver guia completo no topo do arquivo.
 const MINOR_RELEASE_NOTES = {
+  '3.0.8': [
+    {
+      version: '3.0.8.1',
+      features: [
+        '<b>💬 Visualizador de Chat:</b> novo botão nos anexos de conversa (.txt) que abre o atendimento formatado — com Arquivos, Transcrição, busca, visualização de imagens e resumo com IA.'
+      ]
+    }
+  ],
   '3.0.7': [
     {
       version: '3.0.7.2',
