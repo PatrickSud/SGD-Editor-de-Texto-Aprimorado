@@ -43,6 +43,13 @@
   --sgd-pw-input-bg: rgba(255, 255, 255, 0.08);
   --sgd-pw-input-border: #3a4150;
   --sgd-pw-input-color: #e2e8f0;
+  /* color-scheme avisa o navegador a desenhar a LISTA nativa do <select>
+     (que não composita sobre o painel — é uma superfície própria do SO/
+     navegador) em tons escuros; sem isso ela abre sempre clara, mesmo com
+     o <select> fechado themado corretamente. */
+  --sgd-pw-color-scheme: dark;
+  --sgd-pw-select-bg: #232937;
+  --sgd-pw-select-color: #e2e8f0;
   --sgd-pw-check-color: #b6c0cc;
   --sgd-pw-simulate-bg: rgba(255, 255, 255, 0.05);
   --sgd-pw-simulate-border: #3a4150;
@@ -91,6 +98,9 @@
   --sgd-pw-input-bg: #fff;
   --sgd-pw-input-border: #cbd5e1;
   --sgd-pw-input-color: #334155;
+  --sgd-pw-color-scheme: light;
+  --sgd-pw-select-bg: #fff;
+  --sgd-pw-select-color: #334155;
   --sgd-pw-check-color: #475569;
   --sgd-pw-simulate-bg: #f8fafc;
   --sgd-pw-simulate-border: #cbd5e1;
@@ -291,7 +301,16 @@
   padding: 0 8px;
   background: var(--sgd-pw-input-bg);
   color: var(--sgd-pw-input-color);
+  /* Sem isso, a LISTA aberta do select ignora nosso tema e abre com fundo
+     branco/fonte clara (ilegível no modo escuro) — é uma superfície nativa
+     do navegador, não um elemento comum da página. */
+  color-scheme: var(--sgd-pw-color-scheme);
   cursor: pointer;
+}
+.sgd-pw-alert-tier option,
+.sgd-pw-openall-tier option {
+  background: var(--sgd-pw-select-bg);
+  color: var(--sgd-pw-select-color);
 }
 .sgd-pw-check {
   display: flex;
