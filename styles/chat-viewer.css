@@ -24,9 +24,18 @@
   border-radius: var(--border-radius-sm, 6px);
   cursor: pointer;
   vertical-align: middle;
+  white-space: nowrap;
   transition: background 0.2s, transform 0.1s;
   font-family: inherit;
 }
+/* Variante compacta (ex.: ao lado do rótulo "Transcrição:") */
+.sgd-chat-viewer-btn--sm {
+  margin-left: 6px;
+  padding: 2px 8px;
+  font-size: 11px;
+  gap: 4px;
+}
+.sgd-chat-viewer-btn--sm svg { width: 12px; height: 12px; }
 .sgd-chat-viewer-btn:hover { background: #0a6e9e; transform: translateY(-1px); }
 .sgd-chat-viewer-btn:active { transform: translateY(0); }
 .sgd-chat-viewer-btn:disabled { background: #0884c2; cursor: wait; opacity: 0.85; }

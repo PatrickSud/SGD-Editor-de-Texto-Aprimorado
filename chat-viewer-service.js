@@ -415,23 +415,65 @@
    * @param {string} raw - Conteúdo bruto do arquivo de transcrição
    * @returns {Array<{ autor: string, hora: string, frase: string }>}
    */
+  /**
+   * Normaliza o rótulo do autor da transcrição. O sistema traz o agente como
+   * "Agente - <uuid>"; encurtamos para "Agente" / "Cliente".
+   * @param {string} autor
+   * @returns {string}
+   */
+  function normalizaAutorTranscricao(autor) {
+    const s = (autor || '').trim()
+    if (/^cliente/i.test(s)) return 'Cliente'
+    if (/^agente/i.test(s)) return 'Agente'
+    return s
+  }
+
   function parseTranscricao(raw) {
     const text = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
     const linhas = []
+    let started = false
+
     for (const linha of text.split('\n')) {
       const limpa = linha.trim()
       if (!limpa) continue
-      // Ignora cabeçalho/separadores comuns
-      if (/^autor\b/i.test(limpa)) continue
-      if (/^[-|+\s]+$/.test(limpa)) continue
+
+      // Pula o bloco de metadados até encontrar o cabeçalho da tabela
+      // (ex.: "Autor | Horário | Frase").
+      if (!started) {
+        if (/^autor\b/i.test(limpa) && limpa.includes('|')) started = true
+        continue
+      }
+      if (/^[-|+\s]+$/.test(limpa)) continue // linha separadora de traços
 
       const partes = limpa.split('|').map(p => p.trim())
       if (partes.length >= 3) {
-        linhas.push({ autor: partes[0], hora: partes[1], frase: partes.slice(2).join(' | ') })
-      } else {
-        linhas.push({ autor: '', hora: '', frase: limpa })
+        linhas.push({
+          autor: normalizaAutorTranscricao(partes[0]),
+          hora: partes[1],
+          frase: partes.slice(2).join(' | ')
+        })
+      } else if (linhas.length > 0) {
+        // Continuação de uma frase quebrada em várias linhas
+        linhas[linhas.length - 1].frase += ' ' + limpa
       }
     }
+
+    // Fallback: formato sem cabeçalho reconhecido — parseia qualquer "a | b | c"
+    if (!started) {
+      for (const linha of text.split('\n')) {
+        const limpa = linha.trim()
+        if (!limpa || /^[-|+\s]+$/.test(limpa)) continue
+        const partes = limpa.split('|').map(p => p.trim())
+        if (partes.length >= 3) {
+          linhas.push({
+            autor: normalizaAutorTranscricao(partes[0]),
+            hora: partes[1],
+            frase: partes.slice(2).join(' | ')
+          })
+        }
+      }
+    }
+
     return linhas
   }
 
@@ -871,6 +913,7 @@
       const autorLower = (item.autor || '').toLowerCase()
       const isCliente = autorLower.startsWith('cliente')
       row.className = `sgd-transcricao-row ${isCliente ? 'sgd-transcricao-row--cliente' : 'sgd-transcricao-row--atendente'}`
+      row.dataset.searchText = ((item.autor || '') + ' ' + (item.frase || '')).toLowerCase()
 
       if (item.autor || item.hora) {
         const meta = document.createElement('div')
@@ -1545,14 +1588,173 @@ ${chatLog}${extra}`
     }
   }
 
+  // ─── Transcrição telefônica (modal dedicado) ─────────────────────────────────
+
+  /**
+   * Abre um modal formatado só com a transcrição telefônica (usado ao clicar no
+   * botão injetado no campo #transcricaoLigacao, mesmo sem chat).
+   * @param {Array} linhas - Linhas já parseadas
+   * @param {string} fname - Nome do arquivo
+   */
+  function openTranscricaoModal(linhas, fname) {
+    document.getElementById('sgd-chat-viewer-modal')?.remove()
+
+    const overlay = document.createElement('div')
+    overlay.id = 'sgd-chat-viewer-modal'
+    overlay.className = 'sgd-chat-overlay'
+
+    const modal = document.createElement('div')
+    modal.className = 'sgd-chat-modal'
+
+    const modalHeader = document.createElement('div')
+    modalHeader.className = 'sgd-chat-modal-header'
+    const title = document.createElement('span')
+    title.className = 'sgd-chat-modal-title'
+    title.textContent = `📞 ${fname}`
+    const counter = document.createElement('span')
+    counter.className = 'sgd-chat-modal-counter'
+    counter.textContent = `${linhas.length} linhas`
+    const closeBtn = document.createElement('button')
+    closeBtn.className = 'sgd-chat-modal-close'
+    closeBtn.innerHTML = '&#x2715;'
+    closeBtn.onclick = () => overlay.remove()
+    modalHeader.appendChild(title)
+    modalHeader.appendChild(counter)
+    modalHeader.appendChild(closeBtn)
+
+    const searchWrap = document.createElement('div')
+    searchWrap.className = 'sgd-chat-search'
+    const searchInput = document.createElement('input')
+    searchInput.type = 'text'
+    searchInput.placeholder = '🔎 Buscar na transcrição...'
+    searchInput.className = 'sgd-chat-search-input'
+    searchWrap.appendChild(searchInput)
+
+    const panel = document.createElement('div')
+    panel.className = 'sgd-chat-panel sgd-chat-panel--active'
+    const tab = renderTranscricaoTab(linhas)
+    panel.appendChild(tab)
+
+    const applySearch = () => {
+      const term = searchInput.value.trim().toLowerCase()
+      const rows = tab.querySelectorAll('.sgd-transcricao-row')
+      let visible = 0
+      for (const row of rows) {
+        const match = !term || (row.dataset.searchText || '').includes(term)
+        row.style.display = match ? '' : 'none'
+        if (match) visible++
+      }
+      counter.textContent = term
+        ? `${visible} de ${linhas.length} linhas`
+        : `${linhas.length} linhas`
+    }
+    let searchTimeout
+    searchInput.addEventListener('input', () => {
+      clearTimeout(searchTimeout)
+      searchTimeout = setTimeout(applySearch, 200)
+    })
+
+    modal.appendChild(modalHeader)
+    modal.appendChild(searchWrap)
+    modal.appendChild(panel)
+    overlay.appendChild(modal)
+    document.body.appendChild(overlay)
+
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) overlay.remove()
+    })
+    const onKey = e => {
+      if (e.key === 'Escape') {
+        overlay.remove()
+        document.removeEventListener('keydown', onKey)
+      }
+    }
+    document.addEventListener('keydown', onKey)
+  }
+
+  function createTranscricaoButton(el) {
+    const icon =
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+      'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 ' +
+      '19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 ' +
+      '2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>'
+
+    const btn = document.createElement('button')
+    btn.className = 'sgd-chat-viewer-btn sgd-chat-viewer-btn--sm'
+    btn.title = 'Visualizar transcrição da ligação'
+    btn.innerHTML = `${icon} Visualizar`
+
+    const resetBtn = () => {
+      btn.disabled = false
+      btn.innerHTML = `${icon} Visualizar`
+    }
+
+    btn.addEventListener('click', async e => {
+      e.preventDefault()
+      e.stopPropagation()
+      btn.disabled = true
+      btn.innerHTML = '<span class="sgd-chat-btn-spinner"></span> Carregando...'
+      try {
+        const url = el.href || el.src
+        const raw = await fetchChatText(url)
+        const fname = decodeURIComponent(url.split('/').pop().split('?')[0])
+        const linhas = parseTranscricao(raw)
+        if (linhas.length === 0) {
+          if (typeof showNotification === 'function') {
+            showNotification('Nenhuma transcrição válida encontrada.', 'warning')
+          } else {
+            alert('Nenhuma transcrição válida encontrada.')
+          }
+          return
+        }
+        openTranscricaoModal(linhas, fname)
+      } catch (err) {
+        if (typeof showNotification === 'function') {
+          showNotification('Erro ao carregar a transcrição: ' + err.message, 'error')
+        } else {
+          alert('Erro ao carregar a transcrição:\n' + err.message)
+        }
+      } finally {
+        resetBtn()
+      }
+    })
+    return btn
+  }
+
+  function injectTranscricaoButtons() {
+    const cell = document.getElementById('transcricaoLigacao')
+    if (!cell) return
+    const link = cell.querySelector('a[href]')
+    if (!link) return
+    const isTxt =
+      /\.txt(\?.*)?$/i.test(link.href) ||
+      /\.txt(\?.*)?$/i.test((link.textContent || '').trim())
+    if (!isTxt) return
+
+    // Coloca o botão ao lado do rótulo "Transcrição:" (td anterior), em vez de
+    // dentro do campo — fica mais compacto e proporcional.
+    const prev = cell.previousElementSibling
+    const target =
+      prev && prev.classList.contains('tableVisualizacaoLabel') ? prev : cell
+    if (target.dataset.sgdTranscricaoInjected) return
+    target.dataset.sgdTranscricaoInjected = 'true'
+    target.appendChild(createTranscricaoButton(link))
+  }
+
+  function injectAll() {
+    injectButtons()
+    injectTranscricaoButtons()
+  }
+
   // ─── Inicialização (respeitando a preferência) ───────────────────────────────
 
   let observer = null
 
   function start() {
-    injectButtons()
+    injectAll()
     if (observer) return
-    observer = new MutationObserver(() => injectButtons())
+    observer = new MutationObserver(() => injectAll())
     observer.observe(document.body, { childList: true, subtree: true })
   }
 
@@ -1567,6 +1769,9 @@ ${chatLog}${extra}`
     document
       .querySelectorAll('[data-sgd-chat-viewer-injected]')
       .forEach(el => delete el.dataset.sgdChatViewerInjected)
+    document
+      .querySelectorAll('[data-sgd-transcricao-injected]')
+      .forEach(el => delete el.dataset.sgdTranscricaoInjected)
     document.getElementById('sgd-chat-viewer-modal')?.remove()
   }
 

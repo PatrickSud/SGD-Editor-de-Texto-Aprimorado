@@ -395,7 +395,8 @@ const MINOR_RELEASE_NOTES = {
     {
       version: '3.0.8.1',
       features: [
-        '<b>💬 Visualizador de Chat:</b> novo botão nos anexos de conversa (.txt) que abre o atendimento formatado — com Arquivos, Transcrição, busca, visualização de imagens e resumo com IA.'
+        '<b>💬 Visualizador de Chat:</b> novo botão nos anexos de conversa (.txt) que abre o atendimento formatado — com Arquivos, Transcrição, busca, visualização de imagens e resumo com IA.',
+        '<b>📞 Transcrição da ligação:</b> botão "Visualizar" ao lado do campo Transcrição abre a conversa telefônica formatada, com busca.'
       ]
     }
   ],
