@@ -67,7 +67,8 @@ async function getPendingWidgetConfig() {
     includeLowerTiers: false,
     includeN2: false,
     sound: false,
-    repeat: false
+    repeat: false,
+    darkMode: true
   }
   try {
     if (typeof getSettings !== 'function') return cfg
@@ -78,6 +79,8 @@ async function getPendingWidgetConfig() {
     cfg.sound = p.pendingWidgetSound === true
     cfg.repeat = p.pendingWidgetRepeatAlert === true
     cfg.includeLowerTiers = p.pendingWidgetIncludeLowerTiers === true
+    // Padrão true (escuro): só vira claro se a pref existir e for false.
+    cfg.darkMode = p.pendingWidgetDarkMode !== false
     // Migração de instalações antigas: o valor 'none' (removido do select)
     // agora vira o checkbox separado "Não alertar".
     if (p.pendingWidgetAlertDisabled === true || cfg.alertTier === 'none') {
@@ -226,6 +229,7 @@ async function ensurePendingWidgetDom() {
         <button class="sgd-pw-gear" type="button" title="Configurar alerta" aria-label="Configurar alerta">⚙️</button>
       </div>
       <div class="sgd-pw-settings" style="display:none;">
+        <label class="sgd-pw-check"><input type="checkbox" class="sgd-pw-dark-mode" checked> 🌙 Modo escuro</label>
         <label class="sgd-pw-check"><input type="checkbox" class="sgd-pw-alert-disabled"> 🔕 Não alertar (só contagem)</label>
 
         <div class="sgd-pw-alert-block" style="margin-top:8px;">
@@ -380,6 +384,16 @@ function bindPendingWidgetEvents(wrap) {
         if (list) list.style.display = 'none'
         gear.classList.add('active')
       }
+    })
+  }
+
+  // --- Checkbox "Modo escuro": alterna o tema do painel (padrão escuro) ---
+  const cbDarkMode = wrap.querySelector('.sgd-pw-dark-mode')
+  if (cbDarkMode) {
+    cbDarkMode.addEventListener('change', async () => {
+      await savePendingWidgetPref('pendingWidgetDarkMode', cbDarkMode.checked)
+      wrap.classList.toggle('sgd-pw-light', !cbDarkMode.checked)
+      refreshPendingWidget() // reaplica as cores de faixa certas pro tema
     })
   }
 
@@ -555,6 +569,19 @@ async function renderPendingWidget(widgetItems, cfg) {
   // "Faixas abaixo de 30h também contam e abrem" E escolheu uma faixa < 30h.
   const countMinRank =
     includeLower && minRankSelected < noticeRank ? minRankSelected : noticeRank
+  // Tema do painel (padrão escuro): as cores pastel claras de PENDING_SLA_TIERS
+  // ficam ilegíveis num painel escuro, então usamos a paleta alternativa.
+  const isDark = !(cfg && cfg.darkMode === false)
+  const resolveTierStyle = c => {
+    if (isDark) {
+      const d =
+        typeof PENDING_SLA_DARK_TIER_STYLE !== 'undefined'
+          ? PENDING_SLA_DARK_TIER_STYLE[c.tier]
+          : null
+      if (d) return d
+    }
+    return { color: c.color, bg: c.bg }
+  }
 
   // Agrupa por faixa de SLA.
   const groups = {}
@@ -616,18 +643,16 @@ async function renderPendingWidget(widgetItems, cfg) {
       ? '<span class="sgd-pw-n2" title="Aguardando Suporte Nível 2 (outro setor)">N2</span>'
       : ''
 
-  const renderRow = (it, c, muted) => `
-    <a class="sgd-pw-row" style="border-left-color:${c.color};background:${c.bg};${
-      muted ? 'color:#64748b;' : ''
-    }"
+  const renderRow = (it, style, muted) => `
+    <a class="sgd-pw-row${muted ? ' sgd-pw-row-muted' : ''}" style="border-left-color:${style.color};background:${style.bg};"
        href="${sgdPwEscape(it.link)}" target="_blank" rel="noopener noreferrer"
        title="${sgdPwEscape(it.subject)}">
-      <b${muted ? ' style="color:#475569;"' : ''}>${sgdPwEscape(it.id)}</b>${n2Tag(it)} · ${sgdPwEscape(it.subject)}
+      <b>${sgdPwEscape(it.id)}</b>${n2Tag(it)} · ${sgdPwEscape(it.subject)}
     </a>`
 
   // Cabeçalho de grupo com contador: "{icon} {label} {count} {faixa de horas}".
-  const renderGroupHeader = (meta, itemCount, extraNote) => `
-    <div class="sgd-pw-grp" style="color:${meta.color};">
+  const renderGroupHeader = (meta, style, itemCount, extraNote) => `
+    <div class="sgd-pw-grp" style="color:${style.color};">
       <span class="sgd-pw-grp-label">${meta.icon} ${sgdPwEscape(meta.label)}</span>
       <span class="sgd-pw-grp-count">${itemCount}</span>
       <span class="sgd-pw-grp-range">${sgdPwEscape(meta.rangeLabel)}${
@@ -640,6 +665,7 @@ async function renderPendingWidget(widgetItems, cfg) {
     const g = groups[tier]
     if (!g || g.length === 0) return
     const meta = g[0].c
+    const style = resolveTierStyle(meta)
     const isAttention = meta.rank >= countMinRank
 
     if (!isAttention && !separatorAdded) {
@@ -649,13 +675,14 @@ async function renderPendingWidget(widgetItems, cfg) {
 
     html += renderGroupHeader(
       meta,
+      style,
       g.length,
       isAttention
         ? undefined
         : '<span style="font-weight:500;opacity:.8;">(informativo)</span>'
     )
-    g.forEach(({ it, c }) => {
-      html += renderRow(it, c, !isAttention)
+    g.forEach(({ it }) => {
+      html += renderRow(it, style, !isAttention)
     })
   })
 
@@ -688,6 +715,10 @@ async function refreshPendingWidget(opts = {}) {
       ? 99
       : pendingAlertTierToMinRank(cfg.alertTier)
     const wrap0 = await ensurePendingWidgetDom()
+
+    wrap0.classList.toggle('sgd-pw-light', !cfg.darkMode)
+    const cbDarkMode = wrap0.querySelector('.sgd-pw-dark-mode')
+    if (cbDarkMode) cbDarkMode.checked = cfg.darkMode
 
     const cbAlertDisabled = wrap0.querySelector('.sgd-pw-alert-disabled')
     if (cbAlertDisabled) cbAlertDisabled.checked = cfg.alertDisabled

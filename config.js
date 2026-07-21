@@ -192,7 +192,8 @@ const DEFAULT_SETTINGS = {
     pendingWidgetIncludeLowerTiers: false, // Se true, escolher uma faixa abaixo de "Fique atento" (no-prazo/recente) também estende a contagem do 🚨, o agrupamento e o botão "Abrir" pra baixo de 30h. Padrão false: essas duas faixas continuam só informativas mesmo se escolhidas para alertar.
     pendingWidgetIncludeN2: false, // Incluir pendências N2 (aguardando outro setor) na lista/contagem do widget. Padrão: só N1.
     pendingWidgetSound: false, // Tocar um bip curto quando uma SSC cruzar a faixa de alerta configurada.
-    pendingWidgetRepeatAlert: false // Voltar a piscar (~1x/h) enquanto houver pendência nova não vista.
+    pendingWidgetRepeatAlert: false, // Voltar a piscar (~1x/h) enquanto houver pendência nova não vista.
+    pendingWidgetDarkMode: true // Tema do painel do widget (checkbox "🌙 Modo escuro" nas configurações). PADRÃO true (escuro), a pedido do Patrick, 2026-07-20.
   },
   pinnedAIButtons: []
 }

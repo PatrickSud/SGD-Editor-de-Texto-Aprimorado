@@ -209,6 +209,25 @@ const PENDING_SLA_ALL_ORDER = PENDING_SLA_COUNTABLE_ORDER.concat(
 )
 
 /**
+ * Paleta alternativa de cada faixa para o TEMA ESCURO do widget lateral
+ * (pref `pendingWidgetDarkMode`, padrão true). `PENDING_SLA_TIERS.color/bg`
+ * continuam sendo a paleta clara "canônica" (usada pelo card do painel em
+ * info-panel.js, que não tem tema escuro); esta paleta só existe porque os
+ * tons pastel claros de `bg` ficam ilegíveis sobre um painel escuro — o
+ * widget escolhe uma ou outra em runtime conforme o tema ativo.
+ */
+const PENDING_SLA_DARK_TIER_STYLE = {
+  fatal: { color: '#f87171', bg: 'rgba(127,29,29,0.35)' },
+  estourado: { color: '#f87171', bg: 'rgba(220,38,38,0.22)' },
+  urgent: { color: '#fb923c', bg: 'rgba(234,88,12,0.22)' },
+  critical: { color: '#fb923c', bg: 'rgba(249,115,22,0.20)' },
+  warning: { color: '#fbbf24', bg: 'rgba(245,158,11,0.18)' },
+  notice: { color: '#a3e635', bg: 'rgba(101,163,13,0.18)' },
+  'no-prazo': { color: '#60a5fa', bg: 'rgba(59,130,246,0.16)' },
+  recente: { color: '#60a5fa', bg: 'rgba(59,130,246,0.16)' }
+}
+
+/**
  * Menor limiar considerado "faixa de atenção" (entra na contagem e pode
  * notificar). Derivado da menor faixa contável, para não repetir o número
  * mágico 30.

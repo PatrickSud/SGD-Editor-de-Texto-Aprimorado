@@ -3,6 +3,13 @@
  * Widget lateral de pendências: marcador colado na borda direita que expande
  * lateralmente ao clicar, listando as pendências N1 do usuário agrupadas por
  * faixa de SLA. Ver pending-widget.js.
+ *
+ * Tema (2026-07-20, a pedido do Patrick): o painel tem modo escuro (PADRÃO) e
+ * modo claro, alternados pelo checkbox "🌙 Modo escuro" nas configurações do
+ * widget. As cores de cada seção viram variáveis CSS abaixo — a base do
+ * seletor #sgd-pending-widget já é o tema ESCURO; a classe .sgd-pw-light
+ * (adicionada no wrapper quando o usuário desliga o modo escuro) sobrescreve
+ * essas variáveis para os valores claros originais.
  */
 
 #sgd-pending-widget {
@@ -17,6 +24,100 @@
   font-family: 'Inter', system-ui, sans-serif;
   transform: translateX(0);
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Tema ESCURO (padrão) */
+  --sgd-pw-panel-bg: #1c2230;
+  --sgd-pw-panel-border: rgba(255, 255, 255, 0.08);
+  --sgd-pw-header-border: rgba(255, 255, 255, 0.08);
+  --sgd-pw-title-color: #e5e7eb;
+  --sgd-pw-gear-bg: rgba(255, 255, 255, 0.06);
+  --sgd-pw-gear-border: rgba(255, 255, 255, 0.14);
+  --sgd-pw-gear-color: #cbd5e1;
+  --sgd-pw-gear-hover-bg: rgba(255, 255, 255, 0.12);
+  --sgd-pw-gear-active-bg: rgba(255, 255, 255, 0.18);
+  --sgd-pw-gear-active-border: #64748b;
+  --sgd-pw-settings-bg: #171b26;
+  --sgd-pw-settings-border: rgba(255, 255, 255, 0.06);
+  --sgd-pw-label-color: #94a3b8;
+  --sgd-pw-input-bg: #262d3a;
+  --sgd-pw-input-border: #3a4150;
+  --sgd-pw-input-color: #e2e8f0;
+  --sgd-pw-check-color: #b6c0cc;
+  --sgd-pw-simulate-bg: rgba(255, 255, 255, 0.05);
+  --sgd-pw-simulate-border: #3a4150;
+  --sgd-pw-simulate-color: #cbd5e1;
+  --sgd-pw-simulate-hover-bg: rgba(255, 255, 255, 0.1);
+  --sgd-pw-disable-bg: transparent;
+  --sgd-pw-disable-border: #3a4150;
+  --sgd-pw-disable-color: #f87171;
+  --sgd-pw-disable-hover-bg: rgba(248, 113, 113, 0.12);
+  --sgd-pw-disable-hover-border: #b91c1c;
+  --sgd-pw-hint-color: #8390a2;
+  --sgd-pw-hint-strong-color: #cbd5e1;
+  --sgd-pw-row-hover-bg: rgba(255, 255, 255, 0.05);
+  --sgd-pw-row-text: #cbd5e1;
+  --sgd-pw-row-strong: #f1f5f9;
+  --sgd-pw-muted-text: #7c8797;
+  --sgd-pw-muted-strong: #9aa5b3;
+  --sgd-pw-sep-color: rgba(255, 255, 255, 0.1);
+  --sgd-pw-empty-color: #8390a2;
+  --sgd-pw-range-color: #7c8797;
+  --sgd-pw-count-pill-bg: rgba(255, 255, 255, 0.14);
+  --sgd-pw-openall-bg: rgba(248, 113, 113, 0.14);
+  --sgd-pw-openall-border: rgba(248, 113, 113, 0.4);
+  --sgd-pw-openall-color: #fca5a5;
+  --sgd-pw-openall-hover-bg: rgba(248, 113, 113, 0.22);
+  --sgd-pw-n2-bg: rgba(180, 83, 9, 0.25);
+  --sgd-pw-n2-border: rgba(252, 211, 77, 0.4);
+  --sgd-pw-n2-color: #fbbf24;
+}
+
+/* Tema CLARO (opt-in): mesmas cores originais do painel antes do toggle. */
+#sgd-pending-widget.sgd-pw-light {
+  --sgd-pw-panel-bg: #fff;
+  --sgd-pw-panel-border: rgba(0, 0, 0, 0.1);
+  --sgd-pw-header-border: #eee;
+  --sgd-pw-title-color: #1f2937;
+  --sgd-pw-gear-bg: #f8fafc;
+  --sgd-pw-gear-border: rgba(0, 0, 0, 0.12);
+  --sgd-pw-gear-color: #475569;
+  --sgd-pw-gear-hover-bg: #eef2f7;
+  --sgd-pw-gear-active-bg: #e2e8f0;
+  --sgd-pw-gear-active-border: #94a3b8;
+  --sgd-pw-settings-bg: #fbfcfe;
+  --sgd-pw-settings-border: #f1f5f9;
+  --sgd-pw-label-color: #475569;
+  --sgd-pw-input-bg: #fff;
+  --sgd-pw-input-border: #cbd5e1;
+  --sgd-pw-input-color: #334155;
+  --sgd-pw-check-color: #475569;
+  --sgd-pw-simulate-bg: #f8fafc;
+  --sgd-pw-simulate-border: #cbd5e1;
+  --sgd-pw-simulate-color: #334155;
+  --sgd-pw-simulate-hover-bg: #eef2f7;
+  --sgd-pw-disable-bg: #fff;
+  --sgd-pw-disable-border: #cbd5e1;
+  --sgd-pw-disable-color: #b91c1c;
+  --sgd-pw-disable-hover-bg: #fef2f2;
+  --sgd-pw-disable-hover-border: #fca5a5;
+  --sgd-pw-hint-color: #64748b;
+  --sgd-pw-hint-strong-color: #334155;
+  --sgd-pw-row-hover-bg: #f3f4f6;
+  --sgd-pw-row-text: #374151;
+  --sgd-pw-row-strong: #111827;
+  --sgd-pw-muted-text: #64748b;
+  --sgd-pw-muted-strong: #475569;
+  --sgd-pw-sep-color: #e2e8f0;
+  --sgd-pw-empty-color: #64748b;
+  --sgd-pw-range-color: #94a3b8;
+  --sgd-pw-count-pill-bg: rgba(0, 0, 0, 0.08);
+  --sgd-pw-openall-bg: #fff5f5;
+  --sgd-pw-openall-border: rgba(244, 67, 54, 0.4);
+  --sgd-pw-openall-color: #d32f2f;
+  --sgd-pw-openall-hover-bg: #ffe9e9;
+  --sgd-pw-n2-bg: #fef3c7;
+  --sgd-pw-n2-border: #fcd34d;
+  --sgd-pw-n2-color: #b45309;
 }
 
 /* Recolhido: o painel some para a direita, sobra só o marcador (handle). */
@@ -33,7 +134,8 @@
   width: 46px;
   height: 52px;
   border-radius: 14px 0 0 14px;
-  /* Mesmo visual dos botões flutuantes (Ir ao Topo / FAB): vidro escuro. */
+  /* O marcador (handle) mantém sempre o mesmo vidro escuro dos botões
+     flutuantes (Ir ao Topo / FAB), nos dois temas do painel. */
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
@@ -99,8 +201,8 @@
 
 .sgd-pw-panel {
   width: 320px;
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: var(--sgd-pw-panel-bg);
+  border: 1px solid var(--sgd-pw-panel-border);
   border-right: none;
   border-radius: 14px 0 0 14px;
   box-shadow: -10px 10px 40px -12px rgba(0, 0, 0, 0.3);
@@ -113,19 +215,19 @@
   align-items: center;
   gap: 8px;
   padding: 11px 12px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--sgd-pw-header-border);
 }
 .sgd-pw-title {
   font-weight: 700;
   font-size: 14px;
-  color: #1f2937;
+  color: var(--sgd-pw-title-color);
 }
 .sgd-pw-openall {
   margin-left: auto;
   cursor: pointer;
-  border: 1px solid rgba(244, 67, 54, 0.4);
-  background: #fff5f5;
-  color: #d32f2f;
+  border: 1px solid var(--sgd-pw-openall-border);
+  background: var(--sgd-pw-openall-bg);
+  color: var(--sgd-pw-openall-color);
   border-radius: 7px;
   padding: 4px 10px;
   font-size: 11.5px;
@@ -133,7 +235,7 @@
   white-space: nowrap;
 }
 .sgd-pw-openall:hover {
-  background: #ffe9e9;
+  background: var(--sgd-pw-openall-hover-bg);
 }
 .sgd-pw-openall[disabled] {
   opacity: 0.4;
@@ -143,9 +245,9 @@
 
 .sgd-pw-gear {
   cursor: pointer;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  background: #f8fafc;
-  color: #475569;
+  border: 1px solid var(--sgd-pw-gear-border);
+  background: var(--sgd-pw-gear-bg);
+  color: var(--sgd-pw-gear-color);
   border-radius: 7px;
   padding: 4px 8px;
   font-size: 13px;
@@ -153,23 +255,23 @@
   white-space: nowrap;
 }
 .sgd-pw-gear:hover {
-  background: #eef2f7;
+  background: var(--sgd-pw-gear-hover-bg);
 }
 .sgd-pw-gear.active {
-  background: #e2e8f0;
-  border-color: #94a3b8;
+  background: var(--sgd-pw-gear-active-bg);
+  border-color: var(--sgd-pw-gear-active-border);
 }
 
 .sgd-pw-settings {
   padding: 10px 12px;
-  border-bottom: 1px solid #f1f5f9;
-  background: #fbfcfe;
+  border-bottom: 1px solid var(--sgd-pw-settings-border);
+  background: var(--sgd-pw-settings-bg);
 }
 .sgd-pw-settings-label {
   display: block;
   font-size: 11.5px;
   font-weight: 700;
-  color: #475569;
+  color: var(--sgd-pw-label-color);
   margin-bottom: 4px;
 }
 .sgd-pw-alert-tier,
@@ -177,11 +279,11 @@
   width: 100%;
   height: 30px;
   font-size: 12.5px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--sgd-pw-input-border);
   border-radius: 7px;
   padding: 0 8px;
-  background: #fff;
-  color: #334155;
+  background: var(--sgd-pw-input-bg);
+  color: var(--sgd-pw-input-color);
   cursor: pointer;
 }
 .sgd-pw-check {
@@ -190,7 +292,7 @@
   gap: 7px;
   margin-top: 8px;
   font-size: 11.5px;
-  color: #475569;
+  color: var(--sgd-pw-check-color);
   cursor: pointer;
   line-height: 1.35;
 }
@@ -205,9 +307,9 @@
   align-items: center;
   font-size: 9px;
   font-weight: 700;
-  color: #b45309;
-  background: #fef3c7;
-  border: 1px solid #fcd34d;
+  color: var(--sgd-pw-n2-color);
+  background: var(--sgd-pw-n2-bg);
+  border: 1px solid var(--sgd-pw-n2-border);
   border-radius: 8px;
   padding: 0 5px;
   margin-left: 5px;
@@ -218,42 +320,42 @@
   width: 100%;
   margin-top: 12px;
   cursor: pointer;
-  border: 1px solid #cbd5e1;
-  background: #f8fafc;
-  color: #334155;
+  border: 1px solid var(--sgd-pw-simulate-border);
+  background: var(--sgd-pw-simulate-bg);
+  color: var(--sgd-pw-simulate-color);
   border-radius: 7px;
   padding: 7px 10px;
   font-size: 12px;
   font-weight: 600;
 }
 .sgd-pw-simulate:hover {
-  background: #eef2f7;
+  background: var(--sgd-pw-simulate-hover-bg);
 }
 
 .sgd-pw-disable {
   width: 100%;
   margin-top: 8px;
   cursor: pointer;
-  border: 1px solid #cbd5e1;
-  background: #fff;
-  color: #b91c1c;
+  border: 1px solid var(--sgd-pw-disable-border);
+  background: var(--sgd-pw-disable-bg);
+  color: var(--sgd-pw-disable-color);
   border-radius: 7px;
   padding: 7px 10px;
   font-size: 12px;
   font-weight: 700;
 }
 .sgd-pw-disable:hover {
-  background: #fef2f2;
-  border-color: #fca5a5;
+  background: var(--sgd-pw-disable-hover-bg);
+  border-color: var(--sgd-pw-disable-hover-border);
 }
 .sgd-pw-disable-hint {
   margin: 8px 2px 0;
   font-size: 11px;
   line-height: 1.45;
-  color: #64748b;
+  color: var(--sgd-pw-hint-color);
 }
 .sgd-pw-disable-hint b {
-  color: #334155;
+  color: var(--sgd-pw-hint-strong-color);
 }
 
 .sgd-pw-list {
@@ -281,7 +383,7 @@
   font-size: 11px;
   font-weight: 700;
   color: inherit;
-  background: rgba(0, 0, 0, 0.08);
+  background: var(--sgd-pw-count-pill-bg);
   border-radius: 9px;
   padding: 0 7px;
   min-width: 16px;
@@ -293,7 +395,7 @@
   flex: 0 0 auto;
   font-size: 10.5px;
   font-weight: 500;
-  color: #94a3b8;
+  color: var(--sgd-pw-range-color);
   white-space: nowrap;
 }
 
@@ -304,25 +406,34 @@
   border-left: 3px solid #ccc;
   margin: 4px 10px;
   font-size: 12.5px;
-  color: #374151;
+  color: var(--sgd-pw-row-text);
   border-radius: 0 6px 6px 0;
   transition: background 0.15s;
 }
 .sgd-pw-row:hover {
-  background: #f3f4f6;
+  background: var(--sgd-pw-row-hover-bg);
 }
 .sgd-pw-row b {
-  color: #111827;
+  color: var(--sgd-pw-row-strong);
+}
+
+/* Linhas informativas (No prazo/Recente): texto mais apagado, tanto no
+   modo escuro quanto no claro. */
+.sgd-pw-row-muted {
+  color: var(--sgd-pw-muted-text);
+}
+.sgd-pw-row-muted b {
+  color: var(--sgd-pw-muted-strong);
 }
 
 .sgd-pw-sep {
   margin: 14px 10px 4px;
-  border-top: 1px dashed #e2e8f0;
+  border-top: 1px dashed var(--sgd-pw-sep-color);
 }
 
 .sgd-pw-empty {
   padding: 18px 14px;
   font-size: 12.5px;
-  color: #64748b;
+  color: var(--sgd-pw-empty-color);
   text-align: center;
 }
