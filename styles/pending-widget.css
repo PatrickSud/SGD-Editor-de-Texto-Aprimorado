@@ -413,14 +413,21 @@
   border-radius: 0 6px 6px 0;
   transition: background 0.15s;
 }
-/* !important pra garantir que nenhum estilo do SGD (a:hover herdado da
-   página) encolha a fonte no hover — isso estava dificultando clicar. */
+/* !important nas 3 regras de hover abaixo pra garantir que nenhum estilo do
+   SGD (a:hover herdado da página, que costuma vir com !important próprio)
+   encolha a fonte ou force uma cor de link padrão ilegível — principalmente
+   no tema escuro, onde a cor de link "genérica" da página fica sem contraste
+   contra o preto do painel. */
 .sgd-pw-row:hover {
   background: var(--sgd-pw-row-hover-bg);
   font-size: 12.5px !important;
+  color: var(--sgd-pw-row-text) !important;
 }
 .sgd-pw-row b {
   color: var(--sgd-pw-row-strong);
+}
+.sgd-pw-row:hover b {
+  color: var(--sgd-pw-row-strong) !important;
 }
 
 /* Linhas informativas (No prazo/Recente): texto mais apagado, tanto no
