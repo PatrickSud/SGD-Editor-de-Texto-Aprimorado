@@ -245,6 +245,7 @@ async function ensurePendingWidgetDom() {
     <div class="sgd-pw-panel">
       <div class="sgd-pw-header">
         <span class="sgd-pw-title">Minhas pendências</span>
+        <button class="sgd-pw-refresh" type="button" title="Atualizar agora" aria-label="Atualizar agora">🔄</button>
         <button class="sgd-pw-openall" type="button">↗ Abrir 30h+</button>
         <button class="sgd-pw-gear" type="button" title="Configurar alerta" aria-label="Configurar alerta">⚙️</button>
       </div>
@@ -403,6 +404,24 @@ function bindPendingWidgetEvents(wrap) {
         settings.style.display = 'block'
         if (list) list.style.display = 'none'
         gear.classList.add('active')
+      }
+    })
+  }
+
+  // --- Botão "🔄": força um refresh imediato (ignora o cache de 60s do
+  //     coordenador), pra cobrir o caso do widget estar "atrasado" em relação
+  //     ao Painel de pendências (que sempre busca fresco ao trocar de guia). ---
+  const refreshBtn = wrap.querySelector('.sgd-pw-refresh')
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', async () => {
+      if (refreshBtn.disabled) return
+      refreshBtn.disabled = true
+      refreshBtn.classList.add('spinning')
+      try {
+        await refreshPendingWidget({ force: true })
+      } finally {
+        refreshBtn.classList.remove('spinning')
+        refreshBtn.disabled = false
       }
     })
   }
