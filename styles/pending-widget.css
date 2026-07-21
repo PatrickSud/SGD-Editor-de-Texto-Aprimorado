@@ -63,7 +63,9 @@
   --sgd-pw-hint-color: #8390a2;
   --sgd-pw-hint-strong-color: #cbd5e1;
   --sgd-pw-row-hover-bg: rgba(255, 255, 255, 0.05);
-  --sgd-pw-row-text: #cbd5e1;
+  /* Um pouco mais clara que o slate-300 original (#cbd5e1), a pedido do
+     Patrick, pra melhorar a legibilidade do texto das solicitações. */
+  --sgd-pw-row-text: #e2e8f0;
   --sgd-pw-row-strong: #f1f5f9;
   --sgd-pw-muted-text: #7c8797;
   --sgd-pw-muted-strong: #9aa5b3;
@@ -131,9 +133,10 @@
   --sgd-pw-n2-color: #b45309;
 }
 
-/* Recolhido: o painel some para a direita, sobra só o marcador (handle). */
+/* Recolhido: o painel some para a direita, sobra só o marcador (handle).
+   O valor precisa acompanhar a largura de .sgd-pw-panel abaixo. */
 #sgd-pending-widget.collapsed {
-  transform: translateX(var(--sgd-pw-panel-w, 320px));
+  transform: translateX(var(--sgd-pw-panel-w, 400px));
 }
 
 /* Durante o arraste, desliga a transição para acompanhar o cursor. */
@@ -215,7 +218,9 @@
 }
 
 .sgd-pw-panel {
-  width: 320px;
+  /* Aumentado de 320px (a pedido do Patrick) pra caber mais informação por
+     linha sem apertar — ver o fallback equivalente na regra .collapsed acima. */
+  width: 400px;
   background: var(--sgd-pw-panel-bg);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
@@ -416,6 +421,25 @@
   font-size: 12px;
   font-weight: 700;
   margin: 12px 12px 2px;
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 2px 4px;
+}
+.sgd-pw-grp:hover {
+  background: var(--sgd-pw-row-hover-bg);
+}
+.sgd-pw-grp:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: 1px;
+}
+
+/* Seta de recolher/expandir a faixa (▾ expandido / ▸ recolhido). */
+.sgd-pw-grp-toggle {
+  flex: 0 0 auto;
+  display: inline-block;
+  width: 10px;
+  font-size: 10px;
+  opacity: 0.75;
 }
 
 .sgd-pw-grp-label {

@@ -20,6 +20,12 @@ const PENDING_WIDGET_TOP_KEY = 'pendingWidgetTop'
 // grave primeiro) e, depois, as informativas — ambas vêm de pending-service.js
 // (fonte de verdade única da régua de SLA).
 
+// Faixas recolhidas pelo usuário (só a lista de chamados some, o cabeçalho
+// com o contador continua visível). Propositalmente em memória (não
+// persistido) — igual ao estado recolhido/expandido do próprio widget, cada
+// guia começa com tudo expandido.
+const pendingWidgetCollapsedTiers = new Set()
+
 /** Escape defensivo (usa o global escapeHTML se existir). */
 function sgdPwEscape(str) {
   if (typeof escapeHTML === 'function') return escapeHTML(str)
@@ -407,6 +413,35 @@ function bindPendingWidgetEvents(wrap) {
     })
   }
 
+  // --- Recolher/expandir uma faixa: clique (ou Enter/Espaço) no cabeçalho do
+  //     grupo. Delegado no container da lista (o HTML é recriado a cada
+  //     render, então um listener direto no cabeçalho se perderia). Como já
+  //     temos os itens/config da última renderização guardados no wrap, o
+  //     toggle só re-renderiza local — sem rebuscar nada. ---
+  if (list) {
+    const toggleGroup = tier => {
+      if (!tier) return
+      if (pendingWidgetCollapsedTiers.has(tier)) {
+        pendingWidgetCollapsedTiers.delete(tier)
+      } else {
+        pendingWidgetCollapsedTiers.add(tier)
+      }
+      renderPendingWidget(wrap._pwLastItems || [], wrap._pwLastCfg || {})
+    }
+    list.addEventListener('click', e => {
+      const header = e.target.closest('.sgd-pw-grp')
+      if (!header) return
+      toggleGroup(header.dataset.tier)
+    })
+    list.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' && e.key !== ' ') return
+      const header = e.target.closest('.sgd-pw-grp')
+      if (!header) return
+      e.preventDefault()
+      toggleGroup(header.dataset.tier)
+    })
+  }
+
   // --- Checkbox "Modo escuro": alterna o tema do painel (padrão escuro) ---
   const cbDarkMode = wrap.querySelector('.sgd-pw-dark-mode')
   if (cbDarkMode) {
@@ -580,6 +615,10 @@ function bindPendingWidgetEvents(wrap) {
 async function renderPendingWidget(widgetItems, cfg) {
   const wrap = await ensurePendingWidgetDom()
   const items = Array.isArray(widgetItems) ? widgetItems : []
+  // Guarda a última renderização (itens + config) pra permitir recolher/
+  // expandir uma faixa sem precisar rebuscar nada — só re-renderiza local.
+  wrap._pwLastItems = items
+  wrap._pwLastCfg = cfg
   const activeTierKey = getPendingWidgetActiveTier(cfg || {})
   const activeMeta = PENDING_SLA_TIERS[activeTierKey] || PENDING_SLA_TIERS.notice
   const minRankSelected = activeMeta.rank
@@ -680,8 +719,11 @@ async function renderPendingWidget(widgetItems, cfg) {
   }
 
   // Cabeçalho de grupo com contador: "{icon} {label} {count} {faixa de horas}".
-  const renderGroupHeader = (meta, style, itemCount, extraNote) => `
-    <div class="sgd-pw-grp" style="color:${style.color};">
+  // Clicável — recolhe/expande a lista de chamados daquela faixa (o contador
+  // continua visível mesmo recolhido, só a listagem some).
+  const renderGroupHeader = (tier, meta, style, itemCount, extraNote, collapsed) => `
+    <div class="sgd-pw-grp" data-tier="${sgdPwEscape(tier)}" style="color:${style.color};" role="button" tabindex="0" aria-expanded="${!collapsed}">
+      <span class="sgd-pw-grp-toggle">${collapsed ? '▸' : '▾'}</span>
       <span class="sgd-pw-grp-label">${meta.icon} ${sgdPwEscape(meta.label)}</span>
       <span class="sgd-pw-grp-count">${itemCount}</span>
       <span class="sgd-pw-grp-range">${sgdPwEscape(meta.rangeLabel)}${
@@ -696,6 +738,7 @@ async function renderPendingWidget(widgetItems, cfg) {
     const meta = g[0].c
     const style = resolveTierStyle(meta)
     const isAttention = meta.rank >= countMinRank
+    const collapsed = pendingWidgetCollapsedTiers.has(tier)
 
     if (!isAttention && !separatorAdded) {
       html += `<div class="sgd-pw-sep"></div>`
@@ -703,16 +746,20 @@ async function renderPendingWidget(widgetItems, cfg) {
     }
 
     html += renderGroupHeader(
+      tier,
       meta,
       style,
       g.length,
       isAttention
         ? undefined
-        : '<span style="font-weight:500;opacity:.8;">(informativo)</span>'
+        : '<span style="font-weight:500;opacity:.8;">(informativo)</span>',
+      collapsed
     )
-    g.forEach(({ it }) => {
-      html += renderRow(it, meta, style, !isAttention)
-    })
+    if (!collapsed) {
+      g.forEach(({ it }) => {
+        html += renderRow(it, meta, style, !isAttention)
+      })
+    }
   })
 
   if (!html) {
