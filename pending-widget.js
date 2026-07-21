@@ -138,7 +138,8 @@ async function setPendingWidgetDisabled() {
 }
 
 // Duração de uma "rajada" de piscar (ms) e intervalo mínimo para repetir.
-const PENDING_WIDGET_BURST_MS = 9000
+// 5 min (ou até o usuário abrir o painel/widget, o que vier primeiro).
+const PENDING_WIDGET_BURST_MS = 5 * 60 * 1000
 const PENDING_WIDGET_REPEAT_MS = 60 * 60 * 1000 // ~1h
 const PENDING_WIDGET_LAST_BURST_KEY = 'pendingWidgetLastBurstAt'
 let pendingWidgetBurstTimer = null
@@ -167,18 +168,37 @@ function playPendingBeep() {
 }
 
 /**
- * Dispara uma rajada de piscar no marcador (some sozinha após alguns segundos)
- * e registra o horário para o controle de repetição.
+ * Dispara/renova a "rajada" de piscar no marcador — some sozinha após
+ * `durationMs` (padrão PENDING_WIDGET_BURST_MS, 5min) OU assim que o usuário
+ * abre o painel/widget (o clique já remove a classe `has-new` à parte). NÃO
+ * grava o timestamp de origem sozinha — quem dispara decide se isso é um
+ * evento novo (`markPendingWidgetBurstOrigin`) ou só um "acompanhar" numa
+ * guia nova (ver refreshPendingWidget).
+ * @param {HTMLElement} wrap
+ * @param {number} [durationMs]
  */
-function triggerPendingWidgetBurst(wrap) {
+function triggerPendingWidgetBurst(wrap, durationMs) {
   if (!wrap || !wrap.classList.contains('collapsed')) return
+  const duration =
+    Number.isFinite(durationMs) && durationMs > 0
+      ? durationMs
+      : PENDING_WIDGET_BURST_MS
   wrap.classList.add('has-new')
   if (pendingWidgetBurstTimer) clearTimeout(pendingWidgetBurstTimer)
   pendingWidgetBurstTimer = setTimeout(() => {
     wrap.classList.remove('has-new')
-  }, PENDING_WIDGET_BURST_MS)
+  }, duration)
+}
+
+/**
+ * Marca AGORA como o início de uma nova "rajada" (evento novo de escalonamento
+ * ou lembrete periódico). Guias que abrirem enquanto essa rajada ainda está
+ * "ativa" (dentro de PENDING_WIDGET_BURST_MS) usam esse timestamp pra saber
+ * quanto tempo ainda falta e acompanhar o piscar sem soar de novo.
+ */
+async function markPendingWidgetBurstOrigin() {
   try {
-    chrome.storage.local.set({
+    await chrome.storage.local.set({
       [PENDING_WIDGET_LAST_BURST_KEY]: Date.now()
     })
   } catch (e) {
@@ -791,18 +811,41 @@ async function refreshPendingWidget(opts = {}) {
       return
     }
 
-    // Decide se dispara a rajada de piscar: cruzamento novo neste ciclo, ou
-    // (com "repetir" ligado) lembrete periódico enquanto não visto.
+    // Decide se dispara/acompanha a rajada de piscar. 3 casos:
+    // 1) Cruzamento novo NESTE ciclo (nesta guia) → rajada cheia (5min) + som.
+    // 2) Sem cruzamento novo, mas ainda não visto (hasNew) e "repetir" ligado
+    //    e já passou o intervalo (~1h) → lembrete periódico: rajada cheia + som.
+    // 3) Sem cruzamento novo, ainda não visto, mas a rajada original (de
+    //    OUTRA guia/ciclo) ainda está dentro da janela de 5min → esta guia só
+    //    ACOMPANHA o piscar pelo tempo que falta, SEM som (ex.: usuário abriu
+    //    uma guia nova do SGD enquanto o alerta ainda estava "ativo").
     let doBurst = escalated > 0
-    if (!doBurst && hasNew && cfg.repeat) {
+    let burstDuration = PENDING_WIDGET_BURST_MS
+    let playSound = escalated > 0
+    let isNewOrigin = escalated > 0
+
+    if (!doBurst && hasNew) {
       const st = await chrome.storage.local.get([PENDING_WIDGET_LAST_BURST_KEY])
       const last = st[PENDING_WIDGET_LAST_BURST_KEY] || 0
-      if (Date.now() - last >= PENDING_WIDGET_REPEAT_MS) doBurst = true
+      const elapsed = last > 0 ? Date.now() - last : Infinity
+
+      if (cfg.repeat && elapsed >= PENDING_WIDGET_REPEAT_MS) {
+        doBurst = true
+        burstDuration = PENDING_WIDGET_BURST_MS
+        playSound = true
+        isNewOrigin = true
+      } else if (elapsed < PENDING_WIDGET_BURST_MS) {
+        doBurst = true
+        burstDuration = PENDING_WIDGET_BURST_MS - elapsed
+        playSound = false
+        isNewOrigin = false
+      }
     }
 
     if (doBurst) {
-      triggerPendingWidgetBurst(wrap0)
-      if (cfg.sound) playPendingBeep()
+      triggerPendingWidgetBurst(wrap0, burstDuration)
+      if (isNewOrigin) await markPendingWidgetBurstOrigin()
+      if (playSound && cfg.sound) playPendingBeep()
     }
   } catch (error) {
     console.error('PendingWidget: erro ao atualizar o widget:', error)
