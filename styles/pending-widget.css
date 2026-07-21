@@ -323,6 +323,25 @@
   vertical-align: middle;
 }
 
+/* Badges da linha (tempo sem retorno + dias em aberto), no lugar do número
+   da SSC — a cor do badge de tempo acompanha a faixa (definida inline). */
+.sgd-pw-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  background: var(--sgd-pw-count-pill-bg);
+  border-radius: 6px;
+  padding: 1px 6px;
+  margin-right: 5px;
+  vertical-align: middle;
+  line-height: 1.5;
+}
+.sgd-pw-badge-days {
+  color: var(--sgd-pw-range-color);
+  font-weight: 500;
+}
+
 .sgd-pw-simulate {
   width: 100%;
   margin-top: 12px;
