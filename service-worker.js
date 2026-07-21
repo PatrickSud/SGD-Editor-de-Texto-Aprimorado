@@ -1687,6 +1687,30 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           sendResponse({ success: false, error: error.message })
         }
         return true // Resposta assíncrona
+      } else if (message.action === 'FETCH_CLIENT_INFO') {
+        // ── Consulta de Cliente (Domínio Web) ─────────────────────────────
+        // A página do SGD é HTTPS e a API interna é HTTP (mixed content). O
+        // content script não consegue fazer esse fetch; por isso ele delega
+        // aqui. O service worker roda em contexto de extensão e, com a
+        // host_permission "http://srvatn2-01.ead.thomsonreuters.com:8080/*"
+        // declarada no manifest, não sofre bloqueio de mixed content nem CORS.
+        (async () => {
+          const CLIENT_API_BASE = 'http://srvatn2-01.ead.thomsonreuters.com:8080/api/client/'
+          try {
+            const clienteId = String(message.clienteId || '').trim()
+            if (!/^\d+$/.test(clienteId)) {
+              throw new Error('Código de cliente inválido.')
+            }
+            const response = await fetch(CLIENT_API_BASE + clienteId, { cache: 'no-store' })
+            if (!response.ok) throw new Error(`HTTP ${response.status}`)
+            const data = await response.json()
+            sendResponse({ ok: true, data })
+          } catch (error) {
+            console.error('Service Worker: Erro ao consultar cliente:', error)
+            sendResponse({ ok: false, error: error.message || String(error) })
+          }
+        })()
+        return true // Resposta assíncrona
       } else if (message.action === 'getAiChains') {
         // ── Retorna a lista de chains disponíveis para o modal de seleção ─
         // O ui-components.js chama isso para montar os botões de fila.

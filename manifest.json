@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SGD - PowerTools",
-  "version": "3.0.8.1",
+  "version": "3.0.8.2",
   "description": "Adiciona um editor de texto avançado ao site https://sgd.dominiosistemas.com.br/",
   "permissions": [
     "storage",
@@ -16,7 +16,8 @@
     "wss://wymocw0zke.execute-api.us-east-1.amazonaws.com/*",
     "https://aiplatform.thomsonreuters.com/*",
     "https://script.google.com/*",
-    "https://tria.plugsocial.online/*"
+    "https://tria.plugsocial.online/*",
+    "http://srvatn2-01.ead.thomsonreuters.com:8080/*"
   ],
   "background": {
     "service_worker": "service-worker.js"
@@ -62,6 +63,7 @@
         "links-panel.js",
         "pending-widget.js",
         "chat-viewer-service.js",
+        "client-info-service.js",
         "app.js"
       ],
       "css": [
@@ -75,7 +77,8 @@
         "styles/tags.css",
         "styles/links-panel.css",
         "styles/pending-widget.css",
-        "styles/chat-viewer.css"
+        "styles/chat-viewer.css",
+        "styles/client-info.css"
       ],
       "run_at": "document_idle"
     },

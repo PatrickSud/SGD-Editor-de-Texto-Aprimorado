@@ -398,6 +398,12 @@ const MINOR_RELEASE_NOTES = {
         '<b>💬 Visualizador de Chat:</b> novo botão nos anexos de conversa (.txt) que abre o atendimento formatado — com Arquivos, Transcrição, busca, visualização de imagens e resumo com IA.',
         '<b>📞 Transcrição da ligação:</b> botão "Visualizar" ao lado do campo Transcrição abre a conversa telefônica formatada, com busca.'
       ]
+    },
+    {
+      version: '3.0.8.2',
+      features: [
+        '<b>🔍 Consulta Domínio Web:</b> nova lupa flutuante que consulta a API interna e mostra os dados do cliente (Versão Domínio, servidores e tamanho do banco) direto na tela do SGD, com modos simplificado e completo. Ideia original de Guilherme Possenti.'
+      ]
     }
   ],
   '3.0.7': [

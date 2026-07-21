@@ -1085,7 +1085,8 @@ async function renderQuickStepsList(modal) {
  */
 const COLLABORATORS = [
   { name: 'Luiza Moro & Patrick Godoy', role: 'Desenvolvimento e manutenção' },
-  { name: 'Ruan Fiori Marcelino', role: 'Ideia original do Visualizador de Chat' }
+  { name: 'Ruan Fiori Marcelino', role: 'Ideia original do Visualizador de Chat' },
+  { name: 'Guilherme Possenti', role: 'Ideia original da Consulta Domínio Web' }
 ]
 
 /**
@@ -1391,6 +1392,16 @@ async function openManagementModal() {
                 <div class="form-checkbox-group">
                     <input type="checkbox" id="enable-chat-viewer" ${preferences.enableChatViewer !== false ? 'checked' : ''}>
                     <label for="enable-chat-viewer">Exibir o botão "Visualizar Chat" nos anexos .txt de atendimento (conversa formatada, mídias e transcrição)</label>
+                </div>
+                <hr style="margin: 15px 0;">
+                <h5>Consulta de Cliente (Domínio Web)</h5>
+                <div class="form-checkbox-group">
+                    <input type="checkbox" id="enable-client-info" ${preferences.enableClientInfo !== false ? 'checked' : ''}>
+                    <label for="enable-client-info">Exibir a lupa flutuante "Consulta Domínio Web" (consulta a API interna e mostra infos do cliente)</label>
+                </div>
+                <div class="form-checkbox-group">
+                    <input type="checkbox" id="client-info-auto-fetch" ${preferences.clientInfoAutoFetch === true ? 'checked' : ''}>
+                    <label for="client-info-auto-fetch">Consultar automaticamente ao detectar o cliente na página (sem precisar clicar na lupa)</label>
                 </div>
                 <hr style="margin: 15px 0;">
                 <h5>Classificação Padrão</h5>
@@ -3328,6 +3339,16 @@ async function savePreferencesSettings(modal) {
   const enableChatViewerCheckbox = container.querySelector('#enable-chat-viewer');
   if (enableChatViewerCheckbox) {
     newPreferences.enableChatViewer = enableChatViewerCheckbox.checked;
+  }
+
+  // NOVO: Ler preferências da Consulta de Cliente (Domínio Web)
+  const enableClientInfoCheckbox = container.querySelector('#enable-client-info');
+  if (enableClientInfoCheckbox) {
+    newPreferences.enableClientInfo = enableClientInfoCheckbox.checked;
+  }
+  const clientInfoAutoFetchCheckbox = container.querySelector('#client-info-auto-fetch');
+  if (clientInfoAutoFetchCheckbox) {
+    newPreferences.clientInfoAutoFetch = clientInfoAutoFetchCheckbox.checked;
   }
 
   // NOVO: Ler preferência para lembrar a classificação automática padrão

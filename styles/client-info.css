@@ -1,0 +1,237 @@
+/*
+ * client-info.css
+ * Estilos do recurso "Consulta de Cliente (Domínio Web)": lupa flutuante + painel.
+ * Visual alinhado ao da extensão original (header gradiente azul→roxo horizontal,
+ * painel ancorado junto ao botão, loading com ampulheta animada, lupa branca).
+ */
+
+/* ─── Lupa flutuante ─────────────────────────────────────────────────────── */
+/* Por padrão, a lupa é um botão 40x40 que se encaixa no grupo de botões
+   flutuantes (#scroll-btn-group), ao lado do IAplug / Ir ao Topo — mesmo
+   tamanho e cantos dos vizinhos. */
+#sgd-client-info-fab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6a6ff0 0%, #8b5cf6 100%);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+#sgd-client-info-fab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+#sgd-client-info-fab:active { transform: scale(0.97); }
+#sgd-client-info-fab svg { display: block; }
+
+/* Fallback: quando o grupo de botões ainda não existe, a lupa fica fixa no
+   canto inferior direito (onde o grupo apareceria). */
+#sgd-client-info-fab.sgd-ci-fab-standalone {
+  position: fixed;
+  right: 25px;
+  bottom: 25px;
+  z-index: 1050;
+}
+
+/* Espelha a ocultação em janelas pequenas dos demais botões flutuantes. */
+@media (max-width: 679px), (max-height: 449px) {
+  #sgd-client-info-fab.sgd-ci-fab-standalone { display: none !important; }
+}
+
+/* ─── Painel ─────────────────────────────────────────────────────────────── */
+/* Ancorado no canto inferior direito, logo acima da lupa (como no original).
+   Cresce conforme o conteúdo até quase a largura da tela; só então rola. */
+.sgd-client-info-panel {
+  position: fixed;
+  right: 24px;
+  bottom: 88px;
+  z-index: 2147483001;
+  width: max-content;
+  min-width: 340px;
+  max-width: calc(100vw - 48px);
+  background: #ffffff;
+  border: 1px solid rgba(124, 92, 246, 0.28);
+  border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(60, 40, 120, 0.28);
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  color: #1f2937;
+  animation: sgd-ci-in 0.18s ease-out;
+}
+@keyframes sgd-ci-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.sgd-ci-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 18px;
+  background: linear-gradient(90deg, #5a63e8 0%, #7c5cf0 55%, #8b5cf6 100%);
+  color: #fff;
+}
+.sgd-ci-title { font-weight: 600; font-size: 16px; letter-spacing: 0.2px; white-space: nowrap; }
+.sgd-ci-header-actions { display: flex; align-items: center; gap: 12px; }
+.sgd-ci-close {
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  transition: background 0.15s ease;
+}
+.sgd-ci-close:hover { background: rgba(255, 255, 255, 0.34); }
+
+/* ─── Toggle "Automático" no cabeçalho ───────────────────────────────────── */
+.sgd-ci-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.95);
+  white-space: nowrap;
+}
+.sgd-ci-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+.sgd-ci-toggle-track {
+  position: relative;
+  width: 34px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.35);
+  transition: background 0.15s ease;
+}
+.sgd-ci-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+.sgd-ci-toggle input:checked + .sgd-ci-toggle-track { background: rgba(255, 255, 255, 0.9); }
+.sgd-ci-toggle input:checked + .sgd-ci-toggle-track .sgd-ci-toggle-thumb {
+  transform: translateX(16px);
+  background: #6a6ff0;
+}
+
+.sgd-ci-body { padding: 8px 18px 16px; }
+
+/* ─── Estado: pedir código manualmente ───────────────────────────────────── */
+.sgd-ci-ask { padding: 14px 0 6px; }
+.sgd-ci-ask label { display: block; font-size: 13px; margin-bottom: 8px; color: #374151; }
+.sgd-ci-ask-row { display: flex; gap: 8px; }
+.sgd-ci-ask-row input {
+  flex: 1;
+  padding: 9px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 9px;
+  font-size: 14px;
+  outline: none;
+}
+.sgd-ci-ask-row input:focus { border-color: #7c5cf0; box-shadow: 0 0 0 3px rgba(124, 92, 240, 0.18); }
+.sgd-ci-input-invalid { border-color: #ef4444 !important; }
+.sgd-ci-ask-row button,
+#sgd-ci-retry-btn {
+  padding: 9px 16px;
+  border: none;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #6a6ff0 0%, #8b5cf6 100%);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.sgd-ci-ask-row button:hover,
+#sgd-ci-retry-btn:hover { filter: brightness(1.05); }
+
+/* ─── Estados: loading / erro (centralizado, estilo do original) ─────────── */
+.sgd-ci-loading {
+  text-align: center;
+  padding: 30px 16px 26px;
+}
+.sgd-ci-hourglass {
+  font-size: 42px;
+  line-height: 1;
+  display: inline-block;
+  animation: sgd-ci-flip 1.15s ease-in-out infinite;
+}
+@keyframes sgd-ci-flip {
+  0%   { transform: rotate(0deg); }
+  60%  { transform: rotate(180deg); }
+  100% { transform: rotate(360deg); }
+}
+.sgd-ci-loading-title {
+  margin-top: 14px;
+  color: #6a6ff0;
+  font-weight: 600;
+  font-size: 16px;
+}
+.sgd-ci-loading-sub {
+  margin-top: 5px;
+  color: #9ca3af;
+  font-size: 13px;
+}
+.sgd-ci-error .sgd-ci-loading-title { color: #b91c1c; }
+.sgd-ci-error-icon { font-size: 38px; line-height: 1; }
+.sgd-ci-error-detail {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #6b7280;
+  word-break: break-word;
+}
+#sgd-ci-retry-btn { margin-top: 16px; }
+
+/* ─── Tabela de resultado ────────────────────────────────────────────────── */
+.sgd-ci-table-wrap { overflow-x: auto; padding: 8px 0 4px; }
+.sgd-ci-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13.5px;
+  white-space: nowrap;
+}
+.sgd-ci-table th {
+  text-align: left;
+  font-weight: 600;
+  color: #6b7280;
+  padding: 10px 26px 10px 0;
+  border-bottom: 2px solid #7c5cf0;
+}
+.sgd-ci-table td {
+  padding: 12px 26px 12px 0;
+  color: #111827;
+  border-bottom: 1px solid #f3f4f6;
+}
+.sgd-ci-table tbody tr:last-child td { border-bottom: none; }
+
+/* ─── Modo escuro (segue o tema escuro do SGD, se presente) ──────────────── */
+.dark-mode .sgd-client-info-panel,
+.dark-graphite-mode .sgd-client-info-panel,
+.tokyo-night-mode .sgd-client-info-panel {
+  background: #1f2430;
+  color: #e5e7eb;
+  border-color: rgba(124, 92, 246, 0.4);
+}
+.dark-mode .sgd-ci-table td,
+.dark-graphite-mode .sgd-ci-table td,
+.tokyo-night-mode .sgd-ci-table td { color: #e5e7eb; border-bottom-color: #313848; }
+.dark-mode .sgd-ci-loading-sub,
+.dark-graphite-mode .sgd-ci-loading-sub,
+.tokyo-night-mode .sgd-ci-loading-sub { color: #9aa4b2; }
