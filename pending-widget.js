@@ -245,7 +245,6 @@ async function ensurePendingWidgetDom() {
     <div class="sgd-pw-panel">
       <div class="sgd-pw-header">
         <span class="sgd-pw-title">Minhas pendências</span>
-        <button class="sgd-pw-refresh" type="button" title="Atualizar agora" aria-label="Atualizar agora">🔄</button>
         <button class="sgd-pw-openall" type="button">↗ Abrir 30h+</button>
         <button class="sgd-pw-gear" type="button" title="Configurar alerta" aria-label="Configurar alerta">⚙️</button>
       </div>
@@ -404,24 +403,6 @@ function bindPendingWidgetEvents(wrap) {
         settings.style.display = 'block'
         if (list) list.style.display = 'none'
         gear.classList.add('active')
-      }
-    })
-  }
-
-  // --- Botão "🔄": força um refresh imediato (ignora o cache de 60s do
-  //     coordenador), pra cobrir o caso do widget estar "atrasado" em relação
-  //     ao Painel de pendências (que sempre busca fresco ao trocar de guia). ---
-  const refreshBtn = wrap.querySelector('.sgd-pw-refresh')
-  if (refreshBtn) {
-    refreshBtn.addEventListener('click', async () => {
-      if (refreshBtn.disabled) return
-      refreshBtn.disabled = true
-      refreshBtn.classList.add('spinning')
-      try {
-        await refreshPendingWidget({ force: true })
-      } finally {
-        refreshBtn.classList.remove('spinning')
-        refreshBtn.disabled = false
       }
     })
   }
@@ -682,13 +663,10 @@ async function renderPendingWidget(widgetItems, cfg) {
       ? '<span class="sgd-pw-n2" title="Aguardando Suporte Nível 2 (outro setor)">N2</span>'
       : ''
 
-  // Em vez do número da SSC, a linha mostra o badge de dias em aberto (mesmo
-  // dado "📅 Xd" do card do painel) e o de tempo sem retorno — sem ícone
-  // neste último, já que o ícone da faixa já aparece no cabeçalho do grupo.
+  // Em vez do número da SSC, a linha mostra só o badge de dias em aberto
+  // (mesmo dado "📅 Xd" do card do painel) — o badge de tempo sem retorno foi
+  // removido a pedido do Patrick.
   const renderRow = (it, meta, style, muted) => {
-    const hoursLabel = Number.isFinite(meta.hours)
-      ? `${Math.floor(meta.hours)}h`
-      : '–'
     const diasLabel =
       it && it.dias !== undefined && it.dias !== null && it.dias !== ''
         ? `${sgdPwEscape(it.dias)}d`
@@ -697,7 +675,7 @@ async function renderPendingWidget(widgetItems, cfg) {
     <a class="sgd-pw-row${muted ? ' sgd-pw-row-muted' : ''}" style="border-left-color:${style.color};background:${style.bg};"
        href="${sgdPwEscape(it.link)}" target="_blank" rel="noopener noreferrer"
        title="${sgdPwEscape(it.id)} · ${sgdPwEscape(it.subject)}">
-      <span class="sgd-pw-badge sgd-pw-badge-days" title="Dias em aberto">📅 ${diasLabel}</span><span class="sgd-pw-badge sgd-pw-badge-time" style="color:${style.color};" title="Tempo sem retorno">${hoursLabel}</span>${n2Tag(it)} · ${sgdPwEscape(it.subject)}
+      <span class="sgd-pw-badge sgd-pw-badge-days" title="Dias em aberto">📅 ${diasLabel}</span>${n2Tag(it)} · ${sgdPwEscape(it.subject)}
     </a>`
   }
 

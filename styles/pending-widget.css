@@ -279,36 +279,6 @@
   border-color: var(--sgd-pw-gear-active-border);
 }
 
-/* Botão de refresh manual (🔄): mesma linguagem visual da engrenagem. Gira
-   enquanto a busca forçada está em andamento (classe .spinning). */
-.sgd-pw-refresh {
-  cursor: pointer;
-  border: 1px solid var(--sgd-pw-gear-border);
-  background: var(--sgd-pw-gear-bg);
-  color: var(--sgd-pw-gear-color);
-  border-radius: 7px;
-  padding: 4px 8px;
-  font-size: 13px;
-  line-height: 1;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-}
-.sgd-pw-refresh:hover {
-  background: var(--sgd-pw-gear-hover-bg);
-}
-.sgd-pw-refresh[disabled] {
-  opacity: 0.6;
-  cursor: default;
-}
-.sgd-pw-refresh.spinning {
-  animation: sgdPwSpin 0.8s linear infinite;
-}
-@keyframes sgdPwSpin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
 .sgd-pw-settings {
   padding: 10px 12px;
   border-bottom: 1px solid var(--sgd-pw-settings-border);
@@ -372,8 +342,8 @@
   vertical-align: middle;
 }
 
-/* Badges da linha (tempo sem retorno + dias em aberto), no lugar do número
-   da SSC — a cor do badge de tempo acompanha a faixa (definida inline). */
+/* Badge de dias em aberto, no lugar do número da SSC (o badge de tempo sem
+   retorno foi removido a pedido do Patrick). */
 .sgd-pw-badge {
   display: inline-flex;
   align-items: center;
