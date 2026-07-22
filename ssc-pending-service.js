@@ -274,9 +274,42 @@ function parseSscPendingPage(doc, arrivalTimes, now, arrivalTimesState) {
 
   rows.forEach(tr => {
     // Só linhas de dados têm células com id "td:...". Ignora cabeçalho/layout.
-    const idCell = tr.querySelector('td[id^="td:seq_revenda_"]')
+    // A célula do número da SSC tem DOIS padrões de id na grade do SGD:
+    //   - "td:seq_revenda_N"        -> linhas normais
+    //   - "td:sequencial_revenda_N" -> linhas DESTACADAS/prioritárias (coloridas)
+    // As demais células (assunto, dias, responsável, etc.) usam os mesmos ids nos
+    // dois casos. Antes reconhecíamos só o 1º padrão, então as SSCs prioritárias
+    // (fundo amarelo / fonte vermelha) eram silenciosamente descartadas e nunca
+    // apareciam na guia Pendências nem no widget. Reconhecemos os dois padrões.
+    const idCell = tr.querySelector(
+      'td[id^="td:seq_revenda_"], td[id^="td:sequencial_revenda_"]'
+    )
     const assuntoCell = tr.querySelector('td[id^="td:assunto_"]')
     if (!idCell || !assuntoCell) return
+
+    // Sinais visuais da grade do SGD — presentes no HTML (classe/style inline),
+    // portanto legíveis via fetch()+DOMParser (o CSS externo não é aplicado, mas
+    // esses marcadores estão no próprio elemento):
+    //   - Fundo AMARELO/AZUL: classe tableListaRowWarning(Blue) na célula do
+    //     número  => SSC PRIORITÁRIA  => tag "Prioridade".
+    //   - Fonte VERMELHA: style inline "color:red" na linha/assunto/célula
+    //     => SSC com retorno de SS   => tag "Em SS".
+    // São independentes: uma SSC pode ser prioritária E ter retorno de SS (as
+    // duas linhas coloridas ao mesmo tempo).
+    const isPrioritaria =
+      idCell.classList.contains('tableListaRowWarning') ||
+      idCell.classList.contains('tableListaRowWarningBlue')
+    const anchorEl = assuntoCell.querySelector('a')
+    const estilosInline = (
+      (tr.getAttribute('style') || '') +
+      ';' +
+      (idCell.getAttribute('style') || '') +
+      ';' +
+      (anchorEl ? anchorEl.getAttribute('style') || '' : '')
+    )
+      .toLowerCase()
+      .replace(/\s+/g, '')
+    const isEmSS = estilosInline.includes('color:red')
 
     try {
       const id = idCell.textContent.trim()
@@ -367,8 +400,8 @@ function parseSscPendingPage(doc, arrivalTimes, now, arrivalTimesState) {
         responsible,
         modulo,
         alocacao,
-        isPrioritaria: false,
-        isEmSS: false,
+        isPrioritaria,
+        isEmSS,
         hoursSinceUpdate: sla.hoursSinceUpdate,
         timePrecision: sla.timePrecision,
         estimatedDaysSinceUpdate: sla.estimatedDaysSinceUpdate

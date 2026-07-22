@@ -347,6 +347,35 @@
   vertical-align: middle;
 }
 
+/* Selos de Prioridade (fundo amarelo na grade) e SS (retorno de SS), espelhando
+   as tags da lista. No widget é só o selo — a linha NÃO recebe fonte vermelha. */
+.sgd-pw-prio {
+  display: inline-flex;
+  align-items: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+  background: #ef4444;
+  border: 1px solid #dc2626;
+  border-radius: 8px;
+  padding: 0 5px;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+.sgd-pw-emss {
+  display: inline-flex;
+  align-items: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+  background: #f59e0b;
+  border: 1px solid #d97706;
+  border-radius: 8px;
+  padding: 0 5px;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
 /* Badge de dias em aberto, no lugar do número da SSC (o badge de tempo sem
    retorno foi removido a pedido do Patrick). */
 .sgd-pw-badge {

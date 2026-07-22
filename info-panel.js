@@ -1540,7 +1540,7 @@ function createPendingCard(item, showResponsible = false) {
     }
   }
   if (item.isEmSS) {
-    const ssTag = availableTagsCache.find(t => t.name.toLowerCase() === 'em ss')
+    const ssTag = availableTagsCache.find(t => (t.name.toLowerCase() === 'ss' || t.name.toLowerCase() === 'em ss'))
     if (ssTag) {
       tagsRenderList.push(ssTag)
       renderedTagIds.add(ssTag.id)
@@ -4230,7 +4230,7 @@ async function openTagManager(btnElement, pendingId) {
     }
     if (item.isEmSS) {
       const ssTag = availableTagsCache.find(
-        t => t.name.toLowerCase() === 'em ss'
+        t => (t.name.toLowerCase() === 'ss' || t.name.toLowerCase() === 'em ss')
       )
       if (ssTag) autoTagIds.add(ssTag.id)
     }
@@ -4472,7 +4472,7 @@ function refreshPendingCardUI(pendingId) {
         // 2. Tag de Em SS (Automática)
         if (item.isEmSS) {
           const ssTag = availableTagsCache.find(
-            t => t.name.toLowerCase() === 'em ss'
+            t => (t.name.toLowerCase() === 'ss' || t.name.toLowerCase() === 'em ss')
           )
           if (ssTag) {
             tagsRenderList.push(ssTag)

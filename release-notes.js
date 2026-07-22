@@ -121,6 +121,27 @@ function buildNotesToShow(noteworthyVersion, lastSeenVersion) {
 }
 
 const RELEASE_NOTES = {
+  '3.0.9': {
+    title: '🚀 Novidades da Versão 3.0.9',
+    consolidates: '3.0.8',
+    features: [
+      '<b>🚨 Pendências & Alertas:</b>' +
+        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+        '<li><b>SSCs prioritárias voltaram a aparecer:</b> Solicitações destacadas na lista do SGD (prioritárias ou com retorno de SS) não estavam sendo exibidas na guia Pendências nem no Alerta de Pendências. Agora aparecem normalmente.</li>' +
+        '<li><b>Tags automáticas:</b> a tag <b>Prioridade</b> é aplicada sozinha nas SSCs prioritárias e a tag <b>SS</b> nas SSCs com retorno de SS — tanto na guia Pendências quanto no widget.</li>' +
+        '<li><b>Tag "Em SS" renomeada para "SS":</b> ajuste automático; suas marcações são mantidas.</li>' +
+        '</ul>',
+      '<b>💬 Atendimento & Chat:</b>' +
+        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+        '<li><b>Visualizador de Chat:</b> novo botão nos anexos de conversa (.txt) que abre o atendimento formatado — com Arquivos, Transcrição, busca, visualização de imagens e resumo com IA.</li>' +
+        '<li><b>Transcrição da ligação:</b> botão "Visualizar" ao lado do campo Transcrição abre a conversa telefônica formatada, com busca.</li>' +
+        '</ul>',
+      '<b>🔍 Consulta Domínio Web:</b>' +
+        '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+        '<li>Nova lupa flutuante que consulta a API interna e mostra os dados do cliente (Versão Domínio, servidores e tamanho do banco) direto na tela do SGD, com modos simplificado e completo. Ideia original de Guilherme Possenti.</li>' +
+        '</ul>'
+    ]
+  },
   '3.0.8': {
     title: '🚀 Consolidação e Novidades da Versão 3.0.8',
     features: [
@@ -395,14 +416,16 @@ const MINOR_RELEASE_NOTES = {
     {
       version: '3.0.8.1',
       features: [
-        '<b>💬 Visualizador de Chat:</b> novo botão nos anexos de conversa (.txt) que abre o atendimento formatado — com Arquivos, Transcrição, busca, visualização de imagens e resumo com IA.',
-        '<b>📞 Transcrição da ligação:</b> botão "Visualizar" ao lado do campo Transcrição abre a conversa telefônica formatada, com busca.'
+        // Conteúdo agora resumido em RELEASE_NOTES['3.0.9'] (grupo "Atendimento & Chat").
+        { text: '<b>💬 Visualizador de Chat:</b> novo botão nos anexos de conversa (.txt) que abre o atendimento formatado — com Arquivos, Transcrição, busca, visualização de imagens e resumo com IA.', hidden: true },
+        { text: '<b>📞 Transcrição da ligação:</b> botão "Visualizar" ao lado do campo Transcrição abre a conversa telefônica formatada, com busca.', hidden: true }
       ]
     },
     {
       version: '3.0.8.2',
       features: [
-        '<b>🔍 Consulta Domínio Web:</b> nova lupa flutuante que consulta a API interna e mostra os dados do cliente (Versão Domínio, servidores e tamanho do banco) direto na tela do SGD, com modos simplificado e completo. Ideia original de Guilherme Possenti.'
+        // Conteúdo agora resumido em RELEASE_NOTES['3.0.9'] (grupo "Consulta Domínio Web").
+        { text: '<b>🔍 Consulta Domínio Web:</b> nova lupa flutuante que consulta a API interna e mostra os dados do cliente (Versão Domínio, servidores e tamanho do banco) direto na tela do SGD, com modos simplificado e completo. Ideia original de Guilherme Possenti.', hidden: true }
       ]
     }
   ],

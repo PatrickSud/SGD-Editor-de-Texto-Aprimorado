@@ -1111,7 +1111,7 @@ async function savePendingResult(result) {
 // --- GESTÃO DE TAGS ---
 
 const DEFAULT_TAGS = [
-  { id: 'tag-ss', name: 'Em SS', color: '#ff9800' }, // Laranja
+  { id: 'tag-ss', name: 'SS', color: '#ff9800' }, // Laranja
   { id: 'tag-sa-ne', name: 'Em SA/NE', color: '#2196f3' }, // Azul
   { id: 'tag-prioridade', name: 'Prioridade', color: '#f44336' } // Vermelho
 ]
@@ -1129,10 +1129,12 @@ async function initializeTags() {
     let tags = data.pendingTags
     let changed = false
 
-    // Migração de nomes
+    // Migração de nomes (nomes antigos -> atuais). A tag mantém o id 'tag-ss',
+    // então as atribuições manuais (pendingTagsMap) continuam válidas; só muda o
+    // rótulo exibido. Renomeamos "Aguardando SS" e "Em SS" para "SS".
     tags = tags.map(t => {
-      if (t.name === 'Aguardando SS') {
-        t.name = 'Em SS'
+      if (t.name === 'Aguardando SS' || t.name === 'Em SS') {
+        t.name = 'SS'
         changed = true
       }
       if (t.name === 'Aguardando SA/NE') {

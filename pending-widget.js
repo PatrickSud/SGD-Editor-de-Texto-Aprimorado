@@ -724,6 +724,18 @@ async function renderPendingWidget(widgetItems, cfg) {
   // Em vez do número da SSC, a linha mostra só o badge de dias em aberto
   // (mesmo dado "📅 Xd" do card do painel) — o badge de tempo sem retorno foi
   // removido a pedido do Patrick.
+  // Selos espelhando as tags da lista: Prioridade (fundo amarelo na grade) e
+  // SS (retorno de SS = fonte vermelha na grade). No widget, só o selo — a
+  // fonte da linha NÃO fica vermelha (a pedido do Patrick, a tag basta).
+  const prioTag = it =>
+    it && it.isPrioritaria
+      ? '<span class="sgd-pw-prio" title="SSC prioritária">Prioridade</span>'
+      : ''
+  const ssTag = it =>
+    it && it.isEmSS
+      ? '<span class="sgd-pw-emss" title="SSC com retorno de SS">SS</span>'
+      : ''
+
   const renderRow = (it, meta, style, muted) => {
     const diasLabel =
       it && it.dias !== undefined && it.dias !== null && it.dias !== ''
@@ -733,7 +745,7 @@ async function renderPendingWidget(widgetItems, cfg) {
     <a class="sgd-pw-row${muted ? ' sgd-pw-row-muted' : ''}" style="border-left-color:${style.color};background:${style.bg};"
        href="${sgdPwEscape(it.link)}" target="_blank" rel="noopener noreferrer"
        title="${sgdPwEscape(it.id)} · ${sgdPwEscape(it.subject)}">
-      <span class="sgd-pw-badge sgd-pw-badge-days" title="Dias em aberto">📅 ${diasLabel}</span>${n2Tag(it)} · ${sgdPwEscape(it.subject)}
+      <span class="sgd-pw-badge sgd-pw-badge-days" title="Dias em aberto">📅 ${diasLabel}</span>${prioTag(it)}${ssTag(it)}${n2Tag(it)} · ${sgdPwEscape(it.subject)}
     </a>`
   }
 
