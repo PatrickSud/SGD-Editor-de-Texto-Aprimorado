@@ -161,6 +161,7 @@ const DEFAULT_SETTINGS = {
     fab: true,
     goToTop: true,
     searchAnswerButton: true,
+    clientInfo: true,
     separator1: true,
     separator2: true,
     separator3: true,

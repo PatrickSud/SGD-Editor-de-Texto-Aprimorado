@@ -2044,7 +2044,8 @@ function addSgdActionButtons(masterContainer) {
     'sscForm:btnSalvarContinuar',
     'sscForm:btnTramitar',
     'ssForm:gravarTramiteBtn',
-    'ssForm:btnTramitar'
+    'ssForm:btnTramitar',
+    'ocorrenciaForm:gravarTramiteBtn'
   ]
 
   const toolbar = masterContainer.querySelector('.editor-toolbar')
@@ -2116,7 +2117,11 @@ function addSgdActionButtons(masterContainer) {
       actionGroup.appendChild(clonedButton)
       paresBotaoClonado.push({ id, clonedButton })
 
-      if (id === 'sscForm:gravarTramiteBtn' || id === 'ssForm:gravarTramiteBtn') {
+      if (
+        id === 'sscForm:gravarTramiteBtn' ||
+        id === 'ssForm:gravarTramiteBtn' ||
+        id === 'ocorrenciaForm:gravarTramiteBtn'
+      ) {
         gravarButtonEl = clonedButton
       } else if (id === 'cadSscForm:gravarVisualizar') {
         visualizarButtonEl = clonedButton

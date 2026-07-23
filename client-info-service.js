@@ -35,6 +35,7 @@
   const ENABLE_PREF_KEY = 'enableClientInfo'
   const AUTO_PREF_KEY = 'clientInfoAutoFetch'
   const SIMPLE_PREF_KEY = 'clientInfoSimplified'
+  const VISIBILITY_TOGGLE_KEY = 'clientInfo' // chave em settings.toolbarButtons (aba Configurações > Visibilidade dos botões)
   const FAB_ID = 'sgd-client-info-fab'
   const PANEL_ID = 'sgd-client-info-panel'
   const GROUP_ID = 'scroll-btn-group'
@@ -518,14 +519,16 @@
       if (typeof getSettings === 'function') {
         const settings = await getSettings()
         const prefs = settings?.preferences || {}
+        const toolbarButtons = settings?.toolbarButtons || {}
         return {
           enabled: prefs[ENABLE_PREF_KEY] !== false, // padrão: habilitado
           auto: prefs[AUTO_PREF_KEY] === true,         // padrão: manual
-          simplified: prefs[SIMPLE_PREF_KEY] !== false // padrão: simplificado
+          simplified: prefs[SIMPLE_PREF_KEY] !== false, // padrão: simplificado
+          visible: toolbarButtons[VISIBILITY_TOGGLE_KEY] !== false // padrão: visível (Configurações > Visibilidade dos botões)
         }
       }
     } catch {}
-    return { enabled: true, auto: false, simplified: true }
+    return { enabled: true, auto: false, simplified: true, visible: true }
   }
 
   /**
@@ -551,8 +554,8 @@
    * é detectado (sem reabrir se o painel já estiver aberto).
    */
   async function refreshVisibility() {
-    const { enabled, auto } = await getPrefs()
-    const clienteId = enabled ? detectarClienteId() : null
+    const { enabled, auto, visible } = await getPrefs()
+    const clienteId = enabled && visible ? detectarClienteId() : null
 
     if (clienteId) {
       ensureFab()
