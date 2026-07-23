@@ -412,6 +412,18 @@ const RELEASE_NOTES = {
 // Hotfixes/patches (4 dígitos) agrupados pela versão notável anterior (3 dígitos).
 // NÃO exibidos isoladamente — ver guia completo no topo do arquivo.
 const MINOR_RELEASE_NOTES = {
+  '3.0.9': [
+    {
+      version: '3.0.9.1',
+      features: [
+        // Ajuste interno na busca de pendências: quando o usuário tem um
+        // subconjunto de Unidades marcado, a busca força "Todas as Unidades"
+        // (e restaura a marcação original ao final), para não perder pendências
+        // de outras unidades. Sem impacto visível direto ao usuário.
+        { text: '<b>📋 Pendências — filtro de Unidades:</b> a busca de pendências passa a considerar todas as unidades mesmo quando você tem só algumas selecionadas no filtro do SGD, restaurando sua seleção ao final.', hidden: true }
+      ]
+    }
+  ],
   '3.0.8': [
     {
       version: '3.0.8.1',

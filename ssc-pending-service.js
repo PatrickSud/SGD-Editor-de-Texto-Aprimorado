@@ -490,6 +490,41 @@ async function buscarDocumentoSscPendentes() {
     }
   }
 
+  // Filtro de Unidades: se o usuário tem um SUBCONJUNTO de unidades marcado
+  // (uma ou algumas, mas NÃO todas), a busca precisa considerar TODAS as
+  // unidades — senão as pendências de outras unidades ficam de fora. Forçamos
+  // "Todas" apenas nos POSTs de busca; o POST de restauração reusa o form
+  // original (FormData(form)), devolvendo a marcação anterior do usuário ao
+  // final. Se já estiver com todas marcadas (ou nenhuma), segue normalmente.
+  const todosCheckboxes = Array.from(
+    form.querySelectorAll('input[type="checkbox"]')
+  )
+  const nomeCurto = el => (el.getAttribute('name') || '').split(':').pop()
+  const unidadeBoxes = todosCheckboxes.filter(b => nomeCurto(b) === 'unidades')
+  const unidadeName = unidadeBoxes[0] ? unidadeBoxes[0].getAttribute('name') : null
+  const masterUnidade = todosCheckboxes.find(
+    b => nomeCurto(b) === 'inputCheckUnidadeTodas'
+  )
+  const unidadesMarcadas = unidadeBoxes.filter(b => b.checked).length
+  const unidadesRestritas =
+    !!unidadeName &&
+    unidadesMarcadas > 0 &&
+    unidadesMarcadas < unidadeBoxes.length
+  if (unidadesRestritas) {
+    logPendingDebug(
+      `Unidades restritas (${unidadesMarcadas}/${unidadeBoxes.length}) — forçando "Todas" na busca (restaura ao final).`
+    )
+  }
+
+  // Aplica "Todas as Unidades" ao corpo de UMA busca (não mexe no form/DOM,
+  // só nos params daquela requisição). No-op quando não há subconjunto.
+  function aplicarTodasUnidades(params) {
+    if (!unidadesRestritas) return
+    params.delete(unidadeName)
+    unidadeBoxes.forEach(b => params.append(unidadeName, b.value))
+    if (masterUnidade) params.set(masterUnidade.getAttribute('name'), 'on')
+  }
+
   // Helper: um POST de busca por situação, encadeando o ViewState. Devolve o
   // documento e o ViewState atualizado para a próxima requisição (JSF exige
   // o ViewState mais recente a cada POST no mesmo view).
@@ -500,6 +535,7 @@ async function buscarDocumentoSscPendentes() {
     params.set('relSscForm:situacao', situacao)
     params.set('relSscForm:responsavel', alvo)
     params.set('relSscForm:classificacao', SSC_PENDING_CLASSIFICACAO)
+    aplicarTodasUnidades(params)
     params.set('relSscForm:atualizarBtn', 'relSscForm:atualizarBtn')
     if (viewStateOverride) params.set('javax.faces.ViewState', viewStateOverride)
     const res = await fetch(actionUrl, {
