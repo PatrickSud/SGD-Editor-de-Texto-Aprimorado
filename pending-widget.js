@@ -929,14 +929,19 @@ async function refreshPendingWidget(opts = {}) {
 }
 
 /**
- * Mostra (uma única vez por usuário) um aviso informando que o Alerta de
- * Pendências passou a vir HABILITADO por padrão a partir de 2026-07-21 — a
- * pedido do Patrick, pra ninguém ser pego de surpresa pela mudança de
- * padrão. Só dispara pra quem NUNCA setou explicitamente
- * `enablePendingWidget` (ou seja, está usando o novo padrão "de fábrica",
- * seja instalação antiga ou nova); quem já ligou/desligou de propósito não
- * vê o aviso. Controlado pela flag `pendingWidgetDefaultOnNotified`, gravada
- * assim que o aviso é exibido, pra não repetir a cada carregamento.
+ * Mostra (uma única vez por usuário) um aviso apresentando o Alerta de
+ * Pendências (widget lateral) — habilitado por padrão a partir de
+ * 2026-07-21, a pedido do Patrick, pra que todo mundo conheça o recurso.
+ * Em vez de só informar, o aviso já vem com os dois botões de decisão
+ * ("Manter ativado" / "Desativar"), pra o usuário decidir ali mesmo sem
+ * precisar procurar a guia Pendências ou a engrenagem do widget.
+ *
+ * Só dispara pra quem NUNCA setou explicitamente `enablePendingWidget` (ou
+ * seja, está usando o padrão "de fábrica", seja instalação antiga ou nova);
+ * quem já ligou/desligou de propósito não vê o aviso. Controlado pela flag
+ * `pendingWidgetDefaultOnNotified`, gravada assim que o aviso é exibido
+ * (independente da escolha do usuário), pra não repetir a cada
+ * carregamento.
  */
 async function maybeNotifyPendingWidgetDefaultOn() {
   try {
@@ -949,9 +954,29 @@ async function maybeNotifyPendingWidgetDefaultOn() {
 
     if (typeof showNotification === 'function') {
       showNotification(
-        '🚨 O Alerta de Pendências (widget lateral) agora vem habilitado por padrão. Pra desabilitar, abra a guia Pendências e clique em "Alerta", ou use a engrenagem (⚙️) do próprio widget.',
+        '🚨 Novidade: o Alerta de Pendências (widget lateral) agora vem habilitado por padrão. Quer manter ativado?',
         'info',
-        10000
+        20000,
+        null,
+        false,
+        [
+          {
+            label: 'Manter ativado',
+            primary: true,
+            onClick: () => {
+              // Grava explicitamente `true`: deixa de depender só do padrão
+              // "de fábrica", registrando que o usuário confirmou a escolha.
+              savePendingWidgetPref('enablePendingWidget', true)
+            }
+          },
+          {
+            label: 'Desativar',
+            onClick: async () => {
+              await setPendingWidgetDisabled()
+              if (typeof destroyPendingWidget === 'function') destroyPendingWidget()
+            }
+          }
+        ]
       )
     }
     await savePendingWidgetPref('pendingWidgetDefaultOnNotified', true)

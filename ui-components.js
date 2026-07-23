@@ -733,13 +733,23 @@ function createModal(
 /**
  * Exibe uma notificação (toast) no canto superior direito.
  * Adicionada a opção de um callback `onClick` e botão dispensar.
+ * @param {string} message
+ * @param {string} [type]
+ * @param {number} [duration]
+ * @param {Function|null} [onClick] - Clique na notificação inteira (ignorado se `actions` for usado).
+ * @param {boolean} [showDismissButton] - Botão único "Dispensar" (ignorado se `actions` for usado).
+ * @param {Array<{label:string, onClick:Function, primary?:boolean}>|null} [actions] -
+ *   Quando informado, renderiza um ou mais botões próprios (ex.: "Manter ativado"/"Desativar")
+ *   em vez do botão de dispensar único. Cada botão fecha a notificação e dispara seu próprio
+ *   `onClick`; `primary` destaca visualmente o botão recomendado.
  */
 function showNotification(
   message,
   type = 'info',
   duration = 3000,
   onClick = null,
-  showDismissButton = false
+  showDismissButton = false,
+  actions = null
 ) {
   let container = document.getElementById('notification-container')
   if (!container) {
@@ -758,9 +768,24 @@ function showNotification(
     suggestion: '💡' // Ícone para sugestões
   }
 
-  // Se deve mostrar botão dispensar, adiciona o botão na parte inferior
-  const dismissButtonHtml = showDismissButton
-    ? '<div class="notification-actions"><button type="button" class="notification-dismiss-btn" title="Dispensar">Dispensar</button></div>'
+  const hasActions = Array.isArray(actions) && actions.length > 0
+
+  // Se deve mostrar botão dispensar (ou botões de ação customizados), adiciona
+  // a barra de ações na parte inferior. `actions` tem prioridade sobre o botão
+  // único de dispensar.
+  const actionsButtonsHtml = hasActions
+    ? actions
+        .map(
+          (a, i) =>
+            `<button type="button" class="notification-action-btn${a.primary ? ' primary' : ''}" data-action-index="${i}">${escapeHTML(a.label)}</button>`
+        )
+        .join('')
+    : showDismissButton
+      ? '<button type="button" class="notification-dismiss-btn" title="Dispensar">Dispensar</button>'
+      : ''
+
+  const dismissButtonHtml = actionsButtonsHtml
+    ? `<div class="notification-actions">${actionsButtonsHtml}</div>`
     : ''
 
   const notificationHtml = `
@@ -773,31 +798,51 @@ function showNotification(
 
   notification.innerHTML = notificationHtml
 
-  if (onClick) {
-    notification.style.cursor = 'pointer'
-    notification.title = 'Clique para ver'
-    notification.addEventListener('click', () => {
-      onClick()
-      // Remove a notificação imediatamente após o clique.
+  const removeNotification = () => {
+    notification.classList.add('fade-out')
+    setTimeout(() => {
       if (container.contains(notification)) {
         container.removeChild(notification)
       }
-    })
+    }, 500)
   }
 
-  // Adiciona listener para o botão dispensar
-  if (showDismissButton) {
-    const dismissBtn = notification.querySelector('.notification-dismiss-btn')
-    if (dismissBtn) {
-      dismissBtn.addEventListener('click', (e) => {
-        e.stopPropagation() // Evita que o clique no botão dispare o onClick da notificação
-        notification.classList.add('fade-out')
-        setTimeout(() => {
-          if (container.contains(notification)) {
-            container.removeChild(notification)
-          }
-        }, 500)
+  if (hasActions) {
+    // Botões de ação customizados: cada um fecha a notificação e dispara seu
+    // próprio callback. Não usa o onClick genérico (clique na notificação
+    // inteira) para não haver ambiguidade entre "escolher uma opção" e
+    // "clicar em qualquer lugar".
+    notification.querySelectorAll('.notification-action-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation()
+        const idx = Number(btn.dataset.actionIndex)
+        const action = actions[idx]
+        removeNotification()
+        if (action && typeof action.onClick === 'function') action.onClick()
       })
+    })
+  } else {
+    if (onClick) {
+      notification.style.cursor = 'pointer'
+      notification.title = 'Clique para ver'
+      notification.addEventListener('click', () => {
+        onClick()
+        // Remove a notificação imediatamente após o clique.
+        if (container.contains(notification)) {
+          container.removeChild(notification)
+        }
+      })
+    }
+
+    // Adiciona listener para o botão dispensar
+    if (showDismissButton) {
+      const dismissBtn = notification.querySelector('.notification-dismiss-btn')
+      if (dismissBtn) {
+        dismissBtn.addEventListener('click', (e) => {
+          e.stopPropagation() // Evita que o clique no botão dispare o onClick da notificação
+          removeNotification()
+        })
+      }
     }
   }
 

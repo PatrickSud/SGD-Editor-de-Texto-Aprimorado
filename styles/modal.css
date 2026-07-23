@@ -2772,8 +2772,47 @@ a.open-link-btn:hover {
   margin-top: 12px;
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
   padding-top: 8px;
   border-top: 1px solid var(--border-color);
+}
+
+/* Botões de ação customizados (ex.: "Manter ativado" / "Desativar"), usados
+   quando showNotification() recebe o parâmetro `actions`. Reaproveita o
+   visual do botão dispensar; `.primary` destaca a opção recomendada. */
+.notification-action-btn {
+  background: linear-gradient(135deg, #2d3748, #4a5568);
+  border: 1px solid #4a5568;
+  color: white;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: var(--border-radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.notification-action-btn:hover {
+  background: linear-gradient(135deg, #4a5568, #2d3748);
+  border-color: #718096;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.notification-action-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.notification-action-btn.primary {
+  background: linear-gradient(135deg, var(--action-green, #22c55e), #16a34a);
+  border-color: #16a34a;
+}
+
+.notification-action-btn.primary:hover {
+  background: linear-gradient(135deg, #16a34a, var(--action-green, #22c55e));
+  border-color: #15803d;
 }
 
 .notification-dismiss-btn {
