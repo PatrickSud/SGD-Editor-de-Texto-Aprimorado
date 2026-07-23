@@ -422,6 +422,16 @@ const MINOR_RELEASE_NOTES = {
         // de outras unidades. Sem impacto visível direto ao usuário.
         { text: '<b>📋 Pendências — filtro de Unidades:</b> a busca de pendências passa a considerar todas as unidades mesmo quando você tem só algumas selecionadas no filtro do SGD, restaurando sua seleção ao final.', hidden: true }
       ]
+    },
+    {
+      version: '3.0.9.2',
+      features: [
+        '<b>🏢 Filtro de Unidades nas Pendências:</b>' +
+          '<ul style="margin-top: 5px; margin-bottom: 10px; padding-left: 20px;">' +
+          '<li>Novo seletor <b>Unidades</b> na guia Pendências (ao lado de "Ordenar por"): mostra quais unidades estão sendo consideradas e permite escolher <b>Todas</b> ou apenas algumas — a escolha fica salva e é adotada na próxima atualização.</li>' +
+          '<li><b>Contagem mais confiável:</b> a busca de pendências não fica mais presa a um filtro de <b>cliente</b> deixado na sessão do SGD. Ela ignora o cliente específico (pendência é por técnico) e, no caso de 1 unidade + 1 cliente, abre para todas as unidades — sempre restaurando seus filtros ao final.</li>' +
+          '</ul>'
+      ]
     }
   ],
   '3.0.8': [

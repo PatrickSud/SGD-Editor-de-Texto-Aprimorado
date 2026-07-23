@@ -1382,4 +1382,86 @@
   flex-shrink: 0;
 }
 
+/* --- Seletor de Unidades (guia Pendências) --- */
+/* position: fixed + posicionamento via JS (a partir do botão) para NÃO ser
+   recortado por overflow de ancestrais (a barra de ações da guia). */
+.ip-unidades-pop {
+  position: fixed;
+  z-index: 2147483000;
+  width: 280px;
+  background: var(--bg-color, #fff);
+  color: var(--text-color, #222);
+  border: 1px solid var(--border-color, #ddd);
+  border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
+  padding: 8px;
+}
+.ip-unidades-pop-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-color, #eee);
+}
+.ip-unidades-all {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.ip-unidades-search {
+  width: 100%;
+  height: 26px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  font-size: 12px;
+  border: 1px solid var(--border-color, #ccc);
+  border-radius: 5px;
+}
+.ip-unidades-list {
+  max-height: 220px;
+  overflow: auto;
+  margin: 6px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ip-unidade-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 3px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.ip-unidade-item:hover {
+  background: var(--hover-bg, rgba(0, 0, 0, 0.05));
+}
+/* Garante que os checkboxes apareçam mesmo com o CSS global do SGD, que às
+   vezes esconde/reestiliza inputs. */
+.ip-unidades-pop input[type='checkbox'] {
+  -webkit-appearance: checkbox !important;
+  appearance: auto !important;
+  width: 14px !important;
+  height: 14px !important;
+  min-width: 14px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  position: static !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  display: inline-block !important;
+  visibility: visible !important;
+  flex: 0 0 auto;
+}
+.ip-unidades-pop-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-color, #eee);
+}
+
 

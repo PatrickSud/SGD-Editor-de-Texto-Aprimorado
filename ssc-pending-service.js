@@ -43,6 +43,13 @@ const SSC_PENDING_COORD_KEY = 'ssc-pendings'
 // Chave de storage do responsável monitorado (escolha salva pelo usuário).
 const SSC_MONITORED_RESP_KEY = 'sscMonitoredResponsavelId'
 
+// Chave de storage da seleção de UNIDADES monitoradas (escolha salva pelo
+// usuário na guia Pendências). Valores possíveis:
+//   - ausente/undefined -> usa a seleção da sessão do SGD + auto (drill-down);
+//   - 'ALL'             -> força TODAS as unidades;
+//   - array de ids      -> usa exatamente essas unidades.
+const SSC_MONITORED_UNIDADES_KEY = 'sscMonitoredUnidades'
+
 /**
  * Log de depuração das pendências, gated pelo sgdDebug global (config.js).
  * Silencioso por padrão; ative no console da página com: sgdDebug.ativar()
@@ -490,12 +497,19 @@ async function buscarDocumentoSscPendentes() {
     }
   }
 
-  // Filtro de Unidades: se o usuário tem um SUBCONJUNTO de unidades marcado
-  // (uma ou algumas, mas NÃO todas), a busca precisa considerar TODAS as
-  // unidades — senão as pendências de outras unidades ficam de fora. Forçamos
-  // "Todas" apenas nos POSTs de busca; o POST de restauração reusa o form
-  // original (FormData(form)), devolvendo a marcação anterior do usuário ao
-  // final. Se já estiver com todas marcadas (ou nenhuma), segue normalmente.
+  // Filtros herdados da sessão do SGD que distorcem a CONTAGEM de pendências.
+  // O SGD lembra o último filtro usado; se o técnico filtrou por 1 cliente
+  // (tipicamente 1 unidade + 1 cliente) para ver as SSCs daquele cliente, a
+  // consulta de pendências herda isso e mostra um número FALSO (só daquele
+  // cliente). Regras (definidas com o Patrick):
+  //   - Cliente: pendência é por TÉCNICO, nunca por cliente. Se houver um
+  //     cliente específico selecionado, forçamos "Todos" na busca.
+  //   - Unidades: "Todas" e multi-seleção são o modo de trabalho normal do
+  //     técnico e são PRESERVADAS. Só forçamos "Todas as Unidades" no cenário
+  //     problemático de 1 única unidade marcada JUNTO com um cliente específico
+  //     (indício de drill-down por cliente).
+  // Tudo isso vale só nos POSTs de busca; o POST de restauração reusa o form
+  // original (FormData(form)), devolvendo cliente e unidades como estavam.
   const todosCheckboxes = Array.from(
     form.querySelectorAll('input[type="checkbox"]')
   )
@@ -506,23 +520,88 @@ async function buscarDocumentoSscPendentes() {
     b => nomeCurto(b) === 'inputCheckUnidadeTodas'
   )
   const unidadesMarcadas = unidadeBoxes.filter(b => b.checked).length
-  const unidadesRestritas =
+
+  // Lista de unidades disponíveis (id + nome do <label>) para a UI da guia.
+  const unidadesDisponiveis = unidadeBoxes.map(b => {
+    const lab = b.id ? form.querySelector(`label[for="${b.id}"]`) : null
+    return {
+      id: b.value,
+      name: lab ? lab.textContent.trim() : b.value,
+      checked: b.checked
+    }
+  })
+  const idsValidos = new Set(unidadeBoxes.map(b => b.value))
+
+  const clienteSelect = Array.from(form.querySelectorAll('select')).find(
+    s => nomeCurto(s) === 'clientes'
+  )
+  const clienteName = clienteSelect ? clienteSelect.getAttribute('name') : null
+  const clienteValor = clienteSelect ? clienteSelect.value : '0'
+  const clienteEspecifico =
+    !!clienteName && clienteValor && clienteValor !== '0' && clienteValor !== 'NONE'
+
+  // Seleção de unidades escolhida pelo usuário na guia Pendências (storage).
+  //   'ALL' -> todas | array -> custom | ausente -> usa a sessão + auto.
+  const storedUni = await chrome.storage.local.get([SSC_MONITORED_UNIDADES_KEY])
+  const savedUnidades = storedUni[SSC_MONITORED_UNIDADES_KEY]
+  let unidadesModo = 'sessao'
+  let unidadesCustom = []
+  if (savedUnidades === 'ALL') {
+    unidadesModo = 'all'
+  } else if (Array.isArray(savedUnidades) && savedUnidades.length) {
+    unidadesCustom = savedUnidades.filter(id => idsValidos.has(id))
+    if (unidadesCustom.length) unidadesModo = 'custom'
+  }
+
+  // Auto: só "abre" as unidades no cenário 1 unidade + cliente específico
+  // (drill-down por cliente) — e apenas quando NÃO há escolha manual salva.
+  const forcarUnidadesTodas =
+    unidadesModo === 'sessao' &&
+    clienteEspecifico &&
     !!unidadeName &&
-    unidadesMarcadas > 0 &&
-    unidadesMarcadas < unidadeBoxes.length
-  if (unidadesRestritas) {
+    unidadesMarcadas === 1
+
+  // Quais unidades a busca REALMENTE usa (para reportar à UI).
+  let unidadesUsadas
+  if (unidadesModo === 'all' || forcarUnidadesTodas) {
+    unidadesUsadas = unidadeBoxes.map(b => b.value)
+  } else if (unidadesModo === 'custom') {
+    unidadesUsadas = unidadesCustom.slice()
+  } else {
+    unidadesUsadas = unidadeBoxes.filter(b => b.checked).map(b => b.value)
+  }
+
+  if (clienteEspecifico || unidadesModo !== 'sessao') {
     logPendingDebug(
-      `Unidades restritas (${unidadesMarcadas}/${unidadeBoxes.length}) — forçando "Todas" na busca (restaura ao final).`
+      `Filtros da busca -> cliente${clienteEspecifico ? '=Todos(forçado)' : '(inalterado)'} | ` +
+        `unidades modo=${unidadesModo}${forcarUnidadesTodas ? '+autoTodas' : ''} ` +
+        `(${unidadesUsadas.length}/${unidadeBoxes.length}) (restaura ao final).`
     )
   }
 
-  // Aplica "Todas as Unidades" ao corpo de UMA busca (não mexe no form/DOM,
-  // só nos params daquela requisição). No-op quando não há subconjunto.
-  function aplicarTodasUnidades(params) {
-    if (!unidadesRestritas) return
-    params.delete(unidadeName)
-    unidadeBoxes.forEach(b => params.append(unidadeName, b.value))
-    if (masterUnidade) params.set(masterUnidade.getAttribute('name'), 'on')
+  // Aplica cliente + unidades ao corpo de UMA busca (não mexe no form/DOM, só
+  // nos params daquela requisição). A restauração reusa o form original.
+  function aplicarFiltrosBusca(params) {
+    // Cliente: pendência é por técnico; um cliente específico é sempre limpo.
+    if (clienteEspecifico && clienteName) params.set(clienteName, '0')
+    if (!unidadeName) return
+
+    if (unidadesModo === 'all' || forcarUnidadesTodas) {
+      params.delete(unidadeName)
+      unidadeBoxes.forEach(b => params.append(unidadeName, b.value))
+      if (masterUnidade) params.set(masterUnidade.getAttribute('name'), 'on')
+    } else if (unidadesModo === 'custom') {
+      params.delete(unidadeName)
+      unidadesCustom.forEach(id => params.append(unidadeName, id))
+      if (masterUnidade) {
+        if (unidadesCustom.length === unidadeBoxes.length) {
+          params.set(masterUnidade.getAttribute('name'), 'on')
+        } else {
+          params.delete(masterUnidade.getAttribute('name'))
+        }
+      }
+    }
+    // modo 'sessao' sem auto: mantém o que veio no FormData (seleção do SGD).
   }
 
   // Helper: um POST de busca por situação, encadeando o ViewState. Devolve o
@@ -535,7 +614,7 @@ async function buscarDocumentoSscPendentes() {
     params.set('relSscForm:situacao', situacao)
     params.set('relSscForm:responsavel', alvo)
     params.set('relSscForm:classificacao', SSC_PENDING_CLASSIFICACAO)
-    aplicarTodasUnidades(params)
+    aplicarFiltrosBusca(params)
     params.set('relSscForm:atualizarBtn', 'relSscForm:atualizarBtn')
     if (viewStateOverride) params.set('javax.faces.ViewState', viewStateOverride)
     const res = await fetch(actionUrl, {
@@ -586,7 +665,10 @@ async function buscarDocumentoSscPendentes() {
     docN2: buscaN2.doc,
     responsaveis,
     responsavelUsado: alvo,
-    needsSelection: false
+    needsSelection: false,
+    unidades: unidadesDisponiveis,
+    unidadesUsadas,
+    unidadesModo
   }
 }
 
@@ -610,7 +692,10 @@ async function produceSscPendingItems() {
       tabs: null,
       responsaveis: busca.responsaveis,
       responsavelUsado: null,
-      needsSelection: true
+      needsSelection: true,
+      unidades: busca.unidades || [],
+      unidadesUsadas: busca.unidadesUsadas || [],
+      unidadesModo: busca.unidadesModo || 'sessao'
     }
   }
 
@@ -660,7 +745,10 @@ async function produceSscPendingItems() {
     tabs,
     responsaveis: busca.responsaveis,
     responsavelUsado: busca.responsavelUsado,
-    needsSelection: false
+    needsSelection: false,
+    unidades: busca.unidades || [],
+    unidadesUsadas: busca.unidadesUsadas || [],
+    unidadesModo: busca.unidadesModo || 'sessao'
   }
 }
 

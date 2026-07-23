@@ -392,6 +392,99 @@ async function openInfoPanel(initialTabId = 'pending') {
       })
     }
 
+    // Seletor de UNIDADES monitoradas (checklist): mostra o que está ativo no
+    // filtro do SGD e deixa o técnico mudar aqui mesmo. Ao aplicar, salva a
+    // escolha e recarrega (force). Os itens são preenchidos por
+    // populateMonitoredUnidades a cada carga; aqui só bindamos os eventos.
+    const uniWrap = pendingSection.querySelector('#pending-unidades-wrap')
+    if (uniWrap && !uniWrap.dataset.bound) {
+      const btn = uniWrap.querySelector('#pending-unidades-btn')
+      const pop = uniWrap.querySelector('#pending-unidades-pop')
+      const todas = uniWrap.querySelector('#pending-unidades-todas')
+      const lista = uniWrap.querySelector('#pending-unidades-list')
+      const busca = uniWrap.querySelector('#pending-unidades-busca')
+      const aplicar = uniWrap.querySelector('#pending-unidades-aplicar')
+      const cancelar = uniWrap.querySelector('#pending-unidades-cancelar')
+
+      const posicionar = () => {
+        // Posiciona o popover (position: fixed) logo abaixo do botão, alinhado
+        // à direita — assim não é recortado por overflow da barra de ações.
+        const r = btn.getBoundingClientRect()
+        const w = pop.offsetWidth || 280
+        let left = r.right - w
+        if (left < 8) left = 8
+        const maxLeft = window.innerWidth - w - 8
+        if (left > maxLeft) left = Math.max(8, maxLeft)
+        pop.style.left = left + 'px'
+        pop.style.top = r.bottom + 4 + 'px'
+      }
+      const abrir = () => {
+        pop.style.display = 'block'
+        posicionar()
+        if (busca) {
+          busca.value = ''
+          busca.dispatchEvent(new Event('input'))
+        }
+      }
+      const fechar = () => {
+        pop.style.display = 'none'
+      }
+
+      btn.addEventListener('click', e => {
+        e.stopPropagation()
+        pop.style.display === 'block' ? fechar() : abrir()
+      })
+      pop.addEventListener('click', e => e.stopPropagation())
+      document.addEventListener('click', e => {
+        if (pop.style.display === 'block' && !uniWrap.contains(e.target)) fechar()
+      })
+      if (cancelar) cancelar.addEventListener('click', fechar)
+
+      // "Todas" marca/desmarca todos os itens individuais.
+      if (todas) {
+        todas.addEventListener('change', () => {
+          lista
+            .querySelectorAll('input[type="checkbox"]')
+            .forEach(cb => (cb.checked = todas.checked))
+        })
+      }
+      // Ao mudar um item, sincroniza o estado do "Todas".
+      lista.addEventListener('change', () => {
+        const boxes = Array.from(lista.querySelectorAll('input[type="checkbox"]'))
+        const marcados = boxes.filter(b => b.checked).length
+        if (todas) todas.checked = marcados > 0 && marcados === boxes.length
+      })
+      // Filtro de texto por unidade.
+      if (busca) {
+        busca.addEventListener('input', () => {
+          const termo = (busca.value || '').toLowerCase()
+          lista.querySelectorAll('label').forEach(l => {
+            l.style.display = l.textContent.toLowerCase().includes(termo) ? '' : 'none'
+          })
+        })
+      }
+
+      if (aplicar) {
+        aplicar.addEventListener('click', async () => {
+          const boxes = Array.from(lista.querySelectorAll('input[type="checkbox"]'))
+          const marcados = boxes.filter(b => b.checked).map(b => b.value)
+          let valor
+          if ((todas && todas.checked) || marcados.length === boxes.length) {
+            valor = 'ALL'
+          } else if (marcados.length >= 1) {
+            valor = marcados
+          } else {
+            alert('Selecione ao menos uma unidade (ou marque "Todas as unidades").')
+            return
+          }
+          await chrome.storage.local.set({ sscMonitoredUnidades: valor })
+          fechar()
+          loadPendingItems(pendingSection, { force: true })
+        })
+      }
+      uniWrap.dataset.bound = '1'
+    }
+
     // A notificação de novas pendências (pílula do FAB) agora é SEMPRE ativada;
     // o antigo botão "Notificações" foi removido da guia Pendências.
 
@@ -1197,6 +1290,48 @@ function populateMonitoredResponsible(sectionElement, result) {
   sel.style.display = opts.length > 1 ? '' : 'none'
 }
 
+/**
+ * Popula o controle de UNIDADES da guia Pendências com a lista atual do filtro
+ * do SGD (result.unidades) e marca as que estão sendo usadas na busca
+ * (result.unidadesUsadas). Só aparece quando há mais de uma unidade disponível.
+ */
+function populateMonitoredUnidades(sectionElement, result) {
+  const wrap = sectionElement.querySelector('#pending-unidades-wrap')
+  if (!wrap) return
+  const unidades = (result && result.unidades) || []
+  const usadas = new Set((result && result.unidadesUsadas) || [])
+
+  // Sem escolha de unidade (0 ou 1 disponível) -> não mostra o controle.
+  if (unidades.length <= 1) {
+    wrap.style.display = 'none'
+    return
+  }
+  wrap.style.display = ''
+
+  const lista = wrap.querySelector('#pending-unidades-list')
+  const todas = wrap.querySelector('#pending-unidades-todas')
+  const label = wrap.querySelector('#pending-unidades-label')
+
+  lista.innerHTML = unidades
+    .slice()
+    .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+    .map(
+      u =>
+        `<label class="ip-unidade-item"><input type="checkbox" value="${escapeHTML(
+          u.id
+        )}"${usadas.has(u.id) ? ' checked' : ''}> ${escapeHTML(u.name)}</label>`
+    )
+    .join('')
+
+  const total = unidades.length
+  const marcadas = usadas.size
+  const ehTodas = marcadas === 0 || marcadas === total
+  if (todas) todas.checked = ehTodas
+  if (label) {
+    label.textContent = ehTodas ? 'Unidades: Todas' : `Unidades: ${marcadas} de ${total}`
+  }
+}
+
 async function loadPendingItems(sectionElement, options = {}) {
   const container = sectionElement.querySelector('#pending-list-container')
   const refreshBtn = sectionElement.querySelector('#refresh-pending-btn')
@@ -1244,6 +1379,8 @@ async function loadPendingItems(sectionElement, options = {}) {
 
     // Popular o seletor "Responsável monitorado" com as opções do SGD.
     populateMonitoredResponsible(sectionElement, result)
+    // Popular o controle de "Unidades" com a lista atual do filtro do SGD.
+    populateMonitoredUnidades(sectionElement, result)
 
     // Mantém a pílula do FAB sincronizada (conta só N1) ao abrir/atualizar a
     // guia, evitando que ela fique defasada até o próximo ciclo do alarme.
@@ -4744,6 +4881,20 @@ function getSectionContent(sectionId) {
                             <option value="data-desc">Data recente</option>
                             <option value="data-asc">Data antiga</option>
                         </select>
+                        <div id="pending-unidades-wrap" class="ip-unidades-wrap" style="position: relative; display: none;">
+                            <button id="pending-unidades-btn" class="action-btn small-btn enhanced-btn" title="Unidades consideradas na busca de pendências" style="width: auto; height: 28px; padding: 0 10px; display: flex; align-items: center; justify-content: center; white-space: nowrap; font-size: 11px; line-height: 1;">🏢 <span id="pending-unidades-label" style="margin-left: 4px;">Unidades</span> <span style="margin-left: 4px; opacity: .7;">▾</span></button>
+                            <div id="pending-unidades-pop" class="ip-unidades-pop" style="display: none;">
+                                <div class="ip-unidades-pop-head">
+                                    <label class="ip-unidades-all"><input type="checkbox" id="pending-unidades-todas"> <b>Todas as unidades</b></label>
+                                    <input type="text" id="pending-unidades-busca" class="ip-unidades-search" placeholder="Filtrar unidade…">
+                                </div>
+                                <div id="pending-unidades-list" class="ip-unidades-list"></div>
+                                <div class="ip-unidades-pop-foot">
+                                    <button id="pending-unidades-cancelar" class="action-btn small-btn">Cancelar</button>
+                                    <button id="pending-unidades-aplicar" class="action-btn small-btn enhanced-btn">Aplicar</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="ip-actions-group">
                         <select id="pending-monitored-responsible" class="ip-filter-select compact" title="Responsável monitorado — de quem buscar as pendências no SGD" style="max-width: 190px; height: 28px;">
